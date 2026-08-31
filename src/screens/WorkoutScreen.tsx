@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ScreenProps } from './types';
+import { useWeek } from '../useWeek';
 import type { ExerciseLog, WorkoutEntry, WorkoutType } from '../types';
 import {
   CONSTRAINTS,
@@ -74,7 +75,7 @@ function summaryLine(entry: WorkoutEntry): string {
 
 export default function WorkoutScreen({ store, today }: ScreenProps) {
   const { db } = store;
-  const [week, setWeek] = useState(() => weekStart(today));
+  const [week, setWeek] = useWeek(today);
   /** אימון חדש שעדיין אין בו נתונים — קיים רק במסך, לא באחסון. */
   const [draft, setDraft] = useState<WorkoutEntry | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);

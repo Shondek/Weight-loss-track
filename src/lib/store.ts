@@ -7,7 +7,7 @@
  */
 
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
-import { EMPTY_DB, type DB } from '../types';
+import { emptyDb, type DB } from '../types';
 import { parseSettings, parseWeights, parseWorkouts, parseWaist, parseCheckins } from './schema';
 
 export const STORAGE_KEYS = {
@@ -136,7 +136,7 @@ export async function loadDB(): Promise<LoadResult> {
     );
   }
 
-  const db: DB = { ...EMPTY_DB };
+  const db: DB = emptyDb();
   const migrated: string[] = [];
 
   for (const key of Object.keys(STORAGE_KEYS) as DbKey[]) {
@@ -227,7 +227,7 @@ export async function persistAll(db: DB): Promise<void> {
 
 /** מוחק הכול, כולל שאריות של הגרסה הישנה ב-localStorage. */
 export async function wipeAll(): Promise<void> {
-  await persistAll({ ...EMPTY_DB });
+  await persistAll(emptyDb());
   for (const storageKey of Object.values(STORAGE_KEYS)) {
     try {
       if (backend === 'indexeddb') await idbDel(storageKey);

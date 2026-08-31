@@ -24,13 +24,15 @@
 }
 
 :root {
+  /* הפלטה נבדקה מול AA: טקסט משני 4.65:1 ומעלה, גבול פקד 3.02:1 ומעלה.
+     --rule הוא קו הפרדה דקורטיבי בלבד ואינו מגדיר שום פקד. */
   --paper: #faf9f7;
-  --paper-sunk: #f2f0ec;
+  --paper-sunk: #f5f3f0;
   --ink: #16150f;
   --ink-2: #55524a;
-  --ink-3: #807c74;
+  --ink-3: #716d65;
   --rule: #e2dfd8;
-  --rule-strong: #c4c0b7;
+  --rule-strong: #8e8a81;
   --error: #a32a22;
 
   --sp-1: 4px;
@@ -507,8 +509,15 @@ button {
   border-width: 2px;
 }
 
+/* יום עתידי מסומן בקו מקווקו ולא בשקיפות: שקיפות הייתה מורידה את
+   ניגודיות הטקסט מתחת ל-AA. */
 .day--future {
-  opacity: 0.4;
+  border-style: dashed;
+}
+
+.day--future .day__letter,
+.day--future .day__empty {
+  color: var(--ink-3);
 }
 
 .day__letter {
@@ -607,6 +616,32 @@ button {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--sp-2);
+}
+
+/* ---------- קלט קובץ ---------- */
+
+input[type='file'] {
+  font: inherit;
+  font-size: 15px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 8px var(--sp-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink-2);
+}
+
+input[type='file']::file-selector-button {
+  font: inherit;
+  font-size: 15px;
+  margin-inline-end: var(--sp-3);
+  min-height: 34px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper-sunk);
+  color: var(--ink);
 }
 
 /* ---------- נגישות ---------- */

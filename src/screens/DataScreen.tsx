@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
-import { EMPTY_DB, type DB } from '../types';
+import type { DB } from '../types';
 import { parseDb, type DbParseResult } from '../lib/schema';
 import { mergeDb } from '../lib/db';
 import { backupJson } from '../lib/exportText';
@@ -303,7 +303,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
       <p className="tiny muted" style={{ margin: 0 }}>
         היום: <span className="num">{today}</span> · גרסת נתונים{' '}
         <span className="num">1</span>
-        {db === EMPTY_DB ? ' · ריק' : ''}
+        {total(db) === 0 ? ' · ריק' : ''}
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDb } from './useDb';
 import { useToday } from './useToday';
 import { weekStart } from './lib/date';
@@ -23,6 +23,26 @@ export default function App() {
   const today = useToday();
   const [tab, setTab] = useState<TabId>('weight');
   const thisWeek = weekStart(today);
+  const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
+
+  /** ניווט בחצים בין הטאבים. ב-RTL החץ הימני מוביל אחורה. */
+  const onTabKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const delta =
+      e.key === 'ArrowLeft' ? 1 : e.key === 'ArrowRight' ? -1 : e.key === 'Home' ? -99 : e.key === 'End' ? 99 : 0;
+    if (delta === 0) return;
+    e.preventDefault();
+    const i = TABS.findIndex((t) => t.id === tab);
+    const next =
+      delta === -99
+        ? 0
+        : delta === 99
+          ? TABS.length - 1
+          : (i + delta + TABS.length) % TABS.length;
+    const id = TABS[next]?.id;
+    if (!id) return;
+    setTab(id);
+    tabRefs.current[id]?.focus();
+  };
 
   const checkinDue = useMemo(
     () => needsCheckin(store.db.checkins, today, firstDataDate(store.db)),
@@ -49,7 +69,18 @@ export default function App() {
 
   return (
     <div className="app">
-      <main className="app__main" id="main">
+      {/* main נשאר landmark; role="tabpanel" יושב על div פנימי, כי
+          ARIA לא מרשה להחליף את התפקיד של <main>. */}
+      <main className="app__main">
+        <h1 className="visually-hidden">
+          {TABS.find((t) => t.id === tab)?.label} — מדידה
+        </h1>
+        <div
+          id={`panel-${tab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${tab}`}
+          tabIndex={-1}
+        >
         {store.errors.length > 0 && (
           <div className="banner banner--error stack--tight" role="alert">
             {store.errors.map((e) => (
@@ -76,32 +107,48 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'weight' && <WeightScreen store={store} today={today} />}
-        {tab === 'workout' && <WorkoutScreen store={store} today={today} />}
-        {tab === 'checkin' && <CheckinScreen store={store} today={today} />}
-        {tab === 'data' && <DataScreen store={store} today={today} />}
+          {tab === 'weight' && <WeightScreen store={store} today={today} />}
+          {tab === 'workout' && <WorkoutScreen store={store} today={today} />}
+          {tab === 'checkin' && <CheckinScreen store={store} today={today} />}
+          {tab === 'data' && <DataScreen store={store} today={today} />}
+        </div>
       </main>
 
       <nav className="tabs" aria-label="ניווט ראשי">
-        <div className="tabs__inner" role="tablist">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              className="tab"
-              aria-selected={tab === t.id}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-              {t.id === 'checkin' && checkinDue && (
-                <>
-                  <span className="tab__dot" aria-hidden="true" />
-                  <span className="visually-hidden">ממתין</span>
-                </>
-              )}
-            </button>
-          ))}
+        <div
+          className="tabs__inner"
+          role="tablist"
+          aria-label="מסכים"
+          onKeyDown={onTabKey}
+        >
+          {TABS.map((t) => {
+            const selected = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                id={`tab-${t.id}`}
+                ref={(el) => {
+                  tabRefs.current[t.id] = el;
+                }}
+                type="button"
+                role="tab"
+                className="tab"
+                aria-selected={selected}
+                aria-controls={`panel-${t.id}`}
+                // רק הטאב הפעיל בסדר ה-Tab; החצים מזיזים בין הטאבים.
+                tabIndex={selected ? 0 : -1}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+                {t.id === 'checkin' && checkinDue && (
+                  <>
+                    <span className="tab__dot" aria-hidden="true" />
+                    <span className="visually-hidden">ממתין</span>
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
       </nav>
 

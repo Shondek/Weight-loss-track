@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ScreenProps } from './types';
+import { useWeek } from '../useWeek';
 import Stepper from '../components/Stepper';
 import ConfirmButton from '../components/ConfirmButton';
 import DateField from '../components/DateField';
@@ -13,7 +14,6 @@ import {
   formatDMY,
   weekDays,
   weekNumber,
-  weekStart,
 } from '../lib/date';
 import {
   daysSinceWaist,
@@ -41,7 +41,7 @@ const MIN_FULL_WEEKS_FOR_CHART = 3;
 
 export default function WeightScreen({ store, today }: ScreenProps) {
   const { db } = store;
-  const [week, setWeek] = useState(() => weekStart(today));
+  const [week, setWeek] = useWeek(today);
   const [entryDate, setEntryDate] = useState(today);
   const [draft, setDraft] = useState<number | null>(null);
   const [waistDate, setWaistDate] = useState(today);

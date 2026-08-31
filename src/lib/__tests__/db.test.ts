@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { firstDataDate, mergeDb, programStartWeek } from '../db';
 import { needsCheckin, isFilled, upsertCheckin, emptyCheckin, getCheckin } from '../checkins';
-import { EMPTY_DB, type DB } from '../../types';
+import { emptyDb, type DB } from '../../types';
 
-const db = (over: Partial<DB>): DB => ({ ...EMPTY_DB, ...over });
+const db = (over: Partial<DB>): DB => ({ ...emptyDb(), ...over });
 
 describe('firstDataDate / programStartWeek', () => {
   it('התאריך המוקדם ביותר מכל הטבלאות', () => {
@@ -20,8 +20,8 @@ describe('firstDataDate / programStartWeek', () => {
   });
 
   it('DB ריק — null', () => {
-    expect(firstDataDate(EMPTY_DB)).toBeNull();
-    expect(programStartWeek(EMPTY_DB)).toBeNull();
+    expect(firstDataDate(emptyDb())).toBeNull();
+    expect(programStartWeek(emptyDb())).toBeNull();
   });
 
   it('נגזר לראשון של השבוע', () => {
@@ -65,7 +65,7 @@ describe('mergeDb', () => {
   });
 
   it('שום דבר קיים לא נמחק', () => {
-    const merged = mergeDb(current, EMPTY_DB);
+    const merged = mergeDb(current, emptyDb());
     expect(merged.weights).toHaveLength(2);
     expect(merged.workouts).toHaveLength(1);
     expect(merged.waist).toHaveLength(1);
@@ -87,7 +87,7 @@ describe('mergeDb', () => {
 
   it('הגדרות נשמרות אם לקובץ אין הגדרה', () => {
     const withStart = { ...current, settings: { programStart: '2026-08-02' } };
-    expect(mergeDb(withStart, EMPTY_DB).settings.programStart).toBe('2026-08-02');
+    expect(mergeDb(withStart, emptyDb()).settings.programStart).toBe('2026-08-02');
   });
 });
 

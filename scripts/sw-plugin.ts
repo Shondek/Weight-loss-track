@@ -31,6 +31,16 @@ const SW_TEMPLATE = (version: string, urls: string[]) => `/* נוצר אוטומ
 const CACHE = 'fatloss-${version}';
 const PRECACHE = ${JSON.stringify(urls, null, 2)};
 
+/**
+ * ignoreVary הוא חובה, לא אופטימיזציה.
+ * שרתים סטטיים רבים (בהם vite preview) מחזירים \`Vary: Origin\`. הבקשות
+ * שנשמרו ב-precache נוצרו בתוך ה-service worker בלי כותרת Origin, ואילו
+ * הבקשות האמיתיות של הדף לסקריפט, ל-CSS ולפונט כן שולחות אותה. בלי
+ * ignoreVary כל התאמה נכשלת, האפליקציה נראית ריקה אופליין, והמטמון
+ * המלא פשוט לא נמצא.
+ */
+const MATCH = { ignoreVary: true };
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -75,9 +85,9 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         const cache = await caches.open(CACHE);
         const shell =
-          (await cache.match('./index.html')) ||
-          (await cache.match('./')) ||
-          (await cache.match(new URL('./index.html', self.location.href).href));
+          (await cache.match('./index.html', MATCH)) ||
+          (await cache.match('./', MATCH)) ||
+          (await cache.match(new URL('./index.html', self.location.href).href, MATCH));
         if (shell) return shell;
         try {
           return await fetch(req);
@@ -95,7 +105,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE);
-      const hit = await cache.match(req, { ignoreSearch: false });
+      const hit = await cache.match(req, MATCH);
       if (hit) return hit;
       try {
         const res = await fetch(req);
@@ -104,7 +114,7 @@ self.addEventListener('fetch', (event) => {
         }
         return res;
       } catch (err) {
-        const fallback = await cache.match(req, { ignoreSearch: true });
+        const fallback = await cache.match(req, { ...MATCH, ignoreSearch: true });
         if (fallback) return fallback;
         throw err;
       }
@@ -128,6 +138,9 @@ export function serviceWorker(): Plugin {
 
     generateBundle(_options, bundle) {
       const hash = createHash('sha256');
+      // גם הלוגיקה של ה-service worker נכנסת ל-hash, כדי ששינוי בה ייצור
+      // דור cache חדש ולא ימוזג לתוך הישן.
+      hash.update(SW_TEMPLATE('', []));
       // index.html אינו חלק מה-bundle ב-Vite, לכן מוסיפים אותו במפורש
       // (וגם './' עבור שרתים שמגישים אותו מהתיקייה).
       const urls = new Set<string>(['./', './index.html']);

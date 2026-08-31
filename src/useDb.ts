@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EMPTY_DB, type DB } from './types';
+import { emptyDb, type DB } from './types';
 import {
   currentBackend,
   loadDB,
@@ -38,7 +38,7 @@ const WRITE_HELP = 'ייצא גיבוי ממסך "נתונים" לפני שתמ�
 
 export function useDb(): DbApi {
   const [state, setState] = useState<DbState>({
-    db: EMPTY_DB,
+    db: emptyDb(),
     loading: true,
     backend: 'memory',
     notices: [],
@@ -62,7 +62,7 @@ export function useDb(): DbApi {
       } catch (err) {
         if (!mounted.current) return;
         setState({
-          db: EMPTY_DB,
+          db: emptyDb(),
           loading: false,
           backend: currentBackend(),
           notices: [],
@@ -116,7 +116,7 @@ export function useDb(): DbApi {
   );
 
   const wipe = useCallback(async (): Promise<boolean> => {
-    setState((s) => ({ ...s, db: { ...EMPTY_DB } }));
+    setState((s) => ({ ...s, db: emptyDb() }));
     try {
       await wipeAll();
       return true;

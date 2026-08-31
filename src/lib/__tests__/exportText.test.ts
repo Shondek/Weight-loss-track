@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { buildChatReport, backupJson, MAX_CHARS } from '../exportText';
-import { EMPTY_DB, type DB, type WeightEntry } from '../../types';
+import { emptyDb, type DB, type WeightEntry } from '../../types';
 
 const W = (d: string, w: number): WeightEntry => ({ d, w });
 
 /** שבוע 23/08 חלקי (4/7) ואחריו שבוע 30/08 מלא — כמו בדוגמה שבמפרט. */
 function baseDb(): DB {
   return {
-    ...EMPTY_DB,
+    ...emptyDb(),
     weights: [
       W('2026-08-23', 80.5),
       W('2026-08-25', 80.3),
@@ -145,7 +145,7 @@ describe('כלל 2 — שני שבועות מלאים נותנים שורת שי
 
 describe('כלל 3 — שדה שלא מולא נכתב "—"', () => {
   const text = buildChatReport(
-    { ...EMPTY_DB, weights: [W('2026-09-02', 80)] },
+    { ...emptyDb(), weights: [W('2026-09-02', 80)] },
     '2026-08-30',
     '2026-09-05',
   );
@@ -164,7 +164,7 @@ describe('כלל 3 — שדה שלא מולא נכתב "—"', () => {
 describe('כלל 4 — סעיף חסר', () => {
   it('מפרט אימונים חסרים, ימים בלי שקילה ומותניים', () => {
     const text = buildChatReport(
-      { ...EMPTY_DB, weights: [W('2026-08-30', 80), W('2026-08-31', 80)] },
+      { ...emptyDb(), weights: [W('2026-08-30', 80), W('2026-08-31', 80)] },
       '2026-08-30',
       '2026-09-05',
     );
@@ -175,7 +175,7 @@ describe('כלל 4 — סעיף חסר', () => {
 
   it('לא מחשיב ימים עתידיים כחסרים', () => {
     const text = buildChatReport(
-      { ...EMPTY_DB, weights: [W('2026-08-30', 80), W('2026-08-31', 80)] },
+      { ...emptyDb(), weights: [W('2026-08-30', 80), W('2026-08-31', 80)] },
       '2026-08-30',
       '2026-08-31',
     );
@@ -203,7 +203,7 @@ describe('כלל 1 — תקרת 2,500 תווים', () => {
       const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       weights.push(W(iso, 80 + (i % 5) / 10));
     }
-    const text = buildChatReport({ ...EMPTY_DB, weights }, '2026-08-30', '2026-09-05');
+    const text = buildChatReport({ ...emptyDb(), weights }, '2026-08-30', '2026-09-05');
     expect(text.length).toBeLessThanOrEqual(MAX_CHARS);
     expect(text.split('ממוצעים שבועיים אחרונים\n')[1]?.split('\n')[0]?.split(' · ')).toHaveLength(8);
   });

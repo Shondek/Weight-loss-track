@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ScreenProps } from './types';
+import { useWeek } from '../useWeek';
 import type { WeeklyCheckin } from '../types';
 import { NOTE_MAX } from '../types';
 import { emptyCheckin, getCheckin, isFilled, upsertCheckin } from '../lib/checkins';
@@ -16,7 +17,7 @@ const DAYS_0_7 = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export default function CheckinScreen({ store, today }: ScreenProps) {
   const { db } = store;
-  const [week, setWeek] = useState(() => weekStart(today));
+  const [week, setWeek] = useWeek(today);
 
   const saved = getCheckin(db.checkins, week);
   const value: WeeklyCheckin = saved ?? emptyCheckin(week);

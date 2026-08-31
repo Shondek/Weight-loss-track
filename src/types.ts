@@ -72,10 +72,16 @@ export type DB = {
   settings: Settings;
 };
 
-export const EMPTY_DB: DB = {
-  weights: [],
-  workouts: [],
-  waist: [],
-  checkins: [],
-  settings: DEFAULT_SETTINGS,
-};
+/**
+ * בסיס נתונים ריק. פונקציה ולא קבוע — קבוע משותף היה מחזיר את אותם
+ * מערכים לכל הקוראים, ו-spread שטוח לא היה מפריד ביניהם.
+ */
+export function emptyDb(): DB {
+  return {
+    weights: [],
+    workouts: [],
+    waist: [],
+    checkins: [],
+    settings: { ...DEFAULT_SETTINGS },
+  };
+}
