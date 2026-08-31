@@ -49,11 +49,16 @@ npm run preview    # מגיש את dist/ לבדיקה
 
 ### הדרך המובנית: GitHub Pages
 
-הריפו כבר כולל `.github/workflows/deploy.yml`. פעולה חד-פעמית:
+הריפו כולל `.github/workflows/deploy.yml`, וה-workflow מפעיל את Pages
+בעצמו בריצה הראשונה. הכתובת שמתקבלת:
 
-1. ב-GitHub: **Settings ← Pages ← Source: GitHub Actions**.
-2. לחכות לריצה בלשונית **Actions** (בערך דקה).
-3. הכתובת שמתקבלת: `https://<user>.github.io/<repo>/`
+```
+https://<user>.github.io/<repo>/
+```
+
+אם ההפעלה האוטומטית נחסמת (הרשאות חשבון או ארגון), יש להפעיל ידנית
+פעם אחת: **Settings ← Pages ← Source: GitHub Actions**, ואז להריץ
+מחדש את ה-workflow מלשונית **Actions**.
 
 מכאן כל דחיפה לענף בונה, מריץ את הבדיקות, ומפרסם מחדש. בנייה שבורה
 או בדיקה שנכשלת עוצרות את הפריסה.

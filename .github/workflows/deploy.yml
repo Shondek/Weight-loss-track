@@ -1,6 +1,7 @@
 # בונה ופורס את האפליקציה ל-GitHub Pages.
 #
-# הפעלה חד-פעמית בריפו: Settings ← Pages ← Source: GitHub Actions.
+# ה-workflow מפעיל את Pages בעצמו (enablement: true). אם החשבון חוסם
+# את זה, יש להפעיל ידנית: Settings ← Pages ← Source: GitHub Actions.
 # אחרי זה כל דחיפה לענף שלמטה מפרסמת מחדש.
 #
 # הכתובת שמתקבלת: https://<user>.github.io/<repo>/
@@ -42,7 +43,11 @@ jobs:
       - run: npm test
       - run: npm run build
 
+      # enablement מפעיל את Pages דרך ה-API אם הוא עדיין כבוי,
+      # כדי שלא תידרש הגדרה ידנית בריפו.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
