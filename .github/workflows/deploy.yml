@@ -1,11 +1,13 @@
 # בונה ופורס את האפליקציה ל-GitHub Pages.
 #
-# enablement: true מבקש מה-action להפעיל את Pages דרך ה-API, כדי
-# שלא תידרש הגדרה ידנית. בריפו פרטי זה נחסם ("Resource not accessible
-# by integration") — Pages לחשבון חינמי דורש ריפו ציבורי.
+# פעולה חד-פעמית בריפו: Settings ← Pages ← Source: GitHub Actions.
+# אחרי זה כל דחיפה לענף שלמטה מפרסמת מחדש.
 #
-# אם ההפעלה האוטומטית נחסמת בכל זאת: Settings ← Pages ←
-# Source: GitHub Actions, ואז Actions ← deploy ← Run workflow.
+# אין דרך לעקוף את זה מתוך ה-workflow. נוסה enablement: true
+# ב-configure-pages, גם בריפו פרטי וגם ציבורי, ובשניהם:
+#   Create Pages site failed — Resource not accessible by integration
+# יצירת אתר Pages היא פעולה ברמת admin, ו-GITHUB_TOKEN לא מקבל אותה
+# גם עם permissions: pages: write.
 #
 # הכתובת שמתקבלת: https://<user>.github.io/<repo>/
 # `base` ב-vite.config.ts הוא './', ולכן תת-תיקייה עובדת בלי הגדרה נוספת.
@@ -55,8 +57,6 @@ jobs:
           retention-days: 30
 
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

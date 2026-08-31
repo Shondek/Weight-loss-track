@@ -58,10 +58,14 @@ npm run preview    # מגיש את dist/ לבדיקה
 מכאן כל דחיפה לענף בונה, מריץ את הבדיקות, ומפרסם מחדש. בדיקה
 שנכשלת עוצרת את הפריסה.
 
-אין דרך לוותר על שלב 1 מתוך ה-workflow: `actions/configure-pages`
-תומך ב-`enablement: true`, אבל `GITHUB_TOKEN` חוזר עם
-`Resource not accessible by integration` — יצירת אתר Pages דורשת
-הרשאה שהטוקן לא מקבל.
+שתי דרישות מוקדמות:
+
+- **הריפו חייב להיות ציבורי** (בחשבון חינמי). בריפו פרטי האפשרות
+  `GitHub Actions` ב-Settings ← Pages פשוט לא מוצעת.
+- **את שלב 1 אי אפשר לאוטומט.** `actions/configure-pages` תומך
+  ב-`enablement: true`, אבל `GITHUB_TOKEN` חוזר עם
+  `Resource not accessible by integration` — גם בריפו ציבורי, וגם עם
+  `permissions: pages: write`. יצירת אתר Pages היא פעולה ברמת admin.
 
 אם שלב `deploy` נכשל אחרי ההפעלה עם שגיאה על **environment protection
 rules**, הסביבה `github-pages` מוגבלת לענף ברירת המחדל. שתי אפשרויות:
