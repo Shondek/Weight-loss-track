@@ -63,6 +63,11 @@ npm run preview    # מגיש את dist/ לבדיקה
 `Resource not accessible by integration` — יצירת אתר Pages דורשת
 הרשאה שהטוקן לא מקבל.
 
+אם שלב `deploy` נכשל אחרי ההפעלה עם שגיאה על **environment protection
+rules**, הסביבה `github-pages` מוגבלת לענף ברירת המחדל. שתי אפשרויות:
+למזג את הענף ל-`main`, או להוסיף אותו ב-**Settings ← Environments ←
+github-pages ← Deployment branches**.
+
 ### בלי GitHub Pages בכלל
 
 כל ריצה מעלה ארטיפקט בשם `dist` (גם כשהפריסה נעצרת). להוריד אותו
