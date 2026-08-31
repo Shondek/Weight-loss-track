@@ -1,0 +1,6 @@
+Heebo — Copyright the Heebo Project Authors (https://github.com/OdedEzer/heebo)
+Licensed under the SIL Open Font License, Version 1.1.
+https://scripts.sil.org/OFL
+
+הקבצים כאן הם תת-קבוצות (hebrew, latin) של הגרסה המשתנה (variable) של Heebo,
+מוגשות מקומית כדי שהאפליקציה תעבוד אופליין בלי תלות ב-Google Fonts.
