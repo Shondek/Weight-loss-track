@@ -188,8 +188,7 @@ h3 {
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  direction: ltr;
-  unicode-bidi: isolate;
+  text-align: start;
 }
 
 .hero--empty {

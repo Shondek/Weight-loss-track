@@ -7,7 +7,7 @@
 
 import type { ISODate, WaistEntry, WeightEntry } from '../types';
 import { addDays, compareISO, diffDays, weekDays, weekStart } from './date';
-import { round2 } from './format';
+import { mean, round2 } from './format';
 
 export const WEEK_LENGTH = 7;
 
@@ -66,13 +66,12 @@ export function summarizeWeek(
   const byDate = new Map(list.map((e) => [e.d, e.w]));
   const days = weekDays(ws).map((d) => byDate.get(d) ?? null);
   const present = days.filter((v): v is number => v !== null);
+  const avg = mean(present);
   return {
     weekStart: ws,
     days,
     count: present.length,
-    avg: present.length
-      ? round2(present.reduce((a, b) => a + b, 0) / present.length)
-      : null,
+    avg: avg === null ? null : round2(avg),
     complete: present.length === WEEK_LENGTH,
   };
 }

@@ -27,3 +27,18 @@ export function clean(n: number | null | undefined, maxDigits = 2): string {
 export function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
+
+/**
+ * ממוצע מדויק. סכימה ישירה של ערכים כמו 80.1 צוברת שגיאת נקודה צפה
+ * (80.1+80.0+79.8+80.2 = 320.09999999999997), ואז ערך שאמור להיות בדיוק
+ * 80.025 מתעגל כלפי מטה. סוכמים באלפיות שלמות כדי למנוע את זה.
+ * דיוק המקור נשמר עד 3 ספרות אחרי הנקודה — יותר מכל מה שהאפליקציה מזינה.
+ */
+const MEAN_SCALE = 1000;
+
+export function mean(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  let total = 0;
+  for (const v of values) total += Math.round(v * MEAN_SCALE);
+  return total / (MEAN_SCALE * values.length);
+}

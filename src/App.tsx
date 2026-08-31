@@ -3,6 +3,7 @@ import { useDb } from './useDb';
 import { useToday } from './useToday';
 import { weekStart } from './lib/date';
 import { needsCheckin } from './lib/checkins';
+import { firstDataDate } from './lib/db';
 import WeightScreen from './screens/WeightScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
 import CheckinScreen from './screens/CheckinScreen';
@@ -24,8 +25,8 @@ export default function App() {
   const thisWeek = weekStart(today);
 
   const checkinDue = useMemo(
-    () => needsCheckin(store.db.checkins, today),
-    [store.db.checkins, today],
+    () => needsCheckin(store.db.checkins, today, firstDataDate(store.db)),
+    [store.db, today],
   );
 
   // צ'ק-אין נפתח מעצמו רק בשבת, או אם השבוע הקודם נסגר בלי צ'ק-אין.
