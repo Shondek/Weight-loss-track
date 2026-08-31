@@ -22,7 +22,7 @@ describe('parseWeights', () => {
     expect(r.ok).toEqual([{ d: '2026-08-30', w: 79.9 }]);
   });
 
-  it('דוחה תאריך פסול, משקל לא מספרי ומשקל מטורף', () => {
+  it('דוחה תאריך פסול, משקל לא מספרי ומשקל מטורף — עם סיבה מדויקת', () => {
     const r = parseWeights([
       { d: 'nope', w: 80 },
       { d: '2026-08-30', w: 'abc' },
@@ -31,7 +31,13 @@ describe('parseWeights', () => {
       42,
     ]);
     expect(r.ok).toHaveLength(0);
-    expect(r.rejected).toHaveLength(5);
+    expect(r.rejected.map((x) => x.reason)).toEqual([
+      'תאריך לא תקין',
+      'משקל שאינו מספר',
+      'משקל מחוץ לטווח 20–400 ק"ג',
+      'משקל מחוץ לטווח 20–400 ק"ג',
+      'רשומה שאינה אובייקט',
+    ]);
   });
 
   it('מקבל משקל שהגיע כמחרוזת', () => {

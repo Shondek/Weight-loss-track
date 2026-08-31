@@ -64,8 +64,12 @@ export function parseWeights(input: unknown): ParseResult<WeightEntry> {
       continue;
     }
     const w = num(raw.w);
-    if (w === null || w < MIN_WEIGHT || w > MAX_WEIGHT) {
-      rejected.push({ reason: 'משקל מחוץ לטווח הסביר' });
+    if (w === null) {
+      rejected.push({ reason: 'משקל שאינו מספר' });
+      continue;
+    }
+    if (w < MIN_WEIGHT || w > MAX_WEIGHT) {
+      rejected.push({ reason: `משקל מחוץ לטווח ${MIN_WEIGHT}–${MAX_WEIGHT} ק"ג` });
       continue;
     }
     byDate.set(raw.d, { d: raw.d, w });
@@ -94,8 +98,12 @@ export function parseWaist(input: unknown): ParseResult<WaistEntry> {
       continue;
     }
     const cm = num(raw.cm);
-    if (cm === null || cm < MIN_WAIST || cm > MAX_WAIST) {
-      rejected.push({ reason: 'היקף מותניים מחוץ לטווח הסביר' });
+    if (cm === null) {
+      rejected.push({ reason: 'היקף מותניים שאינו מספר' });
+      continue;
+    }
+    if (cm < MIN_WAIST || cm > MAX_WAIST) {
+      rejected.push({ reason: `היקף מותניים מחוץ לטווח ${MIN_WAIST}–${MAX_WAIST} ס"מ` });
       continue;
     }
     byDate.set(raw.d, { d: raw.d, cm });

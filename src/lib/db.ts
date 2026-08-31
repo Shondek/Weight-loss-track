@@ -2,6 +2,9 @@
 
 import type { DB, ISODate } from '../types';
 import { compareISO, weekStart } from './date';
+import { upsertCheckin } from './checkins';
+import { upsertWaist, upsertWeight } from './weights';
+import { upsertWorkout } from './workouts';
 
 /** התאריך המוקדם ביותר שיש עליו נתון כלשהו. */
 export function firstDataDate(db: DB): ISODate | null {
@@ -24,4 +27,31 @@ export function programStartWeek(db: DB): ISODate | null {
   if (db.settings.programStart) return weekStart(db.settings.programStart);
   const first = firstDataDate(db);
   return first ? weekStart(first) : null;
+}
+
+/**
+ * מיזוג ייבוא לתוך הנתונים הקיימים. הרשומה המיובאת גוברת על התנגשות:
+ * משקל ומותניים לפי תאריך, אימון לפי מזהה, צ'ק-אין לפי שבוע.
+ * שום דבר קיים לא נמחק — לכן ייבוא בטעות אינו מאבד נתונים.
+ */
+export function mergeDb(current: DB, incoming: DB): DB {
+  let weights = current.weights;
+  for (const e of incoming.weights) weights = upsertWeight(weights, e);
+
+  let waist = current.waist;
+  for (const e of incoming.waist) waist = upsertWaist(waist, e);
+
+  let workouts = current.workouts;
+  for (const e of incoming.workouts) workouts = upsertWorkout(workouts, e);
+
+  let checkins = current.checkins;
+  for (const c of incoming.checkins) checkins = upsertCheckin(checkins, c);
+
+  return {
+    weights,
+    waist,
+    workouts,
+    checkins,
+    settings: incoming.settings.programStart ? incoming.settings : current.settings,
+  };
 }
