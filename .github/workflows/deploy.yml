@@ -1,8 +1,12 @@
 # בונה ופורס את האפליקציה ל-GitHub Pages.
 #
-# ה-workflow מפעיל את Pages בעצמו (enablement: true). אם החשבון חוסם
-# את זה, יש להפעיל ידנית: Settings ← Pages ← Source: GitHub Actions.
+# פעולה חד-פעמית בריפו: Settings ← Pages ← Source: GitHub Actions.
 # אחרי זה כל דחיפה לענף שלמטה מפרסמת מחדש.
+#
+# נוסה גם enablement: true, שמבקש מה-action להפעיל את Pages דרך ה-API.
+# GITHUB_TOKEN נחסם: "Create Pages site failed — Resource not accessible
+# by integration". יצירת אתר Pages דורשת הרשאה שהטוקן לא מקבל כאן,
+# ולכן אין דרך לעקוף את ההגדרה הידנית מתוך ה-workflow.
 #
 # הכתובת שמתקבלת: https://<user>.github.io/<repo>/
 # `base` ב-vite.config.ts הוא './', ולכן תת-תיקייה עובדת בלי הגדרה נוספת.
@@ -43,11 +47,15 @@ jobs:
       - run: npm test
       - run: npm run build
 
-      # enablement מפעיל את Pages דרך ה-API אם הוא עדיין כבוי,
-      # כדי שלא תידרש הגדרה ידנית בריפו.
-      - uses: actions/configure-pages@v5
+      # ארטיפקט רגיל להורדה, לפני שלבי Pages. כך יש בנייה מוכנה גם אם
+      # Pages כבוי — אפשר להוריד ולגרור לשירות סטטי אחר.
+      - uses: actions/upload-artifact@v4
         with:
-          enablement: true
+          name: dist
+          path: dist
+          retention-days: 30
+
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

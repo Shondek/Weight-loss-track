@@ -49,16 +49,27 @@ npm run preview    # מגיש את dist/ לבדיקה
 
 ### הדרך המובנית: GitHub Pages
 
-הריפו כולל `.github/workflows/deploy.yml`, וה-workflow מפעיל את Pages
-בעצמו בריצה הראשונה. הכתובת שמתקבלת:
+הריפו כולל `.github/workflows/deploy.yml`. נדרשת פעולה ידנית **אחת**:
 
-```
-https://<user>.github.io/<repo>/
-```
+1. **Settings ← Pages ← Source: GitHub Actions** (בתפריט הנפתח).
+2. **Actions ← deploy ← Run workflow** (או פשוט לדחוף קומיט).
+3. הכתובת שמתקבלת: `https://<user>.github.io/<repo>/`
 
-אם ההפעלה האוטומטית נחסמת (הרשאות חשבון או ארגון), יש להפעיל ידנית
-פעם אחת: **Settings ← Pages ← Source: GitHub Actions**, ואז להריץ
-מחדש את ה-workflow מלשונית **Actions**.
+מכאן כל דחיפה לענף בונה, מריץ את הבדיקות, ומפרסם מחדש. בדיקה
+שנכשלת עוצרת את הפריסה.
+
+אין דרך לוותר על שלב 1 מתוך ה-workflow: `actions/configure-pages`
+תומך ב-`enablement: true`, אבל `GITHUB_TOKEN` חוזר עם
+`Resource not accessible by integration` — יצירת אתר Pages דורשת
+הרשאה שהטוקן לא מקבל.
+
+### בלי GitHub Pages בכלל
+
+כל ריצה מעלה ארטיפקט בשם `dist` (גם כשהפריסה נעצרת). להוריד אותו
+מלשונית **Actions**, לפרוס את ה-zip, ולגרור את התיקייה ל-
+[Netlify Drop](https://app.netlify.com/drop) — מתקבלת כתובת HTTPS
+מיידית בלי חשבון. אפשר גם לחבר את הריפו ל-Cloudflare Pages או
+ל-Netlify עם `npm run build` ותיקיית פלט `dist`.
 
 מכאן כל דחיפה לענף בונה, מריץ את הבדיקות, ומפרסם מחדש. בנייה שבורה
 או בדיקה שנכשלת עוצרות את הפריסה.
