@@ -1,0 +1,58 @@
+# בונה ופורס את האפליקציה ל-GitHub Pages.
+#
+# הפעלה חד-פעמית בריפו: Settings ← Pages ← Source: GitHub Actions.
+# אחרי זה כל דחיפה לענף שלמטה מפרסמת מחדש.
+#
+# הכתובת שמתקבלת: https://<user>.github.io/<repo>/
+# `base` ב-vite.config.ts הוא './', ולכן תת-תיקייה עובדת בלי הגדרה נוספת.
+
+name: deploy
+
+on:
+  push:
+    branches:
+      - main
+      - claude/personal-tracking-app-4xbd81
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# פריסה אחת בכל רגע. ריצה בתהליך לא נקטעת באמצע.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # לא פורסים בנייה שבורה
+      - run: npm test
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
