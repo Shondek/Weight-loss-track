@@ -111,7 +111,7 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           <p className="sub" style={{ margin: '6px 0 0' }}>
             <span className="num">{current.count}</span> מתוך{' '}
             <span className="num">{WEEK_LENGTH}</span> שקילות ·{' '}
-            {current.complete ? 'שבוע מלא' : `חלקי (${current.count}/7)`}
+            {current.complete ? 'שבוע מלא' : 'חלקי'}
           </p>
 
           <div className="stack--tight" style={{ marginTop: 'var(--sp-3)' }}>
