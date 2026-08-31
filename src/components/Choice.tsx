@@ -6,6 +6,8 @@ type Props = {
   /** קליק על ערך שכבר נבחר מנקה אותו. */
   clearable?: boolean | undefined;
   hideLabel?: boolean | undefined;
+  /** פריסת רשת אחידה, לסולמות ארוכים כמו 0–10. */
+  scale?: boolean | undefined;
 };
 
 /**
@@ -18,11 +20,12 @@ export default function Choice({
   onChange,
   clearable = true,
   hideLabel,
+  scale,
 }: Props) {
   return (
     <div role="group" aria-label={label}>
       {!hideLabel && <span className="label">{label}</span>}
-      <div className="choice">
+      <div className={scale ? 'choice choice--scale' : 'choice'}>
         {options.map((o) => {
           const on = value === o;
           return (

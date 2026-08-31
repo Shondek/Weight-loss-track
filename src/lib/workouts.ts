@@ -63,8 +63,8 @@ export function lastExercise(
     if (excludeId !== undefined && w.id === excludeId) continue;
     for (const ex of w.ex) {
       if (ex.n !== name) continue;
-      // מתעלמים מרישום ריק לגמרי — הוא לא "המשקל האחרון".
-      if (ex.w === null && ex.r.every((x) => x === null)) continue;
+      // תרגיל בלי אף חזרה לא בוצע, ולכן אינו "האחרון".
+      if (!ex.r.some((x) => x !== null)) continue;
       if (
         !best ||
         compareISO(w.d, best.entry.d) > 0 ||
@@ -101,9 +101,28 @@ export function blankExercises(t: WorkoutType): ExerciseLog[] {
   return PROGRAM[t].map((spec) => ({ n: spec.n, w: null, r: [null, null, null] }));
 }
 
-/** האם התרגיל נרשם בכלל (יש משקל או לפחות סט אחד). */
+/**
+ * שורות תרגילים לאימון חדש, כשהמשקל מאוכלס מהרישום האחרון של כל תרגיל.
+ * המטרה: לאשר או לשנות, לא להקליד מחדש. החזרות תמיד ריקות — המשקל לבדו
+ * אינו נחשב נתון (ראה hasData), ולכן אימון כזה עדיין נחשב ריק.
+ */
+export function prefilledExercises(
+  list: readonly WorkoutEntry[],
+  t: WorkoutType,
+): ExerciseLog[] {
+  return PROGRAM[t].map((spec) => ({
+    n: spec.n,
+    w: spec.kind === 'time' ? null : (lastExercise(list, spec.n)?.w ?? null),
+    r: [null, null, null],
+  }));
+}
+
+/**
+ * האם התרגיל בוצע. נדרשת לפחות חזרה אחת: המשקל לבדו הוא ברירת מחדל
+ * שמולאה מההיסטוריה, לא נתון שהמשתמש רשם.
+ */
 export function hasData(ex: ExerciseLog): boolean {
-  return ex.w !== null || ex.r.some((v) => v !== null);
+  return ex.r.some((v) => v !== null);
 }
 
 export function isWorkoutEmpty(entry: WorkoutEntry): boolean {
@@ -112,9 +131,22 @@ export function isWorkoutEmpty(entry: WorkoutEntry): boolean {
   );
 }
 
-/** מזהה אימון. הייחודיות מגיעה מבחוץ כדי שהמודול יישאר טהור. */
+/**
+ * חותמת זמן בבסיס 36 ברוחב קבוע, כך שהשוואת מחרוזות שווה להשוואת זמן.
+ * הריפוד לרוחב קבוע הוא מה שמבטיח את זה: בלעדיו מחרוזת קצרה יותר הייתה
+ * מסודרת לפני ארוכה ממנה גם אם היא מאוחרת. תשעה תווים מספיקים עד שנת 5138.
+ */
+export function sortableStamp(nowMs: number): string {
+  return Math.max(0, Math.floor(nowMs)).toString(36).padStart(9, '0');
+}
+
+/**
+ * מזהה אימון. הייחודיות מגיעה מבחוץ כדי שהמודול יישאר טהור.
+ * `unique` צריך להתחיל ב-sortableStamp כדי ששני אימונים באותו יום יסודרו
+ * לפי סדר היצירה — זה מה שקובע מי "הבא בתור" בסבב.
+ */
 export function makeWorkoutId(d: ISODate, t: WorkoutType, unique: string): string {
-  return `${d}-${t}-${unique}`;
+  return `${d}-${unique}-${t}`;
 }
 
 /** כאב הכי גבוה שנרשם בקבוצת אימונים. null אם לא נרשם כלל. */

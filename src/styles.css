@@ -442,6 +442,11 @@ button {
   font-weight: 500;
 }
 
+.choice--scale {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+}
+
 .choice--big .choice__btn {
   min-height: 56px;
   font-size: 20px;
