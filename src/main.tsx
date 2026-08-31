@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles.css';
+import { registerServiceWorker } from './platform/appUpdate';
 
 const el = document.getElementById('root');
 if (!el) throw new Error('#root missing');
@@ -13,10 +14,6 @@ createRoot(el).render(
 );
 
 // ה-service worker נוצר רק בבנייה (scripts/sw-plugin.ts).
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register(new URL('sw.js', document.baseURI).href, { updateViaCache: 'none' })
-      .catch(() => undefined);
-  });
+if (import.meta.env.PROD) {
+  window.addEventListener('load', registerServiceWorker);
 }

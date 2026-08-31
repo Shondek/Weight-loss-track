@@ -4,6 +4,8 @@ import { useToday } from './useToday';
 import { weekStart } from './lib/date';
 import { needsCheckin } from './lib/checkins';
 import { firstDataDate } from './lib/db';
+import { KEY_LABELS } from './lib/store';
+import { onAppUpdate } from './platform/appUpdate';
 import WeightScreen from './screens/WeightScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
 import CheckinScreen from './screens/CheckinScreen';
@@ -22,6 +24,8 @@ export default function App() {
   const store = useDb();
   const today = useToday();
   const [tab, setTab] = useState<TabId>('weight');
+  const [updateReady, setUpdateReady] = useState(false);
+  useEffect(() => onAppUpdate(() => setUpdateReady(true)), []);
   const thisWeek = weekStart(today);
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
 
@@ -81,6 +85,39 @@ export default function App() {
           aria-labelledby={`tab-${tab}`}
           tabIndex={-1}
         >
+        {updateReady && (
+          <div className="banner stack--tight" role="status">
+            <p style={{ margin: 0 }}>גרסה חדשה של האפליקציה מוכנה.</p>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => window.location.reload()}
+            >
+              רענן
+            </button>
+          </div>
+        )}
+
+        {store.dirtyKeys.length > 0 && (
+          <div className="banner banner--error stack--tight" role="alert">
+            <p className="strong" style={{ margin: 0 }}>
+              נתונים לא נשמרו במכשיר:{' '}
+              {store.dirtyKeys.map((k) => KEY_LABELS[k]).join(' · ')}
+            </p>
+            <p style={{ margin: 0 }}>
+              הם עדיין על המסך וייכללו בייצוא, אבל ייעלמו בסגירת האפליקציה.
+              ייצא גיבוי ממסך "נתונים".
+            </p>
+            <button
+              type="button"
+              className="btn btn--danger"
+              onClick={() => void store.retrySave()}
+            >
+              נסה לשמור שוב
+            </button>
+          </div>
+        )}
+
         {store.errors.length > 0 && (
           <div className="banner banner--error stack--tight" role="alert">
             {store.errors.map((e) => (

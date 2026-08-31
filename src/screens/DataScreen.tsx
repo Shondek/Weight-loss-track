@@ -5,7 +5,9 @@ import { parseDb, type DbParseResult } from '../lib/schema';
 import { mergeDb } from '../lib/db';
 import { backupJson } from '../lib/exportText';
 import { currentBackend, STORAGE_KEYS } from '../lib/store';
-import { toLocalISO } from '../lib/date';
+import { formatDM, toLocalISO, weekRangeLabel, weekStart } from '../lib/date';
+import { firstDataDate, programStartWeek } from '../lib/db';
+import DateField from '../components/DateField';
 import CopyBlock from '../components/CopyBlock';
 import { downloadText, readFileAsText } from '../platform/download';
 
@@ -20,6 +22,7 @@ type ImportReport = {
 };
 
 const WIPE_WORD = 'מחק';
+const DASH_TEXT = '—';
 
 const BACKEND_LABEL: Record<string, string> = {
   indexeddb: 'IndexedDB',
@@ -42,6 +45,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const fileInput = useRef<HTMLInputElement>(null);
 
   const json = useMemo(() => backupJson(db, new Date().toISOString()), [db]);
+  const start = useMemo(() => programStartWeek(db), [db]);
+  const firstData = useMemo(() => firstDataDate(db), [db]);
 
   const runImport = (text: string) => {
     setReport(null);
@@ -94,6 +99,45 @@ export default function DataScreen({ store, today }: ScreenProps) {
             מפתחות: {Object.values(STORAGE_KEYS).join(' · ')}
           </li>
         </ul>
+      </section>
+
+      <section className="section">
+        <div className="section__head">
+          <h2>תחילת התוכנית</h2>
+          <span className="tiny muted">שבוע 1</span>
+        </div>
+        <div className="stack">
+          <p className="small muted" style={{ margin: 0 }}>
+            קובע רק את מספר השבוע בכותרת הדוח לצ'אט. אינו משפיע על שום חישוב.
+          </p>
+          <p className="sub" style={{ margin: 0 }}>
+            כרגע:{' '}
+            <span className="num">
+              {start ? weekRangeLabel(start) : DASH_TEXT}
+            </span>{' '}
+            {db.settings.programStart ? '(נקבע ידנית)' : '(אוטומטי — מהנתון הראשון)'}
+          </p>
+          <DateField
+            label="בחר תאריך בשבוע 1"
+            value={db.settings.programStart ?? start ?? today}
+            max={today}
+            onChange={(d) =>
+              void store.update('settings', { ...db.settings, programStart: weekStart(d) })
+            }
+          />
+          {db.settings.programStart && (
+            <button
+              type="button"
+              className="btn btn--quiet"
+              onClick={() =>
+                void store.update('settings', { ...db.settings, programStart: null })
+              }
+            >
+              חזרה לאוטומטי
+              {firstData ? ` (${formatDM(weekStart(firstData))})` : ''}
+            </button>
+          )}
+        </div>
       </section>
 
       <section className="section">

@@ -8,7 +8,6 @@ export function round(n: number, digits: number): number {
   return Math.round((n + Number.EPSILON) * f) / f;
 }
 
-export const round1 = (n: number): number => round(n, 1);
 export const round2 = (n: number): number => round(n, 2);
 
 /** מספר עם מספר קבוע של ספרות אחרי הנקודה, או "—" אם אין ערך. */
@@ -23,10 +22,6 @@ export function clean(n: number | null | undefined, maxDigits = 2): string {
   return String(round(n, maxDigits));
 }
 
-/** מגביל ערך לטווח. */
-export function clamp(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, n));
-}
 
 /**
  * ממוצע מדויק. סכימה ישירה של ערכים כמו 80.1 צוברת שגיאת נקודה צפה

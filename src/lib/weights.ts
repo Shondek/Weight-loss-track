@@ -48,10 +48,6 @@ export function removeWeight(list: readonly WeightEntry[], d: ISODate): WeightEn
   return list.filter((e) => e.d !== d);
 }
 
-export function weightOn(list: readonly WeightEntry[], d: ISODate): number | null {
-  return list.find((e) => e.d === d)?.w ?? null;
-}
-
 /** השקילה האחרונה לפי תאריך. */
 export function lastWeight(list: readonly WeightEntry[]): WeightEntry | null {
   let best: WeightEntry | null = null;

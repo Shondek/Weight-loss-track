@@ -30,13 +30,6 @@ export function upsertCheckin(
   return [...rest, c].sort((a, b) => compareISO(a.weekStart, b.weekStart));
 }
 
-export function removeCheckin(
-  list: readonly WeeklyCheckin[],
-  ws: ISODate,
-): WeeklyCheckin[] {
-  return list.filter((c) => c.weekStart !== ws);
-}
-
 /** צ'ק-אין ריק לגמרי נחשב כאילו לא נעשה. */
 export function isFilled(c: WeeklyCheckin | null): boolean {
   if (!c) return false;
