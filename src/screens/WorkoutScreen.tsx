@@ -39,8 +39,8 @@ import Choice from '../components/Choice';
 import ConfirmButton from '../components/ConfirmButton';
 import ExerciseFocus from '../components/ExerciseFocus';
 import Sparkline from '../components/Sparkline';
-import RestTimerBar from '../components/RestTimerBar';
-import { useRestTimer } from '../hooks/useRestTimer';
+import type { RestTimer } from '../hooks/useRestTimer';
+import { readEditor, writeEditor } from '../platform/uiState';
 
 const HISTORY_COUNT = 12;
 const PAIN_SCALE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -93,15 +93,21 @@ function SuggestionLine({
   );
 }
 
-export default function WorkoutScreen({ store, today }: ScreenProps) {
+type Props = ScreenProps & { timer: RestTimer };
+
+export default function WorkoutScreen({ store, today, timer }: Props) {
   const { db } = store;
   const [week, setWeek] = useWeek(today);
   /** אימון חדש שעדיין אין בו נתונים — קיים רק במסך, לא באחסון. */
   const [draft, setDraft] = useState<WorkoutEntry | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  /**
+   * האימון הפתוח והתרגיל שבמוקד נשמרים מחוץ לקומפוננטה, כדי שמעבר טאב
+   * או רענון יחזירו אותך בדיוק למקום שבו היית באמצע אימון. הנתונים
+   * עצמם ממילא נשמרים בכל הקשה — כאן מדובר רק במקום במסך.
+   */
+  const [openId, setOpenId] = useState<string | null>(() => readEditor()?.openId ?? null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [focus, setFocus] = useState(0);
-  const timer = useRestTimer(db.settings.soundEnabled);
+  const [focus, setFocus] = useState(() => readEditor()?.focus ?? 0);
 
   const start = useMemo(() => programStartWeek(db), [db]);
   const inWeek = useMemo(() => workoutsInWeek(db.workouts, week), [db.workouts, week]);
@@ -117,9 +123,14 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
   const current = rows[Math.min(focus, Math.max(0, rows.length - 1))] ?? null;
 
   // אימון שנמחק מבחוץ (ייבוא, מחיקה גורפת) לא נשאר פתוח על ריק.
+  // מטפל גם במזהה שהוחזר מהאחסון ושייך לאימון שכבר לא קיים.
   useEffect(() => {
     if (openId && !db.workouts.some((w) => w.id === openId)) setOpenId(null);
   }, [openId, db.workouts]);
+
+  useEffect(() => {
+    writeEditor(openId ? { openId, focus } : null);
+  }, [openId, focus]);
 
   const defaultDate = compareISO(week, weekStart(today)) === 0 ? today : weekEnd(week);
 
@@ -432,13 +443,6 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
         )}
       </section>
 
-      <RestTimerBar
-        timer={timer}
-        soundEnabled={db.settings.soundEnabled}
-        onToggleSound={(soundEnabled) =>
-          void store.update('settings', { ...db.settings, soundEnabled })
-        }
-      />
     </div>
   );
 }

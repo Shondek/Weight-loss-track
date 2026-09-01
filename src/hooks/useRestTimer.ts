@@ -5,9 +5,13 @@
  * מאט או מקפיא טיימרים כשהמסך כבוי, וכל טיק שהוחמץ אובד לתמיד. כאן
  * האינטרוול רק מחשב מחדש `deadline - Date.now()`, ולכן שלוש דקות עם מסך
  * כבוי מחזירות את הזמן הנכון בדיוק. אותו דפוס כמו ב-src/useToday.ts.
+ *
+ * אותו דדליין נשמר גם ב-localStorage, ולכן הטיימר שורד רענון דף. הוא
+ * מוחזק ברמת האפליקציה ולא בתוך מסך האימון, כדי שמעבר טאב לא יהרוג אותו.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { readTimer, writeTimer } from '../platform/uiState';
 
 const TICK_MS = 250;
 
@@ -85,10 +89,14 @@ function vibrate(): void {
 }
 
 export function useRestTimer(soundEnabled: boolean): RestTimer {
-  const [deadline, setDeadline] = useState<number | null>(null);
-  const [totalSec, setTotalSec] = useState(0);
-  const [label, setLabel] = useState('');
-  const [remainingMs, setRemainingMs] = useState(0);
+  // אתחול מהאחסון: טיימר שעדיין לא פג ממשיך לרוץ אחרי רענון.
+  const restored = typeof window === 'undefined' ? null : readTimer();
+  const [deadline, setDeadline] = useState<number | null>(restored?.deadline ?? null);
+  const [totalSec, setTotalSec] = useState(restored?.totalSec ?? 0);
+  const [label, setLabel] = useState(restored?.label ?? '');
+  const [remainingMs, setRemainingMs] = useState(
+    restored ? Math.max(0, restored.deadline - Date.now()) : 0,
+  );
   const [justFinished, setJustFinished] = useState(false);
   const fired = useRef(false);
   const sound = useRef(soundEnabled);
@@ -112,6 +120,7 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
       if (left <= 0) {
         finish();
         setDeadline(null);
+        writeTimer(null);
       }
     };
 
@@ -137,27 +146,34 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
     setJustFinished(false);
     setTotalSec(seconds);
     setLabel(nextLabel);
+    const next = Date.now() + seconds * 1000;
     setRemainingMs(seconds * 1000);
-    setDeadline(Date.now() + seconds * 1000);
+    setDeadline(next);
+    writeTimer({ deadline: next, totalSec: seconds, label: nextLabel });
     // פותחים את ה-AudioContext בתוך המחווה, כדי ש-iOS ירשה צליל בסיום
     ensureAudio();
   }, []);
 
-  const add = useCallback((seconds: number) => {
-    setDeadline((prev) => {
-      if (prev === null) return prev;
-      const next = prev + seconds * 1000;
-      // לא מקצרים אל מתחת לעכשיו — "-15" בסוף פשוט מסיים
-      return Math.max(next, Date.now());
-    });
-    setTotalSec((t) => Math.max(0, t + seconds));
-  }, []);
+  const add = useCallback(
+    (seconds: number) => {
+      setDeadline((prev) => {
+        if (prev === null) return prev;
+        // לא מקצרים אל מתחת לעכשיו — "-15" בסוף פשוט מסיים
+        const next = Math.max(prev + seconds * 1000, Date.now());
+        writeTimer({ deadline: next, totalSec: totalSec + seconds, label });
+        return next;
+      });
+      setTotalSec((t) => Math.max(0, t + seconds));
+    },
+    [totalSec, label],
+  );
 
   const skip = useCallback(() => {
     fired.current = true;
     setDeadline(null);
     setRemainingMs(0);
     setJustFinished(false);
+    writeTimer(null);
   }, []);
 
   return {

@@ -6,6 +6,8 @@ import { needsCheckin } from './lib/checkins';
 import { firstDataDate } from './lib/db';
 import { KEY_LABELS } from './lib/store';
 import { onAppUpdate } from './platform/appUpdate';
+import { useRestTimer } from './hooks/useRestTimer';
+import RestTimerBar from './components/RestTimerBar';
 import WeightScreen from './screens/WeightScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
 import CheckinScreen from './screens/CheckinScreen';
@@ -26,6 +28,13 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('weight');
   const [updateReady, setUpdateReady] = useState(false);
   useEffect(() => onAppUpdate(() => setUpdateReady(true)), []);
+
+  /**
+   * הטיימר חי כאן ולא בתוך מסך האימון. המסכים מוחלפים בהחלפת טאב,
+   * וטיימר שיושב בתוכם היה נהרג בלחיצה מקרית באמצע אימון.
+   */
+  const timer = useRestTimer(store.db.settings.soundEnabled);
+  const timerVisible = timer.running || timer.justFinished;
   const thisWeek = weekStart(today);
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
 
@@ -64,7 +73,7 @@ export default function App() {
   if (store.loading) {
     return (
       <div className="app">
-        <main className="app__main app__main--timer">
+        <main className={`app__main${timerVisible ? ' app__main--timer' : ''}`}>
           <p className="muted">טוען…</p>
         </main>
       </div>
@@ -75,7 +84,7 @@ export default function App() {
     <div className="app">
       {/* main נשאר landmark; role="tabpanel" יושב על div פנימי, כי
           ARIA לא מרשה להחליף את התפקיד של <main>. */}
-      <main className="app__main app__main--timer">
+      <main className={`app__main${timerVisible ? ' app__main--timer' : ''}`}>
         <h1 className="visually-hidden">
           {TABS.find((t) => t.id === tab)?.label} — מדידה
         </h1>
@@ -145,11 +154,21 @@ export default function App() {
         )}
 
           {tab === 'weight' && <WeightScreen store={store} today={today} />}
-          {tab === 'workout' && <WorkoutScreen store={store} today={today} />}
+          {tab === 'workout' && (
+            <WorkoutScreen store={store} today={today} timer={timer} />
+          )}
           {tab === 'checkin' && <CheckinScreen store={store} today={today} />}
           {tab === 'data' && <DataScreen store={store} today={today} />}
         </div>
       </main>
+
+      <RestTimerBar
+        timer={timer}
+        soundEnabled={store.db.settings.soundEnabled}
+        onToggleSound={(soundEnabled) =>
+          void store.update('settings', { ...store.db.settings, soundEnabled })
+        }
+      />
 
       <nav className="tabs" aria-label="ניווט ראשי">
         <div
