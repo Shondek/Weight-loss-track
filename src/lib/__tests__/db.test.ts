@@ -35,7 +35,7 @@ describe('firstDataDate / programStartWeek', () => {
       programStartWeek(
         db({
           weights: [{ d: '2026-08-12', w: 80 }],
-          settings: { programStart: '2026-07-05' },
+          settings: { programStart: '2026-07-05', soundEnabled: true },
         }),
       ),
     ).toBe('2026-07-05');
@@ -86,7 +86,7 @@ describe('mergeDb', () => {
   });
 
   it('הגדרות נשמרות אם לקובץ אין הגדרה', () => {
-    const withStart = { ...current, settings: { programStart: '2026-08-02' } };
+    const withStart = { ...current, settings: { programStart: '2026-08-02', soundEnabled: true } };
     expect(mergeDb(withStart, emptyDb()).settings.programStart).toBe('2026-08-02');
   });
 });

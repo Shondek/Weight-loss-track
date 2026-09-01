@@ -1,22 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
-import type { ExerciseLog, WorkoutEntry, WorkoutType } from '../types';
+import type { WorkoutEntry, WorkoutType } from '../types';
 import {
   CONSTRAINTS,
-  PROGRAM,
   WORKOUTS_PER_WEEK,
   WORKOUT_TYPES,
-  isTimed,
-  specFor,
+  exerciseById,
 } from '../data/program';
 import {
+  exercisesFor,
   hasData,
+  isTimedExercise,
   isWorkoutEmpty,
   lastExercise,
   makeWorkoutId,
   nextType,
   prefilledExercises,
+  setPerformed,
+  setValue,
   sortableStamp,
   removeWorkout,
   sortWorkouts,
@@ -45,30 +47,25 @@ function newId(): string {
   return `${sortableStamp(Date.now())}-${rand}`;
 }
 
-/** תרגילי התוכנית + תרגילים שנרשמו בעבר ואינם בתוכנית הנוכחית. */
-function exercisesFor(entry: WorkoutEntry, all: readonly WorkoutEntry[]): ExerciseLog[] {
-  const planned = PROGRAM[entry.t];
-  const byName = new Map(entry.ex.map((e) => [e.n, e]));
-  const rows: ExerciseLog[] = planned.map((spec) => {
-    const existing = byName.get(spec.n);
-    if (existing) return existing;
-    // שורה שלא נשמרה עדיין — מאכלסים את המשקל האחרון כברירת מחדל.
-    return {
-      n: spec.n,
-      w: spec.kind === 'time' ? null : (lastExercise(all, spec.n, entry.id)?.w ?? null),
-      r: [null, null, null],
-    };
-  });
-  const plannedNames = new Set(planned.map((s) => s.n));
-  for (const e of entry.ex) if (!plannedNames.has(e.n) && hasData(e)) rows.push(e);
-  return rows;
-}
-
 function summaryLine(entry: WorkoutEntry): string {
   const parts = entry.ex.filter(hasData).map((e) => {
-    const sets = e.r.map((v) => (v === null ? DASH : String(v))).join(',');
-    if (isTimed(e.n)) return `${e.n} ${sets} שנ׳`;
-    return `${e.n} ${e.w === null ? DASH : clean(e.w)}×${sets}`;
+    const values = e.sets
+      .filter(setPerformed)
+      .map((s) => {
+        const v = setValue(s);
+        return v === null ? DASH : String(v);
+      })
+      .join(',');
+    if (isTimedExercise(e)) return `${e.n} ${values} שנ׳`;
+    const weights = [...new Set(e.sets.filter(setPerformed).map((s) => s.weight))];
+    const w =
+      weights.length === 1 && weights[0] !== null && weights[0] !== undefined
+        ? clean(weights[0])
+        : e.sets
+            .filter(setPerformed)
+            .map((s) => (s.weight === null ? DASH : clean(s.weight)))
+            .join(',');
+    return `${e.n} ${w === '' ? DASH : w}×${values}`;
   });
   return parts.length ? parts.join(' · ') : 'לא נרשמו תרגילים';
 }
@@ -195,24 +192,31 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
           />
 
           {exercisesFor(open, db.workouts).map((log) => {
-            const spec = specFor(log.n) ?? {
-              n: log.n,
+            // תרגיל שירד מהתוכנית עדיין ניתן לעריכה, לפי מה שנשמר איתו.
+            const spec = exerciseById(log.exerciseId) ?? {
+              id: log.exerciseId,
+              name: log.n,
               short: log.n,
-              kind: 'reps' as const,
-              min: 8,
-              max: 12,
-              step: 2.5,
-              increment: 5,
+              machine: null,
+              muscles: [],
+              type: log.type,
+              sets: log.sets.length,
+              repRangeMin: log.targetRepMin,
+              repRangeMax: log.targetRepMax,
+              unilateral: false,
+              isTimed: isTimedExercise(log),
+              bodyweightOnly: log.bodyweightOnly,
+              note: null,
             };
             return (
               <ExerciseRow
-                key={log.n}
+                key={log.exerciseId}
                 spec={spec}
                 log={log}
-                previous={lastExercise(db.workouts, log.n, open.id)}
+                previous={lastExercise(db.workouts, log.exerciseId, open.id)}
                 onChange={(next) => {
                   const others = exercisesFor(open, db.workouts).map((e) =>
-                    e.n === next.n ? next : e,
+                    e.exerciseId === next.exerciseId ? next : e,
                   );
                   patch({ ...open, ex: others });
                 }}

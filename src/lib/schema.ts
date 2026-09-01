@@ -5,7 +5,10 @@
 
 import {
   type DB,
+  type ExerciseType,
   type ISODate,
+  type LoggedExercise,
+  type LoggedSet,
   type Settings,
   type WaistEntry,
   type WeeklyCheckin,
@@ -15,6 +18,7 @@ import {
   DEFAULT_SETTINGS,
   NOTE_MAX,
 } from '../types';
+import { exerciseById, resolveExerciseId } from '../data/program';
 import { compareISO, isValidISO, weekStart } from './date';
 
 export type Rejection = { reason: string };
@@ -117,19 +121,110 @@ export function parseWaist(input: unknown): ParseResult<WaistEntry> {
 
 const TYPES: readonly WorkoutType[] = ['A', 'B', 'C'];
 
-function parseSets(input: unknown): (number | null)[] {
-  const arr = asArray(input).slice(0, 3);
-  const out: (number | null)[] = [];
-  for (let i = 0; i < 3; i++) {
-    const v = arr[i];
-    if (v === null || v === undefined || v === '') {
-      out.push(null);
+const MAX_SETS = 10;
+const EXERCISE_TYPES: readonly ExerciseType[] = ['compound', 'isolation', 'core'];
+
+/** מספר חזרות/שניות תקין, או null. */
+function count(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = num(v);
+  return n === null || n < 0 || n > 1000 ? null : Math.round(n);
+}
+
+function weight(v: unknown): number | null {
+  const n = num(v);
+  return n !== null && n >= 0 && n <= 1000 ? n : null;
+}
+
+/** מסיר סטים ריקים מהסוף, כדי ש-`sets.length` ישקף כמה באמת נרשמו. */
+function trimTrailingEmpty(sets: LoggedSet[]): LoggedSet[] {
+  let end = sets.length;
+  while (end > 0) {
+    const s = sets[end - 1];
+    if (!s || (s.reps === null && s.seconds === null && s.weight === null)) end--;
+    else break;
+  }
+  return sets.slice(0, end);
+}
+
+/** הפורמט החדש: מערך סטים באורך משתנה. */
+function parseLoggedSets(input: unknown): LoggedSet[] {
+  const out: LoggedSet[] = [];
+  for (const raw of asArray(input).slice(0, MAX_SETS)) {
+    if (!isRecord(raw)) {
+      out.push({ weight: null, reps: null, seconds: null });
       continue;
     }
-    const n = num(v);
-    out.push(n === null || n < 0 || n > 1000 ? null : Math.round(n));
+    out.push({
+      weight: weight(raw.weight),
+      reps: count(raw.reps),
+      seconds: count(raw.seconds),
+    });
   }
-  return out;
+  return trimTrailingEmpty(out);
+}
+
+/**
+ * הפורמט הישן: משקל אחד לתרגיל ומערך חזרות באורך 3.
+ * מועלה לפורמט החדש בקריאה — המשקל מוכפל לכל סט שבוצע.
+ * `timed` מגיע מהמפרט הנוכחי, כי הרשומה הישנה לא ידעה להבחין.
+ */
+function upcastLegacySets(r: unknown, w: unknown, timed: boolean): LoggedSet[] {
+  const value = weight(w);
+  const sets = asArray(r)
+    .slice(0, MAX_SETS)
+    .map((v) => {
+      const n = count(v);
+      return {
+        weight: timed ? null : n === null ? null : value,
+        reps: timed ? null : n,
+        seconds: timed ? n : null,
+      };
+    });
+  return trimTrailingEmpty(sets);
+}
+
+function isPresent<T>(v: T | null): v is T {
+  return v !== null;
+}
+
+/** ברירות מחדל לתרגיל שכבר לא קיים בתוכנית ולכן אין לו מפרט. */
+const ORPHAN_DEFAULTS = { targetRepMin: 8, targetRepMax: 12 } as const;
+
+/**
+ * תרגיל בודד, משני הפורמטים.
+ *
+ * חדש  — יש `sets`.
+ * ישן  — יש `r` ו-`w`, ואין `sets`. מועלה כאן ולא בכתיבה, כדי שהמיגרציה
+ *        תהיה לא-הרסנית: הדיסק נשאר כמו שהוא עד לכתיבה הבאה.
+ */
+function parseExercise(e: Record<string, unknown>): LoggedExercise | null {
+  const name = typeof e.n === 'string' ? e.n.trim() : '';
+  const rawId = typeof e.exerciseId === 'string' ? e.exerciseId.trim() : '';
+  const id = rawId !== '' ? rawId : (name !== '' ? resolveExerciseId(name) : null);
+  if (id === null && name === '') return null;
+
+  const spec = id !== null ? exerciseById(id) : undefined;
+  const isNewFormat = Array.isArray(e.sets);
+  const timed = spec?.isTimed ?? false;
+
+  const type =
+    EXERCISE_TYPES.find((x) => x === e.type) ?? spec?.type ?? 'isolation';
+
+  return {
+    exerciseId: id ?? `legacy:${name}`,
+    n: name !== '' ? name : (spec?.name ?? id ?? ''),
+    sets: isNewFormat ? parseLoggedSets(e.sets) : upcastLegacySets(e.r, e.w, timed),
+    targetRepMin:
+      count(e.targetRepMin) ?? spec?.repRangeMin ?? ORPHAN_DEFAULTS.targetRepMin,
+    targetRepMax:
+      count(e.targetRepMax) ?? spec?.repRangeMax ?? ORPHAN_DEFAULTS.targetRepMax,
+    type,
+    bodyweightOnly:
+      typeof e.bodyweightOnly === 'boolean'
+        ? e.bodyweightOnly
+        : (spec?.bodyweightOnly ?? false),
+  };
 }
 
 export function parseWorkouts(input: unknown): ParseResult<WorkoutEntry> {
@@ -152,17 +247,7 @@ export function parseWorkouts(input: unknown): ParseResult<WorkoutEntry> {
       continue;
     }
 
-    const ex = asArray(raw.ex)
-      .filter(isRecord)
-      .filter((e) => typeof e.n === 'string' && e.n.trim() !== '')
-      .map((e) => {
-        const w = num(e.w);
-        return {
-          n: String(e.n).trim(),
-          w: w !== null && w >= 0 && w <= 1000 ? w : null,
-          r: parseSets(e.r),
-        };
-      });
+    const ex = asArray(raw.ex).filter(isRecord).map(parseExercise).filter(isPresent);
 
     const id =
       typeof raw.id === 'string' && raw.id.trim() !== ''
@@ -228,7 +313,13 @@ export function parseCheckins(input: unknown): ParseResult<WeeklyCheckin> {
 export function parseSettings(input: unknown): Settings {
   if (!isRecord(input)) return { ...DEFAULT_SETTINGS };
   const ps = input.programStart;
-  return { programStart: isValidISO(ps) ? weekStart(ps) : null };
+  return {
+    programStart: isValidISO(ps) ? weekStart(ps) : null,
+    soundEnabled:
+      typeof input.soundEnabled === 'boolean'
+        ? input.soundEnabled
+        : DEFAULT_SETTINGS.soundEnabled,
+  };
 }
 
 // ---------- בסיס נתונים שלם ----------

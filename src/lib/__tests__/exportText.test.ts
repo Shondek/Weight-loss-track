@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildChatReport, backupJson, MAX_CHARS } from '../exportText';
 import { emptyDb, type DB, type WeightEntry } from '../../types';
+import { le } from './helpers';
 
 const W = (d: string, w: number): WeightEntry => ({ d, w });
 
@@ -33,12 +34,12 @@ function baseDb(): DB {
         knee: 1,
         shoulder: 2,
         ex: [
-          { n: 'לג פרס', w: 60, r: [12, 12, 10] },
-          { n: 'לחיצת חזה במכונה', w: 30, r: [10, 10, 8] },
-          { n: 'חתירת כבל בישיבה', w: 40, r: [12, 12, 12] },
-          { n: 'RDL משקולות יד', w: 20, r: [12, 12, 10] },
-          { n: 'פייס פול', w: 15, r: [15, 15, 15] },
-          { n: 'פלאנק', w: null, r: [45, 40, 40] },
+          le('leg-press', 60, [12, 12, 10]),
+          le('chest-press', 30, [10, 10, 8]),
+          le('seated-cable-row', 40, [12, 12, 12]),
+          le('leg-extension', 25, [15, 15]),
+          le('cable-curl', 15, [12, 12]),
+          le('plank', null, [45, 40, 40]),
         ],
       },
       {
@@ -48,9 +49,9 @@ function baseDb(): DB {
         knee: 0,
         shoulder: 1,
         ex: [
-          { n: 'הרמת אגן', w: 60, r: [12, 12, 12] },
-          { n: 'פולי עליון', w: 45, r: [10, 10, 9] },
-          { n: 'Dead bug', w: null, r: [40, 40, 35] },
+          le('hip-thrust', 60, [12, 12, 12]),
+          le('lat-pulldown', 45, [10, 10, 9]),
+          le('dead-bug', null, [10, 10, 10]),
         ],
       },
     ],
@@ -81,8 +82,8 @@ describe('buildChatReport — snapshot של הפורמט', () => {
       מותניים: 95.5 (קודם 96.0)
 
       אימונים: 2/3
-      02/09 A — לג פרס 60×12,12,10 · לחיצת חזה 30×10,10,8 · חתירת כבל 40×12,12,12 · RDL 20×12,12,10 · פייס פול 15×15,15,15 · פלאנק 45,40,40 שנ׳
-      05/09 B — הרמת אגן 60×12,12,12 · פולי עליון 45×10,10,9 · Dead bug 40,40,35 שנ׳
+      02/09 A — לחיצת רגליים 60×12,12,10 · לחיצת חזה 30×10,10,8 · חתירת כבל 40×12,12,12 · פשיטת ברך 25×15,15 · כפיפת מרפקים 15×12,12 · פלאנק 45,40,40 שנ׳
+      05/09 B — היפ ת'ראסט 60×12,12,12 · פולי עליון 45×10,10,9 · Dead bug 10,10,10
       כאב: ברך 1 · כתף 2
 
       צ'ק-אין
@@ -188,7 +189,14 @@ describe('כלל 4 — סעיף חסר', () => {
       ...db,
       workouts: [
         ...db.workouts,
-        { id: 'x', d: '2026-09-04', t: 'C', knee: null, shoulder: null, ex: [{ n: 'הרמות עגל', w: 20, r: [15, 15, 15] }] },
+        {
+          id: 'x',
+          d: '2026-09-04',
+          t: 'C',
+          knee: null,
+          shoulder: null,
+          ex: [le('hammer-curl', 12, [12, 12])],
+        },
       ],
     };
     expect(buildChatReport(complete, '2026-08-30', '2026-09-05')).toContain('חסר: —');
@@ -224,7 +232,7 @@ describe('כלל 1 — תקרת 2,500 תווים', () => {
 describe('backupJson', () => {
   it('מייצר את מבנה הייצוא של הגרסה הקיימת', () => {
     const parsed: unknown = JSON.parse(backupJson(baseDb(), '2026-09-05T05:00:00.000Z'));
-    expect(parsed).toMatchObject({ v: 1, exported: '2026-09-05T05:00:00.000Z' });
+    expect(parsed).toMatchObject({ v: 2, exported: '2026-09-05T05:00:00.000Z' });
     expect(Object.keys(parsed as object)).toEqual([
       'v',
       'exported',

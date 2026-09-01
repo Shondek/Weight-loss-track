@@ -1,7 +1,19 @@
 /** לוגיקת אימונים. מודול טהור. */
 
-import type { ExerciseLog, ISODate, WorkoutEntry, WorkoutType } from '../types';
-import { PROGRAM, WORKOUT_TYPES, specFor } from '../data/program';
+import type {
+  ISODate,
+  LoggedExercise,
+  LoggedSet,
+  WorkoutEntry,
+  WorkoutType,
+} from '../types';
+import {
+  PROGRAM,
+  TYPE_CONFIG,
+  WORKOUT_TYPES,
+  type Exercise,
+  exerciseById,
+} from '../data/program';
 import { compareISO, weekDays } from './date';
 
 export function sortWorkouts(list: readonly WorkoutEntry[]): WorkoutEntry[] {
@@ -47,89 +59,189 @@ export function nextType(list: readonly WorkoutEntry[]): WorkoutType {
   return WORKOUT_TYPES[(i + 1) % WORKOUT_TYPES.length] ?? 'A';
 }
 
-export type ExerciseHistory = { d: ISODate; w: number | null; r: (number | null)[] };
+// ---------- סטים ----------
+
+export function emptySet(): LoggedSet {
+  return { weight: null, reps: null, seconds: null };
+}
+
+/** האם הסט בוצע. משקל לבדו הוא ברירת מחדל שאוכלסה, לא נתון. */
+export function setPerformed(s: LoggedSet): boolean {
+  return s.reps !== null || s.seconds !== null;
+}
+
+/** החזרות או השניות של הסט — מה שרלוונטי לתרגיל. */
+export function setValue(s: LoggedSet): number | null {
+  return s.reps ?? s.seconds;
+}
+
+/** האם התרגיל בוצע: לפחות סט אחד עם חזרות או שניות. */
+export function hasData(ex: LoggedExercise): boolean {
+  return ex.sets.some(setPerformed);
+}
+
+export function isWorkoutEmpty(entry: WorkoutEntry): boolean {
+  return !entry.ex.some(hasData) && entry.knee === null && entry.shoulder === null;
+}
+
+/** המשקל האחרון שנרשם בתרגיל — הסט האחרון שיש בו משקל. */
+export function lastWeightOf(ex: LoggedExercise): number | null {
+  for (let i = ex.sets.length - 1; i >= 0; i--) {
+    const w = ex.sets[i]?.weight;
+    if (w !== null && w !== undefined) return w;
+  }
+  return null;
+}
+
+// ---------- היסטוריה לפי תרגיל ----------
+
+export type ExerciseHistory = { d: ISODate; workoutId: string; ex: LoggedExercise };
 
 /**
- * הרישום האחרון של תרגיל לפי שם, כדי לאכלס ברירת מחדל.
+ * הרישום האחרון של תרגיל לפי מזהה.
+ *
+ * המזהה, ולא השם, הוא מה שמקשר היסטוריה: תרגיל ששמו השתנה בתוכנית עדיין
+ * מוצא את הביצועים הקודמים שלו (ראה `EXERCISE_ALIASES` ב-data/program.ts).
  * `excludeId` מאפשר להתעלם מהאימון שנערך כרגע.
  */
 export function lastExercise(
   list: readonly WorkoutEntry[],
-  name: string,
+  exerciseId: string,
   excludeId?: string,
 ): ExerciseHistory | null {
-  let best: { entry: WorkoutEntry; ex: ExerciseLog } | null = null;
+  let best: ExerciseHistory | null = null;
   for (const w of list) {
     if (excludeId !== undefined && w.id === excludeId) continue;
     for (const ex of w.ex) {
-      if (ex.n !== name) continue;
-      // תרגיל בלי אף חזרה לא בוצע, ולכן אינו "האחרון".
-      if (!ex.r.some((x) => x !== null)) continue;
+      if (ex.exerciseId !== exerciseId) continue;
+      if (!hasData(ex)) continue;
       if (
         !best ||
-        compareISO(w.d, best.entry.d) > 0 ||
-        (w.d === best.entry.d && w.id > best.entry.id)
+        compareISO(w.d, best.d) > 0 ||
+        (w.d === best.d && w.id > best.workoutId)
       ) {
-        best = { entry: w, ex };
+        best = { d: w.d, workoutId: w.id, ex };
       }
     }
   }
-  return best ? { d: best.entry.d, w: best.ex.w, r: [...best.ex.r] } : null;
+  return best;
 }
 
-/** האם שלושת הסטים הגיעו לתקרת הטווח. תצוגה בלבד — לא משנה נתונים. */
-export function rangeComplete(sets: readonly (number | null)[], max: number): boolean {
-  const filled = sets.slice(0, 3);
-  if (filled.length < 3) return false;
-  return filled.every((v) => v !== null && v >= max);
+/** כל הרישומים של תרגיל, מהישן לחדש. משמש למגמה בהיסטוריה. */
+export function exerciseHistory(
+  list: readonly WorkoutEntry[],
+  exerciseId: string,
+): ExerciseHistory[] {
+  const out: ExerciseHistory[] = [];
+  for (const w of sortWorkouts(list)) {
+    for (const ex of w.ex) {
+      if (ex.exerciseId === exerciseId && hasData(ex)) {
+        out.push({ d: w.d, workoutId: w.id, ex });
+      }
+    }
+  }
+  return out;
 }
 
-/**
- * ההצעה להתקדמות כפולה לתרגיל, או null אם אין.
- * זו תצוגה בלבד: האפליקציה לעולם לא משנה את המשקל בעצמה.
- */
-export function progressionHint(ex: ExerciseLog): string | null {
-  const spec = specFor(ex.n);
-  if (!spec) return null;
-  if (!rangeComplete(ex.r, spec.max)) return null;
-  if (spec.kind === 'time') return `טווח הושלם — הארך את הזמן בפעם הבאה`;
-  return `טווח הושלם — +${spec.increment} ק"ג בפעם הבאה`;
+// ---------- בניית אימון ----------
+
+/** שורת תרגיל ריקה לפי המפרט, עם משקל התחלתי אופציונלי. */
+export function blankLoggedExercise(
+  spec: Exercise,
+  weight: number | null = null,
+): LoggedExercise {
+  const usesWeight = !spec.isTimed && !spec.bodyweightOnly;
+  return {
+    exerciseId: spec.id,
+    n: spec.name,
+    sets: Array.from({ length: spec.sets }, () => ({
+      weight: usesWeight ? weight : null,
+      reps: null,
+      seconds: null,
+    })),
+    targetRepMin: spec.repRangeMin,
+    targetRepMax: spec.repRangeMax,
+    type: spec.type,
+    bodyweightOnly: spec.bodyweightOnly,
+  };
 }
 
 /** שורות תרגילים ריקות לאימון חדש מסוג נתון. */
-export function blankExercises(t: WorkoutType): ExerciseLog[] {
-  return PROGRAM[t].map((spec) => ({ n: spec.n, w: null, r: [null, null, null] }));
+export function blankExercises(t: WorkoutType): LoggedExercise[] {
+  return PROGRAM[t].map((spec) => blankLoggedExercise(spec));
 }
 
 /**
- * שורות תרגילים לאימון חדש, כשהמשקל מאוכלס מהרישום האחרון של כל תרגיל.
+ * שורות תרגילים לאימון חדש, כשהמשקל מאוכלס מהרישום האחרון.
  * המטרה: לאשר או לשנות, לא להקליד מחדש. החזרות תמיד ריקות — המשקל לבדו
- * אינו נחשב נתון (ראה hasData), ולכן אימון כזה עדיין נחשב ריק.
+ * אינו נחשב נתון (ראה `hasData`), ולכן אימון כזה עדיין נחשב ריק.
  */
 export function prefilledExercises(
   list: readonly WorkoutEntry[],
   t: WorkoutType,
-): ExerciseLog[] {
-  return PROGRAM[t].map((spec) => ({
-    n: spec.n,
-    w: spec.kind === 'time' ? null : (lastExercise(list, spec.n)?.w ?? null),
-    r: [null, null, null],
-  }));
+): LoggedExercise[] {
+  return PROGRAM[t].map((spec) => {
+    const prev = lastExercise(list, spec.id);
+    return blankLoggedExercise(spec, prev ? lastWeightOf(prev.ex) : null);
+  });
 }
 
 /**
- * האם התרגיל בוצע. נדרשת לפחות חזרה אחת: המשקל לבדו הוא ברירת מחדל
- * שמולאה מההיסטוריה, לא נתון שהמשתמש רשם.
+ * שורות התרגילים להצגה באימון: תרגילי התוכנית לפי סדרן, ואחריהן תרגילים
+ * שנרשמו בעבר ואינם בתוכנית הנוכחית — כדי שהיסטוריה לא תיעלם מהמסך.
  */
-export function hasData(ex: ExerciseLog): boolean {
-  return ex.r.some((v) => v !== null);
+export function exercisesFor(
+  entry: WorkoutEntry,
+  all: readonly WorkoutEntry[],
+): LoggedExercise[] {
+  const byId = new Map(entry.ex.map((e) => [e.exerciseId, e]));
+  const rows = PROGRAM[entry.t].map((spec) => {
+    const existing = byId.get(spec.id);
+    if (existing) return withSetCount(existing, spec.sets);
+    const prev = lastExercise(all, spec.id, entry.id);
+    return blankLoggedExercise(spec, prev ? lastWeightOf(prev.ex) : null);
+  });
+  const planned = new Set(PROGRAM[entry.t].map((s) => s.id));
+  for (const e of entry.ex) {
+    if (!planned.has(e.exerciseId) && hasData(e)) rows.push(e);
+  }
+  return rows;
 }
 
-export function isWorkoutEmpty(entry: WorkoutEntry): boolean {
-  return (
-    !entry.ex.some(hasData) && entry.knee === null && entry.shoulder === null
-  );
+/**
+ * משלים את מספר הסטים לזה שבתוכנית. רשומות נשמרות בלי סטים ריקים בסוף,
+ * ולכן צריך להרחיב אותן חזרה לתצוגה — בלי לקצץ אם נרשמו יותר.
+ */
+export function withSetCount(ex: LoggedExercise, count: number): LoggedExercise {
+  if (ex.sets.length >= count) return ex;
+  return {
+    ...ex,
+    sets: [
+      ...ex.sets,
+      ...Array.from({ length: count - ex.sets.length }, () => emptySet()),
+    ],
+  };
 }
+
+// ---------- התקדמות (זמני — יוחלף ב-lib/progression.ts) ----------
+
+/**
+ * ההצעה להתקדמות לתרגיל, או null אם אין.
+ * תצוגה בלבד: האפליקציה לעולם לא משנה את המשקל בעצמה.
+ */
+export function progressionHint(ex: LoggedExercise): string | null {
+  const performed = ex.sets.filter(setPerformed);
+  if (performed.length === 0) return null;
+  if (!performed.every((s) => (setValue(s) ?? 0) >= ex.targetRepMax)) return null;
+
+  const increment = TYPE_CONFIG[ex.type].weightIncrement;
+  if (ex.bodyweightOnly || increment === 0) {
+    return 'טווח הושלם — הוסף חזרות או האט את הקצב בפעם הבאה';
+  }
+  return `טווח הושלם — +${increment} ק"ג בפעם הבאה`;
+}
+
+// ---------- מזהים וכאב ----------
 
 /**
  * חותמת זמן בבסיס 36 ברוחב קבוע, כך שהשוואת מחרוזות שווה להשוואת זמן.
@@ -161,4 +273,9 @@ export function peakPain(
     if (max === null || v > max) max = v;
   }
   return max;
+}
+
+/** האם התרגיל הוא תרגיל זמן, לפי המפרט הנוכחי. */
+export function isTimedExercise(ex: LoggedExercise): boolean {
+  return exerciseById(ex.exerciseId)?.isTimed ?? ex.sets.some((s) => s.seconds !== null);
 }

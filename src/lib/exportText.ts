@@ -11,8 +11,8 @@
  *  3. סעיף "חסר" בסוף מפרט מה לא נרשם, כדי שהניתוח לא יתבסס על חורים.
  */
 
-import type { DB, ISODate, WorkoutEntry } from '../types';
-import { shortName, isTimed, WORKOUTS_PER_WEEK } from '../data/program';
+import type { DB, ISODate, LoggedExercise, WorkoutEntry } from '../types';
+import { shortName, WORKOUTS_PER_WEEK } from '../data/program';
 import {
   addDays,
   compareISO,
@@ -26,7 +26,14 @@ import {
 import { programStartWeek } from './db';
 import { clean, DASH } from './format';
 import { getCheckin } from './checkins';
-import { hasData, peakPain, workoutsInWeek } from './workouts';
+import {
+  hasData,
+  isTimedExercise,
+  peakPain,
+  setPerformed,
+  setValue,
+  workoutsInWeek,
+} from './workouts';
 import {
   missingWeighDays,
   summarizeWeek,
@@ -53,11 +60,33 @@ function weekTag(s: WeekSummary): string {
   return s.complete ? `(${s.count}/${WEEK_LENGTH})` : `(חלקי ${s.count}/${WEEK_LENGTH})`;
 }
 
+/**
+ * המשקלים של תרגיל: מספר אחד כשכל הסטים זהים, ורשימה כשהם משתנים.
+ * מוותר על "60,60,60" המיותר בלי להסתיר ירידת משקל באמצע תרגיל.
+ */
+function weightText(ex: LoggedExercise): string {
+  const performed = ex.sets.filter(setPerformed);
+  const weights = performed.map((s) => s.weight);
+  if (weights.length === 0 || weights.every((w) => w === null)) return DASH;
+  const distinct = new Set(weights.map((w) => (w === null ? DASH : clean(w))));
+  if (distinct.size === 1) return [...distinct][0] ?? DASH;
+  return weights.map((w) => (w === null ? DASH : clean(w))).join(',');
+}
+
 function exerciseText(entry: WorkoutEntry): string {
   const parts = entry.ex.filter(hasData).map((e) => {
-    const sets = e.r.map((v) => (v === null ? DASH : String(v))).join(',');
-    if (isTimed(e.n)) return `${shortName(e.n)} ${sets} שנ׳`;
-    return `${shortName(e.n)} ${e.w === null ? DASH : clean(e.w)}×${sets}`;
+    const name = shortName(e.exerciseId, e.n);
+    const values = e.sets
+      .filter(setPerformed)
+      .map((s) => {
+        const v = setValue(s);
+        return v === null ? DASH : String(v);
+      })
+      .join(',');
+    if (isTimedExercise(e)) return `${name} ${values} שנ׳`;
+    // תרגיל משקל גוף לא מקבל אסימון משקל — "—×10,10,10" הוא רעש, לא מידע.
+    if (e.bodyweightOnly) return `${name} ${values}`;
+    return `${name} ${weightText(e)}×${values}`;
   });
   return parts.length ? parts.join(' · ') : 'לא נרשמו תרגילים';
 }
@@ -199,7 +228,8 @@ export function buildChatReport(db: DB, week: ISODate, today: ISODate): string {
 // ---------- גיבוי JSON ----------
 
 export type BackupFile = {
-  v: 1;
+  /** 2 = סטים באורך משתנה עם משקל לכל סט. 1 = הפורמט הישן, עדיין נקלט בייבוא. */
+  v: 2;
   exported: string;
   weights: DB['weights'];
   workouts: DB['workouts'];
@@ -211,7 +241,7 @@ export type BackupFile = {
 /** גיבוי מלא. `exportedAt` מגיע מבחוץ כדי שהמודול יישאר טהור. */
 export function buildBackup(db: DB, exportedAt: string): BackupFile {
   return {
-    v: 1,
+    v: 2,
     exported: exportedAt,
     weights: db.weights,
     workouts: db.workouts,

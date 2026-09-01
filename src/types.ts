@@ -16,18 +16,43 @@ export type WaistEntry = { d: ISODate; cm: number };
 
 export type WorkoutType = 'A' | 'B' | 'C';
 
-/** תרגיל בודד בתוך אימון. `r` הוא שלושה סטים. */
-export type ExerciseLog = {
+/**
+ * סוג התנועה. קובע מנוחה בין סטים, מנוחה בין תרגילים וקפיצת משקל —
+ * הערכים עצמם ב-`TYPE_CONFIG` שב-src/data/program.ts.
+ */
+export type ExerciseType = 'compound' | 'isolation' | 'core';
+
+/** סט בודד. `seconds` לתרגילי זמן, `reps` לכל השאר. */
+export type LoggedSet = {
+  weight: number | null;
+  reps: number | null;
+  seconds: number | null;
+};
+
+/**
+ * תרגיל שבוצע. אורך `sets` משתנה — בתוכנית יש תרגילים של 2 ושל 3 סטים,
+ * ואסור להניח מספר קבוע בשום מקום.
+ *
+ * `targetRepMin/Max`, `type` ו-`bodyweightOnly` מוקפאים ברגע השמירה. כך
+ * המלצת ההתקדמות מחושבת מחדש בכל רינדור מהנתונים הגולמיים, ובלי לצאת
+ * לחפש בתוכנית — שאולי כבר השתנתה מאז.
+ */
+export type LoggedExercise = {
+  exerciseId: string;
+  /** השם בזמן הרישום. שומר על רשומה קריאה גם אם התרגיל ירד מהתוכנית. */
   n: string;
-  w: number | null;
-  r: (number | null)[];
+  sets: LoggedSet[];
+  targetRepMin: number;
+  targetRepMax: number;
+  type: ExerciseType;
+  bodyweightOnly: boolean;
 };
 
 export type WorkoutEntry = {
   id: string;
   d: ISODate;
   t: WorkoutType;
-  ex: ExerciseLog[];
+  ex: LoggedExercise[];
   /** 0–10 */
   knee: number | null;
   /** 0–10 */
@@ -59,9 +84,14 @@ export type Settings = {
    * נשמר כדי שמספור השבועות בדוח לא יזוז אם מוחקים נתונים ישנים.
    */
   programStart: ISODate | null;
+  /**
+   * צליל בסיום טיימר המנוחה. הוויברציה תמיד פועלת — היא מה שעובד
+   * בחדר כושר רועש. הצליל הוא תוספת שאפשר לכבות.
+   */
+  soundEnabled: boolean;
 };
 
-export const DEFAULT_SETTINGS: Settings = { programStart: null };
+export const DEFAULT_SETTINGS: Settings = { programStart: null, soundEnabled: true };
 
 /** כל בסיס הנתונים בזיכרון. */
 export type DB = {

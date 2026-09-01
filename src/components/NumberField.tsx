@@ -8,6 +8,7 @@ type Props = {
   max: number;
   placeholder?: string | undefined;
   suffix?: string | undefined;
+  hideLabel?: boolean | undefined;
 };
 
 /** שדה מספר שלם קטן (חזרות / שניות). בלי כפתורים — רק הקלדה מהירה. */
@@ -19,6 +20,7 @@ export default function NumberField({
   max,
   placeholder,
   suffix,
+  hideLabel,
 }: Props) {
   const id = useId();
   const [text, setText] = useState(() => (value === null ? '' : String(value)));
@@ -31,7 +33,7 @@ export default function NumberField({
 
   return (
     <div>
-      <label htmlFor={id} className="tiny">
+      <label htmlFor={id} className={hideLabel ? 'visually-hidden' : 'tiny'}>
         {label}
         {suffix ? ` (${suffix})` : ''}
       </label>
