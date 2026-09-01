@@ -10,8 +10,10 @@ import {
   restSeconds,
 } from '../data/program';
 import {
+  exerciseHistory,
   exercisesFor,
   hasData,
+  lastWeightOf,
   isTimedExercise,
   isWorkoutEmpty,
   lastExercise,
@@ -35,7 +37,8 @@ import WeekNav from '../components/WeekNav';
 import DateField from '../components/DateField';
 import Choice from '../components/Choice';
 import ConfirmButton from '../components/ConfirmButton';
-import ExerciseRow from '../components/ExerciseRow';
+import ExerciseFocus from '../components/ExerciseFocus';
+import Sparkline from '../components/Sparkline';
 import RestTimerBar from '../components/RestTimerBar';
 import { useRestTimer } from '../hooks/useRestTimer';
 
@@ -97,6 +100,7 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
   const [draft, setDraft] = useState<WorkoutEntry | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [focus, setFocus] = useState(0);
   const timer = useRestTimer(db.settings.soundEnabled);
 
   const start = useMemo(() => programStartWeek(db), [db]);
@@ -109,6 +113,8 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
 
   const stored = openId ? (db.workouts.find((w) => w.id === openId) ?? null) : null;
   const open = draft ?? stored;
+  const rows = open ? exercisesFor(open, db.workouts) : [];
+  const current = rows[Math.min(focus, Math.max(0, rows.length - 1))] ?? null;
 
   // אימון שנמחק מבחוץ (ייבוא, מחיקה גורפת) לא נשאר פתוח על ריק.
   useEffect(() => {
@@ -117,10 +123,29 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
 
   const defaultDate = compareISO(week, weekStart(today)) === 0 ? today : weekEnd(week);
 
+  /** תרגיל שירד מהתוכנית עדיין ניתן לעריכה, לפי מה שנשמר איתו. */
+  const specOf = (log: LoggedExercise) =>
+    exerciseById(log.exerciseId) ?? {
+      id: log.exerciseId,
+      name: log.n,
+      short: log.n,
+      machine: null,
+      muscles: [],
+      type: log.type,
+      sets: log.sets.length,
+      repRangeMin: log.targetRepMin,
+      repRangeMax: log.targetRepMax,
+      unilateral: false,
+      isTimed: isTimedExercise(log),
+      bodyweightOnly: log.bodyweightOnly,
+      note: null,
+    };
+
   /** פותח אימון חדש כטיוטה. לחיצה בטעות לא יוצרת אימון ריק בהיסטוריה. */
   const startWorkout = (t: WorkoutType) => {
     const d = defaultDate;
     setOpenId(null);
+    setFocus(0);
     setDraft({
       id: makeWorkoutId(d, t, newId()),
       d,
@@ -226,39 +251,66 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
             onChange={(d) => patch({ ...open, d })}
           />
 
-          {exercisesFor(open, db.workouts).map((log) => {
-            // תרגיל שירד מהתוכנית עדיין ניתן לעריכה, לפי מה שנשמר איתו.
-            const spec = exerciseById(log.exerciseId) ?? {
-              id: log.exerciseId,
-              name: log.n,
-              short: log.n,
-              machine: null,
-              muscles: [],
-              type: log.type,
-              sets: log.sets.length,
-              repRangeMin: log.targetRepMin,
-              repRangeMax: log.targetRepMax,
-              unilateral: false,
-              isTimed: isTimedExercise(log),
-              bodyweightOnly: log.bodyweightOnly,
-              note: null,
-            };
-            return (
-              <ExerciseRow
-                key={log.exerciseId}
-                spec={spec}
-                log={log}
-                previous={lastExercise(db.workouts, log.exerciseId, open.id)}
-                onChange={(next) => {
-                  const others = exercisesFor(open, db.workouts).map((e) =>
+          {/* תרגיל אחד במוקד. הרצועה למעלה מאפשרת לדלג ולחזור. */}
+          <div className="focusnav" role="group" aria-label="ניווט בין תרגילים">
+            <span className="tiny muted grow">
+              תרגיל <span className="num">{focus + 1}</span> מתוך{' '}
+              <span className="num">{rows.length}</span>
+            </span>
+            <div className="focusnav__dots">
+              {rows.map((r, i) => (
+                <button
+                  key={r.exerciseId}
+                  type="button"
+                  className={`focusnav__dot${i === focus ? ' is-current' : ''}${
+                    hasData(r) ? ' is-done' : ''
+                  }`}
+                  aria-label={`${r.n}${hasData(r) ? ' — נרשם' : ''}`}
+                  aria-current={i === focus}
+                  onClick={() => setFocus(i)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {current && (
+            <ExerciseFocus
+              key={current.exerciseId}
+              spec={specOf(current)}
+              log={current}
+              previous={lastExercise(db.workouts, current.exerciseId, open.id)}
+              onChange={(next) => {
+                patch({
+                  ...open,
+                  ex: rows.map((e) =>
                     e.exerciseId === next.exerciseId ? next : e,
-                  );
-                  patch({ ...open, ex: others });
-                }}
-                onSetLogged={(i) => onSetLogged(log, i)}
-              />
-            );
-          })}
+                  ),
+                });
+              }}
+              onSetLogged={(i) => onSetLogged(current, i)}
+            />
+          )}
+
+          <div className="row" style={{ marginTop: 'var(--sp-4)' }}>
+            <button
+              type="button"
+              className="btn grow"
+              disabled={focus === 0}
+              onClick={() => setFocus((i) => Math.max(0, i - 1))}
+            >
+              הקודם
+            </button>
+            <button
+              type="button"
+              className="btn grow"
+              disabled={focus >= rows.length - 1}
+              onClick={() => setFocus((i) => Math.min(rows.length - 1, i + 1))}
+            >
+              {current && hasData(current) ? 'הבא' : 'דלג'}
+            </button>
+          </div>
 
           <div className="section" style={{ marginTop: 'var(--sp-5)' }}>
             <div className="stack">
@@ -332,6 +384,7 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
                       setOpenId(w.id);
                       setWeek(weekStart(w.d));
                       setExpanded(null);
+                      setFocus(0);
                     }}
                   >
                     ערוך
@@ -351,6 +404,12 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
                                 id: w.id,
                               })?.ex ?? null
                             }
+                          />
+                          <Sparkline
+                            label={`מגמת ${e.n}`}
+                            values={exerciseHistory(db.workouts, e.exerciseId)
+                              .map((h) => lastWeightOf(h.ex))
+                              .filter((v): v is number => v !== null)}
                           />
                         </li>
                       ))}

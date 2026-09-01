@@ -618,6 +618,119 @@ button {
   gap: var(--sp-2);
 }
 
+/* ---------- תרגיל במוקד ---------- */
+
+.focusnav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-top: var(--sp-4);
+}
+
+.focusnav__dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+/* נקודת ניווט קטנה מ-44px בכוונה: זו קיצור-דרך, והניווט העיקרי הוא
+   כפתורי "הקודם"/"הבא" שמתחת, שהם בגודל מלא. */
+.focusnav__dot {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.focusnav__dot.is-done {
+  background: var(--paper-sunk);
+  color: var(--ink);
+}
+
+.focusnav__dot.is-current {
+  border-color: var(--ink);
+  border-width: 2px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.focus {
+  border-top: 1px solid var(--rule);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-4);
+}
+
+.focus__name {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.focus__meta {
+  margin-top: 2px;
+}
+
+.focus__muscles {
+  margin: 2px 0 0;
+}
+
+.focus__note {
+  margin: var(--sp-3) 0 0;
+  border-inline-start: 2px solid var(--ink);
+  padding-inline-start: var(--sp-3);
+}
+
+.focus__prev {
+  margin: var(--sp-3) 0 0;
+}
+
+.focus__sets {
+  margin-top: var(--sp-4);
+}
+
+.focus__set {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.focus__set + .focus__set {
+  margin-top: var(--sp-2);
+}
+
+.focus__setno {
+  min-width: 32px;
+}
+
+.focus__reps {
+  width: 96px;
+  flex: 0 0 96px;
+}
+
+/* שדות גדולים יותר במסך האימון — הזנה באגודל אחד, בעמידה */
+.focus__set input[type='number'] {
+  min-height: 52px;
+  font-size: 19px;
+}
+
+.focus__set .btn--step {
+  min-height: 52px;
+  height: 52px;
+}
+
+.focus__suggestion {
+  margin: var(--sp-4) 0 0;
+  border-inline-start: 2px solid var(--rule-strong);
+  padding-inline-start: var(--sp-3);
+}
+
 /* ---------- טיימר מנוחה ---------- */
 
 /* יושב מעל הניווט התחתון: נראה בלי לגלול, ולא חוסם את שדות ההזנה. */
