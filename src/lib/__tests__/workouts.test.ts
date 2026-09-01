@@ -118,8 +118,10 @@ describe('lastExercise — היסטוריה לפי מזהה, לא לפי שם', 
   it('שם ישן ממופה למזהה החדש, כך שההיסטוריה נשמרת', () => {
     expect(resolveExerciseId('לג פרס')).toBe('leg-press');
     expect(resolveExerciseId('פולי עליון')).toBe('lat-pulldown');
-    expect(resolveExerciseId('לחיצת רגליים')).toBe('leg-press');
-    expect(resolveExerciseId('RDL משקולות יד')).toBeNull();
+    expect(resolveExerciseId('לג-פרס במכונה בישיבה')).toBe('leg-press');
+    // שם של תרגיל שירד מהתוכנית עדיין נפתר, כדי שרשומה ישנה תוצג נכון
+    expect(resolveExerciseId('פלאנק צד')).toBe('side-plank');
+    expect(resolveExerciseId('סקוואט גובלט לספסל')).toBeNull();
   });
 });
 
@@ -185,7 +187,7 @@ describe('בניית אימון', () => {
   it('תרגיל שלא נרשם מעולם נשאר בלי משקל', () => {
     expect(
       prefilledExercises(PREFILL_SOURCE, 'A')
-        .find((r) => r.exerciseId === 'cable-curl')
+        .find((r) => r.exerciseId === 'db-bench-press')
         ?.sets.every((s) => s.weight === null),
     ).toBe(true);
   });
@@ -195,14 +197,17 @@ describe('בניית אימון', () => {
     expect(a.find((r) => r.exerciseId === 'plank')?.sets.every((s) => s.weight === null)).toBe(true);
     const c = prefilledExercises([], 'C');
     expect(
-      c.find((r) => r.exerciseId === 'bulgarian-split-squat')?.sets.every((s) => s.weight === null),
+      c.find((r) => r.exerciseId === 'incline-push-up')?.sets.every((s) => s.weight === null),
     ).toBe(true);
   });
 
   it('מספר הסטים נלקח מהתוכנית, לא קבוע', () => {
     const a = blankExercises('A');
     expect(a.find((r) => r.exerciseId === 'leg-press')?.sets).toHaveLength(3);
-    expect(a.find((r) => r.exerciseId === 'pec-deck')?.sets).toHaveLength(2);
+    expect(a.find((r) => r.exerciseId === 'leg-extension')?.sets).toHaveLength(2);
+    // אותו תרגיל, מספר סטים שונה בכל אימון
+    expect(a.find((r) => r.exerciseId === 'leg-curl')?.sets).toHaveLength(2);
+    expect(blankExercises('B').find((r) => r.exerciseId === 'leg-curl')?.sets).toHaveLength(3);
   });
 
   it('withSetCount משלים סטים שנחתכו בשמירה, בלי לקצץ עודפים', () => {
@@ -224,14 +229,9 @@ describe('בניית אימון', () => {
 
 describe('התוכנית', () => {
   it('מספר התרגילים בכל אימון', () => {
-    expect(PROGRAM.A).toHaveLength(9);
-    expect(PROGRAM.B).toHaveLength(8);
+    expect(PROGRAM.A).toHaveLength(7);
+    expect(PROGRAM.B).toHaveLength(7);
     expect(PROGRAM.C).toHaveLength(7);
-  });
-
-  it('מזהים ייחודיים בכל התוכנית', () => {
-    const ids = (['A', 'B', 'C'] as const).flatMap((t) => PROGRAM[t].map((e) => e.id));
-    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('כל תרגיל תקין: טווח, סטים, שם קצר', () => {
@@ -246,21 +246,22 @@ describe('התוכנית', () => {
   });
 
   it('דגלים מיוחדים לפי המפרט', () => {
+    expect(exerciseById('incline-push-up')).toMatchObject({ bodyweightOnly: true, machine: null });
+    expect(exerciseById('db-step-up')?.unilateral).toBe(true);
+    expect(exerciseById('side-bend')?.unilateral).toBe(true);
+    expect(exerciseById('plank')?.isTimed).toBe(true);
+    expect(exerciseById('assisted-pull-up')?.assisted).toBe(true);
+  });
+
+  it('תרגילים שירדו מהתוכנית עדיין מזוהים, עם הדגלים שלהם', () => {
     expect(exerciseById('bulgarian-split-squat')).toMatchObject({
       bodyweightOnly: true,
       unilateral: true,
-      note: 'משקל גוף בלבד — מגבלת ברך',
+      machine: null,
     });
-    expect(exerciseById('single-arm-cable-row')?.unilateral).toBe(true);
+    expect(exerciseById('side-plank')).toMatchObject({ isTimed: true, unilateral: true });
     expect(exerciseById('dead-bug')?.unilateral).toBe(true);
-    expect(exerciseById('plank')?.isTimed).toBe(true);
-    expect(exerciseById('side-plank')?.isTimed).toBe(true);
-  });
-
-  it('תרגילי משקל גוף בלי שם מכונה', () => {
-    for (const id of ['plank', 'side-plank', 'dead-bug', 'bulgarian-split-squat']) {
-      expect(exerciseById(id)?.machine).toBeNull();
-    }
+    expect(exerciseById('chest-press')?.name).toBe('לחיצת חזה בישיבה');
   });
 
   it('TYPE_CONFIG כפי שהוגדר', () => {
@@ -290,6 +291,7 @@ describe('התוכנית', () => {
       targetRepMax: 15,
       type: 'isolation',
       bodyweightOnly: false,
+      assisted: false,
     });
     expect(row.sets).toHaveLength(2);
   });

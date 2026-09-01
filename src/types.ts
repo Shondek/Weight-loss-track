@@ -33,9 +33,9 @@ export type LoggedSet = {
  * תרגיל שבוצע. אורך `sets` משתנה — בתוכנית יש תרגילים של 2 ושל 3 סטים,
  * ואסור להניח מספר קבוע בשום מקום.
  *
- * `targetRepMin/Max`, `type` ו-`bodyweightOnly` מוקפאים ברגע השמירה. כך
- * המלצת ההתקדמות מחושבת מחדש בכל רינדור מהנתונים הגולמיים, ובלי לצאת
- * לחפש בתוכנית — שאולי כבר השתנתה מאז.
+ * `targetRepMin/Max`, `type`, `bodyweightOnly` ו-`assisted` מוקפאים ברגע
+ * השמירה. כך המלצת ההתקדמות מחושבת מחדש בכל רינדור מהנתונים הגולמיים,
+ * ובלי לצאת לחפש בתוכנית — שאולי כבר השתנתה מאז.
  */
 export type LoggedExercise = {
   exerciseId: string;
@@ -46,6 +46,8 @@ export type LoggedExercise = {
   targetRepMax: number;
   type: ExerciseType;
   bodyweightOnly: boolean;
+  /** המשקל הוא סיוע (גרוויטון) — התקדמות היא *פחות* משקל. */
+  assisted: boolean;
 };
 
 export type WorkoutEntry = {

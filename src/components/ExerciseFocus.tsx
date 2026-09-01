@@ -82,6 +82,7 @@ export default function ExerciseFocus({
           </span>
           {timed ? ' שנ׳' : ''}
           {side ? ` ${side}` : ''}
+          {spec.effort ? ` · ${spec.effort}` : ''}
         </span>
       </div>
 

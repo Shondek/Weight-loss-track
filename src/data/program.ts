@@ -1,11 +1,15 @@
 /**
- * תוכנית האימונים. הקובץ היחיד שמגדיר תרגילים, טווחי חזרות, מנוחות ותוספות
- * משקל. הקומפוננטות לא יודעות דבר על תרגילים — הן קוראות מכאן.
+ * תוכנית האימונים. התוכן עצמו חי ב-`program-abc.json` (Vite מייבא JSON
+ * נטיבית, בלי תלות); הקובץ הזה טוען אותו, משלים ברירות מחדל וחושף את
+ * ה-API היחיד שהקומפוננטות מכירות. הן לא יודעות דבר על תרגילים — הן
+ * קוראות מכאן.
  *
- * לשנות תרגיל, טווח, מנוחה או תוספת? רק כאן.
+ * לשנות תרגיל, טווח, הערה או סרטון? ב-JSON. לשנות מנוחה או תוספת משקל
+ * לסוג תרגיל? `TYPE_CONFIG` כאן.
  */
 
 import type { ExerciseType, WorkoutType } from '../types';
+import programJson from './program-abc.json';
 
 export interface Exercise {
   /** מזהה יציב. זה המפתח להיסטוריה — לעולם לא לשנות אותו. */
@@ -16,18 +20,31 @@ export interface Exercise {
   short: string;
   /** שם המכונה באנגלית, כפי שהוא מופיע בחדר הכושר. null בתרגילי משקל גוף. */
   machine: string | null;
+  /** קבוצת שריר ראשית, כפי שהתקבלה בתוכנית (legs/chest/back/…). */
+  muscle: string;
   muscles: string[];
   type: ExerciseType;
   sets: number;
+  /** טווח החזרות כטקסט להצגה, כלשונו בתוכנית ("10-12", "10 לרגל", "30-45 שנ'"). */
+  reps: string;
   repRangeMin: number;
   repRangeMax: number;
+  /** הנחיית מאמץ להצגה בלבד ("RIR 2"). null כשאין. לא שדה קלט. */
+  effort: string | null;
   /** מוצג כ"לרגל" / "ליד". */
   unilateral: boolean;
   /** שניות במקום חזרות. */
   isTimed: boolean;
   /** אסור להוסיף משקל — ההתקדמות היא בחזרות. */
   bodyweightOnly: boolean;
+  /**
+   * המשקל הוא *סיוע* (גרוויטון): פחות משקל = קשה יותר. הופך את כיוון
+   * ההמלצה ב-src/lib/progression.ts.
+   */
+  assisted: boolean;
   note: string | null;
+  /** סרטון הדגמה. null כשאין — ואז שום דבר לא מרונדר. */
+  videoUrl: string | null;
 }
 
 /**
@@ -46,313 +63,93 @@ export const TYPE_CONFIG: Record<
   core: { restBetweenSets: 45, restBetweenExercises: 90, weightIncrement: 0 },
 };
 
-type ExerciseInput = Omit<
-  Exercise,
-  'unilateral' | 'isTimed' | 'bodyweightOnly' | 'note'
-> &
-  Partial<Pick<Exercise, 'unilateral' | 'isTimed' | 'bodyweightOnly' | 'note'>>;
+type OptionalKeys =
+  | 'reps'
+  | 'effort'
+  | 'unilateral'
+  | 'isTimed'
+  | 'bodyweightOnly'
+  | 'assisted'
+  | 'note'
+  | 'videoUrl';
 
-/** ברירות מחדל לדגלים, כדי שרק החריגים יצוינו במפורש. */
+/** צורת התרגיל ב-JSON: הזהות חובה, השאר אופציונלי. `type` מגיע כמחרוזת. */
+type ExerciseInput = Omit<Exercise, OptionalKeys | 'type'> & {
+  type: string;
+} & Partial<{ [K in OptionalKeys]: Exercise[K] | undefined }>;
+
+/**
+ * ברירות מחדל לדגלים, כדי שרק החריגים יצוינו במפורש ב-JSON.
+ * `effort: "—"` (כפי שהתקבל בתוכנית לתרגילי ליבה) הוא "אין הנחיה" → null.
+ */
 function ex(e: ExerciseInput): Exercise {
+  const type = e.type as ExerciseType;
+  if (!(type in TYPE_CONFIG)) {
+    throw new Error(`program-abc.json: סוג תרגיל לא מוכר "${e.type}" ב-${e.id}`);
+  }
+  const effort = e.effort?.trim();
   return {
-    unilateral: false,
-    isTimed: false,
-    bodyweightOnly: false,
-    note: null,
-    ...e,
+    id: e.id,
+    name: e.name,
+    short: e.short,
+    machine: e.machine,
+    muscle: e.muscle,
+    muscles: e.muscles,
+    type,
+    sets: e.sets,
+    reps: e.reps ?? `${e.repRangeMin}-${e.repRangeMax}`,
+    repRangeMin: e.repRangeMin,
+    repRangeMax: e.repRangeMax,
+    effort: effort && effort !== '—' ? effort : null,
+    unilateral: e.unilateral ?? false,
+    isTimed: e.isTimed ?? false,
+    bodyweightOnly: e.bodyweightOnly ?? false,
+    assisted: e.assisted ?? false,
+    note: e.note ?? null,
+    videoUrl: e.videoUrl ?? null,
   };
 }
 
+export const WORKOUT_TYPES: WorkoutType[] = ['A', 'B', 'C'];
+
+function isWorkoutType(code: string): code is WorkoutType {
+  return (WORKOUT_TYPES as string[]).includes(code);
+}
+
+const workoutsByCode = new Map<WorkoutType, { title: string; exercises: Exercise[] }>();
+for (const w of programJson.workouts) {
+  if (!isWorkoutType(w.code)) {
+    throw new Error(`program-abc.json: קוד אימון לא מוכר "${w.code}"`);
+  }
+  workoutsByCode.set(w.code, {
+    title: w.title,
+    exercises: w.exercises.map((e) => ex(e as ExerciseInput)),
+  });
+}
+for (const t of WORKOUT_TYPES) {
+  if (!workoutsByCode.has(t)) throw new Error(`program-abc.json: חסר אימון ${t}`);
+}
+
+/** התרגילים של כל אימון, בסדר הביצוע. אותו id יכול להופיע בשני אימונים עם סטים/טווח שונים. */
 export const PROGRAM: Record<WorkoutType, Exercise[]> = {
-  // A — חזה + גב אופקי
-  A: [
-    ex({
-      id: 'leg-press',
-      name: 'לחיצת רגליים',
-      short: 'לחיצת רגליים',
-      machine: 'Leg Press',
-      muscles: ['ארבע ראשי', 'ישבן'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'leg-press-calf-raise',
-      name: 'הרמת שוקיים',
-      short: 'שוקיים',
-      machine: 'Leg Press Calf Raise',
-      muscles: ['תאומים'],
-      type: 'isolation',
-      sets: 3,
-      repRangeMin: 12,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'chest-press',
-      name: 'לחיצת חזה בישיבה',
-      short: 'לחיצת חזה',
-      machine: 'Chest Press',
-      muscles: ['חזה', 'טרייספס', 'כתף קדמית'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 8,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'seated-cable-row',
-      name: 'חתירה בישיבה בכבל',
-      short: 'חתירת כבל',
-      machine: 'Seated Cable Row',
-      muscles: ['גב רחב', 'טרפז', 'מעוינים'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'leg-extension',
-      name: 'פשיטת ברך',
-      short: 'פשיטת ברך',
-      machine: 'Leg Extension',
-      muscles: ['ארבע ראשי'],
-      type: 'isolation',
-      sets: 2,
-      repRangeMin: 12,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'pec-deck',
-      name: 'פרפר',
-      short: 'פרפר',
-      machine: 'Pec Deck',
-      muscles: ['חזה'],
-      type: 'isolation',
-      sets: 2,
-      repRangeMin: 12,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'cable-lateral-raise',
-      name: 'הרחקה לצד בכבל',
-      short: 'הרחקה בכבל',
-      machine: 'Cable Lateral Raise',
-      muscles: ['כתף אמצעית'],
-      type: 'isolation',
-      sets: 2,
-      repRangeMin: 12,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'cable-curl',
-      name: 'כפיפת מרפקים בכבל',
-      short: 'כפיפת מרפקים',
-      machine: 'Cable Curl',
-      muscles: ['בייספס'],
-      type: 'isolation',
-      sets: 2,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'plank',
-      name: 'פלאנק',
-      short: 'פלאנק',
-      machine: null,
-      muscles: ['ליבה'],
-      type: 'core',
-      sets: 3,
-      repRangeMin: 30,
-      repRangeMax: 45,
-      isTimed: true,
-      bodyweightOnly: true,
-    }),
-  ],
-
-  // B — ירכיים אחוריות + גב אנכי
-  B: [
-    ex({
-      id: 'leg-curl',
-      name: 'כפיפת ברך',
-      short: 'כפיפת ברך',
-      machine: 'Leg Curl',
-      muscles: ['ירך אחורית'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'lat-pulldown',
-      name: 'פולי עליון לחזה',
-      short: 'פולי עליון',
-      machine: 'Lat Pulldown',
-      muscles: ['גב רחב', 'טרפז תחתון', 'בייספס'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'hip-thrust',
-      name: "היפ ת'ראסט",
-      short: "היפ ת'ראסט",
-      machine: 'Hip Thrust',
-      muscles: ['ישבן', 'ירך אחורית'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'chest-supported-row',
-      name: 'חתירה בתמיכת חזה',
-      short: 'חתירה נתמכת',
-      machine: 'Chest Supported Row',
-      muscles: ['טרפז אמצעי', 'מעוינים', 'גב רחב'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'triceps-pushdown',
-      name: 'פשיטת מרפקים בפולי',
-      short: 'פשיטת מרפקים',
-      machine: 'Triceps Pushdown',
-      muscles: ['טרייספס'],
-      type: 'isolation',
-      sets: 2,
-      repRangeMin: 12,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'standing-calf-raise',
-      name: 'הרמת שוקיים בעמידה',
-      short: 'שוקיים בעמידה',
-      machine: 'Standing Calf Raise',
-      muscles: ['תאומים'],
-      type: 'isolation',
-      sets: 3,
-      repRangeMin: 12,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'dead-bug',
-      name: 'Dead bug',
-      short: 'Dead bug',
-      machine: null,
-      muscles: ['ליבה עמוקה'],
-      type: 'core',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 10,
-      unilateral: true,
-      bodyweightOnly: true,
-    }),
-    ex({
-      id: 'side-plank',
-      name: 'פלאנק צד',
-      short: 'פלאנק צד',
-      machine: null,
-      muscles: ['אלכסונים'],
-      type: 'core',
-      sets: 2,
-      repRangeMin: 20,
-      repRangeMax: 30,
-      isTimed: true,
-      unilateral: true,
-      bodyweightOnly: true,
-    }),
-  ],
-
-  // C — ידיים + חד-צדדי
-  C: [
-    ex({
-      id: 'bulgarian-split-squat',
-      name: 'סקוואט בולגרי',
-      short: 'בולגרי',
-      machine: null,
-      muscles: ['ישבן', 'ארבע ראשי'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 8,
-      repRangeMax: 10,
-      unilateral: true,
-      bodyweightOnly: true,
-      note: 'משקל גוף בלבד — מגבלת ברך',
-    }),
-    ex({
-      id: 'incline-chest-press',
-      name: 'לחיצת חזה בשיפוע',
-      short: 'חזה שיפוע',
-      machine: 'Incline Chest Press',
-      muscles: ['חזה עליון', 'כתף קדמית'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'single-arm-cable-row',
-      name: 'חתירת יד אחת בכבל',
-      short: 'חתירת יד אחת',
-      machine: 'Single-Arm Cable Row',
-      muscles: ['גב רחב', 'מעוינים'],
-      type: 'compound',
-      sets: 3,
-      repRangeMin: 10,
-      repRangeMax: 12,
-      unilateral: true,
-    }),
-    ex({
-      id: 'face-pull',
-      name: 'פייס פול',
-      short: 'פייס פול',
-      machine: 'Cable Face Pull',
-      muscles: ['כתף אחורית', 'סובבי כתף'],
-      type: 'isolation',
-      sets: 3,
-      repRangeMin: 15,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'lateral-raise',
-      name: 'הרחקה לצד',
-      short: 'הרחקה לצד',
-      machine: 'Lateral Raise',
-      muscles: ['כתף אמצעית'],
-      type: 'isolation',
-      sets: 2,
-      repRangeMin: 12,
-      repRangeMax: 15,
-    }),
-    ex({
-      id: 'hammer-curl',
-      name: 'כפיפת פטיש',
-      short: 'כפיפת פטיש',
-      machine: 'Hammer Curl',
-      muscles: ['בייספס', 'אמה'],
-      type: 'isolation',
-      sets: 2,
-      repRangeMin: 10,
-      repRangeMax: 12,
-    }),
-    ex({
-      id: 'cable-crunch',
-      name: 'כפיפות בטן בכבל',
-      short: 'כפיפות בטן',
-      machine: 'Cable Crunch',
-      muscles: ['ישרי הבטן'],
-      type: 'core',
-      sets: 3,
-      repRangeMin: 12,
-      repRangeMax: 12,
-    }),
-  ],
+  A: workoutsByCode.get('A')!.exercises,
+  B: workoutsByCode.get('B')!.exercises,
+  C: workoutsByCode.get('C')!.exercises,
 };
 
-export const WORKOUT_TYPES: WorkoutType[] = ['A', 'B', 'C'];
+/** כותרת האימון להצגה ("דחיפה + ארבע-ראשי"). */
+export const WORKOUT_TITLES: Record<WorkoutType, string> = {
+  A: workoutsByCode.get('A')!.title,
+  B: workoutsByCode.get('B')!.title,
+  C: workoutsByCode.get('C')!.title,
+};
+
+/**
+ * תרגילים שירדו מהתוכנית. נשארים כזהות בלבד כדי שרשומה ישנה תמשיך להיות
+ * מובנת: "פלאנק צד" עדיין יודע שהוא בשניות, ותרגיל שירד עדיין מוצג בשמו.
+ * לא מופיעים באף אימון ולא ניתן לבחור אותם.
+ */
+export const RETIRED: Exercise[] = programJson.retired.map((e) => ex(e as ExerciseInput));
 
 /** כמה אימונים בשבוע התוכנית מצפה להם. משמש לספירה "n/3" ולסעיף "חסר". */
 export const WORKOUTS_PER_WEEK = 3;
@@ -361,24 +158,29 @@ export const WORKOUTS_PER_WEEK = 3;
 export const CONSTRAINTS =
   'ברך — בלי כריעה מתחת ל-90°, בלי קפיצות. כתף — בלי לחיצה מעל הראש, מרפקים 45°.';
 
-const BY_ID: Map<string, Exercise> = new Map(
-  WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => [e.id, e] as const)),
-);
+/**
+ * זהות לפי id: המופע הראשון בתוכנית, ואחריו הפרושים. כשאותו id מופיע
+ * בשני אימונים, הזהות (שם, סוג, דגלים) זהה — רק סטים/טווח שונים, ולהם
+ * יש `exerciseIn`.
+ */
+const BY_ID: Map<string, Exercise> = new Map();
+for (const e of [...WORKOUT_TYPES.flatMap((t) => PROGRAM[t]), ...RETIRED]) {
+  if (!BY_ID.has(e.id)) BY_ID.set(e.id, e);
+}
 
 const BY_NAME: Map<string, string> = new Map(
   WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => [e.name, e.id] as const)),
 );
 
 /**
- * שם עברי ישן → מזהה חדש, כשמדובר באותה תנועה.
+ * שם עברי ישן → מזהה, כשמדובר באותה תנועה.
  *
  * זה מה שמקשר היסטוריה מעבר לשינוי שמות התרגילים: אימון שנרשם עם "לג פרס"
- * ימשיך להזין את המשקל האחרון של "לחיצת רגליים".
+ * ימשיך להזין את המשקל האחרון של "לג-פרס במכונה בישיבה". שמות של תרגילים
+ * שירדו מהתוכנית ממופים למזהה הפרוש שלהם, כדי שהרשומה תוצג נכון.
  *
- * תרגילים שנשמטו מהתוכנית ואין להם מקבילה (RDL משקולות יד, סקוואט גובלט
- * לספסל) לא מופיעים כאן בכוונה — הם יישארו קריאים בהיסטוריה בלי להתחזות
- * לתרגיל אחר. "כפיפת ופשיטת מרפקים" נפצל לשניים ולכן אינו ניתן למיפוי
- * חד-ערכי.
+ * "סקוואט גובלט לספסל" ו"כפיפת ופשיטת מרפקים" לא מופיעים כאן בכוונה — אין
+ * להם מקבילה חד-ערכית, והם יישארו קריאים בהיסטוריה לפי שמם.
  */
 export const EXERCISE_ALIASES: Record<string, string> = {
   'לג פרס': 'leg-press',
@@ -395,6 +197,7 @@ export const EXERCISE_ALIASES: Record<string, string> = {
   'מכרעים בולגריים': 'bulgarian-split-squat',
   'הרמות עגל': 'standing-calf-raise',
   'לחיצת חזה משקולות שיפוע 30°': 'incline-chest-press',
+  'RDL משקולות יד': 'db-rdl',
 };
 
 export function exerciseById(id: string): Exercise | undefined {
@@ -402,12 +205,27 @@ export function exerciseById(id: string): Exercise | undefined {
 }
 
 /**
+ * המפרט של תרגיל *באימון מסוים* — סטים וטווח יכולים להיות שונים בין A ל-B
+ * לאותו id (כפיפת ברכיים: 2×12-15 ב-A, 3×10-12 ב-B). כשהתרגיל לא באימון
+ * הזה (רשומה ישנה) מחזיר undefined, והקורא נופל ל-`exerciseById`.
+ */
+export function exerciseIn(t: WorkoutType, id: string): Exercise | undefined {
+  return PROGRAM[t].find((e) => e.id === id);
+}
+
+/**
  * המזהה של תרגיל לפי שם: קודם שם בתוכנית הנוכחית, אחר כך טבלת השמות
- * הישנים. מחזיר null כשאין התאמה — התרגיל יוצג בהיסטוריה לפי שמו בלבד.
+ * הישנים, ואחר כך שמות של תרגילים שירדו. מחזיר null כשאין התאמה — התרגיל
+ * יוצג בהיסטוריה לפי שמו בלבד.
  */
 export function resolveExerciseId(name: string): string | null {
   const trimmed = name.trim();
-  return BY_NAME.get(trimmed) ?? EXERCISE_ALIASES[trimmed] ?? null;
+  return (
+    BY_NAME.get(trimmed) ??
+    EXERCISE_ALIASES[trimmed] ??
+    RETIRED.find((e) => e.name === trimmed)?.id ??
+    null
+  );
 }
 
 /** שם קצר לדוח. תרגיל שאינו בתוכנית נשאר עם השם שנרשם איתו. */

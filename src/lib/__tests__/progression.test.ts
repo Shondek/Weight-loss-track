@@ -58,16 +58,37 @@ describe('משקל גוף ותוספת אפס — חזרות, לא משקל', ()
 });
 
 describe('תרגיל של שני סטים — לא מניחים שלושה', () => {
+  // פשיטת ברך: 2 סטים, יעד 12–15
   it('שני סטים בתקרה נחשבים השלמה', () => {
-    expect(kind(le('pec-deck', 25, [15, 15]))).toBe('add-weight');
+    expect(kind(le('leg-extension', 25, [15, 15]))).toBe('add-weight');
   });
 
   it('שני סטים, אחד מתחת למינימום', () => {
-    expect(kind(le('pec-deck', 25, [15, 11]))).toBe('hold');
+    expect(kind(le('leg-extension', 25, [15, 11]))).toBe('hold');
   });
 
   it('שני סטים באמצע הטווח', () => {
-    expect(kind(le('pec-deck', 25, [13, 13]))).toBe('add-reps');
+    expect(kind(le('leg-extension', 25, [13, 13]))).toBe('add-reps');
+  });
+});
+
+describe('תרגיל עם סיוע (גרוויטון) — הכיוון הפוך', () => {
+  // מתח בגרוויטון: compound, יעד 6–10, המשקל הוא סיוע
+  it('כל הסטים בתקרה — מורידים סיוע, לא מוסיפים משקל', () => {
+    const s = getProgressionSuggestion(le('assisted-pull-up', 40, [10, 10, 10]));
+    expect(s.kind).toBe('add-weight');
+    expect(s.text).toBe('הורד סיוע ב-5 ק״ג, חזור ל-6 חזרות');
+  });
+
+  it('המשקל המוצע יורד ב-5 ולא מתחת ל-0', () => {
+    expect(suggestedNextWeight(le('assisted-pull-up', 40, [10, 10, 10]))).toBe(35);
+    expect(suggestedNextWeight(le('assisted-pull-up', 2.5, [10, 10, 10]))).toBe(0);
+  });
+
+  it('בתוך הטווח או מתחת למינימום — כמו כל תרגיל, המשקל נשאר', () => {
+    expect(kind(le('assisted-pull-up', 40, [8, 8, 7]))).toBe('add-reps');
+    expect(suggestedNextWeight(le('assisted-pull-up', 40, [8, 8, 7]))).toBe(40);
+    expect(kind(le('assisted-pull-up', 40, [6, 5, 5]))).toBe('hold');
   });
 });
 

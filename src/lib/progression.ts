@@ -83,6 +83,13 @@ export function getProgressionSuggestion(
           : 'טווח הושלם — הוסף חזרות או האט את הקצב.',
       };
     }
+    // בגרוויטון המשקל הוא סיוע — "לעלות" זה להוריד סיוע.
+    if (current.assisted) {
+      return {
+        kind: 'add-weight',
+        text: `הורד סיוע ב-${increment} ק״ג, חזור ל-${current.targetRepMin} ${unit}`,
+      };
+    }
     return {
       kind: 'add-weight',
       text: `הוסף ${increment} ק״ג, חזור ל-${current.targetRepMin} ${unit}`,
@@ -95,6 +102,7 @@ export function getProgressionSuggestion(
 
 /**
  * המשקל המוצע לפעם הבאה: המשקל האחרון, ועוד התוספת אם ההמלצה היא לעלות.
+ * בתרגיל עם סיוע (`assisted`) הכיוון הפוך — פחות סיוע, לא מתחת ל-0.
  * מחזיר null כשאין משקל להתבסס עליו.
  */
 export function suggestedNextWeight(
@@ -112,5 +120,6 @@ export function suggestedNextWeight(
   if (last === null) return null;
   const suggestion = getProgressionSuggestion(ex, previous);
   if (suggestion.kind !== 'add-weight') return last;
-  return last + TYPE_CONFIG[ex.type].weightIncrement;
+  const increment = TYPE_CONFIG[ex.type].weightIncrement;
+  return ex.assisted ? Math.max(0, last - increment) : last + increment;
 }

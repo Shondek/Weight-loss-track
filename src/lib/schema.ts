@@ -224,6 +224,7 @@ function parseExercise(e: Record<string, unknown>): LoggedExercise | null {
       typeof e.bodyweightOnly === 'boolean'
         ? e.bodyweightOnly
         : (spec?.bodyweightOnly ?? false),
+    assisted: typeof e.assisted === 'boolean' ? e.assisted : (spec?.assisted ?? false),
   };
 }
 

@@ -192,6 +192,7 @@ export function blankLoggedExercise(
     targetRepMax: spec.repRangeMax,
     type: spec.type,
     bodyweightOnly: spec.bodyweightOnly,
+    assisted: spec.assisted,
   };
 }
 

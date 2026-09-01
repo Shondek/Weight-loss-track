@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
 import type { LoggedExercise, WorkoutEntry, WorkoutType } from '../types';
+import type { Exercise } from '../data/program';
 import {
   CONSTRAINTS,
   WORKOUTS_PER_WEEK,
+  WORKOUT_TITLES,
   WORKOUT_TYPES,
   exerciseById,
+  exerciseIn,
   restSeconds,
 } from '../data/program';
 import {
@@ -134,22 +137,32 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
 
   const defaultDate = compareISO(week, weekStart(today)) === 0 ? today : weekEnd(week);
 
-  /** תרגיל שירד מהתוכנית עדיין ניתן לעריכה, לפי מה שנשמר איתו. */
-  const specOf = (log: LoggedExercise) =>
+  /**
+   * המפרט לתצוגה: קודם כפי שהוא באימון הזה (סטים/טווח יכולים להיות שונים
+   * בין A ל-B), אחרת הזהות הכללית, ותרגיל שירד מהתוכנית עדיין ניתן לעריכה
+   * לפי מה שנשמר איתו.
+   */
+  const specOf = (log: LoggedExercise): Exercise =>
+    (open ? exerciseIn(open.t, log.exerciseId) : undefined) ??
     exerciseById(log.exerciseId) ?? {
       id: log.exerciseId,
       name: log.n,
       short: log.n,
       machine: null,
+      muscle: '',
       muscles: [],
       type: log.type,
       sets: log.sets.length,
+      reps: '',
       repRangeMin: log.targetRepMin,
       repRangeMax: log.targetRepMax,
+      effort: null,
       unilateral: false,
       isTimed: isTimedExercise(log),
       bodyweightOnly: log.bodyweightOnly,
+      assisted: log.assisted,
       note: null,
+      videoUrl: null,
     };
 
   /** פותח אימון חדש כטיוטה. לחיצה בטעות לא יוצרת אימון ריק בהיסטוריה. */
@@ -248,7 +261,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         <section className="section">
           <div className="section__head">
             <h2>
-              אימון {open.t} · <span className="num">{formatDM(open.d)}</span>
+              אימון {open.t} · {WORKOUT_TITLES[open.t]} ·{' '}
+              <span className="num">{formatDM(open.d)}</span>
             </h2>
             <button type="button" className="btn btn--quiet" onClick={closeEditor}>
               סגור

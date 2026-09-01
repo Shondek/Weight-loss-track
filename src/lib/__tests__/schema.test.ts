@@ -83,6 +83,7 @@ describe('parseWorkouts — פורמט הגרסה הישנה', () => {
           targetRepMax: 12,
           type: 'compound',
           bodyweightOnly: false,
+          assisted: false,
         },
       ],
       knee: 0,
@@ -113,13 +114,26 @@ describe('parseWorkouts — פורמט הגרסה הישנה', () => {
 
   it('תרגיל שירד מהתוכנית נשמר עם שמו, בלי להתחזות לתרגיל אחר', () => {
     const r = parseWorkouts([
-      { ...legacy, ex: [{ n: 'RDL משקולות יד', w: 20, r: [12, 12, 10] }] },
+      { ...legacy, ex: [{ n: 'סקוואט גובלט לספסל', w: 20, r: [12, 12, 10] }] },
     ]);
     expect(r.ok[0]?.ex[0]).toMatchObject({
-      exerciseId: 'legacy:RDL משקולות יד',
-      n: 'RDL משקולות יד',
+      exerciseId: 'legacy:סקוואט גובלט לספסל',
+      n: 'סקוואט גובלט לספסל',
     });
     expect(r.ok[0]?.ex[0]?.sets).toHaveLength(3);
+  });
+
+  it('שם ישן של תרגיל שחזר לתוכנית מתחבר למזהה שלו (RDL → db-rdl)', () => {
+    const r = parseWorkouts([
+      { ...legacy, ex: [{ n: 'RDL משקולות יד', w: 20, r: [12, 12, 10] }] },
+    ]);
+    expect(r.ok[0]?.ex[0]).toMatchObject({ exerciseId: 'db-rdl', n: 'RDL משקולות יד' });
+  });
+
+  it('תרגיל שירד מהתוכנית (retired) עדיין מזוהה — פלאנק צד נשאר בשניות', () => {
+    const r = parseWorkouts([{ ...legacy, ex: [{ n: 'פלאנק צד', w: null, r: [30, 25] }] }]);
+    expect(r.ok[0]?.ex[0]?.exerciseId).toBe('side-plank');
+    expect(r.ok[0]?.ex[0]?.sets[0]).toEqual({ weight: null, reps: null, seconds: 30 });
   });
 
   it('הפורמט החדש נקלט כמו שהוא, באורך סטים משתנה', () => {

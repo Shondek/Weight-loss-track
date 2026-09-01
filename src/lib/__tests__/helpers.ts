@@ -28,6 +28,7 @@ export function le(
     targetRepMax: spec?.repRangeMax ?? 12,
     type: spec?.type ?? 'isolation',
     bodyweightOnly: spec?.bodyweightOnly ?? false,
+    assisted: spec?.assisted ?? false,
     ...over,
   };
 }
