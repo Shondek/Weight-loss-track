@@ -68,7 +68,23 @@ export default function ExerciseFocus({
 
   return (
     <div className="focus">
-      <h3 className="focus__name">{spec.name}</h3>
+      <h3 className="focus__name">
+        {spec.name}
+        {spec.videoUrl && (
+          // קישור רגיל בלבד: בלי preload, בלי אימות, בלי iframe. בלי videoUrl
+          // לא מרונדר כלום, כך שהתרגיל נראה זהה.
+          <a
+            className="focus__video"
+            href={spec.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`סרטון הדגמה — ${spec.name}`}
+            title="סרטון הדגמה"
+          >
+            ▶
+          </a>
+        )}
+      </h3>
 
       <div className="row row--between row--baseline focus__meta">
         <span className="tiny muted grow" style={{ direction: 'ltr', textAlign: 'start' }}>

@@ -673,6 +673,28 @@ button {
   margin: 0;
 }
 
+/* ▶ לסרטון הדגמה. אזור מגע 44px בלי להגדיל את הכותרת. */
+.focus__video {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-block: calc(-1 * var(--sp-2));
+  margin-inline-start: var(--sp-1);
+  vertical-align: middle;
+  font-size: 14px;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.focus__video:hover,
+.focus__video:focus-visible {
+  color: var(--ink);
+  background: var(--paper-sunk);
+}
+
 .focus__meta {
   margin-top: 2px;
 }
