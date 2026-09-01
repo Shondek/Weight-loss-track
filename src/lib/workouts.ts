@@ -14,6 +14,7 @@ import {
   exerciseById,
 } from '../data/program';
 import { compareISO, weekDays } from './date';
+import { suggestedNextWeight } from './progression';
 
 export function sortWorkouts(list: readonly WorkoutEntry[]): WorkoutEntry[] {
   return [...list].sort(
@@ -126,6 +127,35 @@ export function lastExercise(
   return best;
 }
 
+/**
+ * הרישום שקדם לאימון נתון באותו תרגיל.
+ * דרוש כדי לזהות כישלון שני ברצף — הכלל שמפעיל ירידה מדרגה.
+ */
+export function previousRecord(
+  list: readonly WorkoutEntry[],
+  exerciseId: string,
+  before: { d: ISODate; id: string },
+): ExerciseHistory | null {
+  let best: ExerciseHistory | null = null;
+  for (const w of list) {
+    if (w.id === before.id) continue;
+    const isEarlier =
+      compareISO(w.d, before.d) < 0 || (w.d === before.d && w.id < before.id);
+    if (!isEarlier) continue;
+    for (const ex of w.ex) {
+      if (ex.exerciseId !== exerciseId || !hasData(ex)) continue;
+      if (
+        !best ||
+        compareISO(w.d, best.d) > 0 ||
+        (w.d === best.d && w.id > best.workoutId)
+      ) {
+        best = { d: w.d, workoutId: w.id, ex };
+      }
+    }
+  }
+  return best;
+}
+
 /** כל הרישומים של תרגיל, מהישן לחדש. משמש למגמה בהיסטוריה. */
 export function exerciseHistory(
   list: readonly WorkoutEntry[],
@@ -171,18 +201,36 @@ export function blankExercises(t: WorkoutType): LoggedExercise[] {
 }
 
 /**
- * שורות תרגילים לאימון חדש, כשהמשקל מאוכלס מהרישום האחרון.
- * המטרה: לאשר או לשנות, לא להקליד מחדש. החזרות תמיד ריקות — המשקל לבדו
- * אינו נחשב נתון (ראה `hasData`), ולכן אימון כזה עדיין נחשב ריק.
+ * המשקל שאיתו לפתוח את התרגיל בפעם הבאה: מה שנרשם לאחרונה, ועוד התוספת
+ * אם ההמלצה מהאימון הקודם הייתה לעלות. null כשאין על מה להתבסס.
+ */
+export function openingWeight(
+  list: readonly WorkoutEntry[],
+  exerciseId: string,
+  excludeId?: string,
+): number | null {
+  const last = lastExercise(list, exerciseId, excludeId);
+  if (!last) return null;
+  const before = previousRecord(list, exerciseId, {
+    d: last.d,
+    id: last.workoutId,
+  });
+  return suggestedNextWeight(last.ex, before?.ex ?? null);
+}
+
+/**
+ * שורות תרגילים לאימון חדש, כשהמשקל מאוכלס מהרישום האחרון — כולל
+ * ההעלאה שההמלצה הקודמת הציעה. המטרה: לאשר או לשנות, לא להקליד מחדש.
+ * החזרות תמיד ריקות — המשקל לבדו אינו נחשב נתון (ראה `hasData`), ולכן
+ * אימון כזה עדיין נחשב ריק.
  */
 export function prefilledExercises(
   list: readonly WorkoutEntry[],
   t: WorkoutType,
 ): LoggedExercise[] {
-  return PROGRAM[t].map((spec) => {
-    const prev = lastExercise(list, spec.id);
-    return blankLoggedExercise(spec, prev ? lastWeightOf(prev.ex) : null);
-  });
+  return PROGRAM[t].map((spec) =>
+    blankLoggedExercise(spec, openingWeight(list, spec.id)),
+  );
 }
 
 /**
@@ -197,8 +245,7 @@ export function exercisesFor(
   const rows = PROGRAM[entry.t].map((spec) => {
     const existing = byId.get(spec.id);
     if (existing) return withSetCount(existing, spec.sets);
-    const prev = lastExercise(all, spec.id, entry.id);
-    return blankLoggedExercise(spec, prev ? lastWeightOf(prev.ex) : null);
+    return blankLoggedExercise(spec, openingWeight(all, spec.id, entry.id));
   });
   const planned = new Set(PROGRAM[entry.t].map((s) => s.id));
   for (const e of entry.ex) {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
-import type { WorkoutEntry, WorkoutType } from '../types';
+import type { LoggedExercise, WorkoutEntry, WorkoutType } from '../types';
 import {
   CONSTRAINTS,
   WORKOUTS_PER_WEEK,
@@ -17,6 +17,7 @@ import {
   makeWorkoutId,
   nextType,
   prefilledExercises,
+  previousRecord,
   setPerformed,
   setValue,
   sortableStamp,
@@ -28,6 +29,7 @@ import {
 import { compareISO, dayLetter, formatDM, formatDMY, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import { clean, DASH } from '../lib/format';
+import { getProgressionSuggestion } from '../lib/progression';
 import WeekNav from '../components/WeekNav';
 import DateField from '../components/DateField';
 import Choice from '../components/Choice';
@@ -47,27 +49,42 @@ function newId(): string {
   return `${sortableStamp(Date.now())}-${rand}`;
 }
 
-function summaryLine(entry: WorkoutEntry): string {
-  const parts = entry.ex.filter(hasData).map((e) => {
-    const values = e.sets
-      .filter(setPerformed)
-      .map((s) => {
-        const v = setValue(s);
-        return v === null ? DASH : String(v);
-      })
-      .join(',');
-    if (isTimedExercise(e)) return `${e.n} ${values} שנ׳`;
-    const weights = [...new Set(e.sets.filter(setPerformed).map((s) => s.weight))];
-    const w =
-      weights.length === 1 && weights[0] !== null && weights[0] !== undefined
-        ? clean(weights[0])
-        : e.sets
-            .filter(setPerformed)
-            .map((s) => (s.weight === null ? DASH : clean(s.weight)))
-            .join(',');
-    return `${e.n} ${w === '' ? DASH : w}×${values}`;
-  });
-  return parts.length ? parts.join(' · ') : 'לא נרשמו תרגילים';
+/** שורת סיכום לתרגיל אחד: משקל אחד כשכולם זהים, רשימה כשהם משתנים. */
+function exerciseLine(e: LoggedExercise): string {
+  const performed = e.sets.filter(setPerformed);
+  const values = performed
+    .map((s) => {
+      const v = setValue(s);
+      return v === null ? DASH : String(v);
+    })
+    .join(',');
+  if (isTimedExercise(e)) return `${e.n} ${values} שנ׳`;
+  if (e.bodyweightOnly) return `${e.n} ${values}`;
+  const weights = [...new Set(performed.map((s) => s.weight))];
+  const w =
+    weights.length === 1
+      ? weights[0] === null || weights[0] === undefined
+        ? DASH
+        : clean(weights[0])
+      : performed.map((s) => (s.weight === null ? DASH : clean(s.weight))).join(',');
+  return `${e.n} ${w}×${values}`;
+}
+
+/** ההמלצה מחושבת כאן ולא נשמרה — לכן היא נכונה גם אחרי שינוי בלוגיקה. */
+function SuggestionLine({
+  ex,
+  previous,
+}: {
+  ex: LoggedExercise;
+  previous: LoggedExercise | null;
+}) {
+  const suggestion = getProgressionSuggestion(ex, previous);
+  if (suggestion.kind === 'none') return null;
+  return (
+    <p className="tiny muted" style={{ margin: '2px 0 0' }}>
+      {suggestion.text}
+    </p>
+  );
 }
 
 export default function WorkoutScreen({ store, today }: ScreenProps) {
@@ -303,9 +320,22 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
                 </div>
                 {expanded === w.id && (
                   <div className="stack--tight" style={{ padding: 'var(--sp-2) 0' }}>
-                    <p className="small" style={{ margin: 0 }}>
-                      {summaryLine(w)}
-                    </p>
+                    <ul className="list list--block small">
+                      {w.ex.filter(hasData).map((e) => (
+                        <li key={e.exerciseId}>
+                          <div>{exerciseLine(e)}</div>
+                          <SuggestionLine
+                            ex={e}
+                            previous={
+                              previousRecord(db.workouts, e.exerciseId, {
+                                d: w.d,
+                                id: w.id,
+                              })?.ex ?? null
+                            }
+                          />
+                        </li>
+                      ))}
+                    </ul>
                     <p className="tiny muted" style={{ margin: 0 }}>
                       כאב: ברך <span className="num">{w.knee ?? DASH}</span> · כתף{' '}
                       <span className="num">{w.shoulder ?? DASH}</span>
