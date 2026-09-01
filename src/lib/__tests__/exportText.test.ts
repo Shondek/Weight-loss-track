@@ -28,6 +28,7 @@ function baseDb(): DB {
     ],
     workouts: [
       {
+        schemaVersion: 2,
         id: '2026-09-02-a',
         d: '2026-09-02',
         t: 'A',
@@ -43,6 +44,7 @@ function baseDb(): DB {
         ],
       },
       {
+        schemaVersion: 2,
         id: '2026-09-05-b',
         d: '2026-09-05',
         t: 'B',
@@ -190,6 +192,7 @@ describe('כלל 4 — סעיף חסר', () => {
       workouts: [
         ...db.workouts,
         {
+          schemaVersion: 2,
           id: 'x',
           d: '2026-09-04',
           t: 'C',
@@ -238,9 +241,22 @@ describe('backupJson', () => {
       'exported',
       'weights',
       'workouts',
+      'legacyWorkouts',
       'waist',
       'checkins',
       'settings',
     ]);
+  });
+
+  it('אימונים שלא הומרו נכללים בגיבוי כמו שהם', () => {
+    const raw = { id: 'b', d: 'nope', t: 'A', ex: [{ n: 'לג פרס', w: 60, r: [12] }] };
+    const db: DB = {
+      ...baseDb(),
+      legacyWorkouts: [{ raw, d: 'nope', reason: 'תאריך לא תקין' }],
+    };
+    const parsed = JSON.parse(backupJson(db, '2026-09-05T05:00:00.000Z')) as {
+      legacyWorkouts: { raw: unknown }[];
+    };
+    expect(parsed.legacyWorkouts[0]?.raw).toEqual(raw);
   });
 });

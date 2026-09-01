@@ -12,7 +12,7 @@ describe('firstDataDate / programStartWeek', () => {
         db({
           weights: [{ d: '2026-08-30', w: 80 }],
           workouts: [
-            { id: 'x', d: '2026-08-12', t: 'A', ex: [], knee: null, shoulder: null },
+            { schemaVersion: 2, id: 'x', d: '2026-08-12', t: 'A', ex: [], knee: null, shoulder: null },
           ],
         }),
       ),
@@ -48,7 +48,7 @@ describe('mergeDb', () => {
       { d: '2026-08-30', w: 80.1 },
       { d: '2026-08-31', w: 80.0 },
     ],
-    workouts: [{ id: 'a', d: '2026-08-30', t: 'A', ex: [], knee: 1, shoulder: null }],
+    workouts: [{ schemaVersion: 2, id: 'a', d: '2026-08-30', t: 'A', ex: [], knee: 1, shoulder: null }],
     waist: [{ d: '2026-08-30', cm: 96 }],
   });
 
@@ -76,8 +76,8 @@ describe('mergeDb', () => {
       current,
       db({
         workouts: [
-          { id: 'a', d: '2026-08-30', t: 'B', ex: [], knee: 5, shoulder: null },
-          { id: 'b', d: '2026-09-02', t: 'C', ex: [], knee: null, shoulder: null },
+          { schemaVersion: 2, id: 'a', d: '2026-08-30', t: 'B', ex: [], knee: 5, shoulder: null },
+          { schemaVersion: 2, id: 'b', d: '2026-09-02', t: 'C', ex: [], knee: null, shoulder: null },
         ],
       }),
     );
@@ -88,6 +88,17 @@ describe('mergeDb', () => {
   it('הגדרות נשמרות אם לקובץ אין הגדרה', () => {
     const withStart = { ...current, settings: { programStart: '2026-08-02', soundEnabled: true } };
     expect(mergeDb(withStart, emptyDb()).settings.programStart).toBe('2026-08-02');
+  });
+
+  it('אימונים ישנים: הקיימים נשארים, מיובאים מתווספים, תוכן זהה לא מוכפל', () => {
+    const a = { raw: { d: 'x', t: 'A' }, d: 'x', reason: 'תאריך לא תקין' };
+    const b = { raw: { d: 'y', t: 'Z' }, d: 'y', reason: 'תאריך לא תקין' };
+    const merged = mergeDb(
+      db({ legacyWorkouts: [a] }),
+      db({ legacyWorkouts: [{ ...a, raw: { ...a.raw } }, b] }),
+    );
+    expect(merged.legacyWorkouts).toEqual([a, b]);
+    expect(mergeDb(db({ legacyWorkouts: [a] }), emptyDb()).legacyWorkouts).toEqual([a]);
   });
 });
 

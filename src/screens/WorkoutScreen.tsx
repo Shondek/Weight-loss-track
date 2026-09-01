@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
-import type { LoggedExercise, WorkoutEntry, WorkoutType } from '../types';
+import {
+  WORKOUT_SCHEMA_VERSION,
+  type LoggedExercise,
+  type WorkoutEntry,
+  type WorkoutType,
+} from '../types';
 import type { Exercise } from '../data/program';
 import {
   CONSTRAINTS,
@@ -171,6 +176,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     setOpenId(null);
     setFocus(0);
     setDraft({
+      schemaVersion: WORKOUT_SCHEMA_VERSION,
       id: makeWorkoutId(d, t, newId()),
       d,
       t,
@@ -457,6 +463,31 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         )}
       </section>
 
+      {db.legacyWorkouts.length > 0 && (
+        // רשומות שלא ניתן היה להמיר. קריאה בלבד: אין עריכה ואין מחיקה —
+        // הן נשמרות כמו שהן ב-fatloss:workouts, וזמינות בגיבוי ה-JSON.
+        <section className="section">
+          <h2 style={{ marginBottom: 'var(--sp-3)' }}>
+            אימונים ישנים שלא הומרו (<span className="num">{db.legacyWorkouts.length}</span>)
+          </h2>
+          <ul className="list list--block small">
+            {db.legacyWorkouts.map((l, i) => (
+              <li key={i} className="muted">
+                אימון ישן · <span className="num">{legacyDate(l.d)}</span> · {l.reason}
+              </li>
+            ))}
+          </ul>
+          <p className="tiny muted" style={{ margin: 0 }}>
+            הרשומות נשמרות כמו שהן ונכללות בגיבוי ה-JSON במסך "נתונים".
+          </p>
+        </section>
+      )}
     </div>
   );
+}
+
+/** התאריך של רשומה ישנה כפי שהוא — לא עבר אימות, אז לא מפרסרים אותו. */
+function legacyDate(d: string | null): string {
+  if (d === null || d.trim() === '') return 'ללא תאריך';
+  return d.length > 24 ? `${d.slice(0, 24)}…` : d;
 }

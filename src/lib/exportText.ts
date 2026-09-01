@@ -233,6 +233,8 @@ export type BackupFile = {
   exported: string;
   weights: DB['weights'];
   workouts: DB['workouts'];
+  /** אימונים שלא הומרו, גולמיים. גם הגיבוי לא מאבד אותם. */
+  legacyWorkouts: DB['legacyWorkouts'];
   waist: DB['waist'];
   checkins: DB['checkins'];
   settings: DB['settings'];
@@ -245,6 +247,7 @@ export function buildBackup(db: DB, exportedAt: string): BackupFile {
     exported: exportedAt,
     weights: db.weights,
     workouts: db.workouts,
+    legacyWorkouts: db.legacyWorkouts,
     waist: db.waist,
     checkins: db.checkins,
     settings: db.settings,

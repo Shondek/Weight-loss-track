@@ -41,5 +41,5 @@ export function wk(
   knee: number | null = null,
   shoulder: number | null = null,
 ): WorkoutEntry {
-  return { id, d, t, ex, knee, shoulder };
+  return { schemaVersion: 2, id, d, t, ex, knee, shoulder };
 }

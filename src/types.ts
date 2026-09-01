@@ -50,7 +50,15 @@ export type LoggedExercise = {
   assisted: boolean;
 };
 
+/**
+ * גרסת המבנה של רשומת אימון שמורה.
+ * 2 = `ex[].sets` באורך משתנה, שם התרגיל כטקסט ב-`n`. רשומות בלי השדה
+ * (הגרסה הישנה) מומרות בקריאה ומקבלות אותו — ראה `parseWorkouts`.
+ */
+export const WORKOUT_SCHEMA_VERSION = 2;
+
 export type WorkoutEntry = {
+  schemaVersion: typeof WORKOUT_SCHEMA_VERSION;
   id: string;
   d: ISODate;
   t: WorkoutType;
@@ -59,6 +67,17 @@ export type WorkoutEntry = {
   knee: number | null;
   /** 0–10 */
   shoulder: number | null;
+};
+
+/**
+ * רשומת אימון שלא ניתן היה להמיר. נשמרת גולמית, כמו שהיא, ומוצגת כ"אימון ישן".
+ * לעולם לא נמחקת בשמירה — `persist('workouts')` כותב אותה חזרה יחד עם השאר.
+ */
+export type LegacyWorkout = {
+  raw: unknown;
+  /** התאריך כפי שהופיע ברשומה, אם היה מחרוזת. להצגה בלבד. */
+  d: string | null;
+  reason: string;
 };
 
 export type WeeklyCheckin = {
@@ -99,6 +118,8 @@ export const DEFAULT_SETTINGS: Settings = { programStart: null, soundEnabled: tr
 export type DB = {
   weights: WeightEntry[];
   workouts: WorkoutEntry[];
+  /** אימונים שלא הומרו. חיים באותו מפתח אחסון כמו `workouts`, לא במפתח משלהם. */
+  legacyWorkouts: LegacyWorkout[];
   waist: WaistEntry[];
   checkins: WeeklyCheckin[];
   settings: Settings;
@@ -112,6 +133,7 @@ export function emptyDb(): DB {
   return {
     weights: [],
     workouts: [],
+    legacyWorkouts: [],
     waist: [],
     checkins: [],
     settings: { ...DEFAULT_SETTINGS },

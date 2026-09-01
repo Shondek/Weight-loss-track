@@ -67,6 +67,7 @@ describe('parseWorkouts — פורמט הגרסה הישנה', () => {
     const r = parseWorkouts([legacy]);
     expect(r.rejected).toHaveLength(0);
     expect(r.ok[0]).toEqual({
+      schemaVersion: 2,
       id: 'abc',
       d: '2026-08-30',
       t: 'A',
@@ -215,6 +216,56 @@ describe('parseWorkouts — פורמט הגרסה הישנה', () => {
   });
 });
 
+describe('parseWorkouts — schemaVersion ורשומות שלא ניתן להמיר', () => {
+  const v1 = {
+    id: 'old',
+    ts: 0,
+    d: '2026-08-30',
+    t: 'A',
+    ex: [{ n: 'לג פרס', w: 60, r: [12, 12, 10] }],
+    knee: 0,
+    shoulder: 1,
+  };
+  const v2 = {
+    schemaVersion: 2,
+    id: 'new',
+    d: '2026-09-02',
+    t: 'B',
+    ex: [],
+    knee: null,
+    shoulder: null,
+  };
+
+  it('רשומה ישנה מקבלת schemaVersion 2 ונספרת כמומרת; רשומה חדשה לא נספרת', () => {
+    const r = parseWorkouts([v1, v2]);
+    expect(r.ok.map((w) => w.schemaVersion)).toEqual([2, 2]);
+    expect(r.upgraded).toBe(1);
+    expect(parseWorkouts([v2]).upgraded).toBe(0);
+  });
+
+  it('רשומה עם תאריך שבור לא נעלמת — חוזרת גולמית ב-unparsed עם סיבה', () => {
+    const broken = { ...v1, id: 'broken', d: '30/08/2026' };
+    const r = parseWorkouts([v1, broken, 'junk']);
+    expect(r.ok).toHaveLength(1);
+    expect(r.unparsed).toEqual([
+      { raw: broken, d: '30/08/2026', reason: 'תאריך לא תקין' },
+      { raw: 'junk', d: null, reason: 'רשומה שאינה אובייקט' },
+    ]);
+    // אותה רשומה בדיוק — לא עותק מנורמל
+    expect(r.unparsed[0]?.raw).toBe(broken);
+  });
+
+  it('תרגיל בלי שם ובלי מזהה נשאר, עם שם מציין-מקום', () => {
+    const r = parseWorkouts([{ ...v1, ex: [{ w: 20, r: [10, 10] }] }]);
+    expect(r.ok[0]?.ex).toHaveLength(1);
+    expect(r.ok[0]?.ex[0]).toMatchObject({
+      exerciseId: 'legacy:תרגיל ללא שם',
+      n: 'תרגיל ללא שם',
+    });
+    expect(r.ok[0]?.ex[0]?.sets).toHaveLength(2);
+  });
+});
+
 describe('parseCheckins', () => {
   it('מנרמל תאריך שבוע לראשון וחותך הערה ל-280', () => {
     const r = parseCheckins([
@@ -298,5 +349,32 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
   it('קלט שאינו אובייקט מחזיר DB ריק בלי לזרוק', () => {
     const r = parseDb('junk');
     expect(r.counts).toEqual({ weights: 0, workouts: 0, waist: 0, checkins: 0 });
+  });
+
+  it('אימון שבור בייבוא נשמר ב-legacyWorkouts ומדווח כ"נשמר כאימון ישן"', () => {
+    const broken = { id: 'b', d: 'nope', t: 'A', ex: [] };
+    const r = parseDb({ ...legacyExport, workouts: [...legacyExport.workouts, broken] });
+    expect(r.counts.workouts).toBe(1);
+    expect(r.db.legacyWorkouts).toEqual([{ raw: broken, d: 'nope', reason: 'תאריך לא תקין' }]);
+    expect(r.rejected).toContainEqual({
+      section: 'אימונים',
+      reason: 'תאריך לא תקין — נשמר כאימון ישן',
+      count: 1,
+    });
+  });
+
+  it('גיבוי v2 עם legacyWorkouts — הרשומות הגולמיות חוזרות למסלול, ומה שעדיין שבור נשאר ישן', () => {
+    const stillBroken = { id: 'b', d: 'nope', t: 'A', ex: [] };
+    const r = parseDb({
+      v: 2,
+      workouts: [],
+      legacyWorkouts: [
+        { raw: stillBroken, d: 'nope', reason: 'תאריך לא תקין' },
+        { raw: legacyExport.workouts[0], d: '2026-08-30', reason: 'סיבה שכבר לא רלוונטית' },
+      ],
+    });
+    expect(r.counts.workouts).toBe(1);
+    expect(r.db.workouts[0]?.id).toBe('w1');
+    expect(r.db.legacyWorkouts.map((l) => l.raw)).toEqual([stillBroken]);
   });
 });

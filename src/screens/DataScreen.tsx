@@ -91,7 +91,14 @@ export default function DataScreen({ store, today }: ScreenProps) {
           </li>
           <li>
             שקילות <span className="num">{db.weights.length}</span> · אימונים{' '}
-            <span className="num">{db.workouts.length}</span> · מותניים{' '}
+            <span className="num">{db.workouts.length}</span>
+            {db.legacyWorkouts.length > 0 && (
+              <>
+                {' '}
+                (+<span className="num">{db.legacyWorkouts.length}</span> ישנים)
+              </>
+            )}{' '}
+            · מותניים{' '}
             <span className="num">{db.waist.length}</span> · צ'ק-אין{' '}
             <span className="num">{db.checkins.length}</span>
           </li>

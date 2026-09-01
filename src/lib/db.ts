@@ -1,6 +1,6 @@
 /** גזירות שחוצות טבלאות. מודול טהור. */
 
-import type { DB, ISODate } from '../types';
+import type { DB, ISODate, LegacyWorkout } from '../types';
 import { compareISO, weekStart } from './date';
 import { upsertCheckin } from './checkins';
 import { upsertWaist, upsertWeight } from './weights';
@@ -51,7 +51,28 @@ export function mergeDb(current: DB, incoming: DB): DB {
     weights,
     waist,
     workouts,
+    legacyWorkouts: mergeLegacy(current.legacyWorkouts, incoming.legacyWorkouts),
     checkins,
     settings: incoming.settings.programStart ? incoming.settings : current.settings,
   };
+}
+
+/** רשומות גולמיות אין להן מזהה — כפילות מזוהה לפי תוכן זהה. */
+function mergeLegacy(current: LegacyWorkout[], incoming: LegacyWorkout[]): LegacyWorkout[] {
+  const fingerprint = (l: LegacyWorkout): string | null => {
+    try {
+      return JSON.stringify(l.raw) ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const seen = new Set(current.map(fingerprint).filter((f): f is string => f !== null));
+  const out = [...current];
+  for (const l of incoming) {
+    const f = fingerprint(l);
+    if (f !== null && seen.has(f)) continue;
+    if (f !== null) seen.add(f);
+    out.push(l);
+  }
+  return out;
 }

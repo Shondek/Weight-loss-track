@@ -18,7 +18,23 @@ export const STORAGE_KEYS = {
   settings: 'fatloss:settings',
 } as const;
 
+/**
+ * מפתחות גיבוי. נפרדים מ-`STORAGE_KEYS` כדי שלא ייכנסו ל-`DbKey`, ל-`persistAll`
+ * ולתצוגת המפתחות. נכתבים פעם אחת ולעולם לא נדרסים.
+ */
+export const BACKUP_KEYS = {
+  /** `fatloss:workouts` כפי שהיה לפני ההמרה ל-`schemaVersion: 2`. */
+  workoutsV1: 'fatloss:workouts:v1',
+} as const;
+
 export type DbKey = keyof typeof STORAGE_KEYS;
+
+/**
+ * רשומות האימון שלא הומרו, גולמיות. `persist('workouts')` כותב אותן חזרה
+ * אחרי הרשומות התקינות בכל שמירה — כך הן שורדות גם עריכה של אימון אחר.
+ * מתעדכן ב-`loadDB` וב-`persistAll` בלבד.
+ */
+let legacyWorkoutsRaw: unknown[] = [];
 
 export const KEY_LABELS: Record<DbKey, string> = {
   weights: 'שקילות',
@@ -138,6 +154,8 @@ export async function loadDB(): Promise<LoadResult> {
 
   const db: DB = emptyDb();
   const migrated: string[] = [];
+  let workoutsRaw: unknown;
+  let workoutsUpgraded = 0;
 
   for (const key of Object.keys(STORAGE_KEYS) as DbKey[]) {
     const storageKey = STORAGE_KEYS[key];
@@ -171,6 +189,9 @@ export async function loadDB(): Promise<LoadResult> {
       case 'workouts': {
         const r = parseWorkouts(raw);
         db.workouts = r.ok;
+        db.legacyWorkouts = r.unparsed;
+        workoutsRaw = raw;
+        workoutsUpgraded = r.upgraded;
         if (fromLegacy && r.ok.length) migrated.push(`${r.ok.length} אימונים`);
         break;
       }
@@ -206,13 +227,63 @@ export async function loadDB(): Promise<LoadResult> {
     notices.push(`יובאו מהגרסה הקודמת: ${migrated.join(' · ')}.`);
   }
 
+  legacyWorkoutsRaw = db.legacyWorkouts.map((l) => l.raw);
+
+  if (workoutsUpgraded > 0) {
+    const notice = await upgradeWorkoutsOnDisk(workoutsRaw, db);
+    if (notice) notices.push(`${workoutsUpgraded} ${notice}`);
+  }
+
   return { db, backend, notices, readErrors };
+}
+
+/**
+ * המרה חד-פעמית של `fatloss:workouts` ל-`schemaVersion: 2`.
+ *
+ * 1. אם `fatloss:workouts:v1` עדיין לא קיים — כותבים אליו את המערך הגולמי,
+ *    בדיוק כפי שנקרא. הכתיבה הזו קורית פעם אחת בחיי המכשיר.
+ * 2. רק אחרי שהגיבוי קיים כותבים ל-`fatloss:workouts` את המערך המומר,
+ *    והרשומות שלא הומרו אחריו כמו שהן.
+ *
+ * אם הגיבוי לא נכתב — לא נוגעים ב-`fatloss:workouts`. האפליקציה ממשיכה
+ * לעבוד מההמרה שבזיכרון, והניסיון חוזר בטעינה הבאה.
+ * מחזיר את סוף הודעת המשתמש, או null אם שום דבר לא נכתב.
+ */
+async function upgradeWorkoutsOnDisk(raw: unknown, db: DB): Promise<string | null> {
+  let backupExists: boolean;
+  try {
+    backupExists = (await rawGet(BACKUP_KEYS.workoutsV1)) !== undefined;
+  } catch {
+    return null;
+  }
+
+  if (!backupExists) {
+    try {
+      await rawSet(BACKUP_KEYS.workoutsV1, raw);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    await persist('workouts', db.workouts);
+  } catch {
+    return null;
+  }
+  return backupExists
+    ? 'אימונים הומרו לפורמט החדש.'
+    : 'אימונים הומרו לפורמט החדש; עותק של המקור נשמר.';
 }
 
 /** שומר מפתח אחד. זורק StoreWriteError אם הכתיבה נכשלה. */
 export async function persist<K extends DbKey>(key: K, value: DB[K]): Promise<void> {
+  // האימונים שלא הומרו נכתבים תמיד בסוף אותו מפתח, כדי שלא ייעלמו בשמירה.
+  const toWrite: unknown =
+    key === 'workouts' && legacyWorkoutsRaw.length
+      ? [...(value as DB['workouts']), ...legacyWorkoutsRaw]
+      : value;
   try {
-    await rawSet(STORAGE_KEYS[key], value);
+    await rawSet(STORAGE_KEYS[key], toWrite);
   } catch (err) {
     throw new StoreWriteError(key, err);
   }
@@ -220,15 +291,19 @@ export async function persist<K extends DbKey>(key: K, value: DB[K]): Promise<vo
 
 /** שומר את כל בסיס הנתונים (ייבוא / מחיקה גורפת). */
 export async function persistAll(db: DB): Promise<void> {
+  legacyWorkoutsRaw = db.legacyWorkouts.map((l) => l.raw);
   for (const key of Object.keys(STORAGE_KEYS) as DbKey[]) {
     await persist(key, db[key]);
   }
 }
 
-/** מוחק הכול, כולל שאריות של הגרסה הישנה ב-localStorage. */
+/**
+ * מוחק הכול, כולל שאריות של הגרסה הישנה ב-localStorage וגיבוי ה-v1.
+ * זה הנתיב היחיד שמוחק מפתח כלשהו, והוא נפתח רק מ"מחק הכול" המפורש.
+ */
 export async function wipeAll(): Promise<void> {
   await persistAll(emptyDb());
-  for (const storageKey of Object.values(STORAGE_KEYS)) {
+  for (const storageKey of [...Object.values(STORAGE_KEYS), ...Object.values(BACKUP_KEYS)]) {
     try {
       if (backend === 'indexeddb') await idbDel(storageKey);
       window.localStorage.removeItem(storageKey);

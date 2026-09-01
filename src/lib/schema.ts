@@ -7,6 +7,7 @@ import {
   type DB,
   type ExerciseType,
   type ISODate,
+  type LegacyWorkout,
   type LoggedExercise,
   type LoggedSet,
   type Settings,
@@ -17,6 +18,7 @@ import {
   type WorkoutType,
   DEFAULT_SETTINGS,
   NOTE_MAX,
+  WORKOUT_SCHEMA_VERSION,
 } from '../types';
 import { exerciseById, resolveExerciseId } from '../data/program';
 import { compareISO, isValidISO, weekStart } from './date';
@@ -184,25 +186,23 @@ function upcastLegacySets(r: unknown, w: unknown, timed: boolean): LoggedSet[] {
   return trimTrailingEmpty(sets);
 }
 
-function isPresent<T>(v: T | null): v is T {
-  return v !== null;
-}
-
 /** ברירות מחדל לתרגיל שכבר לא קיים בתוכנית ולכן אין לו מפרט. */
 const ORPHAN_DEFAULTS = { targetRepMin: 8, targetRepMax: 12 } as const;
+
+/** תרגיל בלי שם ובלי מזהה. לא נזרק — הסטים שלו הם עדיין נתון שנרשם. */
+const UNNAMED_EXERCISE = 'תרגיל ללא שם';
 
 /**
  * תרגיל בודד, משני הפורמטים.
  *
  * חדש  — יש `sets`.
- * ישן  — יש `r` ו-`w`, ואין `sets`. מועלה כאן ולא בכתיבה, כדי שהמיגרציה
- *        תהיה לא-הרסנית: הדיסק נשאר כמו שהוא עד לכתיבה הבאה.
+ * ישן  — יש `r` ו-`w`, ואין `sets`. מועלה כאן, ותוצאת ההעלאה נכתבת לדיסק
+ *        פעם אחת ב-`loadDB` אחרי שהמקור גובה (ראה store.ts).
  */
-function parseExercise(e: Record<string, unknown>): LoggedExercise | null {
+function parseExercise(e: Record<string, unknown>): LoggedExercise {
   const name = typeof e.n === 'string' ? e.n.trim() : '';
   const rawId = typeof e.exerciseId === 'string' ? e.exerciseId.trim() : '';
   const id = rawId !== '' ? rawId : (name !== '' ? resolveExerciseId(name) : null);
-  if (id === null && name === '') return null;
 
   const spec = id !== null ? exerciseById(id) : undefined;
   const isNewFormat = Array.isArray(e.sets);
@@ -212,8 +212,8 @@ function parseExercise(e: Record<string, unknown>): LoggedExercise | null {
     EXERCISE_TYPES.find((x) => x === e.type) ?? spec?.type ?? 'isolation';
 
   return {
-    exerciseId: id ?? `legacy:${name}`,
-    n: name !== '' ? name : (spec?.name ?? id ?? ''),
+    exerciseId: id ?? `legacy:${name !== '' ? name : UNNAMED_EXERCISE}`,
+    n: name !== '' ? name : (spec?.name ?? id ?? UNNAMED_EXERCISE),
     sets: isNewFormat ? parseLoggedSets(e.sets) : upcastLegacySets(e.r, e.w, timed),
     targetRepMin:
       count(e.targetRepMin) ?? spec?.repRangeMin ?? ORPHAN_DEFAULTS.targetRepMin,
@@ -228,34 +228,58 @@ function parseExercise(e: Record<string, unknown>): LoggedExercise | null {
   };
 }
 
-export function parseWorkouts(input: unknown): ParseResult<WorkoutEntry> {
+export type WorkoutsParseResult = ParseResult<WorkoutEntry> & {
+  /**
+   * כל רשומה שנדחתה, גולמית. אותו מידע כמו `rejected`, אבל עם הרשומה עצמה —
+   * כדי שהיא תישמר כמו שהיא ותוצג כ"אימון ישן" במקום להיעלם.
+   */
+  unparsed: LegacyWorkout[];
+  /** כמה רשומות תקינות הגיעו בלי `schemaVersion` — כלומר הומרו כאן. */
+  upgraded: number;
+};
+
+export function parseWorkouts(input: unknown): WorkoutsParseResult {
   const rejected: Rejection[] = [];
+  const unparsed: LegacyWorkout[] = [];
   const byId = new Map<string, WorkoutEntry>();
   let generated = 0;
+  let upgraded = 0;
+
+  const reject = (raw: unknown, reason: string) => {
+    rejected.push({ reason });
+    unparsed.push({
+      raw,
+      d: isRecord(raw) && typeof raw.d === 'string' ? raw.d : null,
+      reason,
+    });
+  };
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      reject(raw, 'רשומה שאינה אובייקט');
       continue;
     }
     if (!isValidISO(raw.d)) {
-      rejected.push({ reason: 'תאריך לא תקין' });
+      reject(raw, 'תאריך לא תקין');
       continue;
     }
     const t = TYPES.find((x) => x === raw.t);
     if (!t) {
-      rejected.push({ reason: 'סוג אימון שאינו A/B/C' });
+      reject(raw, 'סוג אימון שאינו A/B/C');
       continue;
     }
 
-    const ex = asArray(raw.ex).filter(isRecord).map(parseExercise).filter(isPresent);
+    const ex = asArray(raw.ex).filter(isRecord).map(parseExercise);
 
     const id =
       typeof raw.id === 'string' && raw.id.trim() !== ''
         ? raw.id
         : `${raw.d}-${t}-imported-${generated++}`;
 
+    if (raw.schemaVersion !== WORKOUT_SCHEMA_VERSION) upgraded++;
+
     byId.set(id, {
+      schemaVersion: WORKOUT_SCHEMA_VERSION,
       id,
       d: raw.d,
       t,
@@ -268,7 +292,7 @@ export function parseWorkouts(input: unknown): ParseResult<WorkoutEntry> {
   const ok = [...byId.values()].sort(
     (a, b) => compareISO(a.d, b.d) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
   );
-  return { ok, rejected };
+  return { ok, rejected, unparsed, upgraded };
 }
 
 // ---------- צ'ק-אין ----------
@@ -341,7 +365,10 @@ function tally(section: string, r: Rejection[]): { section: string; reason: stri
 export function parseDb(input: unknown): DbParseResult {
   const src = isRecord(input) ? input : {};
   const weights = parseWeights(src.weights);
-  const workouts = parseWorkouts(src.workouts);
+  // גיבוי של האפליקציה הזו מכיל גם `legacyWorkouts` — רשומות גולמיות שלא
+  // הומרו. הן נכנסות לאותו מסלול, ואם עדיין לא ניתן להמיר אותן הן נשארות ישנות.
+  const legacyRaw = asArray(src.legacyWorkouts).map((l) => (isRecord(l) ? l.raw : l));
+  const workouts = parseWorkouts([...asArray(src.workouts), ...legacyRaw]);
   const waist = parseWaist(src.waist);
   const checkins = parseCheckins(src.checkins);
 
@@ -349,6 +376,8 @@ export function parseDb(input: unknown): DbParseResult {
     db: {
       weights: weights.ok,
       workouts: workouts.ok,
+      // גם בייבוא רשומה שבורה לא נזרקת — היא נשמרת גולמית לצד השאר.
+      legacyWorkouts: workouts.unparsed,
       waist: waist.ok,
       checkins: checkins.ok,
       settings: parseSettings(src.settings),
@@ -361,7 +390,10 @@ export function parseDb(input: unknown): DbParseResult {
     },
     rejected: [
       ...tally('משקל', weights.rejected),
-      ...tally('אימונים', workouts.rejected),
+      ...tally(
+        'אימונים',
+        workouts.rejected.map((r) => ({ reason: `${r.reason} — נשמר כאימון ישן` })),
+      ),
       ...tally('מותניים', waist.rejected),
       ...tally("צ'ק-אין", checkins.rejected),
     ],
