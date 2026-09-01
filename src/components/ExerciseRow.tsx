@@ -1,7 +1,8 @@
 import type { LoggedExercise, LoggedSet } from '../types';
 import type { Exercise } from '../data/program';
 import type { ExerciseHistory } from '../lib/workouts';
-import { emptySet, progressionHint, setValue } from '../lib/workouts';
+import { emptySet, setValue } from '../lib/workouts';
+import { getProgressionSuggestion } from '../lib/progression';
 import { formatDM } from '../lib/date';
 import { clean, DASH } from '../lib/format';
 import Stepper from './Stepper';
@@ -33,7 +34,7 @@ function historyLabel(prev: ExerciseHistory): string {
 export default function ExerciseRow({ spec, log, onChange, previous }: Props) {
   const timed = spec.isTimed;
   const usesWeight = !timed && !spec.bodyweightOnly;
-  const hint = progressionHint(log);
+  const suggestion = getProgressionSuggestion(log, previous?.ex ?? null);
   const perSide = spec.unilateral ? (spec.name.includes('חתיר') ? ' ליד' : ' לצד') : '';
 
   const patchSet = (i: number, patch: Partial<LoggedSet>) => {
@@ -104,16 +105,16 @@ export default function ExerciseRow({ spec, log, onChange, previous }: Props) {
         ))}
       </div>
 
-      {(previous || hint) && (
+      {(previous || suggestion.kind !== 'none') && (
         <div className="stack--tight" style={{ marginTop: 'var(--sp-2)' }}>
           {previous && (
             <p className="tiny muted" style={{ margin: 0 }}>
               {historyLabel(previous)}
             </p>
           )}
-          {hint && (
+          {suggestion.kind !== 'none' && (
             <p className="tiny" style={{ margin: 0 }}>
-              {hint}
+              {suggestion.text}
             </p>
           )}
         </div>

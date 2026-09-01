@@ -9,7 +9,6 @@ import type {
 } from '../types';
 import {
   PROGRAM,
-  TYPE_CONFIG,
   WORKOUT_TYPES,
   type Exercise,
   exerciseById,
@@ -221,24 +220,6 @@ export function withSetCount(ex: LoggedExercise, count: number): LoggedExercise 
       ...Array.from({ length: count - ex.sets.length }, () => emptySet()),
     ],
   };
-}
-
-// ---------- התקדמות (זמני — יוחלף ב-lib/progression.ts) ----------
-
-/**
- * ההצעה להתקדמות לתרגיל, או null אם אין.
- * תצוגה בלבד: האפליקציה לעולם לא משנה את המשקל בעצמה.
- */
-export function progressionHint(ex: LoggedExercise): string | null {
-  const performed = ex.sets.filter(setPerformed);
-  if (performed.length === 0) return null;
-  if (!performed.every((s) => (setValue(s) ?? 0) >= ex.targetRepMax)) return null;
-
-  const increment = TYPE_CONFIG[ex.type].weightIncrement;
-  if (ex.bodyweightOnly || increment === 0) {
-    return 'טווח הושלם — הוסף חזרות או האט את הקצב בפעם הבאה';
-  }
-  return `טווח הושלם — +${increment} ק"ג בפעם הבאה`;
 }
 
 // ---------- מזהים וכאב ----------

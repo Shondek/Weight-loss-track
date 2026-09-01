@@ -12,7 +12,6 @@ import {
   nextType,
   peakPain,
   prefilledExercises,
-  progressionHint,
   removeWorkout,
   sortableStamp,
   upsertWorkout,
@@ -121,45 +120,6 @@ describe('lastExercise — היסטוריה לפי מזהה, לא לפי שם', 
     expect(resolveExerciseId('פולי עליון')).toBe('lat-pulldown');
     expect(resolveExerciseId('לחיצת רגליים')).toBe('leg-press');
     expect(resolveExerciseId('RDL משקולות יד')).toBeNull();
-  });
-});
-
-describe('התקדמות', () => {
-  it('מכונה מורכבת: +5 ק"ג', () => {
-    expect(progressionHint(le('leg-press', 60, [12, 12, 12]))).toBe(
-      'טווח הושלם — +5 ק"ג בפעם הבאה',
-    );
-  });
-
-  it('בידוד: +2.5 ק"ג — גם בתרגיל מכונה', () => {
-    // "פשיטת ברך" הוא בידוד על מכונה. הסיווג הישן לפי ציוד היה נותן לו 5.
-    expect(progressionHint(le('leg-extension', 30, [15, 15]))).toBe(
-      'טווח הושלם — +2.5 ק"ג בפעם הבאה',
-    );
-  });
-
-  it('משקל גוף בלבד: לעולם לא מציע משקל', () => {
-    expect(progressionHint(le('bulgarian-split-squat', null, [10, 10, 10]))).toBe(
-      'טווח הושלם — הוסף חזרות או האט את הקצב בפעם הבאה',
-    );
-  });
-
-  it('ליבה עם משקל: חזרות, לא "+0 ק"ג"', () => {
-    expect(progressionHint(le('cable-crunch', 20, [12, 12, 12]))).toBe(
-      'טווח הושלם — הוסף חזרות או האט את הקצב בפעם הבאה',
-    );
-  });
-
-  it('תרגיל של שני סטים מזוהה כמושלם — לא נדרשים שלושה', () => {
-    expect(progressionHint(le('pec-deck', 25, [15, 15]))).not.toBeNull();
-  });
-
-  it('מתחת לתקרה — אין רמז', () => {
-    expect(progressionHint(le('leg-press', 60, [12, 11, 12]))).toBeNull();
-  });
-
-  it('בלי אף סט שבוצע — אין רמז', () => {
-    expect(progressionHint(le('leg-press', 60, [null, null, null]))).toBeNull();
   });
 });
 
