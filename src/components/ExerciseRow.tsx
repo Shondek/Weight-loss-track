@@ -14,6 +14,8 @@ type Props = {
   onChange: (next: LoggedExercise) => void;
   /** הרישום הקודם של אותו תרגיל, לתווית "אחרון". */
   previous: ExerciseHistory | null;
+  /** נקרא כשסט מקבל ערך — מפעיל את טיימר המנוחה. */
+  onSetLogged?: ((setIndex: number) => void) | undefined;
 };
 
 const MAX_WEIGHT = 500;
@@ -31,7 +33,13 @@ function historyLabel(prev: ExerciseHistory): string {
   return `אחרון: ${[weight, values.join('/')].filter(Boolean).join(' · ')} · ${formatDM(prev.d)}`;
 }
 
-export default function ExerciseRow({ spec, log, onChange, previous }: Props) {
+export default function ExerciseRow({
+  spec,
+  log,
+  onChange,
+  previous,
+  onSetLogged,
+}: Props) {
   const timed = spec.isTimed;
   const usesWeight = !timed && !spec.bodyweightOnly;
   const suggestion = getProgressionSuggestion(log, previous?.ex ?? null);
@@ -39,8 +47,16 @@ export default function ExerciseRow({ spec, log, onChange, previous }: Props) {
 
   const patchSet = (i: number, patch: Partial<LoggedSet>) => {
     const sets = log.sets.length > i ? [...log.sets] : [...log.sets, emptySet()];
-    sets[i] = { ...(sets[i] ?? emptySet()), ...patch };
+    const before = sets[i] ?? emptySet();
+    const after = { ...before, ...patch };
+    sets[i] = after;
     onChange({ ...log, sets });
+
+    // המנוחה נפתחת רק כשסט עובר מריק למלא — לא בכל הקשה על המשקל,
+    // ולא כשמתקנים ערך שכבר הוזן.
+    const wasEmpty = before.reps === null && before.seconds === null;
+    const nowFilled = after.reps !== null || after.seconds !== null;
+    if (wasEmpty && nowFilled) onSetLogged?.(i);
   };
 
   return (

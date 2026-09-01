@@ -64,7 +64,7 @@ export default function App() {
   if (store.loading) {
     return (
       <div className="app">
-        <main className="app__main">
+        <main className="app__main app__main--timer">
           <p className="muted">טוען…</p>
         </main>
       </div>
@@ -75,7 +75,7 @@ export default function App() {
     <div className="app">
       {/* main נשאר landmark; role="tabpanel" יושב על div פנימי, כי
           ARIA לא מרשה להחליף את התפקיד של <main>. */}
-      <main className="app__main">
+      <main className="app__main app__main--timer">
         <h1 className="visually-hidden">
           {TABS.find((t) => t.id === tab)?.label} — מדידה
         </h1>

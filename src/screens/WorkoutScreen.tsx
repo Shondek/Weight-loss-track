@@ -7,6 +7,7 @@ import {
   WORKOUTS_PER_WEEK,
   WORKOUT_TYPES,
   exerciseById,
+  restSeconds,
 } from '../data/program';
 import {
   exercisesFor,
@@ -35,6 +36,8 @@ import DateField from '../components/DateField';
 import Choice from '../components/Choice';
 import ConfirmButton from '../components/ConfirmButton';
 import ExerciseRow from '../components/ExerciseRow';
+import RestTimerBar from '../components/RestTimerBar';
+import { useRestTimer } from '../hooks/useRestTimer';
 
 const HISTORY_COUNT = 12;
 const PAIN_SCALE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -94,6 +97,7 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
   const [draft, setDraft] = useState<WorkoutEntry | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const timer = useRestTimer(db.settings.soundEnabled);
 
   const start = useMemo(() => programStartWeek(db), [db]);
   const inWeek = useMemo(() => workoutsInWeek(db.workouts, week), [db.workouts, week]);
@@ -148,6 +152,20 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
   const closeEditor = () => {
     setDraft(null);
     setOpenId(null);
+    timer.skip();
+  };
+
+  /**
+   * הזנת סט פותחת מנוחה אוטומטית.
+   *
+   * התנאי הוא `index + 1 === sets.length`, ולא `=== 3`. בתוכנית יש
+   * תרגילים של 2 סטים (פשיטת ברך, פרפר, הרחקות, כפיפות, פלאנק צד),
+   * ומספר קשיח היה משאיר אותם בלי מנוחה בין תרגילים לנצח.
+   */
+  const onSetLogged = (ex: LoggedExercise, setIndex: number) => {
+    const isLastSet = setIndex + 1 === ex.sets.length;
+    const seconds = restSeconds(ex.type, isLastSet);
+    timer.start(seconds, isLastSet ? 'מנוחה לפני התרגיל הבא' : 'מנוחה בין סטים');
   };
 
   return (
@@ -237,6 +255,7 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
                   );
                   patch({ ...open, ex: others });
                 }}
+                onSetLogged={(i) => onSetLogged(log, i)}
               />
             );
           })}
@@ -353,6 +372,14 @@ export default function WorkoutScreen({ store, today }: ScreenProps) {
           </ul>
         )}
       </section>
+
+      <RestTimerBar
+        timer={timer}
+        soundEnabled={db.settings.soundEnabled}
+        onToggleSound={(soundEnabled) =>
+          void store.update('settings', { ...db.settings, soundEnabled })
+        }
+      />
     </div>
   );
 }
