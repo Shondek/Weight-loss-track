@@ -100,6 +100,59 @@ describe('buildChatReport — snapshot של הפורמט', () => {
   });
 });
 
+describe('תרגילים שדולגו', () => {
+  it('תרגיל בלי אף חזרה נכתב במפורש בסוף שורת האימון', () => {
+    const db = baseDb();
+    const first = db.workouts[0]!;
+    const withSkip: DB = {
+      ...db,
+      workouts: [
+        {
+          ...first,
+          ex: [
+            ...first.ex,
+            // שורה ריקה כפי שהיא נשמרת: התרגיל היה באימון, לא נרשם בו דבר
+            le('leg-curl', 30, []),
+            le('db-lateral-raise-seated', null, [null, null, null]),
+          ],
+        },
+        db.workouts[1]!,
+      ],
+    };
+    const text = buildChatReport(withSkip, '2026-08-30', '2026-09-05');
+    expect(text).toContain(
+      '02/09 A — לג-פרס 60×12,12,10 · לחיצת חזה 30×10,10,8 · חתירת כבל 40×12,12,12 · פשיטת ברכיים 25×15,15 · כפיפת מרפקים 15×12,12 · פלאנק 45,40,40 שנ׳ · דולגו: כפיפת ברכיים, הרחקת כתפיים בישיבה',
+    );
+    // האימון השני לא השתנה — אין בו "דולגו"
+    expect(text).toContain('05/09 B — הרמות אגן 60×12,12,12 · פולי עליון 45×10,10,9 · Dead bug 10,10,10\n');
+  });
+
+  it('כשלא נרשם דבר — "לא נרשמו תרגילים" בלי פירוט, כי הכול דולג', () => {
+    const db = baseDb();
+    const empty: DB = {
+      ...db,
+      workouts: [{ ...db.workouts[0]!, ex: [le('leg-press', 60, []), le('plank', null, [])] }],
+    };
+    const text = buildChatReport(empty, '2026-08-30', '2026-09-05');
+    expect(text).toContain('02/09 A — לא נרשמו תרגילים\n');
+    expect(text).not.toContain('דולגו');
+  });
+
+  it('משקל שאוכלס אוטומטית בלי חזרות אינו ביצוע — התרגיל נחשב דולג', () => {
+    const db = baseDb();
+    const prefilled: DB = {
+      ...db,
+      workouts: [
+        {
+          ...db.workouts[1]!,
+          ex: [...db.workouts[1]!.ex, le('leg-curl', 30, [null, null, null])],
+        },
+      ],
+    };
+    expect(buildChatReport(prefilled, '2026-08-30', '2026-09-05')).toContain('דולגו: כפיפת ברכיים');
+  });
+});
+
 describe('כלל 2 — שבוע חלקי', () => {
   const db = baseDb();
   // מסירים את שבת מהשבוע הנוכחי

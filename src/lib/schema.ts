@@ -344,6 +344,7 @@ export function parseSettings(input: unknown): Settings {
       typeof input.soundEnabled === 'boolean'
         ? input.soundEnabled
         : DEFAULT_SETTINGS.soundEnabled,
+    lastBackup: isValidISO(input.lastBackup) ? input.lastBackup : null,
   };
 }
 

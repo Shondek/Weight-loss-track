@@ -110,9 +110,18 @@ export type Settings = {
    * בחדר כושר רועש. הצליל הוא תוספת שאפשר לכבות.
    */
   soundEnabled: boolean;
+  /**
+   * התאריך שבו יוצא גיבוי מלא לאחרונה (הורדה או העתקת JSON). null = מעולם.
+   * הנתונים חיים על המכשיר בלבד, וזה מה שמאפשר להזכיר כשעבר יותר מדי זמן.
+   */
+  lastBackup: ISODate | null;
 };
 
-export const DEFAULT_SETTINGS: Settings = { programStart: null, soundEnabled: true };
+export const DEFAULT_SETTINGS: Settings = {
+  programStart: null,
+  soundEnabled: true,
+  lastBackup: null,
+};
 
 /** כל בסיס הנתונים בזיכרון. */
 export type DB = {

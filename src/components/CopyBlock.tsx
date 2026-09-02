@@ -8,6 +8,8 @@ type Props = {
   primary?: boolean | undefined;
   /** תווית לתיבת הטקסט שנפתחת */
   boxLabel: string;
+  /** נקרא רק כשההעתקה האוטומטית הצליחה. העתקה ידנית לא נחשבת — אין דרך לדעת שקרתה. */
+  onCopied?: (() => void) | undefined;
 };
 
 type State = 'idle' | 'copied' | 'manual';
@@ -17,7 +19,7 @@ type State = 'idle' | 'copied' | 'manual';
  * אם ההעתקה נכשלה (קורה ב-iOS מסוימים) נפתחת תיבת טקסט מסומנת ולא
  * הודעת שגיאה סתמית.
  */
-export default function CopyBlock({ text, label, primary, boxLabel }: Props) {
+export default function CopyBlock({ text, label, primary, boxLabel, onCopied }: Props) {
   const [state, setState] = useState<State>('idle');
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -27,6 +29,7 @@ export default function CopyBlock({ text, label, primary, boxLabel }: Props) {
     if (ok) {
       setState('copied');
       window.setTimeout(() => setState('idle'), 2500);
+      onCopied?.();
       return;
     }
     setState('manual');

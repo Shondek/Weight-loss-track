@@ -80,6 +80,15 @@ export function hasData(ex: LoggedExercise): boolean {
   return ex.sets.some(setPerformed);
 }
 
+/**
+ * תרגילים שהיו באימון ולא נרשמה בהם אף חזרה. השורות הריקות נשמרות עם
+ * הרשומה, ולכן "מה היה מתוכנן באותו יום" מוקפא בה — לא נגזר מהתוכנית
+ * הנוכחית, שאולי השתנתה מאז.
+ */
+export function skippedExercises(entry: WorkoutEntry): LoggedExercise[] {
+  return entry.ex.filter((e) => !hasData(e));
+}
+
 export function isWorkoutEmpty(entry: WorkoutEntry): boolean {
   return !entry.ex.some(hasData) && entry.knee === null && entry.shoulder === null;
 }

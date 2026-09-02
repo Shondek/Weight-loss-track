@@ -35,7 +35,7 @@ describe('firstDataDate / programStartWeek', () => {
       programStartWeek(
         db({
           weights: [{ d: '2026-08-12', w: 80 }],
-          settings: { programStart: '2026-07-05', soundEnabled: true },
+          settings: { programStart: '2026-07-05', soundEnabled: true, lastBackup: null },
         }),
       ),
     ).toBe('2026-07-05');
@@ -86,8 +86,32 @@ describe('mergeDb', () => {
   });
 
   it('הגדרות נשמרות אם לקובץ אין הגדרה', () => {
-    const withStart = { ...current, settings: { programStart: '2026-08-02', soundEnabled: true } };
+    const withStart = {
+      ...current,
+      settings: { programStart: '2026-08-02', soundEnabled: true, lastBackup: null },
+    };
     expect(mergeDb(withStart, emptyDb()).settings.programStart).toBe('2026-08-02');
+  });
+
+  it('הגדרות מתמזגות שדה-שדה: תחילת תוכנית מהקובץ, צליל מקומי, גיבוי המאוחר', () => {
+    const local = {
+      ...current,
+      settings: { programStart: null, soundEnabled: false, lastBackup: '2026-08-20' },
+    };
+    const file = db({
+      settings: { programStart: '2026-08-02', soundEnabled: true, lastBackup: '2026-08-10' },
+    });
+    expect(mergeDb(local, file).settings).toEqual({
+      programStart: '2026-08-02',
+      soundEnabled: false,
+      lastBackup: '2026-08-20',
+    });
+    // הקובץ חדש יותר — התאריך שלו גובר
+    const newerFile = db({
+      settings: { programStart: null, soundEnabled: true, lastBackup: '2026-09-01' },
+    });
+    expect(mergeDb(local, newerFile).settings.lastBackup).toBe('2026-09-01');
+    expect(mergeDb(local, emptyDb()).settings.lastBackup).toBe('2026-08-20');
   });
 
   it('אימונים ישנים: הקיימים נשארים, מיובאים מתווספים, תוכן זהה לא מוכפל', () => {

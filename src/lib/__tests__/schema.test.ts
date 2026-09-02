@@ -296,17 +296,29 @@ describe('parseCheckins', () => {
 
 describe('parseSettings', () => {
   it('ברירת מחדל על קלט זבל', () => {
-    expect(parseSettings(undefined)).toEqual({ programStart: null, soundEnabled: true });
+    expect(parseSettings(undefined)).toEqual({
+      programStart: null,
+      soundEnabled: true,
+      lastBackup: null,
+    });
     expect(parseSettings({ programStart: 'bad' })).toEqual({
       programStart: null,
       soundEnabled: true,
+      lastBackup: null,
     });
   });
   it('מנרמל לראשון', () => {
     expect(parseSettings({ programStart: '2026-09-02' })).toEqual({
       programStart: '2026-08-30',
       soundEnabled: true,
+      lastBackup: null,
     });
+  });
+
+  it('תאריך גיבוי: נשמר כשתקין, null כשלא', () => {
+    expect(parseSettings({ lastBackup: '2026-09-01' }).lastBackup).toBe('2026-09-01');
+    expect(parseSettings({ lastBackup: 'אתמול' }).lastBackup).toBeNull();
+    expect(parseSettings({ lastBackup: 5 }).lastBackup).toBeNull();
   });
 
   it('צליל: ברירת מחדל דלוקה, וכיבוי מפורש נשמר', () => {
@@ -343,7 +355,7 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
     expect(r.rejected).toEqual([
       { section: 'משקל', reason: 'תאריך לא תקין', count: 1 },
     ]);
-    expect(r.db.settings).toEqual({ programStart: null, soundEnabled: true });
+    expect(r.db.settings).toEqual({ programStart: null, soundEnabled: true, lastBackup: null });
   });
 
   it('קלט שאינו אובייקט מחזיר DB ריק בלי לזרוק', () => {
