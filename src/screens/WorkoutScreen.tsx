@@ -31,6 +31,7 @@ import {
   previousRecord,
   setPerformed,
   setValue,
+  skippedExercises,
   sortableStamp,
   removeWorkout,
   sortWorkouts,
@@ -98,6 +99,82 @@ function SuggestionLine({
     <p className="tiny muted" style={{ margin: '2px 0 0' }}>
       {suggestion.text}
     </p>
+  );
+}
+
+type RowProps = {
+  w: WorkoutEntry;
+  workouts: readonly WorkoutEntry[];
+  expanded: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+};
+
+/**
+ * שורת אימון ברשימה: כותרת שנפתחת לפירוט, וכפתור עריכה.
+ * משמשת גם ברשימת השבוע הנבחר וגם בהיסטוריה, כדי ששתיהן יתנהגו זהה.
+ */
+function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowProps) {
+  const skipped = skippedExercises(w);
+  return (
+    <li>
+      <div className="row">
+        <button
+          type="button"
+          className="btn btn--quiet grow"
+          style={{ justifyContent: 'flex-start', textAlign: 'start' }}
+          aria-expanded={expanded}
+          onClick={onToggle}
+        >
+          <span className="num">{formatDM(w.d)}</span>
+          <span className="muted tiny">{dayLetter(w.d)}</span>
+          <span className="strong">{w.t}</span>
+          <span className="muted tiny">
+            {w.ex.filter(hasData).length} תרגילים
+          </span>
+        </button>
+        <button type="button" className="btn btn--quiet" onClick={onEdit}>
+          ערוך
+        </button>
+      </div>
+      {expanded && (
+        <div className="stack--tight" style={{ padding: 'var(--sp-2) 0' }}>
+          <ul className="list list--block small">
+            {w.ex.filter(hasData).map((e) => (
+              <li key={e.exerciseId}>
+                <div>{exerciseLine(e)}</div>
+                <SuggestionLine
+                  ex={e}
+                  previous={
+                    previousRecord(workouts, e.exerciseId, { d: w.d, id: w.id })?.ex ?? null
+                  }
+                />
+                <Sparkline
+                  label={`מגמת ${e.n}`}
+                  values={exerciseHistory(workouts, e.exerciseId)
+                    .map((h) => lastWeightOf(h.ex))
+                    .filter((v): v is number => v !== null)}
+                />
+              </li>
+            ))}
+          </ul>
+          {skipped.length > 0 && (
+            <p className="tiny muted" style={{ margin: 0 }}>
+              דולגו: {skipped.map((e) => e.n).join(', ')}
+            </p>
+          )}
+          <p className="tiny muted" style={{ margin: 0 }}>
+            כאב: ברך <span className="num">{w.knee ?? DASH}</span> · כתף{' '}
+            <span className="num">{w.shoulder ?? DASH}</span>
+          </p>
+          <ConfirmButton
+            ariaLabel={`מחק אימון ${w.t} של ${formatDMY(w.d)}`}
+            onConfirm={onDelete}
+          />
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -210,6 +287,34 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     timer.skip();
   };
 
+  /** פותח אימון קיים לעריכה ומעביר את התצוגה לשבוע שלו. */
+  const editWorkout = (w: WorkoutEntry) => {
+    setDraft(null);
+    setOpenId(w.id);
+    setWeek(weekStart(w.d));
+    setExpanded(null);
+    setFocus(0);
+  };
+
+  /**
+   * אותו אימון יכול להופיע בשתי הרשימות (השבוע הנוכחי הוא גם "אחרון").
+   * מפתח הפתיחה כולל את שם הרשימה, כדי שפתיחה באחת לא תפתח גם בשנייה.
+   */
+  const renderRow = (list: 'week' | 'history') => (w: WorkoutEntry) => {
+    const key = `${list}:${w.id}`;
+    return (
+      <WorkoutRow
+        key={w.id}
+        w={w}
+        workouts={db.workouts}
+        expanded={expanded === key}
+        onToggle={() => setExpanded(expanded === key ? null : key)}
+        onEdit={() => editWorkout(w)}
+        onDelete={() => void store.update('workouts', removeWorkout(db.workouts, w.id))}
+      />
+    );
+  };
+
   /**
    * הזנת סט פותחת מנוחה אוטומטית.
    *
@@ -241,6 +346,13 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           <span className="num">{WORKOUTS_PER_WEEK}</span> אימונים השבוע · הבא בתור:{' '}
           <span className="strong">{upNext}</span>
         </p>
+        {/* האימונים של השבוע שנבחר. ההיסטוריה למטה מציגה רק את האחרונים,
+            וזו הדרך להגיע לאימון ישן יותר — לנווט לשבוע שלו. */}
+        {inWeek.length > 0 && (
+          <ul className="list list--block" style={{ marginTop: 'var(--sp-3)' }}>
+            {[...inWeek].reverse().map(renderRow('week'))}
+          </ul>
+        )}
       </section>
 
       {!open && (
@@ -383,83 +495,20 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       )}
 
       <section className="section">
-        <h2 style={{ marginBottom: 'var(--sp-3)' }}>היסטוריה</h2>
+        <div className="section__head">
+          <h2>היסטוריה</h2>
+          {history.length > 0 && (
+            <span className="tiny muted">
+              <span className="num">{history.length}</span> אחרונים
+            </span>
+          )}
+        </div>
         {history.length === 0 ? (
           <p className="muted small" style={{ margin: 0 }}>
             אין אימונים.
           </p>
         ) : (
-          <ul className="list list--block">
-            {history.map((w) => (
-              <li key={w.id}>
-                <div className="row">
-                  <button
-                    type="button"
-                    className="btn btn--quiet grow"
-                    style={{ justifyContent: 'flex-start', textAlign: 'start' }}
-                    aria-expanded={expanded === w.id}
-                    onClick={() => setExpanded(expanded === w.id ? null : w.id)}
-                  >
-                    <span className="num">{formatDM(w.d)}</span>
-                    <span className="muted tiny">{dayLetter(w.d)}</span>
-                    <span className="strong">{w.t}</span>
-                    <span className="muted tiny">
-                      {w.ex.filter(hasData).length} תרגילים
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--quiet"
-                    onClick={() => {
-                      setDraft(null);
-                      setOpenId(w.id);
-                      setWeek(weekStart(w.d));
-                      setExpanded(null);
-                      setFocus(0);
-                    }}
-                  >
-                    ערוך
-                  </button>
-                </div>
-                {expanded === w.id && (
-                  <div className="stack--tight" style={{ padding: 'var(--sp-2) 0' }}>
-                    <ul className="list list--block small">
-                      {w.ex.filter(hasData).map((e) => (
-                        <li key={e.exerciseId}>
-                          <div>{exerciseLine(e)}</div>
-                          <SuggestionLine
-                            ex={e}
-                            previous={
-                              previousRecord(db.workouts, e.exerciseId, {
-                                d: w.d,
-                                id: w.id,
-                              })?.ex ?? null
-                            }
-                          />
-                          <Sparkline
-                            label={`מגמת ${e.n}`}
-                            values={exerciseHistory(db.workouts, e.exerciseId)
-                              .map((h) => lastWeightOf(h.ex))
-                              .filter((v): v is number => v !== null)}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="tiny muted" style={{ margin: 0 }}>
-                      כאב: ברך <span className="num">{w.knee ?? DASH}</span> · כתף{' '}
-                      <span className="num">{w.shoulder ?? DASH}</span>
-                    </p>
-                    <ConfirmButton
-                      ariaLabel={`מחק אימון ${w.t} של ${formatDMY(w.d)}`}
-                      onConfirm={() =>
-                        void store.update('workouts', removeWorkout(db.workouts, w.id))
-                      }
-                    />
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+          <ul className="list list--block">{history.map(renderRow('history'))}</ul>
         )}
       </section>
 

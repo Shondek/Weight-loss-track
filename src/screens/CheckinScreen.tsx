@@ -113,7 +113,15 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
         <div className="stack">
           <CopyBlock text={report} label="העתק לצ'אט" boxLabel="דוח הצ'ק-אין" primary />
           <div>
-            <CopyBlock text={json} label="העתק JSON מלא" boxLabel="גיבוי JSON" />
+            <CopyBlock
+              text={json}
+              label="העתק JSON מלא"
+              boxLabel="גיבוי JSON"
+              onCopied={() => {
+                if (db.settings.lastBackup === today) return;
+                void store.update('settings', { ...db.settings, lastBackup: today });
+              }}
+            />
             <p className="tiny muted" style={{ margin: '4px 0 0' }}>
               לגיבוי, לא לצ'אט.
             </p>

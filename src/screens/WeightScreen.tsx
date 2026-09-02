@@ -34,6 +34,7 @@ import {
 } from '../lib/weights';
 import { MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../lib/schema';
 import { programStartWeek } from '../lib/db';
+import { daysSinceBackup, needsBackupReminder } from '../lib/backup';
 import { DASH } from '../lib/format';
 
 const RECENT_COUNT = 10;
@@ -68,6 +69,9 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   const waistThisWeek = useMemo(() => waistInWeek(db.waist, week), [db.waist, week]);
   const waistPrev = useMemo(() => waistBeforeWeek(db.waist, week), [db.waist, week]);
 
+  const backupDue = useMemo(() => needsBackupReminder(db, today), [db, today]);
+  const sinceBackup = daysSinceBackup(db.settings, today);
+
   const fullWeeks = weeks.filter((w) => w.complete).length;
   const recent = useMemo(() => sortWeights(db.weights).slice(-RECENT_COUNT).reverse(), [db.weights]);
   const missing = WEEK_LENGTH - current.count;
@@ -86,6 +90,15 @@ export default function WeightScreen({ store, today }: ScreenProps) {
 
   return (
     <div className="stack--loose">
+      {/* הנתונים על המכשיר בלבד. התזכורת היא ההגנה היחידה מפני מחיקה בטעות. */}
+      {backupDue && (
+        <p className="notice" style={{ margin: 0 }}>
+          {sinceBackup === null
+            ? 'גיבוי: אין עדיין. ייצא ממסך "נתונים".'
+            : `גיבוי: עברו ${sinceBackup} ימים מהגיבוי האחרון.`}
+        </p>
+      )}
+
       {(sinceWaist === null || sinceWaist >= WAIST_REMINDER_DAYS) && db.weights.length > 0 && (
         <p className="notice" style={{ margin: 0 }}>
           {sinceWaist === null

@@ -29,10 +29,25 @@ export function programStartWeek(db: DB): ISODate | null {
   return first ? weekStart(first) : null;
 }
 
+/** כמה רשומות נתונים יש בסך הכול. הגדרות אינן רשומה. */
+export function recordCount(db: DB): number {
+  return db.weights.length + db.workouts.length + db.waist.length + db.checkins.length;
+}
+
+/** המאוחר מבין שני תאריכים, או מה שקיים כשאחד מהם חסר. */
+function laterOf(a: ISODate | null, b: ISODate | null): ISODate | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return compareISO(a, b) >= 0 ? a : b;
+}
+
 /**
  * מיזוג ייבוא לתוך הנתונים הקיימים. הרשומה המיובאת גוברת על התנגשות:
  * משקל ומותניים לפי תאריך, אימון לפי מזהה, צ'ק-אין לפי שבוע.
  * שום דבר קיים לא נמחק — לכן ייבוא בטעות אינו מאבד נתונים.
+ *
+ * הגדרות מתמזגות שדה-שדה: תחילת התוכנית מהקובץ אם יש בו כזו, הצליל הוא
+ * העדפת מכשיר ונשאר מקומי, ותאריך הגיבוי הוא המאוחר מבין השניים.
  */
 export function mergeDb(current: DB, incoming: DB): DB {
   let weights = current.weights;
@@ -53,7 +68,11 @@ export function mergeDb(current: DB, incoming: DB): DB {
     workouts,
     legacyWorkouts: mergeLegacy(current.legacyWorkouts, incoming.legacyWorkouts),
     checkins,
-    settings: incoming.settings.programStart ? incoming.settings : current.settings,
+    settings: {
+      programStart: incoming.settings.programStart ?? current.settings.programStart,
+      soundEnabled: current.settings.soundEnabled,
+      lastBackup: laterOf(current.settings.lastBackup, incoming.settings.lastBackup),
+    },
   };
 }
 

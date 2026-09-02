@@ -32,6 +32,7 @@ import {
   peakPain,
   setPerformed,
   setValue,
+  skippedExercises,
   workoutsInWeek,
 } from './workouts';
 import {
@@ -73,6 +74,10 @@ function weightText(ex: LoggedExercise): string {
   return weights.map((w) => (w === null ? DASH : clean(w))).join(',');
 }
 
+/**
+ * שורת האימון. תרגילים שדולגו נכתבים במפורש בסוף, כדי שהניתוח יבדיל בין
+ * "לא בוצע" ל"לא נרשם". כשלא נרשם דבר — כל התרגילים דולגו, ואין טעם לפרט.
+ */
 function exerciseText(entry: WorkoutEntry): string {
   const parts = entry.ex.filter(hasData).map((e) => {
     const name = shortName(e.exerciseId, e.n);
@@ -88,7 +93,10 @@ function exerciseText(entry: WorkoutEntry): string {
     if (e.bodyweightOnly) return `${name} ${values}`;
     return `${name} ${weightText(e)}×${values}`;
   });
-  return parts.length ? parts.join(' · ') : 'לא נרשמו תרגילים';
+  if (parts.length === 0) return 'לא נרשמו תרגילים';
+  const skipped = skippedExercises(entry).map((e) => shortName(e.exerciseId, e.n));
+  const done = parts.join(' · ');
+  return skipped.length ? `${done} · דולגו: ${skipped.join(', ')}` : done;
 }
 
 function missingWorkoutText(done: number): string[] {

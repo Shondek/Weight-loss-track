@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
-import type { DB } from '../types';
 import { parseDb, type DbParseResult } from '../lib/schema';
 import { mergeDb } from '../lib/db';
 import { backupJson } from '../lib/exportText';
 import { currentBackend, STORAGE_KEYS } from '../lib/store';
-import { formatDM, toLocalISO, weekRangeLabel, weekStart } from '../lib/date';
-import { firstDataDate, programStartWeek } from '../lib/db';
+import { formatDM, formatDMY, toLocalISO, weekRangeLabel, weekStart } from '../lib/date';
+import { firstDataDate, programStartWeek, recordCount } from '../lib/db';
+import { daysSinceBackup } from '../lib/backup';
 import DateField from '../components/DateField';
 import CopyBlock from '../components/CopyBlock';
 import { downloadText, readFileAsText } from '../platform/download';
@@ -30,8 +30,13 @@ const BACKEND_LABEL: Record<string, string> = {
   memory: 'זיכרון בלבד — הנתונים ייעלמו בסגירת הדף',
 };
 
-function total(db: DB): number {
-  return db.weights.length + db.workouts.length + db.waist.length + db.checkins.length;
+const total = recordCount;
+
+/** "לפני 3 ימים" / "היום" — לשורת הגיבוי האחרון. */
+function agoText(days: number): string {
+  if (days <= 0) return 'היום';
+  if (days === 1) return 'אתמול';
+  return `לפני ${days} ימים`;
 }
 
 export default function DataScreen({ store, today }: ScreenProps) {
@@ -47,6 +52,13 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const json = useMemo(() => backupJson(db, new Date().toISOString()), [db]);
   const start = useMemo(() => programStartWeek(db), [db]);
   const firstData = useMemo(() => firstDataDate(db), [db]);
+  const sinceBackup = daysSinceBackup(db.settings, today);
+
+  /** גיבוי מלא יצא מהמכשיר — הורדה או העתקה שהצליחה. מזין את התזכורת. */
+  const markBackedUp = () => {
+    if (db.settings.lastBackup === today) return;
+    void store.update('settings', { ...db.settings, lastBackup: today });
+  };
 
   const runImport = (text: string) => {
     setReport(null);
@@ -161,11 +173,28 @@ export default function DataScreen({ store, today }: ScreenProps) {
             onClick={() => {
               const ok = downloadText(`fatloss-${toLocalISO(new Date())}.json`, json);
               if (!ok) setImportError('ההורדה נחסמה. השתמש ב"העתק JSON מלא".');
+              else markBackedUp();
             }}
           >
             הורד קובץ גיבוי
           </button>
-          <CopyBlock text={json} label="העתק JSON מלא" boxLabel="גיבוי JSON" />
+          <CopyBlock
+            text={json}
+            label="העתק JSON מלא"
+            boxLabel="גיבוי JSON"
+            onCopied={markBackedUp}
+          />
+          <p className={`small${sinceBackup === null && total(db) > 0 ? ' err' : ' muted'}`} style={{ margin: 0 }}>
+            גיבוי אחרון:{' '}
+            {db.settings.lastBackup ? (
+              <>
+                <span className="num">{formatDMY(db.settings.lastBackup)}</span>
+                {sinceBackup !== null ? ` (${agoText(sinceBackup)})` : ''}
+              </>
+            ) : (
+              'אין עדיין'
+            )}
+          </p>
           <p className="tiny muted" style={{ margin: 0 }}>
             הכול נשמר על המכשיר בלבד. אין חשבון ואין ענן — גיבוי הוא באחריותך.
           </p>
