@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildChatReport, backupJson, MAX_CHARS } from '../exportText';
 import { emptyDb, type DB, type WeightEntry } from '../../types';
 import { le } from './helpers';
+import { blankCardio, FINISHER_ID, markCardioDone, WARMUP_ID } from '../workouts';
 
 const W = (d: string, w: number): WeightEntry => ({ d, w });
 
@@ -150,6 +151,49 @@ describe('תרגילים שדולגו', () => {
       ],
     };
     expect(buildChatReport(prefilled, '2026-08-30', '2026-09-05')).toContain('דולגו: כפיפת ברכיים');
+  });
+});
+
+describe('חימום ואירובי סיום בדוח', () => {
+  it('חימום שבוצע נכתב ראשון, אירובי שבוצע אחרון, כאב נשאר', () => {
+    const db = baseDb();
+    const first = db.workouts[0]!;
+    const withCardio: DB = {
+      ...db,
+      workouts: [
+        {
+          ...first,
+          ex: [
+            markCardioDone(blankCardio(WARMUP_ID), 10),
+            ...first.ex,
+            markCardioDone({ ...blankCardio(FINISHER_ID), cardio: { mode: 'treadmill', minutes: 12 } }, 12),
+          ],
+        },
+        db.workouts[1]!,
+      ],
+    };
+    const text = buildChatReport(withCardio, '2026-08-30', '2026-09-05');
+    expect(text).toContain(
+      '02/09 A — חימום אופניים 10 דק׳ · לג-פרס 60×12,12,10 · לחיצת חזה 30×10,10,8 · חתירת כבל 40×12,12,12 · פשיטת ברכיים 25×15,15 · כפיפת מרפקים 15×12,12 · פלאנק 45,40,40 שנ׳ · אירובי הליכון 12 דק׳\n',
+    );
+    expect(text).toContain('כאב: ברך 1 · כתף 2');
+    expect(text.length).toBeLessThanOrEqual(MAX_CHARS);
+  });
+
+  it('חימום ואירובי שלא בוצעו לא מופיעים — גם לא ב"דולגו"', () => {
+    const db = baseDb();
+    const first = db.workouts[0]!;
+    const untouched: DB = {
+      ...db,
+      workouts: [
+        { ...first, ex: [blankCardio(WARMUP_ID), ...first.ex, blankCardio(FINISHER_ID)] },
+        db.workouts[1]!,
+      ],
+    };
+    const text = buildChatReport(untouched, '2026-08-30', '2026-09-05');
+    expect(text).not.toContain('חימום');
+    expect(text).not.toContain('אירובי');
+    expect(text).not.toContain('דולגו');
   });
 });
 

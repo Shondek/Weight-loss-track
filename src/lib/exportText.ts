@@ -27,7 +27,11 @@ import { programStartWeek } from './db';
 import { clean, DASH } from './format';
 import { getCheckin } from './checkins';
 import {
+  cardioMinutesDone,
+  cardioModeLabel,
+  cardioOf,
   hasData,
+  isCardio,
   isTimedExercise,
   peakPain,
   setPerformed,
@@ -74,12 +78,20 @@ function weightText(ex: LoggedExercise): string {
   return weights.map((w) => (w === null ? DASH : clean(w))).join(',');
 }
 
+/** "חימום אופניים 10 דק׳" — בלי נקודות-אמצע, שהן המפריד בין תרגילים. */
+function cardioText(e: LoggedExercise): string {
+  return `${e.n} ${cardioModeLabel(cardioOf(e).mode)} ${n(cardioMinutesDone(e))} דק׳`;
+}
+
 /**
- * שורת האימון. תרגילים שדולגו נכתבים במפורש בסוף, כדי שהניתוח יבדיל בין
- * "לא בוצע" ל"לא נרשם". כשלא נרשם דבר — כל התרגילים דולגו, ואין טעם לפרט.
+ * שורת האימון: חימום ראשון, תרגילים לפי סדרם (שם משקל×חזרות בכל סט),
+ * אירובי סיום אחרון — שניהם רק אם בוצעו. תרגילים שדולגו נכתבים במפורש
+ * בסוף, כדי שהניתוח יבדיל בין "לא בוצע" ל"לא נרשם". כשלא נרשם דבר —
+ * כל התרגילים דולגו, ואין טעם לפרט.
  */
 function exerciseText(entry: WorkoutEntry): string {
   const parts = entry.ex.filter(hasData).map((e) => {
+    if (isCardio(e)) return cardioText(e);
     const name = shortName(e.exerciseId, e.n);
     const values = e.sets
       .filter(setPerformed)

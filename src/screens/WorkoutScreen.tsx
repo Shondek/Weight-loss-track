@@ -17,36 +17,40 @@ import {
   exerciseIn,
   restSeconds,
 } from '../data/program';
+import { HISTORY_ROWS } from '../data/config';
 import {
+  cardioLine,
   exerciseHistory,
   exercisesFor,
   hasData,
+  isCardio,
   lastWeightOf,
   isTimedExercise,
   isWorkoutEmpty,
-  lastExercise,
   makeWorkoutId,
   nextType,
   prefilledExercises,
-  previousRecord,
+  recentExercises,
   setPerformed,
   setValue,
   skippedExercises,
   sortableStamp,
+  strengthExercises,
   removeWorkout,
   sortWorkouts,
   upsertWorkout,
   workoutsInWeek,
+  WARMUP_ID,
 } from '../lib/workouts';
 import { compareISO, dayLetter, formatDM, formatDMY, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import { clean, DASH } from '../lib/format';
-import { getProgressionSuggestion } from '../lib/progression';
 import WeekNav from '../components/WeekNav';
 import DateField from '../components/DateField';
 import Choice from '../components/Choice';
 import ConfirmButton from '../components/ConfirmButton';
 import ExerciseFocus from '../components/ExerciseFocus';
+import CardioFocus from '../components/CardioFocus';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
 import { readEditor, writeEditor } from '../platform/uiState';
@@ -64,8 +68,12 @@ function newId(): string {
   return `${sortableStamp(Date.now())}-${rand}`;
 }
 
-/** שורת סיכום לתרגיל אחד: משקל אחד כשכולם זהים, רשימה כשהם משתנים. */
+/**
+ * שורת סיכום לתרגיל אחד: משקל אחד כשכולם זהים, רשימה כשהם משתנים
+ * (רשומות ישנות עם משקל שונה בכל סט). חימום/אירובי: "חימום · אופניים · 10 דק׳".
+ */
 function exerciseLine(e: LoggedExercise): string {
+  if (isCardio(e)) return cardioLine(e) ?? e.n;
   const performed = e.sets.filter(setPerformed);
   const values = performed
     .map((s) => {
@@ -83,23 +91,6 @@ function exerciseLine(e: LoggedExercise): string {
         : clean(weights[0])
       : performed.map((s) => (s.weight === null ? DASH : clean(s.weight))).join(',');
   return `${e.n} ${w}×${values}`;
-}
-
-/** ההמלצה מחושבת כאן ולא נשמרה — לכן היא נכונה גם אחרי שינוי בלוגיקה. */
-function SuggestionLine({
-  ex,
-  previous,
-}: {
-  ex: LoggedExercise;
-  previous: LoggedExercise | null;
-}) {
-  const suggestion = getProgressionSuggestion(ex, previous);
-  if (suggestion.kind === 'none') return null;
-  return (
-    <p className="tiny muted" style={{ margin: '2px 0 0' }}>
-      {suggestion.text}
-    </p>
-  );
 }
 
 type RowProps = {
@@ -131,7 +122,7 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
           <span className="muted tiny">{dayLetter(w.d)}</span>
           <span className="strong">{w.t}</span>
           <span className="muted tiny">
-            {w.ex.filter(hasData).length} תרגילים
+            {strengthExercises(w).filter(hasData).length} תרגילים
           </span>
         </button>
         <button type="button" className="btn btn--quiet" onClick={onEdit}>
@@ -144,18 +135,14 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
             {w.ex.filter(hasData).map((e) => (
               <li key={e.exerciseId}>
                 <div>{exerciseLine(e)}</div>
-                <SuggestionLine
-                  ex={e}
-                  previous={
-                    previousRecord(workouts, e.exerciseId, { d: w.d, id: w.id })?.ex ?? null
-                  }
-                />
-                <Sparkline
-                  label={`מגמת ${e.n}`}
-                  values={exerciseHistory(workouts, e.exerciseId)
-                    .map((h) => lastWeightOf(h.ex))
-                    .filter((v): v is number => v !== null)}
-                />
+                {!isCardio(e) && (
+                  <Sparkline
+                    label={`מגמת ${e.n}`}
+                    values={exerciseHistory(workouts, e.exerciseId)
+                      .map((h) => lastWeightOf(h.ex))
+                      .filter((v): v is number => v !== null)}
+                  />
+                )}
               </li>
             ))}
           </ul>
@@ -206,6 +193,15 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const open = draft ?? stored;
   const rows = open ? exercisesFor(open, db.workouts) : [];
   const current = rows[Math.min(focus, Math.max(0, rows.length - 1))] ?? null;
+  /** מספור לתצוגה: חימום = 0, תרגילי הכוח 1..N, אירובי סיום = "א". */
+  const strengthTotal = rows.filter((r) => !isCardio(r)).length;
+  const dotLabel = (i: number): string => {
+    const r = rows[i];
+    if (!r) return '';
+    if (r.exerciseId === WARMUP_ID) return '0';
+    if (isCardio(r)) return 'א';
+    return String(rows.slice(0, i + 1).filter((x) => !isCardio(x)).length);
+  };
 
   // אימון שנמחק מבחוץ (ייבוא, מחיקה גורפת) לא נשאר פתוח על ריק.
   // מטפל גם במזהה שהוחזר מהאחסון ושייך לאימון שכבר לא קיים.
@@ -316,7 +312,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   };
 
   /**
-   * הזנת סט פותחת מנוחה אוטומטית.
+   * הזנת סט פותחת מנוחה אוטומטית. המשכים ב-src/data/config.ts.
    *
    * התנאי הוא `index + 1 === sets.length`, ולא `=== 3`. בתוכנית יש
    * תרגילים של 2 סטים (פשיטת ברך, פרפר, הרחקות, כפיפות, פלאנק צד),
@@ -326,6 +322,11 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     const isLastSet = setIndex + 1 === ex.sets.length;
     const seconds = restSeconds(ex.type, isLastSet);
     timer.start(seconds, isLastSet ? 'מנוחה לפני התרגיל הבא' : 'מנוחה בין סטים');
+  };
+
+  /** חימום/אירובי: אותו טיימר, במשך שנקבע ידנית. אין מנוחה אחריו. */
+  const onCardioStart = (ex: LoggedExercise, minutes: number) => {
+    timer.start(minutes * 60, ex.n, 'countdown');
   };
 
   return (
@@ -397,8 +398,14 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           {/* תרגיל אחד במוקד. הרצועה למעלה מאפשרת לדלג ולחזור. */}
           <div className="focusnav" role="group" aria-label="ניווט בין תרגילים">
             <span className="tiny muted grow">
-              תרגיל <span className="num">{focus + 1}</span> מתוך{' '}
-              <span className="num">{rows.length}</span>
+              {current && isCardio(current) ? (
+                current.n
+              ) : (
+                <>
+                  תרגיל <span className="num">{dotLabel(focus)}</span> מתוך{' '}
+                  <span className="num">{strengthTotal}</span>
+                </>
+              )}
             </span>
             <div className="focusnav__dots">
               {rows.map((r, i) => (
@@ -412,18 +419,32 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                   aria-current={i === focus}
                   onClick={() => setFocus(i)}
                 >
-                  {i + 1}
+                  {dotLabel(i)}
                 </button>
               ))}
             </div>
           </div>
 
-          {current && (
+          {current && isCardio(current) && (
+            <CardioFocus
+              key={current.exerciseId}
+              log={current}
+              onChange={(next) => {
+                patch({
+                  ...open,
+                  ex: rows.map((e) => (e.exerciseId === next.exerciseId ? next : e)),
+                });
+              }}
+              onStart={(minutes) => onCardioStart(current, minutes)}
+            />
+          )}
+
+          {current && !isCardio(current) && (
             <ExerciseFocus
               key={current.exerciseId}
               spec={specOf(current)}
               log={current}
-              previous={lastExercise(db.workouts, current.exerciseId, open.id)}
+              history={recentExercises(db.workouts, current.exerciseId, HISTORY_ROWS, open.id)}
               onChange={(next) => {
                 patch({
                   ...open,

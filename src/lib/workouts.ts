@@ -1,6 +1,7 @@
 /** לוגיקת אימונים. מודול טהור. */
 
 import type {
+  CardioMode,
   ISODate,
   LoggedExercise,
   LoggedSet,
@@ -13,8 +14,13 @@ import {
   type Exercise,
   exerciseById,
 } from '../data/program';
+import {
+  CARDIO_MODES,
+  FINISHER_CARDIO,
+  FINISHER_CARDIO_ENABLED,
+  WARMUP,
+} from '../data/config';
 import { compareISO, weekDays } from './date';
-import { suggestedNextWeight } from './progression';
 
 export function sortWorkouts(list: readonly WorkoutEntry[]): WorkoutEntry[] {
   return [...list].sort(
@@ -83,10 +89,16 @@ export function hasData(ex: LoggedExercise): boolean {
 /**
  * תרגילים שהיו באימון ולא נרשמה בהם אף חזרה. השורות הריקות נשמרות עם
  * הרשומה, ולכן "מה היה מתוכנן באותו יום" מוקפא בה — לא נגזר מהתוכנית
- * הנוכחית, שאולי השתנתה מאז.
+ * הנוכחית, שאולי השתנתה מאז. חימום/אירובי לא נחשבים "דולגו" — הם
+ * מדווחים רק כשבוצעו.
  */
 export function skippedExercises(entry: WorkoutEntry): LoggedExercise[] {
-  return entry.ex.filter((e) => !hasData(e));
+  return entry.ex.filter((e) => !hasData(e) && !isCardio(e));
+}
+
+/** התרגילים "האמיתיים" של האימון — בלי חימום ואירובי. */
+export function strengthExercises(entry: WorkoutEntry): LoggedExercise[] {
+  return entry.ex.filter((e) => !isCardio(e));
 }
 
 export function isWorkoutEmpty(entry: WorkoutEntry): boolean {
@@ -136,35 +148,6 @@ export function lastExercise(
   return best;
 }
 
-/**
- * הרישום שקדם לאימון נתון באותו תרגיל.
- * דרוש כדי לזהות כישלון שני ברצף — הכלל שמפעיל ירידה מדרגה.
- */
-export function previousRecord(
-  list: readonly WorkoutEntry[],
-  exerciseId: string,
-  before: { d: ISODate; id: string },
-): ExerciseHistory | null {
-  let best: ExerciseHistory | null = null;
-  for (const w of list) {
-    if (w.id === before.id) continue;
-    const isEarlier =
-      compareISO(w.d, before.d) < 0 || (w.d === before.d && w.id < before.id);
-    if (!isEarlier) continue;
-    for (const ex of w.ex) {
-      if (ex.exerciseId !== exerciseId || !hasData(ex)) continue;
-      if (
-        !best ||
-        compareISO(w.d, best.d) > 0 ||
-        (w.d === best.d && w.id > best.workoutId)
-      ) {
-        best = { d: w.d, workoutId: w.id, ex };
-      }
-    }
-  }
-  return best;
-}
-
 /** כל הרישומים של תרגיל, מהישן לחדש. משמש למגמה בהיסטוריה. */
 export function exerciseHistory(
   list: readonly WorkoutEntry[],
@@ -179,6 +162,105 @@ export function exerciseHistory(
     }
   }
   return out;
+}
+
+/**
+ * הביצועים האחרונים של תרגיל, מהחדש לישן — מה שמוצג מעל שדות הקלט.
+ * `excludeId` מתעלם מהאימון שנערך כרגע, כדי שהוא לא יופיע כ"קודם" של עצמו.
+ */
+export function recentExercises(
+  list: readonly WorkoutEntry[],
+  exerciseId: string,
+  count: number,
+  excludeId?: string,
+): ExerciseHistory[] {
+  return exerciseHistory(list, exerciseId)
+    .filter((h) => excludeId === undefined || h.workoutId !== excludeId)
+    .slice(-count)
+    .reverse();
+}
+
+// ---------- חימום ואירובי סיום ----------
+
+/** מזהי השורות המיוחדות. לא בתוכנית — קיימים רק ברשומה. */
+export const WARMUP_ID = 'warmup';
+export const FINISHER_ID = 'finisher-cardio';
+
+export const CARDIO_NAMES: Record<typeof WARMUP_ID | typeof FINISHER_ID, string> = {
+  [WARMUP_ID]: 'חימום',
+  [FINISHER_ID]: 'אירובי',
+};
+
+export function isCardioId(id: string): id is typeof WARMUP_ID | typeof FINISHER_ID {
+  return id === WARMUP_ID || id === FINISHER_ID;
+}
+
+export function isCardio(ex: LoggedExercise): boolean {
+  return isCardioId(ex.exerciseId);
+}
+
+/** "אופניים" / "הליכון". */
+export function cardioModeLabel(mode: CardioMode): string {
+  return CARDIO_MODES.find((m) => m.id === mode)?.label ?? mode;
+}
+
+/** "חימום · אופניים · 10 דק׳" — השורה בהיסטוריה. null כשלא בוצע. */
+export function cardioLine(ex: LoggedExercise): string | null {
+  const minutes = cardioMinutesDone(ex);
+  if (minutes === null) return null;
+  return `${ex.n} · ${cardioModeLabel(cardioOf(ex).mode)} · ${minutes} דק׳`;
+}
+
+/** שורת חימום/אירובי ריקה: מצב ומספר דקות ברירת מחדל, בלי ביצוע. */
+export function blankCardio(id: typeof WARMUP_ID | typeof FINISHER_ID): LoggedExercise {
+  const defaults = id === WARMUP_ID ? WARMUP : FINISHER_CARDIO;
+  return {
+    exerciseId: id,
+    n: CARDIO_NAMES[id],
+    sets: [],
+    targetRepMin: 0,
+    targetRepMax: 0,
+    type: 'cardio',
+    bodyweightOnly: true,
+    assisted: false,
+    cardio: { mode: defaults.defaultMode, minutes: defaults.defaultMinutes },
+  };
+}
+
+/** המצב והדקות של שורת אירובי, עם ברירות מחדל לרשומה שנקלטה בלי `cardio`. */
+export function cardioOf(ex: LoggedExercise): { mode: CardioMode; minutes: number } {
+  if (ex.cardio) return ex.cardio;
+  const seconds = ex.sets[0]?.seconds ?? null;
+  return { mode: 'bike', minutes: seconds === null ? 0 : Math.round(seconds / 60) };
+}
+
+/**
+ * הדקות שבוצעו בפועל — מה שנרשם בלחיצה על "התחל". null כשלא בוצע.
+ * נגזר מ-`sets[0].seconds` כדי ש-`hasData` יעבוד כמו בכל תרגיל אחר.
+ */
+export function cardioMinutesDone(ex: LoggedExercise): number | null {
+  const seconds = ex.sets[0]?.seconds ?? null;
+  return seconds === null ? null : Math.round(seconds / 60);
+}
+
+/** מסמן אירובי כבוצע: הדקות מהשדה נכנסות ל-`sets[0].seconds`. */
+export function markCardioDone(ex: LoggedExercise, minutes: number): LoggedExercise {
+  const cardio = { ...cardioOf(ex), minutes };
+  return { ...ex, cardio, sets: [{ weight: null, reps: null, seconds: minutes * 60 }] };
+}
+
+/** משנה מצב/דקות בלי לגעת בביצוע — מלבד עדכון הדקות אם כבר בוצע. */
+export function patchCardio(
+  ex: LoggedExercise,
+  patch: Partial<{ mode: CardioMode; minutes: number }>,
+): LoggedExercise {
+  const cardio = { ...cardioOf(ex), ...patch };
+  const done = cardioMinutesDone(ex) !== null;
+  return {
+    ...ex,
+    cardio,
+    sets: done ? [{ weight: null, reps: null, seconds: cardio.minutes * 60 }] : ex.sets,
+  };
 }
 
 // ---------- בניית אימון ----------
@@ -211,8 +293,9 @@ export function blankExercises(t: WorkoutType): LoggedExercise[] {
 }
 
 /**
- * המשקל שאיתו לפתוח את התרגיל בפעם הבאה: מה שנרשם לאחרונה, ועוד התוספת
- * אם ההמלצה מהאימון הקודם הייתה לעלות. null כשאין על מה להתבסס.
+ * המשקל שאיתו לפתוח את התרגיל: בדיוק מה שנרשם בביצוע האחרון.
+ * בלי תוספת ובלי חישוב — ההחלטה על משקל מתקבלת מחוץ לאפליקציה.
+ * null כשאין על מה להתבסס.
  */
 export function openingWeight(
   list: readonly WorkoutEntry[],
@@ -220,47 +303,57 @@ export function openingWeight(
   excludeId?: string,
 ): number | null {
   const last = lastExercise(list, exerciseId, excludeId);
-  if (!last) return null;
-  const before = previousRecord(list, exerciseId, {
-    d: last.d,
-    id: last.workoutId,
-  });
-  return suggestedNextWeight(last.ex, before?.ex ?? null);
+  return last ? lastWeightOf(last.ex) : null;
 }
 
 /**
- * שורות תרגילים לאימון חדש, כשהמשקל מאוכלס מהרישום האחרון — כולל
- * ההעלאה שההמלצה הקודמת הציעה. המטרה: לאשר או לשנות, לא להקליד מחדש.
- * החזרות תמיד ריקות — המשקל לבדו אינו נחשב נתון (ראה `hasData`), ולכן
- * אימון כזה עדיין נחשב ריק.
+ * שורות תרגילים לאימון חדש: חימום בראש, תרגילי התוכנית עם המשקל מהרישום
+ * האחרון, ואירובי סיום בסוף כשהוא מופעל. המטרה: לאשר או לשנות, לא
+ * להקליד מחדש. החזרות תמיד ריקות — המשקל לבדו אינו נחשב נתון (ראה
+ * `hasData`), ולכן אימון כזה עדיין נחשב ריק.
  */
 export function prefilledExercises(
   list: readonly WorkoutEntry[],
   t: WorkoutType,
 ): LoggedExercise[] {
-  return PROGRAM[t].map((spec) =>
-    blankLoggedExercise(spec, openingWeight(list, spec.id)),
-  );
+  return [
+    blankCardio(WARMUP_ID),
+    ...PROGRAM[t].map((spec) => blankLoggedExercise(spec, openingWeight(list, spec.id))),
+    ...(FINISHER_CARDIO_ENABLED ? [blankCardio(FINISHER_ID)] : []),
+  ];
 }
 
 /**
- * שורות התרגילים להצגה באימון: תרגילי התוכנית לפי סדרן, ואחריהן תרגילים
- * שנרשמו בעבר ואינם בתוכנית הנוכחית — כדי שהיסטוריה לא תיעלם מהמסך.
+ * שורות התרגילים להצגה באימון, בסדר הביצוע: חימום (אינדקס 0), תרגילי
+ * התוכנית לפי סדרן, תרגילים שנרשמו בעבר ואינם בתוכנית הנוכחית — כדי
+ * שהיסטוריה לא תיעלם מהמסך — ואירובי סיום אחרון.
+ *
+ * רשומה ישנה בלי חימום מקבלת שורה ריקה; האירובי מופיע רק כשהדגל דלוק,
+ * או כשהוא כבר נרשם ברשומה (נתון שנרשם לא מוסתר).
  */
 export function exercisesFor(
   entry: WorkoutEntry,
   all: readonly WorkoutEntry[],
 ): LoggedExercise[] {
   const byId = new Map(entry.ex.map((e) => [e.exerciseId, e]));
-  const rows = PROGRAM[entry.t].map((spec) => {
+  const rows: LoggedExercise[] = [byId.get(WARMUP_ID) ?? blankCardio(WARMUP_ID)];
+  for (const spec of PROGRAM[entry.t]) {
     const existing = byId.get(spec.id);
-    if (existing) return withSetCount(existing, spec.sets);
-    return blankLoggedExercise(spec, openingWeight(all, spec.id, entry.id));
-  });
-  const planned = new Set(PROGRAM[entry.t].map((s) => s.id));
-  for (const e of entry.ex) {
-    if (!planned.has(e.exerciseId) && hasData(e)) rows.push(e);
+    rows.push(
+      existing
+        ? withSetCount(existing, spec.sets)
+        : blankLoggedExercise(spec, openingWeight(all, spec.id, entry.id)),
+    );
   }
+  const placed = new Set(rows.map((r) => r.exerciseId));
+  for (const e of entry.ex) {
+    if (!placed.has(e.exerciseId) && e.exerciseId !== FINISHER_ID && hasData(e)) {
+      rows.push(e);
+    }
+  }
+  const finisher = byId.get(FINISHER_ID);
+  if (FINISHER_CARDIO_ENABLED) rows.push(finisher ?? blankCardio(FINISHER_ID));
+  else if (finisher && hasData(finisher)) rows.push(finisher);
   return rows;
 }
 
@@ -315,5 +408,6 @@ export function peakPain(
 
 /** האם התרגיל הוא תרגיל זמן, לפי המפרט הנוכחי. */
 export function isTimedExercise(ex: LoggedExercise): boolean {
+  if (isCardio(ex)) return true;
   return exerciseById(ex.exerciseId)?.isTimed ?? ex.sets.some((s) => s.seconds !== null);
 }

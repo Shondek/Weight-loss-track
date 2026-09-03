@@ -216,6 +216,68 @@ describe('parseWorkouts — פורמט הגרסה הישנה', () => {
   });
 });
 
+describe('parseWorkouts — חימום ואירובי', () => {
+  const base = { id: 'c1', d: '2026-09-03', t: 'A', knee: null, shoulder: null };
+
+  it('שורת חימום נקלטת עם מצב ודקות, ומסומנת cardio לפי המזהה', () => {
+    const r = parseWorkouts([
+      {
+        ...base,
+        ex: [
+          {
+            exerciseId: 'warmup',
+            n: 'חימום',
+            sets: [{ weight: null, reps: null, seconds: 600 }],
+            targetRepMin: 0,
+            targetRepMax: 0,
+            type: 'cardio',
+            bodyweightOnly: true,
+            assisted: false,
+            cardio: { mode: 'treadmill', minutes: 10 },
+          },
+        ],
+      },
+    ]);
+    expect(r.ok[0]?.ex[0]).toEqual({
+      exerciseId: 'warmup',
+      n: 'חימום',
+      sets: [{ weight: null, reps: null, seconds: 600 }],
+      targetRepMin: 0,
+      targetRepMax: 0,
+      type: 'cardio',
+      bodyweightOnly: true,
+      assisted: false,
+      cardio: { mode: 'treadmill', minutes: 10 },
+    });
+  });
+
+  it('חימום בלי cardio או עם מצב לא מוכר — אופניים, דקות מהביצוע', () => {
+    const r = parseWorkouts([
+      {
+        ...base,
+        ex: [
+          { exerciseId: 'warmup', n: 'חימום', sets: [{ seconds: 480 }] },
+          { exerciseId: 'finisher-cardio', n: 'אירובי', sets: [], cardio: { mode: 'rowing' } },
+        ],
+      },
+    ]);
+    expect(r.ok[0]?.ex[0]?.cardio).toEqual({ mode: 'bike', minutes: 8 });
+    expect(r.ok[0]?.ex[0]?.type).toBe('cardio');
+    expect(r.ok[0]?.ex[1]?.cardio).toEqual({ mode: 'bike', minutes: 0 });
+  });
+
+  it('תרגיל רגיל לא מקבל cardio, ו-type "cardio" שנשמר עליו בטעות לא נקלט', () => {
+    const r = parseWorkouts([
+      {
+        ...base,
+        ex: [{ exerciseId: 'leg-press', n: 'לג-פרס', sets: [{ weight: 60, reps: 10 }], type: 'cardio' }],
+      },
+    ]);
+    expect('cardio' in (r.ok[0]?.ex[0] as object)).toBe(false);
+    expect(r.ok[0]?.ex[0]?.type).toBe('compound');
+  });
+});
+
 describe('parseWorkouts — schemaVersion ורשומות שלא ניתן להמיר', () => {
   const v1 = {
     id: 'old',

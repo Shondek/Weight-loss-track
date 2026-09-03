@@ -1,8 +1,8 @@
 import type { LoggedExercise, LoggedSet } from '../types';
 import type { Exercise } from '../data/program';
+import { WEIGHT_STEP } from '../data/config';
 import type { ExerciseHistory } from '../lib/workouts';
-import { emptySet, setPerformed, setValue } from '../lib/workouts';
-import { getProgressionSuggestion } from '../lib/progression';
+import { emptySet, lastWeightOf, setPerformed, setValue } from '../lib/workouts';
 import { formatDM } from '../lib/date';
 import { clean, DASH } from '../lib/format';
 import Stepper from './Stepper';
@@ -12,15 +12,14 @@ type Props = {
   spec: Exercise;
   log: LoggedExercise;
   onChange: (next: LoggedExercise) => void;
-  previous: ExerciseHistory | null;
+  /** הביצועים האחרונים של התרגיל, מהחדש לישן. ריק = אין ביצוע קודם. */
+  history: ExerciseHistory[];
   /** נקרא כשסט עובר מריק למלא — מפעיל את טיימר המנוחה. */
   onSetLogged: (setIndex: number) => void;
 };
 
 const MAX_WEIGHT = 500;
 const MAX_REPS = 999;
-/** קפיצת כפתורי ה-± בשדה המשקל. נפרדת מתוספת ההתקדמות, שגסה יותר. */
-const WEIGHT_STEP = 2.5;
 
 /** "לרגל" לתרגילי רגליים, "ליד" לתרגילי ידיים, "לצד" לשאר. */
 function sideLabel(spec: Exercise): string {
@@ -30,29 +29,47 @@ function sideLabel(spec: Exercise): string {
   return 'לצד';
 }
 
-function previousText(prev: ExerciseHistory, timed: boolean): string {
-  const values = prev.ex.sets
+/**
+ * שורת היסטוריה: "03/09 · 40 ק״ג · 12,12,10". נתונים בלבד — בלי פרשנות.
+ * רשומה ישנה עם משקל שונה בכל סט מציגה את כולם, כדי לא להסתיר דבר.
+ */
+function historyText(h: ExerciseHistory, timed: boolean, usesWeight: boolean): string {
+  const performed = h.ex.sets.filter(setPerformed);
+  const values = performed
     .map((s) => {
       const v = setValue(s);
       return v === null ? DASH : String(v);
     })
-    .join('/');
-  const weights = [...new Set(prev.ex.sets.map((s) => s.weight).filter((w) => w !== null))];
-  const weight = !timed && weights.length === 1 ? `${clean(weights[0])} ק"ג · ` : '';
-  return `${weight}${values}${timed ? ' שנ׳' : ''} · ${formatDM(prev.d)}`;
+    .join(',');
+  const parts = [formatDM(h.d)];
+  if (usesWeight) {
+    const weights = performed.map((s) => (s.weight === null ? DASH : clean(s.weight)));
+    const distinct = new Set(weights);
+    parts.push(`${distinct.size === 1 ? (weights[0] ?? DASH) : weights.join(',')} ק״ג`);
+  }
+  parts.push(timed ? `${values} שנ׳` : values);
+  return parts.join(' · ');
 }
 
 export default function ExerciseFocus({
   spec,
   log,
   onChange,
-  previous,
+  history,
   onSetLogged,
 }: Props) {
   const timed = spec.isTimed;
   const usesWeight = !timed && !spec.bodyweightOnly;
-  const suggestion = getProgressionSuggestion(log, previous?.ex ?? null);
   const side = sideLabel(spec);
+  const weight = lastWeightOf(log);
+
+  /**
+   * משקל אחד לתרגיל. במודל הוא עדיין נשמר לכל סט — אותו ערך בכולם —
+   * כדי שרשומות קיימות (עם משקל שונה בכל סט) ימשיכו להיקרא.
+   */
+  const setWeight = (w: number | null) => {
+    onChange({ ...log, sets: log.sets.map((s) => ({ ...s, weight: w })) });
+  };
 
   const patchSet = (i: number, patch: Partial<LoggedSet>) => {
     const sets = log.sets.length > i ? [...log.sets] : [...log.sets, emptySet()];
@@ -61,8 +78,7 @@ export default function ExerciseFocus({
     sets[i] = after;
     onChange({ ...log, sets });
 
-    // המנוחה נפתחת רק במעבר מריק למלא — לא בכל הקשה על המשקל,
-    // ולא כשמתקנים ערך שכבר הוזן.
+    // המנוחה נפתחת רק במעבר מריק למלא — לא כשמתקנים ערך שכבר הוזן.
     if (!setPerformed(before) && setPerformed(after)) onSetLogged(i);
   };
 
@@ -106,30 +122,44 @@ export default function ExerciseFocus({
 
       {spec.note && <p className="focus__note small">{spec.note}</p>}
 
-      <p className="tiny muted focus__prev">
-        {previous ? `הפעם הקודמת: ${previousText(previous, timed)}` : 'אין רישום קודם'}
-      </p>
+      {/* היסטוריה לקריאה בלבד: הביצועים האחרונים, לפני שדות הקלט. */}
+      <div className="focus__history" aria-label={`ביצועים קודמים — ${spec.name}`}>
+        {history.length === 0 ? (
+          <p className="tiny muted" style={{ margin: 0 }}>
+            אין ביצוע קודם
+          </p>
+        ) : (
+          <ul className="list list--block tiny muted">
+            {history.map((h) => (
+              <li key={h.workoutId} className="num">
+                {historyText(h, timed, usesWeight)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {usesWeight && (
+        <div className="focus__weight">
+          <Stepper
+            label={`משקל — ${spec.name}`}
+            value={weight}
+            onChange={setWeight}
+            step={WEIGHT_STEP}
+            min={0}
+            max={MAX_WEIGHT}
+            decimals={1}
+            unit='ק"ג'
+            placeholder='ק"ג'
+          />
+        </div>
+      )}
 
       <div className="focus__sets">
         {log.sets.map((s, i) => (
           <div className="focus__set" key={i}>
             <span className="focus__setno tiny muted">סט {i + 1}</span>
-            {usesWeight && (
-              <div className="grow">
-                <Stepper
-                  label={`משקל, סט ${i + 1} — ${spec.name}`}
-                  hideLabel
-                  value={s.weight}
-                  onChange={(weight) => patchSet(i, { weight })}
-                  step={WEIGHT_STEP}
-                  min={0}
-                  max={MAX_WEIGHT}
-                  decimals={1}
-                  placeholder='ק"ג'
-                />
-              </div>
-            )}
-            <div className={usesWeight ? 'focus__reps' : 'grow'}>
+            <div className="focus__reps">
               <NumberField
                 label={`${timed ? 'שניות' : 'חזרות'}, סט ${i + 1} — ${spec.name}`}
                 hideLabel
@@ -143,10 +173,6 @@ export default function ExerciseFocus({
           </div>
         ))}
       </div>
-
-      {suggestion.kind !== 'none' && (
-        <p className="small focus__suggestion">{suggestion.text}</p>
-      )}
     </div>
   );
 }

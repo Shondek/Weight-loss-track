@@ -709,12 +709,22 @@ button {
   padding-inline-start: var(--sp-3);
 }
 
-.focus__prev {
+.focus__history {
   margin: var(--sp-3) 0 0;
+  border-inline-start: 2px solid var(--rule-strong);
+  padding-inline-start: var(--sp-3);
+}
+
+.focus__history ul {
+  margin: 0;
+}
+
+.focus__weight {
+  margin-top: var(--sp-4);
 }
 
 .focus__sets {
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-3);
 }
 
 .focus__set {
@@ -732,8 +742,8 @@ button {
 }
 
 .focus__reps {
-  width: 96px;
-  flex: 0 0 96px;
+  width: 120px;
+  flex: 0 0 120px;
 }
 
 /* שדות גדולים יותר במסך האימון — הזנה באגודל אחד, בעמידה */
@@ -742,15 +752,42 @@ button {
   font-size: 19px;
 }
 
-.focus__set .btn--step {
+.focus__weight input[type='number'] {
+  min-height: 52px;
+  font-size: 19px;
+}
+
+.focus__weight .btn--step {
   min-height: 52px;
   height: 52px;
 }
 
-.focus__suggestion {
-  margin: var(--sp-4) 0 0;
-  border-inline-start: 2px solid var(--rule-strong);
-  padding-inline-start: var(--sp-3);
+/* ---------- חימום / אירובי סיום ---------- */
+
+/* מכשיר | דקות | התחל — בשורה אחת, ונשבר לשתיים במסך צר */
+.cardio {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.cardio__mode {
+  flex: 1 1 180px;
+}
+
+.cardio__minutes {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+
+.cardio__minutes input[type='number'] {
+  width: 84px;
+  min-height: 52px;
+  font-size: 19px;
 }
 
 /* ---------- טיימר מנוחה ---------- */

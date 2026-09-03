@@ -17,10 +17,18 @@ export type WaistEntry = { d: ISODate; cm: number };
 export type WorkoutType = 'A' | 'B' | 'C';
 
 /**
- * סוג התנועה. קובע מנוחה בין סטים, מנוחה בין תרגילים וקפיצת משקל —
- * הערכים עצמם ב-`TYPE_CONFIG` שב-src/data/program.ts.
+ * סוג התנועה. קובע את משכי המנוחה בין סטים ובין תרגילים — הערכים עצמם
+ * ב-`REST_SECONDS` שב-src/data/config.ts. `cardio` = חימום / אירובי סיום.
  */
-export type ExerciseType = 'compound' | 'isolation' | 'core';
+export type ExerciseType = 'compound' | 'isolation' | 'core' | 'cardio';
+
+export type CardioMode = 'bike' | 'treadmill';
+
+/**
+ * חימום או אירובי סיום. `minutes` הוא מה שהוזן בשדה; הביצוע עצמו נרשם
+ * ב-`sets[0].seconds` ברגע שלוחצים "התחל" — עד אז השורה ריקה ולא נחשבת נתון.
+ */
+export type CardioLog = { mode: CardioMode; minutes: number };
 
 /** סט בודד. `seconds` לתרגילי זמן, `reps` לכל השאר. */
 export type LoggedSet = {
@@ -33,9 +41,11 @@ export type LoggedSet = {
  * תרגיל שבוצע. אורך `sets` משתנה — בתוכנית יש תרגילים של 2 ושל 3 סטים,
  * ואסור להניח מספר קבוע בשום מקום.
  *
+ * המשקל נשמר לכל סט (אותו ערך בכולם — הקלט הוא שדה אחד לתרגיל), כדי
+ * שרשומות ישנות עם משקל שונה בכל סט ימשיכו להיטען ולהיות מוצגות.
+ *
  * `targetRepMin/Max`, `type`, `bodyweightOnly` ו-`assisted` מוקפאים ברגע
- * השמירה. כך המלצת ההתקדמות מחושבת מחדש בכל רינדור מהנתונים הגולמיים,
- * ובלי לצאת לחפש בתוכנית — שאולי כבר השתנתה מאז.
+ * השמירה, כדי שהרשומה תישאר מובנת גם אם התוכנית תשתנה מאז.
  */
 export type LoggedExercise = {
   exerciseId: string;
@@ -46,8 +56,10 @@ export type LoggedExercise = {
   targetRepMax: number;
   type: ExerciseType;
   bodyweightOnly: boolean;
-  /** המשקל הוא סיוע (גרוויטון) — התקדמות היא *פחות* משקל. */
+  /** המשקל הוא סיוע (גרוויטון) — פחות משקל = קשה יותר. */
   assisted: boolean;
+  /** קיים רק בשורות חימום / אירובי סיום (`type: 'cardio'`). */
+  cardio?: CardioLog;
 };
 
 /**

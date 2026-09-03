@@ -4,11 +4,12 @@
  * ה-API היחיד שהקומפוננטות מכירות. הן לא יודעות דבר על תרגילים — הן
  * קוראות מכאן.
  *
- * לשנות תרגיל, טווח, הערה או סרטון? ב-JSON. לשנות מנוחה או תוספת משקל
- * לסוג תרגיל? `TYPE_CONFIG` כאן.
+ * לשנות תרגיל, טווח, הערה או סרטון? ב-JSON. לשנות מנוחה לסוג תרגיל?
+ * `REST_SECONDS` ב-src/data/config.ts.
  */
 
 import type { ExerciseType, WorkoutType } from '../types';
+import { REST_SECONDS } from './config';
 import programJson from './program-abc.json';
 
 export interface Exercise {
@@ -37,10 +38,7 @@ export interface Exercise {
   isTimed: boolean;
   /** אסור להוסיף משקל — ההתקדמות היא בחזרות. */
   bodyweightOnly: boolean;
-  /**
-   * המשקל הוא *סיוע* (גרוויטון): פחות משקל = קשה יותר. הופך את כיוון
-   * ההמלצה ב-src/lib/progression.ts.
-   */
+  /** המשקל הוא *סיוע* (גרוויטון): פחות משקל = קשה יותר. */
   assisted: boolean;
   note: string | null;
   /** סרטון הדגמה. null כשאין — ואז שום דבר לא מרונדר. */
@@ -48,20 +46,10 @@ export interface Exercise {
 }
 
 /**
- * `type` קובע שלושה דברים בבת אחת: מנוחה בין סטים, מנוחה בין תרגילים,
- * וקפיצת המשקל. הערכים חיים כאן בלבד ולא משוכפלים בכל תרגיל.
- *
- * `weightIncrement: 0` פירושו "התקדם בחזרות, לא במשקל" — ראה
- * `getProgressionSuggestion` ב-src/lib/progression.ts.
+ * `type` קובע את משכי המנוחה. הערכים חיים ב-src/data/config.ts בלבד
+ * ולא משוכפלים בכל תרגיל; נחשפים גם מכאן כדי שהקומפוננטות יקראו מקום אחד.
  */
-export const TYPE_CONFIG: Record<
-  ExerciseType,
-  { restBetweenSets: number; restBetweenExercises: number; weightIncrement: number }
-> = {
-  compound: { restBetweenSets: 120, restBetweenExercises: 180, weightIncrement: 5 },
-  isolation: { restBetweenSets: 60, restBetweenExercises: 90, weightIncrement: 2.5 },
-  core: { restBetweenSets: 45, restBetweenExercises: 90, weightIncrement: 0 },
-};
+export const TYPE_CONFIG = REST_SECONDS;
 
 type OptionalKeys =
   | 'reps'
@@ -84,7 +72,7 @@ type ExerciseInput = Omit<Exercise, OptionalKeys | 'type'> & {
  */
 function ex(e: ExerciseInput): Exercise {
   const type = e.type as ExerciseType;
-  if (!(type in TYPE_CONFIG)) {
+  if (!(type in REST_SECONDS) || type === 'cardio') {
     throw new Error(`program-abc.json: סוג תרגיל לא מוכר "${e.type}" ב-${e.id}`);
   }
   const effort = e.effort?.trim();
@@ -235,6 +223,6 @@ export function shortName(id: string, fallback: string): string {
 
 /** כמה שניות מנוחה אחרי סט של התרגיל הזה — או אחרי הסט האחרון שלו. */
 export function restSeconds(type: ExerciseType, afterLastSet: boolean): number {
-  const cfg = TYPE_CONFIG[type];
-  return afterLastSet ? cfg.restBetweenExercises : cfg.restBetweenSets;
+  const cfg = REST_SECONDS[type];
+  return afterLastSet ? cfg.betweenExercises : cfg.betweenSets;
 }

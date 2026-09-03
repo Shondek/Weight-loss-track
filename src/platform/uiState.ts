@@ -16,7 +16,19 @@ const EDITOR_KEY = 'fatloss:ui:editor';
 /** אימון פתוח שנשכח נחשב נטוש אחרי שש שעות. */
 const EDITOR_TTL_MS = 6 * 60 * 60 * 1000;
 
-export type TimerState = { deadline: number; totalSec: number; label: string };
+export type TimerKind = 'rest' | 'countdown';
+
+/**
+ * `pausedMs` — כמה נשאר כשהטיימר מושהה; אז `deadline` לא רלוונטי.
+ * `kind` — מנוחה (±15, דלג) או ספירה לאחור ידנית של חימום/אירובי (השהה, אפס, דלג).
+ */
+export type TimerState = {
+  deadline: number;
+  totalSec: number;
+  label: string;
+  kind: TimerKind;
+  pausedMs: number | null;
+};
 export type EditorState = { openId: string; focus: number; at: number };
 
 function read<T>(key: string): T | null {
@@ -37,11 +49,19 @@ function write(key: string, value: unknown): void {
   }
 }
 
-/** הטיימר השמור, רק אם עוד לא פג. */
+/** הטיימר השמור, רק אם עוד לא פג — או שהוא מושהה, ואז הוא לא פג לעולם. */
 export function readTimer(): TimerState | null {
-  const v = read<TimerState>(TIMER_KEY);
+  const v = read<Partial<TimerState>>(TIMER_KEY);
   if (!v || typeof v.deadline !== 'number') return null;
-  return v.deadline > Date.now() ? v : null;
+  const state: TimerState = {
+    deadline: v.deadline,
+    totalSec: typeof v.totalSec === 'number' ? v.totalSec : 0,
+    label: typeof v.label === 'string' ? v.label : '',
+    kind: v.kind === 'countdown' ? 'countdown' : 'rest',
+    pausedMs: typeof v.pausedMs === 'number' ? v.pausedMs : null,
+  };
+  if (state.pausedMs !== null) return state;
+  return state.deadline > Date.now() ? state : null;
 }
 
 export function writeTimer(v: TimerState | null): void {

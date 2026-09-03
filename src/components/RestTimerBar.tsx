@@ -15,6 +15,8 @@ function mmss(total: number): string {
 /**
  * שורת הטיימר. לא חוסמת — אפשר להזין את הסט הבא בזמן שהיא רצה.
  * יושבת מעל הניווט התחתון כדי שתיראה בלי לגלול.
+ *
+ * מנוחה: ±15 ודלג. ספירה לאחור (חימום/אירובי): השהה/המשך, אפס, דלג.
  */
 export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Props) {
   if (!timer.running && !timer.justFinished) return null;
@@ -26,22 +28,39 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Pro
           <>
             <span className="resttimer__count num">{mmss(timer.remainingSec)}</span>
             <span className="grow tiny muted">{timer.label}</span>
-            <button
-              type="button"
-              className="btn btn--step"
-              onClick={() => timer.add(-15)}
-              aria-label="הפחת 15 שניות"
-            >
-              <span className="num">−15</span>
-            </button>
-            <button
-              type="button"
-              className="btn btn--step"
-              onClick={() => timer.add(15)}
-              aria-label="הוסף 15 שניות"
-            >
-              <span className="num">+15</span>
-            </button>
+            {timer.kind === 'countdown' ? (
+              <>
+                <button
+                  type="button"
+                  className="btn btn--quiet"
+                  onClick={timer.paused ? timer.resume : timer.pause}
+                >
+                  {timer.paused ? 'המשך' : 'השהה'}
+                </button>
+                <button type="button" className="btn btn--quiet" onClick={timer.reset}>
+                  אפס
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn btn--step"
+                  onClick={() => timer.add(-15)}
+                  aria-label="הפחת 15 שניות"
+                >
+                  <span className="num">−15</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--step"
+                  onClick={() => timer.add(15)}
+                  aria-label="הוסף 15 שניות"
+                >
+                  <span className="num">+15</span>
+                </button>
+              </>
+            )}
             <button type="button" className="btn btn--quiet" onClick={timer.skip}>
               דלג
             </button>

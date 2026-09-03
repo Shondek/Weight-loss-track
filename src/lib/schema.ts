@@ -4,6 +4,8 @@
  */
 
 import {
+  type CardioLog,
+  type CardioMode,
   type DB,
   type ExerciseType,
   type ISODate,
@@ -22,6 +24,7 @@ import {
 } from '../types';
 import { exerciseById, resolveExerciseId } from '../data/program';
 import { compareISO, isValidISO, weekStart } from './date';
+import { isCardioId } from './workouts';
 
 export type Rejection = { reason: string };
 
@@ -124,7 +127,9 @@ export function parseWaist(input: unknown): ParseResult<WaistEntry> {
 const TYPES: readonly WorkoutType[] = ['A', 'B', 'C'];
 
 const MAX_SETS = 10;
-const EXERCISE_TYPES: readonly ExerciseType[] = ['compound', 'isolation', 'core'];
+const EXERCISE_TYPES: readonly ExerciseType[] = ['compound', 'isolation', 'core', 'cardio'];
+const CARDIO_MODES: readonly CardioMode[] = ['bike', 'treadmill'];
+const MAX_CARDIO_MINUTES = 1000;
 
 /** מספר חזרות/שניות תקין, או null. */
 function count(v: unknown): number | null {
@@ -186,6 +191,19 @@ function upcastLegacySets(r: unknown, w: unknown, timed: boolean): LoggedSet[] {
   return trimTrailingEmpty(sets);
 }
 
+/**
+ * חימום / אירובי: מצב ודקות. רשומה שנקלטה בלי `cardio` (או עם ערכים
+ * שבורים) מקבלת "אופניים" והדקות נגזרות ממה שבוצע — לא נדחית.
+ */
+function parseCardio(v: unknown, sets: LoggedSet[]): CardioLog {
+  const rec = isRecord(v) ? v : {};
+  const mode = CARDIO_MODES.find((m) => m === rec.mode) ?? 'bike';
+  const doneSeconds = sets[0]?.seconds ?? null;
+  const minutes =
+    count(rec.minutes) ?? (doneSeconds === null ? 0 : Math.round(doneSeconds / 60));
+  return { mode, minutes: Math.min(minutes, MAX_CARDIO_MINUTES) };
+}
+
 /** ברירות מחדל לתרגיל שכבר לא קיים בתוכנית ולכן אין לו מפרט. */
 const ORPHAN_DEFAULTS = { targetRepMin: 8, targetRepMax: 12 } as const;
 
@@ -206,15 +224,21 @@ function parseExercise(e: Record<string, unknown>): LoggedExercise {
 
   const spec = id !== null ? exerciseById(id) : undefined;
   const isNewFormat = Array.isArray(e.sets);
-  const timed = spec?.isTimed ?? false;
+  const cardio = id !== null && isCardioId(id);
+  const timed = cardio || (spec?.isTimed ?? false);
+  const sets = isNewFormat ? parseLoggedSets(e.sets) : upcastLegacySets(e.r, e.w, timed);
 
-  const type =
-    EXERCISE_TYPES.find((x) => x === e.type) ?? spec?.type ?? 'isolation';
+  // שורת חימום/אירובי מזוהה לפי המזהה בלבד — הסוג שנשמר לא יכול לסתור אותה.
+  const type = cardio
+    ? 'cardio'
+    : (EXERCISE_TYPES.find((x) => x === e.type && x !== 'cardio') ??
+      spec?.type ??
+      'isolation');
 
   return {
     exerciseId: id ?? `legacy:${name !== '' ? name : UNNAMED_EXERCISE}`,
     n: name !== '' ? name : (spec?.name ?? id ?? UNNAMED_EXERCISE),
-    sets: isNewFormat ? parseLoggedSets(e.sets) : upcastLegacySets(e.r, e.w, timed),
+    sets,
     targetRepMin:
       count(e.targetRepMin) ?? spec?.repRangeMin ?? ORPHAN_DEFAULTS.targetRepMin,
     targetRepMax:
@@ -223,8 +247,9 @@ function parseExercise(e: Record<string, unknown>): LoggedExercise {
     bodyweightOnly:
       typeof e.bodyweightOnly === 'boolean'
         ? e.bodyweightOnly
-        : (spec?.bodyweightOnly ?? false),
+        : (spec?.bodyweightOnly ?? cardio),
     assisted: typeof e.assisted === 'boolean' ? e.assisted : (spec?.assisted ?? false),
+    ...(cardio ? { cardio: parseCardio(e.cardio, sets) } : {}),
   };
 }
 

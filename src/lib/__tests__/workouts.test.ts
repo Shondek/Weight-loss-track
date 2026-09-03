@@ -1,24 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import {
+  blankCardio,
   blankExercises,
   blankLoggedExercise,
+  cardioLine,
+  cardioMinutesDone,
   exerciseHistory,
   exercisesFor,
+  FINISHER_ID,
   hasData,
   isWorkoutEmpty,
   lastExercise,
   lastWeightOf,
   makeWorkoutId,
+  markCardioDone,
   nextType,
+  openingWeight,
+  patchCardio,
   peakPain,
   prefilledExercises,
+  recentExercises,
   removeWorkout,
+  skippedExercises,
   sortableStamp,
   upsertWorkout,
+  WARMUP_ID,
   withSetCount,
   workoutsInWeek,
 } from '../workouts';
-import { PROGRAM, TYPE_CONFIG, exerciseById, resolveExerciseId } from '../../data/program';
+import { PROGRAM, TYPE_CONFIG, exerciseById, resolveExerciseId, restSeconds } from '../../data/program';
+import { FINISHER_CARDIO_ENABLED, REST_SECONDS } from '../../data/config';
 import type { WorkoutEntry, WorkoutType } from '../../types';
 import { le, wk } from './helpers';
 
@@ -115,6 +126,34 @@ describe('lastExercise — היסטוריה לפי מזהה, לא לפי שם', 
     ]);
   });
 
+  it('recentExercises — שלושת האחרונים מהחדש לישן, בלי האימון הנוכחי', () => {
+    const four = [
+      ...list,
+      wk('4', '2026-09-07', 'A', [le('leg-press', 62.5, [12, 12, 12])]),
+      wk('5', '2026-09-14', 'A', [le('leg-press', 65, [10, 10, 9])]),
+    ];
+    expect(recentExercises(four, 'leg-press', 3).map((h) => h.d)).toEqual([
+      '2026-09-14',
+      '2026-09-07',
+      '2026-08-31',
+    ]);
+    expect(recentExercises(four, 'leg-press', 3, '5').map((h) => h.d)).toEqual([
+      '2026-09-07',
+      '2026-08-31',
+      '2026-08-24',
+    ]);
+    expect(recentExercises(four, 'face-pull', 3)).toEqual([]);
+  });
+
+  it('openingWeight — בדיוק המשקל האחרון, בלי תוספת', () => {
+    expect(openingWeight(list, 'leg-press')).toBe(60);
+    expect(openingWeight(list, 'leg-press', '2')).toBe(55);
+    // כל הסטים בתקרה — עדיין אותו משקל. ההחלטה מתקבלת מחוץ לאפליקציה.
+    const maxed = [wk('1', '2026-09-01', 'A', [le('leg-press', 60, [12, 12, 12])])];
+    expect(openingWeight(maxed, 'leg-press')).toBe(60);
+    expect(openingWeight(list, 'face-pull')).toBeNull();
+  });
+
   it('שם ישן ממופה למזהה החדש, כך שההיסטוריה נשמרת', () => {
     expect(resolveExerciseId('לג פרס')).toBe('leg-press');
     expect(resolveExerciseId('פולי עליון')).toBe('lat-pulldown');
@@ -176,6 +215,90 @@ const PREFILL_SOURCE: WorkoutEntry[] = [
   ]),
 ];
 
+describe('חימום ואירובי סיום', () => {
+  it('שורת חימום ריקה: אופניים, 10 דקות, בלי ביצוע — לא נחשבת נתון', () => {
+    const w = blankCardio(WARMUP_ID);
+    expect(w).toMatchObject({
+      exerciseId: 'warmup',
+      n: 'חימום',
+      type: 'cardio',
+      cardio: { mode: 'bike', minutes: 10 },
+    });
+    expect(hasData(w)).toBe(false);
+    expect(cardioMinutesDone(w)).toBeNull();
+    expect(cardioLine(w)).toBeNull();
+  });
+
+  it('"התחל" רושם את הדקות כשניות בסט 0, וההיסטוריה מציגה שורה אחת', () => {
+    const done = markCardioDone(blankCardio(WARMUP_ID), 12);
+    expect(done.sets).toEqual([{ weight: null, reps: null, seconds: 720 }]);
+    expect(hasData(done)).toBe(true);
+    expect(cardioMinutesDone(done)).toBe(12);
+    expect(cardioLine(done)).toBe('חימום · אופניים · 12 דק׳');
+    expect(cardioLine(patchCardio(done, { mode: 'treadmill' }))).toBe('חימום · הליכון · 12 דק׳');
+  });
+
+  it('שינוי דקות לפני "התחל" לא רושם ביצוע; אחרי — מעדכן אותו', () => {
+    const before = patchCardio(blankCardio(WARMUP_ID), { minutes: 8 });
+    expect(before.cardio?.minutes).toBe(8);
+    expect(hasData(before)).toBe(false);
+    const after = patchCardio(markCardioDone(before, 8), { minutes: 15 });
+    expect(after.sets[0]?.seconds).toBe(900);
+  });
+
+  it('חימום הוא תמיד השורה הראשונה באימון, גם ברשומה ישנה בלי חימום', () => {
+    const old = wk('1', '2026-09-01', 'A', [le('leg-press', 60, [12, 12, 12])]);
+    const rows = exercisesFor(old, [old]);
+    expect(rows[0]?.exerciseId).toBe(WARMUP_ID);
+    expect(rows.slice(1, PROGRAM.A.length + 1).map((r) => r.exerciseId)).toEqual(
+      PROGRAM.A.map((s) => s.id),
+    );
+    expect(prefilledExercises([], 'B')[0]?.exerciseId).toBe(WARMUP_ID);
+  });
+
+  it('חימום שנרשם נשמר במקומו ולא מוכפל', () => {
+    const entry = wk('1', '2026-09-01', 'A', [
+      markCardioDone(blankCardio(WARMUP_ID), 10),
+      le('leg-press', 60, [12, 12, 12]),
+    ]);
+    const rows = exercisesFor(entry, [entry]);
+    expect(rows.filter((r) => r.exerciseId === WARMUP_ID)).toHaveLength(1);
+    expect(cardioMinutesDone(rows[0]!)).toBe(10);
+  });
+
+  it('אירובי סיום מוסתר כשהדגל כבוי, ומופיע אחרון כשהוא דלוק', () => {
+    const entry = wk('1', '2026-09-01', 'A', []);
+    const rows = exercisesFor(entry, [entry]);
+    const hasFinisher = rows.some((r) => r.exerciseId === FINISHER_ID);
+    expect(hasFinisher).toBe(FINISHER_CARDIO_ENABLED);
+    if (FINISHER_CARDIO_ENABLED) {
+      expect(rows[rows.length - 1]?.exerciseId).toBe(FINISHER_ID);
+    }
+    expect(prefilledExercises([], 'A').some((r) => r.exerciseId === FINISHER_ID)).toBe(
+      FINISHER_CARDIO_ENABLED,
+    );
+  });
+
+  it('אירובי שכבר נרשם לא נעלם גם כשהדגל כבוי', () => {
+    const entry = wk('1', '2026-09-01', 'A', [markCardioDone(blankCardio(FINISHER_ID), 12)]);
+    const rows = exercisesFor(entry, [entry]);
+    expect(rows[rows.length - 1]).toMatchObject({ exerciseId: FINISHER_ID });
+    expect(cardioLine(rows[rows.length - 1]!)).toBe('אירובי · אופניים · 12 דק׳');
+  });
+
+  it('חימום/אירובי לא נחשבים "דולגו", ואימון עם חימום ריק בלבד עדיין ריק', () => {
+    const entry = wk('1', '2026-09-01', 'A', prefilledExercises([], 'A'));
+    expect(skippedExercises(entry).some((e) => e.exerciseId === WARMUP_ID)).toBe(false);
+    expect(skippedExercises(entry)).toHaveLength(PROGRAM.A.length);
+    expect(isWorkoutEmpty(entry)).toBe(true);
+  });
+
+  it('אין מנוחה אחרי חימום', () => {
+    expect(restSeconds('cardio', false)).toBe(0);
+    expect(restSeconds('cardio', true)).toBe(0);
+  });
+});
+
 describe('בניית אימון', () => {
   it('prefilledExercises מאכלס משקל אחרון ומשאיר חזרות ריקות', () => {
     const rows = prefilledExercises(PREFILL_SOURCE, 'A');
@@ -222,8 +345,10 @@ describe('בניית אימון', () => {
     });
     const entry = wk('1', '2026-09-01', 'A', [le('leg-press', 60, [12, 12, 12]), orphan]);
     const rows = exercisesFor(entry, [entry]);
-    expect(rows).toHaveLength(PROGRAM.A.length + 1);
-    expect(rows[rows.length - 1]?.n).toBe('RDL משקולות יד');
+    // חימום + התוכנית + התרגיל שירד (+ אירובי כשהדגל דלוק)
+    const strength = rows.filter((r) => r.type !== 'cardio');
+    expect(strength).toHaveLength(PROGRAM.A.length + 1);
+    expect(strength[strength.length - 1]?.n).toBe('RDL משקולות יד');
   });
 });
 
@@ -264,22 +389,31 @@ describe('התוכנית', () => {
     expect(exerciseById('chest-press')?.name).toBe('לחיצת חזה בישיבה');
   });
 
-  it('TYPE_CONFIG כפי שהוגדר', () => {
-    expect(TYPE_CONFIG.compound).toEqual({
-      restBetweenSets: 120,
-      restBetweenExercises: 180,
-      weightIncrement: 5,
-    });
-    expect(TYPE_CONFIG.isolation).toEqual({
-      restBetweenSets: 60,
-      restBetweenExercises: 90,
-      weightIncrement: 2.5,
-    });
-    expect(TYPE_CONFIG.core).toEqual({
-      restBetweenSets: 45,
-      restBetweenExercises: 90,
-      weightIncrement: 0,
-    });
+  it('משכי המנוחה — מקום אחד, config.ts', () => {
+    expect(TYPE_CONFIG).toBe(REST_SECONDS);
+    expect(REST_SECONDS.compound).toEqual({ betweenSets: 90, betweenExercises: 90 });
+    expect(REST_SECONDS.isolation).toEqual({ betweenSets: 60, betweenExercises: 90 });
+    expect(REST_SECONDS.core).toEqual({ betweenSets: 60, betweenExercises: 90 });
+    expect(restSeconds('compound', false)).toBe(90);
+    expect(restSeconds('isolation', false)).toBe(60);
+    expect(restSeconds('core', false)).toBe(60);
+    expect(restSeconds('isolation', true)).toBe(90);
+  });
+
+  it('סיווג מורכב/בידוד לפי המפרט', () => {
+    const compound = ['leg-press', 'db-bench-press', 'lat-pulldown', 'db-rdl', 'seated-cable-row'];
+    const isolation = [
+      'leg-extension',
+      'leg-curl',
+      'db-lateral-raise-seated',
+      'pec-deck',
+      'face-pull',
+      'db-supinated-curl',
+      'triceps-pushdown',
+    ];
+    for (const id of compound) expect(exerciseById(id)?.type, id).toBe('compound');
+    for (const id of isolation) expect(exerciseById(id)?.type, id).toBe('isolation');
+    expect(exerciseById('plank')?.type).toBe('core');
   });
 
   it('blankLoggedExercise מקפיא את היעד ואת הסוג', () => {
