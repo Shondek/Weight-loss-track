@@ -103,7 +103,9 @@ describe('program-abc.json — תוכן כל תרגיל', () => {
     }
     expect(exerciseById('plank')?.effort).toBeNull();
     expect(exerciseById('side-bend')?.effort).toBeNull();
-    expect(exerciseById('leg-press')?.effort).toBe('RIR 2');
+    expect(exerciseById('leg-press-45')?.effort).toBe('RIR 2');
+    // מפרט פרוש נשאר בלי הנחיית מאמץ
+    expect(exerciseById('leg-press')?.effort).toBeNull();
   });
 
   it('videoUrl הוא https או null; תרגיל פרוש בלי סרטון', () => {

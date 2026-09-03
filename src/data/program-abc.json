@@ -6,10 +6,10 @@
       "title": "דחיפה + ארבע-ראשי",
       "exercises": [
         {
-          "id": "leg-press",
-          "name": "לג-פרס במכונה בישיבה",
+          "id": "leg-press-45",
+          "name": "לג-פרס במכונה חצי שכיבה",
           "short": "לג-פרס",
-          "machine": "Leg Press",
+          "machine": "Leg Press 45°",
           "muscle": "legs",
           "muscles": ["ארבע ראשי", "ישבן"],
           "type": "compound",
@@ -18,8 +18,8 @@
           "repRangeMin": 10,
           "repRangeMax": 12,
           "effort": "RIR 2",
-          "note": "לא להוריד את הברכיים לחזה",
-          "videoUrl": "https://drive.google.com/file/d/143vBtTPZluDfG0vvqIXFTICVOVYNxeRc/view?usp=share_link"
+          "note": "לא להוריד את הברכיים לחזה. עצור כשהברך ב-90°",
+          "videoUrl": "https://drive.google.com/file/d/1SdqhAwbHCOEhiqVNZEvSxbF4uYP8FiUa/view?usp=share_link"
         },
         {
           "id": "db-bench-press",
@@ -98,26 +98,24 @@
           "repRangeMin": 12,
           "repRangeMax": 15,
           "effort": "RIR 1",
-          "note": null,
+          "note": "לא מעל גובה הכתף",
           "videoUrl": "https://drive.google.com/file/d/1y9vcT0NOaktUtm9L7UJICLSpjZpJX-OZ/view?usp=share_link"
         },
         {
-          "id": "plank",
-          "name": "בטן- פלאנק סטטי",
-          "short": "פלאנק",
-          "machine": null,
+          "id": "cable-torso-rotation",
+          "name": "בטן- רוטציות גו פולי אמצעי",
+          "short": "רוטציות גו",
+          "machine": "Cable",
           "muscle": "core",
-          "muscles": ["ליבה"],
-          "type": "core",
+          "muscles": ["אלכסונים"],
+          "type": "isolation",
           "sets": 3,
-          "reps": "30-45 שנ'",
-          "repRangeMin": 30,
-          "repRangeMax": 45,
-          "isTimed": true,
-          "bodyweightOnly": true,
-          "effort": "—",
-          "note": null,
-          "videoUrl": "https://drive.google.com/file/d/1gmiYVdPzQuDcGLAiweQxJiQv5cnFzTWy/view?usp=share_link"
+          "reps": "12-15",
+          "repRangeMin": 12,
+          "repRangeMax": 15,
+          "effort": "RIR 1",
+          "note": "אגן נייח. התנועה מגיעה מהגו",
+          "videoUrl": "https://drive.google.com/file/d/1XuEWbaJgXr0hwpjHnetkM6roNsfC_FFd/view?usp=share_link"
         }
       ]
     },
@@ -244,10 +242,10 @@
       "title": "ירכיים + שילוב",
       "exercises": [
         {
-          "id": "machine-hip-thrust",
-          "name": "הרמות אגן- מכונה",
-          "short": "הרמות אגן מכונה",
-          "machine": "Hip Thrust Machine",
+          "id": "db-hip-thrust",
+          "name": "הרמות אגן- משקולת יד",
+          "short": "הרמות אגן",
+          "machine": "Dumbbell",
           "muscle": "legs",
           "muscles": ["ישבן", "ירך אחורית"],
           "type": "compound",
@@ -256,24 +254,24 @@
           "repRangeMin": 10,
           "repRangeMax": 12,
           "effort": "RIR 2",
-          "note": null,
-          "videoUrl": "https://drive.google.com/file/d/178LiL_cayenyimU14QubdfdD_VTshDlx/view?usp=share_link"
+          "note": "גב עליון על ספסל. משקולת על עצם האגן",
+          "videoUrl": "https://drive.google.com/file/d/1swX82NiWQr524IDSPHpfGQtuNoDMg-yu/view?usp=share_link"
         },
         {
-          "id": "t-bar-row",
-          "name": "חתירה- מכונה ייעודית T-bar",
-          "short": "חתירה T-bar",
-          "machine": "T-Bar Row",
+          "id": "single-arm-cable-row",
+          "name": "חתירה- כייבל קרוס יד אחת",
+          "short": "חתירת יד אחת",
+          "machine": "Cable Cross",
           "muscle": "back",
-          "muscles": ["גב רחב", "טרפז", "מעוינים"],
+          "muscles": ["גב רחב", "מעוינים"],
           "type": "compound",
           "sets": 3,
           "reps": "10-12",
           "repRangeMin": 10,
           "repRangeMax": 12,
           "effort": "RIR 2",
-          "note": null,
-          "videoUrl": "https://drive.google.com/file/d/1gb3hDI9GOzcfs1wJIDkzcY8e1l_CV650/view?usp=share_link"
+          "note": "10-12 לכל צד. רשום את המשקל כפי שמופיע על הסטק",
+          "videoUrl": "https://drive.google.com/file/d/1csXNjma9zaN_EnBq4N2mx2tpoUKMHAld/view?usp=share_link"
         },
         {
           "id": "db-incline-bench-press",
@@ -288,14 +286,14 @@
           "repRangeMin": 8,
           "repRangeMax": 12,
           "effort": "RIR 2",
-          "note": "מרפקים ב-45°, לא 90°. מדרון נמוך — לא לחיצה מעל הראש",
+          "note": "מרפקים ב-45°. מדרון נמוך — לא לחיצה מעל הראש",
           "videoUrl": "https://drive.google.com/file/d/1beJfALua4GL3z7GNhTHUTLLQWDSmjfya/view?usp=drive_link"
         },
         {
-          "id": "leg-press",
-          "name": "לג-פרס במכונה בישיבה",
+          "id": "leg-press-45",
+          "name": "לג-פרס במכונה חצי שכיבה",
           "short": "לג-פרס",
-          "machine": "Leg Press",
+          "machine": "Leg Press 45°",
           "muscle": "legs",
           "muscles": ["ארבע ראשי", "ישבן"],
           "type": "compound",
@@ -304,8 +302,8 @@
           "repRangeMin": 10,
           "repRangeMax": 12,
           "effort": "RIR 2",
-          "note": "לא להוריד את הברכיים לחזה",
-          "videoUrl": "https://drive.google.com/file/d/143vBtTPZluDfG0vvqIXFTICVOVYNxeRc/view?usp=share_link"
+          "note": "לא להוריד את הברכיים לחזה. עצור כשהברך ב-90°",
+          "videoUrl": "https://drive.google.com/file/d/1SdqhAwbHCOEhiqVNZEvSxbF4uYP8FiUa/view?usp=share_link"
         },
         {
           "id": "db-lateral-raise-standing",
@@ -320,7 +318,7 @@
           "repRangeMin": 12,
           "repRangeMax": 15,
           "effort": "RIR 1",
-          "note": null,
+          "note": "לא מעל גובה הכתף",
           "videoUrl": "https://drive.google.com/file/d/19ejixaBc4u96BYF4-BfmTWSmyws11K4P/view?usp=share_link"
         },
         {
@@ -359,6 +357,10 @@
     }
   ],
   "retired": [
+    { "id": "leg-press", "name": "לג-פרס במכונה בישיבה", "short": "לג-פרס", "machine": "Leg Press", "muscle": "legs", "muscles": ["ארבע ראשי", "ישבן"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
+    { "id": "plank", "name": "בטן- פלאנק סטטי", "short": "פלאנק", "machine": null, "muscle": "core", "muscles": ["ליבה"], "type": "core", "sets": 3, "repRangeMin": 30, "repRangeMax": 45, "isTimed": true, "bodyweightOnly": true },
+    { "id": "machine-hip-thrust", "name": "הרמות אגן- מכונה", "short": "הרמות אגן מכונה", "machine": "Hip Thrust Machine", "muscle": "legs", "muscles": ["ישבן", "ירך אחורית"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
+    { "id": "t-bar-row", "name": "חתירה- מכונה ייעודית T-bar", "short": "חתירה T-bar", "machine": "T-Bar Row", "muscle": "back", "muscles": ["גב רחב", "טרפז", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "hip-thrust", "name": "הרמות אגן- מוט", "short": "הרמות אגן", "machine": "Barbell", "muscle": "legs", "muscles": ["ישבן", "ירך אחורית"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "assisted-pull-up", "name": "מתח- גרוויטון", "short": "מתח גרוויטון", "machine": "Assisted Pull-Up (Gravitron)", "muscle": "back", "muscles": ["גב רחב", "בייספס"], "type": "compound", "sets": 3, "repRangeMin": 6, "repRangeMax": 10, "assisted": true },
     { "id": "incline-push-up", "name": "שכיבות סמיכה- ידיים מוגבהות", "short": "שכיבות סמיכה", "machine": null, "muscle": "chest", "muscles": ["חזה", "טרייספס", "כתף קדמית"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 15, "bodyweightOnly": true },
@@ -374,7 +376,6 @@
     { "id": "side-plank", "name": "פלאנק צד", "short": "פלאנק צד", "machine": null, "muscle": "core", "muscles": ["אלכסונים"], "type": "core", "sets": 2, "repRangeMin": 20, "repRangeMax": 30, "isTimed": true, "unilateral": true, "bodyweightOnly": true },
     { "id": "bulgarian-split-squat", "name": "סקוואט בולגרי", "short": "בולגרי", "machine": null, "muscle": "legs", "muscles": ["ישבן", "ארבע ראשי"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 10, "unilateral": true, "bodyweightOnly": true, "note": "משקל גוף בלבד — מגבלת ברך" },
     { "id": "incline-chest-press", "name": "לחיצת חזה בשיפוע", "short": "חזה שיפוע", "machine": "Incline Chest Press", "muscle": "chest", "muscles": ["חזה עליון", "כתף קדמית"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
-    { "id": "single-arm-cable-row", "name": "חתירת יד אחת בכבל", "short": "חתירת יד אחת", "machine": "Single-Arm Cable Row", "muscle": "back", "muscles": ["גב רחב", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "unilateral": true },
     { "id": "lateral-raise", "name": "הרחקה לצד", "short": "הרחקה לצד", "machine": "Lateral Raise", "muscle": "shoulders", "muscles": ["כתף אמצעית"], "type": "isolation", "sets": 2, "repRangeMin": 12, "repRangeMax": 15 },
     { "id": "hammer-curl", "name": "כפיפת פטיש", "short": "כפיפת פטיש", "machine": "Hammer Curl", "muscle": "biceps", "muscles": ["בייספס", "אמה"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12 }
   ]
