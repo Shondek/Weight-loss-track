@@ -318,10 +318,9 @@ describe('בניית אימון', () => {
   it('תרגיל זמן ומשקל-גוף לעולם בלי משקל', () => {
     const a = prefilledExercises(PREFILL_SOURCE, 'A');
     expect(a.find((r) => r.exerciseId === 'plank')?.sets.every((s) => s.weight === null)).toBe(true);
-    const c = prefilledExercises([], 'C');
-    expect(
-      c.find((r) => r.exerciseId === 'incline-push-up')?.sets.every((s) => s.weight === null),
-    ).toBe(true);
+    // תרגיל משקל גוף פרוש — עדיין נבנה בלי משקל
+    const pushUp = blankLoggedExercise(exerciseById('incline-push-up')!, 20);
+    expect(pushUp.sets.every((s) => s.weight === null)).toBe(true);
   });
 
   it('מספר הסטים נלקח מהתוכנית, לא קבוע', () => {
