@@ -165,6 +165,35 @@ export function exerciseHistory(
 }
 
 /**
+ * הערך שמייצג ביצוע אחד בגרף ההתקדמות: המשקל בתרגיל משקל, השניות הטובות
+ * ביותר בתרגיל זמן, והחזרות הטובות ביותר בתרגיל משקל גוף. ביצוע בלי ערך
+ * (משקל שלא נרשם) נשמט — הגרף מצייר רק מה שנרשם.
+ */
+export function progressValue(
+  ex: LoggedExercise,
+  measure: 'weight' | 'seconds' | 'reps',
+): number | null {
+  if (measure === 'weight') return lastWeightOf(ex);
+  const values = ex.sets
+    .map((s) => (measure === 'seconds' ? s.seconds : s.reps))
+    .filter((v): v is number => v !== null);
+  return values.length ? Math.max(...values) : null;
+}
+
+/** נקודות הגרף של תרגיל, מהישן לחדש: תאריך וערך לכל ביצוע שיש בו ערך. */
+export function progressPoints(
+  history: readonly ExerciseHistory[],
+  measure: 'weight' | 'seconds' | 'reps',
+): { d: ISODate; value: number }[] {
+  const out: { d: ISODate; value: number }[] = [];
+  for (const h of history) {
+    const value = progressValue(h.ex, measure);
+    if (value !== null) out.push({ d: h.d, value });
+  }
+  return out;
+}
+
+/**
  * הביצועים האחרונים של תרגיל, מהחדש לישן — מה שמוצג מעל שדות הקלט.
  * `excludeId` מתעלם מהאימון שנערך כרגע, כדי שהוא לא יופיע כ"קודם" של עצמו.
  */

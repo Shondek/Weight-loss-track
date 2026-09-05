@@ -361,7 +361,6 @@
     }
   ],
   "retired": [
-    { "id": "leg-press-45", "name": "לג-פרס במכונה חצי שכיבה", "short": "לג-פרס", "machine": "Leg Press 45°", "muscle": "legs", "muscles": ["ארבע ראשי", "ישבן"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "db-hip-thrust", "name": "הרמות אגן- משקולת יד", "short": "הרמות אגן", "machine": "Dumbbell", "muscle": "legs", "muscles": ["ישבן", "ירך אחורית"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "single-arm-cable-row", "name": "חתירה- כייבל קרוס יד אחת", "short": "חתירת יד אחת", "machine": "Cable Cross", "muscle": "back", "muscles": ["גב רחב", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "cable-crunch", "name": "בטן- כפיפות בטן עם חבל פולי עליון", "short": "כפיפות בטן", "machine": "Cable Rope", "muscle": "core", "muscles": ["ישרי הבטן"], "type": "isolation", "sets": 3, "repRangeMin": 12, "repRangeMax": 15 },

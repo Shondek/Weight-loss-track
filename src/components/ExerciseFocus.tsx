@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import type { LoggedExercise, LoggedSet } from '../types';
 import type { Exercise } from '../data/program';
 import { WEIGHT_STEP } from '../data/config';
 import type { ExerciseHistory } from '../lib/workouts';
-import { emptySet, lastWeightOf, setPerformed, setValue } from '../lib/workouts';
+import { emptySet, lastWeightOf, progressPoints, setPerformed, setValue } from '../lib/workouts';
 import { formatDM } from '../lib/date';
 import { clean, DASH } from '../lib/format';
 import Stepper from './Stepper';
 import NumberField from './NumberField';
+import ExerciseChart from './ExerciseChart';
 
 type Props = {
   spec: Exercise;
@@ -14,6 +16,8 @@ type Props = {
   onChange: (next: LoggedExercise) => void;
   /** הביצועים האחרונים של התרגיל, מהחדש לישן. ריק = אין ביצוע קודם. */
   history: ExerciseHistory[];
+  /** כל הביצועים של התרגיל, מהישן לחדש — לגרף ולרשימה המלאה. */
+  fullHistory: ExerciseHistory[];
   /** נקרא כשסט עובר מריק למלא — מפעיל את טיימר המנוחה. */
   onSetLogged: (setIndex: number) => void;
 };
@@ -56,12 +60,17 @@ export default function ExerciseFocus({
   log,
   onChange,
   history,
+  fullHistory,
   onSetLogged,
 }: Props) {
   const timed = spec.isTimed;
   const usesWeight = !timed && !spec.bodyweightOnly;
   const side = sideLabel(spec);
   const weight = lastWeightOf(log);
+  const [showAll, setShowAll] = useState(false);
+  const measure = timed ? 'seconds' : usesWeight ? 'weight' : 'reps';
+  const unit = timed ? 'שנ׳' : usesWeight ? 'ק״ג' : 'חזרות';
+  const points = progressPoints(fullHistory, measure);
 
   /**
    * משקל אחד לתרגיל. במודל הוא עדיין נשמר לכל סט — אותו ערך בכולם —
@@ -136,6 +145,28 @@ export default function ExerciseFocus({
               </li>
             ))}
           </ul>
+        )}
+        {fullHistory.length >= 2 && (
+          <button
+            type="button"
+            className="btn btn--quiet"
+            aria-expanded={showAll}
+            onClick={() => setShowAll((v) => !v)}
+          >
+            {showAll ? 'הסתר' : 'כל ההיסטוריה'} (<span className="num">{fullHistory.length}</span>)
+          </button>
+        )}
+        {showAll && (
+          <div className="stack--tight" style={{ marginTop: 'var(--sp-2)' }}>
+            <ExerciseChart points={points} unit={unit} label={`התקדמות ${spec.name}`} />
+            <ul className="list list--block tiny muted" aria-label={`כל הביצועים — ${spec.name}`}>
+              {[...fullHistory].reverse().map((h) => (
+                <li key={h.workoutId} className="num">
+                  {historyText(h, timed, usesWeight)}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 

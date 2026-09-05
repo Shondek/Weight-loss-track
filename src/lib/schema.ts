@@ -22,7 +22,7 @@ import {
   NOTE_MAX,
   WORKOUT_SCHEMA_VERSION,
 } from '../types';
-import { exerciseById, resolveExerciseId } from '../data/program';
+import { canonicalExerciseId, exerciseById, resolveExerciseId } from '../data/program';
 import { compareISO, isValidISO, weekStart } from './date';
 import { isCardioId } from './workouts';
 
@@ -220,7 +220,8 @@ const UNNAMED_EXERCISE = 'תרגיל ללא שם';
 function parseExercise(e: Record<string, unknown>): LoggedExercise {
   const name = typeof e.n === 'string' ? e.n.trim() : '';
   const rawId = typeof e.exerciseId === 'string' ? e.exerciseId.trim() : '';
-  const id = rawId !== '' ? rawId : (name !== '' ? resolveExerciseId(name) : null);
+  // מזהה שאוחד למזהה אחר (אותה מכונה) מתורגם כאן, פעם אחת, בכניסה.
+  const id = rawId !== '' ? canonicalExerciseId(rawId) : (name !== '' ? resolveExerciseId(name) : null);
 
   const spec = id !== null ? exerciseById(id) : undefined;
   const isNewFormat = Array.isArray(e.sets);

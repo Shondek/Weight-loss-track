@@ -186,7 +186,24 @@ export const EXERCISE_ALIASES: Record<string, string> = {
   'הרמות עגל': 'standing-calf-raise',
   'לחיצת חזה משקולות שיפוע 30°': 'incline-chest-press',
   'RDL משקולות יד': 'db-rdl',
+  'לג-פרס במכונה חצי שכיבה': 'leg-press',
 };
+
+/**
+ * מזהה ישן → מזהה נוכחי, כשמתברר שמדובר באותה מכונה. חל על כל רשומה
+ * בקריאה מהאחסון ומהייבוא (ראה `parseExercise`), ולכן ההיסטוריה של שני
+ * המזהים מוצגת כשורה אחת בלי לגעת בקובץ שנשמר.
+ *
+ * "לג-פרס במכונה חצי שכיבה" (03/09–05/09/2026) נרשם כמזהה נפרד ואוחד חזרה.
+ */
+export const EXERCISE_ID_ALIASES: Record<string, string> = {
+  'leg-press-45': 'leg-press',
+};
+
+/** המזהה הנוכחי של מזהה שנקרא מרשומה. */
+export function canonicalExerciseId(id: string): string {
+  return EXERCISE_ID_ALIASES[id] ?? id;
+}
 
 export function exerciseById(id: string): Exercise | undefined {
   return BY_ID.get(id);

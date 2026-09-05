@@ -445,6 +445,9 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               spec={specOf(current)}
               log={current}
               history={recentExercises(db.workouts, current.exerciseId, HISTORY_ROWS, open.id)}
+              fullHistory={exerciseHistory(db.workouts, current.exerciseId).filter(
+                (h) => h.workoutId !== open.id,
+              )}
               onChange={(next) => {
                 patch({
                   ...open,

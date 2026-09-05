@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   EXERCISE_ALIASES,
+  EXERCISE_ID_ALIASES,
   PROGRAM,
   RETIRED,
   TYPE_CONFIG,
@@ -105,7 +106,7 @@ describe('program-abc.json — תוכן כל תרגיל', () => {
     expect(exerciseById('side-bend')?.effort).toBeNull();
     expect(exerciseById('leg-press')?.effort).toBe('RIR 2');
     // מפרט פרוש נשאר בלי הנחיית מאמץ
-    expect(exerciseById('leg-press-45')?.effort).toBeNull();
+    expect(exerciseById('machine-hip-thrust')?.effort).toBeNull();
   });
 
   it('videoUrl הוא https או null; תרגיל פרוש בלי סרטון', () => {
@@ -137,6 +138,14 @@ describe('שמות ישנים', () => {
     for (const [name, id] of Object.entries(EXERCISE_ALIASES)) {
       expect(exerciseById(id), `${name} → ${id}`).toBeDefined();
     }
+  });
+
+  it('alias של מזהה מצביע למזהה קיים, והמזהה הישן עצמו כבר לא קיים בשום מקום', () => {
+    for (const [from, to] of Object.entries(EXERCISE_ID_ALIASES)) {
+      expect(exerciseById(to), `${from} → ${to}`).toBeDefined();
+      expect(exerciseById(from), from).toBeUndefined();
+    }
+    expect(EXERCISE_ID_ALIASES['leg-press-45']).toBe('leg-press');
   });
 
   it('exerciseById נותן את המופע הראשון בתוכנית, ואחריו פרושים', () => {

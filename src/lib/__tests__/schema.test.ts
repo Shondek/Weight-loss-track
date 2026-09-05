@@ -100,6 +100,26 @@ describe('parseWorkouts — פורמט הגרסה הישנה', () => {
     expect(r.ok[0]?.ex[0]?.exerciseId).toBe('lat-pulldown');
   });
 
+  it('מזהה שאוחד (leg-press-45) נקרא כמזהה הנוכחי — ההיסטוריה מתאחדת, השם שנרשם נשמר', () => {
+    const r = parseWorkouts([
+      {
+        ...legacy,
+        schemaVersion: 2,
+        ex: [
+          {
+            exerciseId: 'leg-press-45',
+            n: 'לג-פרס במכונה חצי שכיבה',
+            sets: [{ weight: 60, reps: 12, seconds: null }],
+          },
+        ],
+      },
+    ]);
+    expect(r.ok[0]?.ex[0]).toMatchObject({ exerciseId: 'leg-press', n: 'לג-פרס במכונה חצי שכיבה' });
+    // וגם רשומה ישנה לפי שם בלבד
+    const byName = parseWorkouts([{ ...legacy, ex: [{ n: 'לג-פרס במכונה חצי שכיבה', w: 60, r: [12] }] }]);
+    expect(byName.ok[0]?.ex[0]?.exerciseId).toBe('leg-press');
+  });
+
   it('תרגיל זמן מועלה לשניות ולא לחזרות', () => {
     const r = parseWorkouts([{ ...legacy, ex: [{ n: 'פלאנק', w: null, r: [45, 40] }] }]);
     expect(r.ok[0]?.ex[0]?.sets).toEqual([

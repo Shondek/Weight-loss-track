@@ -5,12 +5,14 @@ import type { WeeklyCheckin } from '../types';
 import { NOTE_MAX } from '../types';
 import { emptyCheckin, getCheckin, isFilled, upsertCheckin } from '../lib/checkins';
 import { backupJson, buildChatReport } from '../lib/exportText';
+import { buildWeekSummary } from '../lib/weekSummary';
 import { formatDMY, isSaturday, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import WeekNav from '../components/WeekNav';
 import Choice from '../components/Choice';
 import Stepper from '../components/Stepper';
 import CopyBlock from '../components/CopyBlock';
+import WeekSummary from '../components/WeekSummary';
 
 const SCALE_1_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const DAYS_0_7 = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -23,6 +25,7 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
   const value: WeeklyCheckin = saved ?? emptyCheckin(week);
   const start = useMemo(() => programStartWeek(db), [db]);
   const report = useMemo(() => buildChatReport(db, week, today), [db, week, today]);
+  const summary = useMemo(() => buildWeekSummary(db, week, today), [db, week, today]);
   const json = useMemo(() => backupJson(db, new Date().toISOString()), [db]);
 
   const patch = (next: Partial<WeeklyCheckin>) => {
@@ -43,6 +46,11 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
           {isSaturday(today) && week === weekStart(today) ? ' · היום' : ''}
           {isFilled(saved) ? ' · מולא' : ' · לא מולא'}
         </p>
+      </section>
+
+      <section className="section">
+        <h2 style={{ marginBottom: 'var(--sp-3)' }}>סיכום השבוע</h2>
+        <WeekSummary report={summary} today={today} />
       </section>
 
       <section className="section">
