@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "import:nutrition": "node scripts/import_nutrition_db.ts"
   },
   "dependencies": {
     "idb-keyval": "^6.2.1",
