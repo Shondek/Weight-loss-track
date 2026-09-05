@@ -22,6 +22,8 @@ export type Food = {
   portions: FoodPortion[];
   /** הערך במאגר חשוד (ראה `MohFood.suspect`). מאפיין של המאגר, לא של האכילה. */
   suspect: boolean;
+  /** מנה מורכבת — הערכים חושבו ממרכיבים. לא יכולה להיות מרכיב במנה אחרת. */
+  isRecipe: boolean;
 };
 
 export function isCustomFoodId(id: string): boolean {
@@ -49,6 +51,7 @@ export function fromMoh(f: MohFood): Food {
     fiber: f.fiber,
     portions: f.portions,
     suspect: f.suspect === true,
+    isRecipe: false,
   };
 }
 
@@ -64,6 +67,7 @@ export function fromCustom(f: CustomFood): Food {
     fiber: f.fiber,
     portions: f.portions,
     suspect: false,
+    isRecipe: f.recipe !== undefined,
   };
 }
 

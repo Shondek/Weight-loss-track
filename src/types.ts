@@ -125,8 +125,24 @@ export const CUSTOM_FOOD_PREFIX = 'c:';
 export type FoodPortion = { u: string; g: number };
 
 /**
+ * מנה מורכבת: נבנית פעם אחת ממרכיבים, והערכים ל-100 גרם של התערובת נשמרים
+ * בשדות הרגילים של `CustomFood` — כך שכל שכבת החישוב עובדת בלי לדעת שזו מנה.
+ *
+ * `finalGrams` הוא משקל המנה המוגמרת. בבישול מתאדים מים והמשקל קטן מסכום
+ * המרכיבים, ולכן הערכים ל-100 גרם מתרכזים. בסלט קר אין איבוד. ברירת המחדל
+ * היא סכום המרכיבים, והשדה תמיד ניתן לעריכה.
+ *
+ * מרכיב הוא מזון מהמאגר או מזון שלי רגיל. מנה בתוך מנה לא נתמכת.
+ */
+export type Recipe = {
+  items: { foodId: FoodId; grams: number }[];
+  finalGrams: number;
+};
+
+/**
  * מזון שהוזן ידנית, עם המספרים מהתווית. הערכים ל-100 גרם.
  * `null` = לא ידוע (לא אפס). `cat` לפי `FoodCategory` שב-lib/nutrition/foodDb.ts.
+ * עם `recipe` — מנה מורכבת; הערכים חושבו מהמרכיבים (ראה lib/nutrition/recipe.ts).
  */
 export type CustomFood = {
   id: FoodId;
@@ -140,6 +156,7 @@ export type CustomFood = {
   portions: FoodPortion[];
   /** לשימוש עתידי. */
   barcode: string | null;
+  recipe?: Recipe;
 };
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';

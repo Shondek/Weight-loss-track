@@ -19,6 +19,7 @@ import {
   type LoggedSet,
   type MealType,
   type NutritionTarget,
+  type Recipe,
   type Settings,
   type WaistEntry,
   type WeeklyCheckin,
@@ -449,6 +450,25 @@ function parsePer100(raw: Record<string, unknown>): { error: string } | { ref: F
   return { ref: { name, kcal, protein, carbs: carbs.value, fat, fiber: fiber.value } };
 }
 
+/**
+ * מתכון של מנה מורכבת. מרכיב שבור נשמט; בלי אף מרכיב תקין או בלי משקל
+ * סופי חיובי — אין מתכון, והמזון נשאר עם הערכים ששמורים בו.
+ */
+function parseRecipe(v: unknown): Recipe | null {
+  if (!isRecord(v)) return null;
+  const items: Recipe['items'] = [];
+  for (const raw of asArray(v.items)) {
+    if (!isRecord(raw)) continue;
+    const foodId = typeof raw.foodId === 'string' ? raw.foodId.trim() : '';
+    const grams = inRange(raw.grams, MIN_GRAMS, MAX_GRAMS);
+    if ((!isMohFoodId(foodId) && !isCustomFoodId(foodId)) || grams === null) continue;
+    items.push({ foodId, grams });
+  }
+  const finalGrams = inRange(v.finalGrams, MIN_GRAMS, MAX_GRAMS * 10);
+  if (items.length === 0 || finalGrams === null) return null;
+  return { items, finalGrams };
+}
+
 export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
   const rejected: Rejection[] = [];
   const byId = new Map<string, CustomFood>();
@@ -470,13 +490,25 @@ export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
     }
     const cat = intInRange(raw.cat, 1, 9);
     const barcode = cleanText(raw.barcode, 64);
+    const recipe = parseRecipe(raw.recipe);
     byId.set(id, {
       id,
       ...per100.ref,
       cat,
       portions: parsePortions(raw.portions),
       barcode: barcode === '' ? null : barcode,
+      ...(recipe ? { recipe } : {}),
     });
+  }
+
+  // מנה בתוך מנה לא נתמכת. המתכון מוסר, הערכים השמורים נשארים — לא מאבדים מזון.
+  for (const f of byId.values()) {
+    if (!f.recipe) continue;
+    const nested = f.recipe.items.some((i) => byId.get(i.foodId)?.recipe !== undefined);
+    if (nested) {
+      rejected.push({ reason: `מנה בתוך מנה לא נתמכת — המתכון של "${f.name}" הוסר, הערכים נשמרו` });
+      delete f.recipe;
+    }
   }
 
   const ok = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'he'));

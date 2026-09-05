@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
-import type { FoodEntry, MealType, NutritionTarget } from '../types';
+import type { CustomFood, FoodEntry, MealType, NutritionTarget } from '../types';
 import { useFoodIndex } from '../useFoodIndex';
 import NumberField from '../components/NumberField';
+import CustomFoodEditor, { type EditorMode } from './CustomFoodEditor';
 import { MEAL_HOURS } from '../data/config';
 import { formatDM } from '../lib/date';
 import { DASH } from '../lib/format';
@@ -15,7 +16,7 @@ import {
   MIN_GRAMS,
   MIN_TARGET_KCAL,
 } from '../lib/schema';
-import type { Food } from '../lib/nutrition/foods';
+import { fromCustom, removeCustomFood, upsertCustomFood, type Food } from '../lib/nutrition/foods';
 import { resolveFood, searchFoods } from '../lib/nutrition/index';
 import {
   defaultMeal,
@@ -154,6 +155,41 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   // ---------- יעד ----------
   const [editingTarget, setEditingTarget] = useState(false);
 
+  // ---------- מזונות שלי ----------
+  const [editor, setEditor] = useState<{ existing: CustomFood | null; name?: string; mode?: EditorMode } | null>(null);
+
+  const saveCustom = (food: CustomFood) => {
+    void store.update('customFoods', upsertCustomFood(db.customFoods, food));
+    setEditor(null);
+    // מזון שנוצר מתוך החיפוש נבחר מיד לרישום — ממשיכים מאיפה שעצרנו.
+    if (!editor?.existing) {
+      setSelected(fromCustom(food));
+      setQuery(food.name);
+      setGramsText('');
+    }
+  };
+
+  if (editor) {
+    return (
+      <CustomFoodEditor
+        index={foodIndex.index}
+        existing={editor.existing}
+        initialName={editor.name}
+        initialMode={editor.mode}
+        onSave={saveCustom}
+        onCancel={() => setEditor(null)}
+        onDelete={
+          editor.existing
+            ? () => {
+                void store.update('customFoods', removeCustomFood(db.customFoods, editor.existing!.id));
+                setEditor(null);
+              }
+            : undefined
+        }
+      />
+    );
+  }
+
   return (
     <div className="stack--loose">
       <section className="section section--first">
@@ -265,7 +301,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                     <button type="button" className="results__btn" onClick={() => pick(f)}>
                       <span className="grow">
                         {f.name}
-                        {f.source === 'custom' && <span className="tiny muted"> · שלי</span>}
+                        {f.isRecipe && <span className="tiny muted"> · מנה</span>}
+                        {f.source === 'custom' && !f.isRecipe && <span className="tiny muted"> · שלי</span>}
                         {f.suspect && <span className="tiny err"> · ערך חשוד במאגר</span>}
                       </span>
                       <span className="num muted small">{kcalText(f.kcal)}</span>
@@ -275,9 +312,15 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
               </ul>
             )}
             {!selected && query.trim() !== '' && results.length === 0 && foodIndex.status === 'ready' && (
-              <p className="tiny muted" style={{ margin: '4px 0 0' }}>
-                לא נמצא. מזון שאינו במאגר יתווסף ידנית בשלב הבא.
-              </p>
+              <div className="row row--wrap" style={{ marginTop: 'var(--sp-2)' }}>
+                <span className="tiny muted">לא נמצא במאגר.</span>
+                <button type="button" className="btn btn--quiet" onClick={() => setEditor({ existing: null, name: query.trim(), mode: 'label' })}>
+                  הוסף מהתווית
+                </button>
+                <button type="button" className="btn btn--quiet" onClick={() => setEditor({ existing: null, name: query.trim(), mode: 'recipe' })}>
+                  בנה מנה
+                </button>
+              </div>
             )}
             {selected && (
               <p className="tiny muted" style={{ margin: '4px 0 0' }}>
@@ -374,6 +417,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                           {' '}
                           · <span className="num">{e.grams}</span> ג׳ ·{' '}
                           <span className="num">{timeText(e.ts)}</span>
+                          {live?.isRecipe && ' · מנה'}
                           {n.fromRef && ' · מהרישום'}
                           {live?.suspect && <span className="err"> · ערך חשוד</span>}
                         </span>
@@ -394,6 +438,43 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             </div>
           ))
         )}
+      </section>
+
+      <section className="section">
+        <div className="section__head">
+          <h2>מזונות שלי</h2>
+          <span className="tiny muted">
+            <span className="num">{db.customFoods.length}</span>
+          </span>
+        </div>
+        {db.customFoods.length > 0 && (
+          <ul className="list" style={{ marginBottom: 'var(--sp-3)' }}>
+            {db.customFoods.map((f) => (
+              <li key={f.id}>
+                <span className="grow">
+                  {f.name}
+                  <span className="tiny muted">
+                    {f.recipe ? ' · מנה' : ' · מהתווית'} · <span className="num">{kcalText(f.kcal)}</span> קק"ל ל-100 ג׳
+                  </span>
+                </span>
+                <button type="button" className="btn btn--quiet" aria-label={`ערוך ${f.name}`} onClick={() => setEditor({ existing: f })}>
+                  ערוך
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="row">
+          <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'label' })}>
+            מזון מהתווית
+          </button>
+          <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'recipe' })}>
+            מנה ממרכיבים
+          </button>
+        </div>
+        <p className="tiny muted" style={{ margin: '6px 0 0' }}>
+          מנה: בונים פעם אחת ממרכיבים, שוקלים את הצלחת ומזינים גרמים כמו בכל מזון.
+        </p>
       </section>
 
       <p className="tiny muted" style={{ margin: 0 }}>
