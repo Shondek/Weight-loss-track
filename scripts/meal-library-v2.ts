@@ -65,9 +65,9 @@ export const GRAMS = {
   /** ✎ נפח הקפה עצמו לא במסמך. 150 מ"ל, ~4 קק"ל. */
   coffee: 150,
   /**
-   * יחידה = 1 ג' עד לאימות משקל האריזה: הערכים המלאים של היחידה נשמרים
-   * "ל-1 ג'" (כלומר ×100 ל-100 ג'), והזנת 1 ברישום = יחידה אחת.
-   * כשתשקול — עדכן את המזון לערכים אמיתיים ל-100 ג'.
+   * יחידה = 1 ג' (`unitFood`) עד לאימות משקל האריזה: ערכי היחידה נשמרים
+   * ×100 ל-100 ג', והזנת 1 ברישום = יחידה אחת. פריטי יחידה נרשמים בנפרד
+   * ולא בתוך מנה, כדי שמשקל המנה כפי שהוגדרה = משקל הצלחת.
    */
   unitAs1: 1,
 } as const;
@@ -81,8 +81,8 @@ const per100 = (kcal: number, protein: number, grams: number) => ({
   protein: (protein * 100) / grams,
 });
 
-/** ערכי יחידה בקונבנציית "יחידה = 1 ג'": ל-100 ג' = ×100. */
-const perUnitAs1 = (kcal: number, protein: number) => per100(kcal, protein, GRAMS.unitAs1);
+/** ערכי יחידה במזון `unitFood`: ל-100 ג' = ×100, והדגל פוטר מתקרת הסבירות. */
+const perUnitAs1 = (kcal: number, protein: number) => ({ ...per100(kcal, protein, GRAMS.unitAs1), unitFood: true as const });
 
 export const CUSTOM_FOODS: Custom[] = [
   {
@@ -108,7 +108,7 @@ export const CUSTOM_FOODS: Custom[] = [
     fiber: null,
     portions: [{ u: 'בקבוק', g: GRAMS.unitAs1 }],
     barcode: null,
-    note: 'בקבוק = 1 (הזן 1 לבקבוק). תווית: 193–196 קק"ל · 40 חלבון ל-350 מ"ל. פחמימה ושומן לא ידועים',
+    note: 'בקבוק = 1 ג\' (הזן 1 לבקבוק). תווית: 193–196 קק"ל · 40 חלבון ל-350 מ"ל. פחמימה ושומן לא ידועים',
   },
   {
     id: id('greek-yogurt-0'),
@@ -158,7 +158,7 @@ export const CUSTOM_FOODS: Custom[] = [
     ...perUnitAs1(120, 4),
     portions: [{ u: 'יחידה', g: GRAMS.unitAs1 }],
     barcode: null,
-    note: `יחידה = 1 (הזן 1 לפיתה). ${UNVERIFIED}: 120 קק"ל · 4 חלבון ליחידה. פחמימה ושומן לא ידועים`,
+    note: `יחידה = 1 ג' (הזן 1 לפיתה). ${UNVERIFIED}: 120 קק"ל · 4 חלבון ליחידה. פחמימה ושומן לא ידועים`,
   },
   {
     id: id('date-ball'),
@@ -170,7 +170,7 @@ export const CUSTOM_FOODS: Custom[] = [
     ...perUnitAs1(130, 0),
     portions: [{ u: 'יחידה', g: GRAMS.unitAs1 }],
     barcode: null,
-    note: `יחידה = 1 (הזן 1 לכדור). ${UNVERIFIED}: ~130 קק"ל ליחידה, חלבון לא במסמך (0). פחמימה ושומן לא ידועים`,
+    note: `יחידה = 1 ג' (הזן 1 לכדור). ${UNVERIFIED}: ~130 קק"ל ליחידה, חלבון לא במסמך (0). פחמימה ושומן לא ידועים`,
   },
 ];
 
@@ -271,12 +271,12 @@ export const DISHES: DishDef[] = [
       { foodId: MOH.tomato, grams: 200 },
       { foodId: C['bulgarit-5']!, grams: 100 },
       { foodId: MOH.oliveOil, grams: GRAMS.oilTsp },
-      { foodId: C['pita-light']!, grams: GRAMS.unitAs1 },
       { foodId: C['greek-yogurt-0']!, grams: 200 },
     ],
     finalGrams: null,
-    note: 'עגבניות טריות, לא רסק. פיתה קלה: יחידה = 1 עד לאימות המשקל',
-    doc: { kcal: 682, protein: 61, label: 'ע2' },
+    note: 'עגבניות טריות, לא רסק. בלי הפיתה — נרשמת בנפרד כ-1',
+    // המסמך: 682 / 61 כולל פיתה קלה (120 / 4).
+    doc: { kcal: 682 - 120, protein: 61 - 4, label: 'ע2 (בלי פיתה)' },
   },
   {
     slug: 'dinner-3-eggs-cheese',
@@ -287,12 +287,12 @@ export const DISHES: DishDef[] = [
       { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp },
       { foodId: C['bulgarit-5']!, grams: 150 },
       { foodId: MOH.salad, grams: 250 },
-      { foodId: C['pita-light']!, grams: GRAMS.unitAs1 },
       { foodId: C['greek-yogurt-0']!, grams: 150 },
     ],
     finalGrams: null,
-    note: 'פיתה קלה: יחידה = 1 עד לאימות המשקל',
-    doc: { kcal: 706, protein: 58, label: 'ע3' },
+    note: 'בלי הפיתה — נרשמת בנפרד כ-1',
+    // המסמך: 706 / 58 כולל פיתה קלה (120 / 4).
+    doc: { kcal: 706 - 120, protein: 58 - 4, label: 'ע3 (בלי פיתה)' },
   },
   {
     slug: 'dinner-4-broccoli-pie',
@@ -323,17 +323,17 @@ export const DISHES: DishDef[] = [
     doc: { kcal: 649, protein: 65, label: 'ע5' },
   },
   {
-    slug: 'coffee-milk-date-ball',
-    name: 'קפה קר עם חלב + כדור תמר',
+    slug: 'coffee-milk',
+    name: 'קפה קר עם חלב',
     cat: 9,
     items: [
       { foodId: MOH.coffee, grams: GRAMS.coffee },
       { foodId: MOH.milk3, grams: GRAMS.milkInCoffee },
-      { foodId: C['date-ball']!, grams: GRAMS.unitAs1 },
     ],
     finalGrams: null,
-    note: 'חלב 100 מ"ל וקפה 150 מ"ל נגזרו מהמסמך (190 − 130 = 60 קק"ל). כדור תמר: יחידה = 1 עד לאימות המשקל',
-    doc: { kcal: 190, protein: 4, label: 'קפה' },
+    note: 'חלב 100 מ"ל וקפה 150 מ"ל נגזרו מהמסמך (190 − 130 כדור תמר = 60 קק"ל). כדור התמר נרשם בנפרד כ-1',
+    // המסמך: 190 / 4 כולל כדור תמר (130 / 0).
+    doc: { kcal: 190 - 130, protein: 4, label: 'קפה (בלי כדור תמר)' },
   },
 ];
 

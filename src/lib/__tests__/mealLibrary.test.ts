@@ -56,9 +56,9 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
   it('הפערים שדווחו נשארים כפי שהם — לא מתוקנים בשקט', () => {
     // הסלט מהמאגר (42.5) מול 56 במסמך, וכדור התמר בלי חלבון — פערים מוכרים.
     expect(dishNutrition('lunch-4-pastrami').kcal / 676 - 1).toBeCloseTo(-0.068, 2);
-    expect(dishNutrition('dinner-2-shakshuka').kcal / 682 - 1).toBeCloseTo(-0.061, 2);
+    expect(dishNutrition('dinner-2-shakshuka').kcal / (682 - 120) - 1).toBeCloseTo(-0.074, 2);
     expect(dishNutrition('dinner-4-broccoli-pie').kcal / 978 - 1).toBeCloseTo(-0.063, 2);
-    expect(dishNutrition('coffee-milk-date-ball').protein / 4 - 1).toBeCloseTo(-0.138, 2);
+    expect(dishNutrition('coffee-milk').protein / 4 - 1).toBeCloseTo(-0.138, 2);
   });
 
   it('בלוקים: פריט × גרמים מול המסמך, כולם בתוך 2%', () => {
@@ -92,24 +92,36 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     expect(foods.find((f) => f.id === libId('bulgarit-5'))?.fat).toBe(5);
   });
 
-  it('יחידה = 1 ג\': הזנת 1 נותנת פיתה / כדור / בקבוק שלמים', () => {
+  it('unitFood: הזנת 1 נותנת פיתה / כדור / בקבוק שלמים; רק שלושתם מסומנים', () => {
     for (const [slug, kcal, protein] of [['pita-light', 120, 4], ['date-ball', 130, 0], ['pro40-yotvata', 195, 40]] as const) {
       const food = resolveFood(index, libId(slug))!;
-      const n = entryNutrition(newEntry(food, 1, 'snack', 1, 't'), food);
+      expect(food.unitFood, slug).toBe(true);
+      const e = newEntry(food, 1, 'snack', 1, 't');
+      expect(e.ref.unitFood).toBe(true);
+      const n = entryNutrition(e, food);
       expect(n.kcal, slug).toBeCloseTo(kcal, 6);
       expect(n.protein, slug).toBeCloseTo(protein, 6);
       expect(n.fatUnknown, slug).toBe(true);
       expect(food.portions).toEqual([{ u: expect.any(String), g: 1 }]);
-      expect(food.name && foods.find((f) => f.id === food.id)?.note).toContain('= 1');
+      expect(foods.find((f) => f.id === food.id)?.note).toContain('= 1');
     }
-    // המנות משתמשות ב-1 ג' לפיתה ולכדור.
-    const shak = foods.find((f) => f.id === libId('dinner-2-shakshuka'))!;
-    expect(shak.recipe?.items.find((i) => i.foodId === libId('pita-light'))?.grams).toBe(1);
+    expect(foods.filter((f) => f.unitFood)).toHaveLength(3);
+  });
+
+  it('פיתה וכדור תמר לא בתוך מנות — משקל המנה = משקל הצלחת', () => {
+    const pita = libId('pita-light');
+    const ball = libId('date-ball');
+    for (const f of foods) {
+      if (!f.recipe) continue;
+      expect(f.recipe.items.some((i) => i.foodId === pita || i.foodId === ball), f.name).toBe(false);
+    }
+    expect(foods.find((f) => f.id === libId('coffee-milk'))?.recipe?.items).toHaveLength(2);
   });
 
   it('מנה עם מרכיב שהשומן בו לא ידוע → שומן המנה null; ביום — fatUnknownGrams', () => {
     const shak = resolveFood(index, libId('dinner-2-shakshuka'))!;
-    expect(shak.fat).toBeNull(); // פיתה קלה בלי שומן ידוע
+    expect(shak.fat).not.toBeNull(); // בלי פיתה — כל המרכיבים עם שומן ידוע
+    expect(shak.carbs).toBeNull(); // בולגרית ויוגורט בלי פחמימה ידועה
     const rb = resolveFood(index, libId('lunch-2-roastbeef'))!;
     expect(rb.fat).toBeNull(); // רוסטביף בלי שומן ידוע
     const chicken = resolveFood(index, libId('lunch-1-chicken'))!;

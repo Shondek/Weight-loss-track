@@ -14,7 +14,7 @@ import {
 } from '../lib/nutrition/recipe';
 import { kcalText, macroText } from '../lib/nutrition/display';
 import { DASH } from '../lib/format';
-import { FOOD_NOTE_MAX } from '../types';
+import { FOOD_NOTE_MAX, UNIT_FOOD_SCALE } from '../types';
 import {
   FOOD_NAME_MAX,
   MAX_GRAMS,
@@ -128,13 +128,19 @@ export default function CustomFoodEditor({
   const [name, setName] = useState(existing?.name ?? initialName ?? '');
   const [cat, setCat] = useState<number | null>(existing?.cat ?? null);
   const [note, setNote] = useState(existing?.note ?? '');
+  /** יחידה = 1 ג': השדות מקבלים ערכי יחידה, נשמרים ×100. */
+  const [unitFood, setUnitFood] = useState(existing?.unitFood === true);
+  const unitScale = unitFood ? UNIT_FOOD_SCALE : 1;
 
   // ---------- מהתווית ----------
-  const [kcal, setKcal] = useState(toText(existing?.recipe ? null : existing?.kcal));
-  const [protein, setProtein] = useState(toText(existing?.recipe ? null : existing?.protein));
-  const [carbs, setCarbs] = useState(toText(existing?.recipe ? null : existing?.carbs));
-  const [fat, setFat] = useState(toText(existing?.recipe ? null : existing?.fat));
-  const [fiber, setFiber] = useState(toText(existing?.recipe ? null : existing?.fiber));
+  // בעריכת מזון יחידה השדות מציגים ערכי יחידה (÷100), והשמירה מכפילה חזרה.
+  const shown = (v: number | null | undefined) =>
+    toText(existing?.recipe ? null : v === null || v === undefined ? v : v / (existing?.unitFood ? UNIT_FOOD_SCALE : 1));
+  const [kcal, setKcal] = useState(shown(existing?.kcal));
+  const [protein, setProtein] = useState(shown(existing?.protein));
+  const [carbs, setCarbs] = useState(shown(existing?.carbs));
+  const [fat, setFat] = useState(shown(existing?.fat));
+  const [fiber, setFiber] = useState(shown(existing?.fiber));
 
   // ---------- מנה ----------
   const [items, setItems] = useState<RecipeItem[]>(existing?.recipe?.items.map((i) => ({ ...i })) ?? []);
@@ -204,13 +210,15 @@ export default function CustomFoodEditor({
       ...(note.trim() === '' ? {} : { note: note.trim().slice(0, FOOD_NOTE_MAX) }),
     };
     if (mode === 'label' && labelValues && labelValid) {
+      const s = (v: number | null) => (v === null ? null : v * unitScale);
       onSave({
         ...base,
-        kcal: labelValues.kcal!,
-        protein: labelValues.protein!,
-        carbs: labelValues.carbs,
-        fat: labelValues.fat,
-        fiber: labelValues.fiber,
+        kcal: labelValues.kcal! * unitScale,
+        protein: labelValues.protein! * unitScale,
+        carbs: s(labelValues.carbs),
+        fat: s(labelValues.fat),
+        fiber: s(labelValues.fiber),
+        ...(unitFood ? { unitFood: true as const } : {}),
       });
     } else if (mode === 'recipe' && finalGrams !== null) {
       onSave(buildRecipeFood(base, items, finalGrams, resolve));
@@ -278,10 +286,21 @@ export default function CustomFoodEditor({
       {mode === 'label' && (
         <section className="section">
           <div className="section__head">
-            <h2>ערכים ל-100 ג׳</h2>
+            <h2>{unitFood ? 'ערכים ליחידה' : 'ערכים ל-100 ג׳'}</h2>
             <span className="tiny muted">מהתווית, כמו שהם</span>
           </div>
           <div className="stack">
+            <label className="row" style={{ fontSize: 14, color: 'var(--ink)', gap: 'var(--sp-2)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={unitFood}
+                onChange={(e) => setUnitFood(e.target.checked)}
+                style={{ width: 22, height: 22, margin: 0 }}
+              />
+              <span>
+                יחידה = 1 ג׳ <span className="muted tiny">— ערכי היחידה כמו שהם; ברישום מזינים 1 ליחידה. לפריט בלי משקל אריזה ידוע.</span>
+              </span>
+            </label>
             <DecimalField label="קלוריות" value={kcal} onChange={setKcal} min={0} max={MAX_KCAL_PER_100G} big />
             <div className="macros">
               <DecimalField label="חלבון" value={protein} onChange={setProtein} min={0} max={MAX_MACRO_PER_100G} />
@@ -291,7 +310,6 @@ export default function CustomFoodEditor({
             <DecimalField label="סיבים" value={fiber} onChange={setFiber} min={0} max={MAX_MACRO_PER_100G} optional />
             <p className="tiny muted" style={{ margin: 0 }}>
               פחמימה, שומן וסיבים שלא בתווית נשארים ריקים ומוצגים כמקף — לא כאפס.
-              ערכי יחידה בלי משקל אריזה: הזן אותם כ"ל-1 ג'" והזן 1 ברישום — עד שתשקול.
             </p>
           </div>
         </section>

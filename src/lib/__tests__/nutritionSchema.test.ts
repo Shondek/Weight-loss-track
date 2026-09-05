@@ -60,24 +60,39 @@ describe('parseCustomFoods', () => {
   });
 
   it('דוחה ערכים מחוץ לטווח ל-100 ג׳, ומקבל carbs/fat/fiber כ-null', () => {
-    // התקרות גבוהות בכוונה: מזון בקונבנציית "יחידה = 1 ג'" מחזיק ×100 ל-100 ג'.
     const r = parseCustomFoods([
-      custom({ kcal: 90_001 }),
-      custom({ protein: 10_001 }),
+      custom({ kcal: 901 }),
+      custom({ protein: 101 }),
       custom({ fat: -1 }),
       custom({ carbs: null, fat: null, fiber: null }),
-      custom({ id: 'c:x', carbs: 10_500 }),
-      custom({ id: 'c:unit', kcal: 19_500, protein: 4_000 }),
+      custom({ id: 'c:x', carbs: 150 }),
     ]);
-    expect(r.ok).toHaveLength(2);
+    expect(r.ok).toHaveLength(1);
     expect(r.ok[0]?.carbs).toBeNull();
     expect(r.ok[0]?.fat).toBeNull();
     expect(r.ok[0]?.fiber).toBeNull();
     expect(r.rejected.map((x) => x.reason)).toEqual([
-      "קלוריות מחוץ לטווח 0–90000 ל-100 ג'",
-      "מאקרו מחוץ לטווח 0–10000 ל-100 ג'",
-      "מאקרו מחוץ לטווח 0–10000 ל-100 ג'",
-      "מאקרו מחוץ לטווח 0–10000 ל-100 ג'",
+      "קלוריות מחוץ לטווח 0–900 ל-100 ג'",
+      "מאקרו מחוץ לטווח 0–100 ל-100 ג'",
+      "מאקרו מחוץ לטווח 0–100 ל-100 ג'",
+      "מאקרו מחוץ לטווח 0–100 ל-100 ג'",
+    ]);
+  });
+
+  it('unitFood: ערכי יחידה ×100 עוברים רק עם הדגל, והדגל נשמר', () => {
+    const r = parseCustomFoods([
+      custom({ id: 'c:u', kcal: 19_500, protein: 4_000, unitFood: true }),
+      custom({ id: 'c:no', kcal: 19_500, protein: 4_000 }),
+      custom({ id: 'c:over', kcal: 90_001, unitFood: true }),
+      custom({ id: 'c:false', unitFood: false as unknown as true }),
+    ]);
+    expect(r.ok.map((f) => [f.id, f.unitFood === true]).sort()).toEqual([
+      ['c:false', false],
+      ['c:u', true],
+    ]);
+    expect(r.rejected.map((x) => x.reason)).toEqual([
+      "קלוריות מחוץ לטווח 0–900 ל-100 ג'",
+      "קלוריות מחוץ לטווח 0–90000 ל-100 ג' (ערכי יחידה ×100)",
     ]);
   });
 
@@ -151,15 +166,23 @@ describe('parseEntries', () => {
   it('רישום בלי ref או עם ref שבור נדחה — הוא לא היה שורד מחיקת מזון', () => {
     const r = parseEntries([
       { ...entry(), ref: undefined },
-      entry({ ref: { ...ref, kcal: 100_000 } }),
+      entry({ ref: { ...ref, kcal: 5000 } }),
       entry({ ref: { ...ref, name: '' } }),
     ]);
     expect(r.ok).toHaveLength(0);
     expect(r.rejected.map((x) => x.reason)).toEqual([
       'רישום בלי ערכי מזון',
-      "ערכי מזון: קלוריות מחוץ לטווח 0–90000 ל-100 ג'",
+      "ערכי מזון: קלוריות מחוץ לטווח 0–900 ל-100 ג'",
       'ערכי מזון: מזון בלי שם',
     ]);
+  });
+
+  it('רישום של מזון יחידה: ה-ref נושא unitFood, ולכן ערכי ×100 מתקבלים', () => {
+    const unitRef = { name: 'פיתה קלה', kcal: 12_000, protein: 400, carbs: null, fat: null, fiber: null, unitFood: true as const };
+    const r = parseEntries([entry({ foodId: 'c:pita', grams: 1, ref: unitRef }), entry({ id: 'e2', foodId: 'c:pita', grams: 1, ref: { name: unitRef.name, kcal: unitRef.kcal, protein: unitRef.protein, carbs: null, fat: null, fiber: null } })]);
+    expect(r.ok).toHaveLength(1);
+    expect(r.ok[0]?.ref.unitFood).toBe(true);
+    expect(r.rejected[0]?.reason).toContain('0–900');
   });
 
   it('ref עם carbs/fat/fiber null נשמר כ-null, לא כאפס', () => {

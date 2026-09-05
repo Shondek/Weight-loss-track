@@ -3,7 +3,7 @@
 import type { FoodEntry, FoodRef, ISODate, MealType } from '../../types';
 import { toLocalISO } from '../date';
 import { sortableStamp } from '../workouts';
-import type { Food } from './foods';
+import { refOf, type Food } from './foods';
 
 export const MEAL_ORDER: readonly MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -53,14 +53,7 @@ export function newEntry(
   unique: string,
   note = '',
 ): FoodEntry {
-  const ref: FoodRef = {
-    name: food.name,
-    kcal: food.kcal,
-    protein: food.protein,
-    carbs: food.carbs,
-    fat: food.fat,
-    fiber: food.fiber,
-  };
+  const ref: FoodRef = refOf(food);
   return {
     id: makeEntryId(ts, unique),
     d: toLocalISO(new Date(ts)),

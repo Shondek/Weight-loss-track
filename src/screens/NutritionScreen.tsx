@@ -16,7 +16,7 @@ import {
   MIN_GRAMS,
   MIN_TARGET_KCAL,
 } from '../lib/schema';
-import { fromCustom, removeCustomFood, upsertCustomFood, type Food } from '../lib/nutrition/foods';
+import { displayValues, fromCustom, removeCustomFood, upsertCustomFood, type Food } from '../lib/nutrition/foods';
 import { resolveFood, searchFoods } from '../lib/nutrition/index';
 import {
   defaultMeal,
@@ -216,7 +216,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           {(
             [
               ['חלבון', summary.protein, target?.protein, false],
-              ['פחמימה', summary.carbs, target?.carbs, false],
+              ['פחמימה', summary.carbs, target?.carbs, summary.carbsUnknownGrams > 0],
               ['שומן', summary.fat, target?.fat, summary.fatUnknownGrams > 0],
             ] as const
           ).map(([label, consumed, goal, atLeast]) => (
@@ -308,7 +308,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                         {f.source === 'custom' && !f.isRecipe && <span className="tiny muted"> · שלי</span>}
                         {f.suspect && <span className="tiny err"> · ערך חשוד במאגר</span>}
                       </span>
-                      <span className="num muted small">{kcalText(f.kcal)}</span>
+                      <span className="num muted small">{kcalText(displayValues(f).kcal)}</span>
                     </button>
                   </li>
                 ))}
@@ -327,10 +327,10 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             )}
             {selected && (
               <p className="tiny muted" style={{ margin: '4px 0 0' }}>
-                <span className="num">{kcalText(selected.kcal)}</span> קק"ל ·{' '}
-                <span className="num">{macroText(selected.protein)}</span> חלבון ·{' '}
-                <span className="num">{selected.carbs === null ? DASH : macroText(selected.carbs)}</span> פחמימה ·{' '}
-                <span className="num">{selected.fat === null ? DASH : macroText(selected.fat)}</span> שומן · ל-100 ג׳
+                <span className="num">{kcalText(displayValues(selected).kcal)}</span> קק"ל ·{' '}
+                <span className="num">{macroText(displayValues(selected).protein)}</span> חלבון ·{' '}
+                <span className="num">{displayValues(selected).carbs === null ? DASH : macroText(displayValues(selected).carbs!)}</span> פחמימה ·{' '}
+                <span className="num">{displayValues(selected).fat === null ? DASH : macroText(displayValues(selected).fat!)}</span> שומן · {displayValues(selected).per}
                 {selected.suspect && <span className="err"> · ערך חשוד במאגר</span>}
                 {' '}
                 <button type="button" className="btn btn--quiet tiny" onClick={clearPick} style={{ minHeight: 0 }}>
@@ -457,7 +457,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                 <span className="grow">
                   {f.name}
                   <span className="tiny muted">
-                    {f.recipe ? ' · מנה' : ' · מהתווית'} · <span className="num">{kcalText(f.kcal)}</span> קק"ל ל-100 ג׳
+                    {f.recipe ? ' · מנה' : ' · מהתווית'} ·{' '}
+                    <span className="num">{kcalText(displayValues(fromCustom(f)).kcal)}</span> קק"ל {displayValues(fromCustom(f)).per}
                     {f.note ? ` · ${f.note}` : ''}
                   </span>
                 </span>

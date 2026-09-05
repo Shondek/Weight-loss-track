@@ -6,7 +6,14 @@
  * = מזון שלי. `MohFood` מגיע מקובץ ה-asset, `CustomFood` מהאחסון.
  */
 
-import { CUSTOM_FOOD_PREFIX, type CustomFood, type FoodId, type FoodPortion, type FoodRef } from '../../types.ts';
+import {
+  CUSTOM_FOOD_PREFIX,
+  UNIT_FOOD_SCALE,
+  type CustomFood,
+  type FoodId,
+  type FoodPortion,
+  type FoodRef,
+} from '../../types.ts';
 import type { MohFood } from './foodDb';
 
 /** מזון שאפשר לרשום: מהמאגר או שלי. הממשק לא צריך להבחין ביניהם. */
@@ -24,6 +31,8 @@ export type Food = {
   suspect: boolean;
   /** מנה מורכבת — הערכים חושבו ממרכיבים. לא יכולה להיות מרכיב במנה אחרת. */
   isRecipe: boolean;
+  /** יחידה = 1 ג': הערכים ל-100 ג' הם ערכי יחידה ×100. הזנת 1 = יחידה. */
+  unitFood: boolean;
 };
 
 export function isCustomFoodId(id: string): boolean {
@@ -52,6 +61,7 @@ export function fromMoh(f: MohFood): Food {
     portions: f.portions,
     suspect: f.suspect === true,
     isRecipe: false,
+    unitFood: false,
   };
 }
 
@@ -68,12 +78,36 @@ export function fromCustom(f: CustomFood): Food {
     portions: f.portions,
     suspect: false,
     isRecipe: f.recipe !== undefined,
+    unitFood: f.unitFood === true,
   };
 }
 
-/** ערכי המקור ל-100 גרם שנשמרים ברישום. */
+/** ערכי המקור ל-100 גרם שנשמרים ברישום. `unitFood` מוקפא איתם. */
 export function refOf(f: Food): FoodRef {
-  return { name: f.name, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat, fiber: f.fiber };
+  return {
+    name: f.name,
+    kcal: f.kcal,
+    protein: f.protein,
+    carbs: f.carbs,
+    fat: f.fat,
+    fiber: f.fiber,
+    ...(f.unitFood ? { unitFood: true as const } : {}),
+  };
+}
+
+/**
+ * הערכים להצגה: ל-100 ג' במזון רגיל, ליחידה במזון יחידה (÷100).
+ * הסכום היומי לא צריך את זה — הוא עובד על הערכים כפי שהם.
+ */
+export function displayValues(f: Food): { kcal: number; protein: number; carbs: number | null; fat: number | null; per: string } {
+  const k = f.unitFood ? 1 / UNIT_FOOD_SCALE : 1;
+  return {
+    kcal: f.kcal * k,
+    protein: f.protein * k,
+    carbs: f.carbs === null ? null : f.carbs * k,
+    fat: f.fat === null ? null : f.fat * k,
+    per: f.unitFood ? 'ליחידה (הזן 1)' : 'ל-100 ג׳',
+  };
 }
 
 // ---------- מזונות שלי ----------

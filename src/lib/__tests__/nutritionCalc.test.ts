@@ -108,7 +108,7 @@ describe('entryNutrition — רישום בודד', () => {
 
 describe('daySummary', () => {
   it('יום ריק — אפסים, count 0, fiberUnknownGrams 0', () => {
-    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 });
+    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 });
     const other = log(bread, 30, at(2026, 9, 4, 8));
     expect(daySummary([other], '2026-09-05', resolve).count).toBe(0);
   });
@@ -141,6 +141,7 @@ describe('daySummary', () => {
     expect(s.fiber).toBeCloseTo(2.4, 10);
     expect(s.fiberUnknownGrams).toBe(80);
     expect(s.fatUnknownGrams).toBe(0);
+    expect(s.carbsUnknownGrams).toBe(150); // הדג
     expect(s.carbs).toBeCloseTo(28.2 + 1 + 0.6, 10);
     expect(s.kcal).toBeCloseTo(142.2 + 125 + 75 + 192, 10);
     expect(s.count).toBe(4);
@@ -152,6 +153,7 @@ describe('daySummary', () => {
     const s = daySummary(entries, '2026-09-05', (id) => (id === 'c:rb' ? roastbeef : resolve(id)));
     expect(s.fat).toBeCloseTo(0.9, 10);
     expect(s.fatUnknownGrams).toBe(350);
+    expect(s.carbsUnknownGrams).toBe(350);
     expect(s.kcal).toBeCloseTo(357 + 142.2, 10);
   });
 

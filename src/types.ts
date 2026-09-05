@@ -160,9 +160,17 @@ export type CustomFood = {
   recipe?: Recipe;
   /** טקסט חופשי עד `FOOD_NOTE_MAX` — מקור הערכים, מה טרם אומת. */
   note?: string;
+  /**
+   * "היחידה היא 1 גרם": הערכים ל-100 ג' הם ערכי היחידה ×100, והזנת 1
+   * ברישום = יחידה אחת. לפריט בלי משקל אריזה ידוע. פוטר מתקרות הסבירות
+   * ל-100 ג' (ראה `UNIT_FOOD_SCALE`), ולכן ניתן רק במפורש.
+   */
+  unitFood?: true;
 };
 
 export const FOOD_NOTE_MAX = 200;
+/** ערכי יחידה נשמרים ×100 (ל-100 ג' = 100 יחידות של 1 ג'). */
+export const UNIT_FOOD_SCALE = 100;
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
@@ -181,6 +189,8 @@ export type FoodRef = {
   carbs: number | null;
   fat: number | null;
   fiber: number | null;
+  /** מוקפא יחד עם הערכים — הפרסר צריך לדעת שהם ערכי יחידה ×100. */
+  unitFood?: true;
 };
 
 export type FoodEntry = {

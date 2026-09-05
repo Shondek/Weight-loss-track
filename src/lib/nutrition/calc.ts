@@ -7,15 +7,16 @@
  *     נגזרות מהמאקרו ולא להפך.
  *  2. המזון החי גובר; `ref` שברישום הוא הגיבוי כשהמזון נעלם.
  *  3. ערכי ביניים בדיוק מלא. העיגול הוא עניין של תצוגה בלבד (display.ts).
- *  4. בסיכום יומי `null` נספר כאפס, ובמקביל נספרים הגרמים שהשומן או הסיבים
- *     בהם לא ידועים — כדי שהממשק יוכל לומר "לפחות X" במקום מספר שנראה מדויק.
+ *  4. בסיכום יומי `null` נספר כאפס, ובמקביל נספרים הגרמים שהפחמימה, השומן
+ *     או הסיבים בהם לא ידועים — כדי שהממשק יוכל לומר "לפחות X" במקום מספר
+ *     שנראה מדויק. שלושתם מתנהגים אותו דבר.
  *  5. הנותר יכול להיות שלילי. לא מעגלים לאפס.
  */
 
 import type { FoodEntry, FoodRef, ISODate, NutritionTarget, WeightEntry } from '../../types';
 import { diffDays } from '../date';
 import { lastWeight } from '../weights';
-import type { Food } from './foods';
+import { refOf, type Food } from './foods';
 
 export type Nutrients = {
   kcal: number;
@@ -40,12 +41,7 @@ export type EntryNutrition = Nutrients & {
 
 /** ערכי המקור בפועל לרישום: המזון החי כשהוא קיים, אחרת ההקפאה שברישום. */
 export function sourceOf(entry: FoodEntry, live: Food | null): { ref: FoodRef; fromRef: boolean } {
-  if (live) {
-    return {
-      ref: { name: live.name, kcal: live.kcal, protein: live.protein, carbs: live.carbs, fat: live.fat, fiber: live.fiber },
-      fromRef: false,
-    };
-  }
+  if (live) return { ref: refOf(live), fromRef: false };
   return { ref: entry.ref, fromRef: true };
 }
 
@@ -73,9 +69,11 @@ export type DaySummary = Nutrients & {
   /** כמה רישומים נסכמו. 0 = יום ריק. */
   count: number;
   /**
-   * סך הגרמים מרישומים שהשומן בהם לא ידוע. כשגדול מאפס, `fat` הוא חסם
-   * תחתון ("לפחות X ג'"), לא ערך מדויק.
+   * סך הגרמים מרישומים שהפחמימה בהם לא ידועה. כשגדול מאפס, `carbs` הוא
+   * חסם תחתון ("לפחות X ג'"), לא ערך מדויק.
    */
+  carbsUnknownGrams: number;
+  /** כנ"ל לשומן. */
   fatUnknownGrams: number;
   /** כנ"ל לסיבים. */
   fiberUnknownGrams: number;
@@ -89,7 +87,7 @@ export function daySummary(
   d: ISODate,
   resolve: FoodResolver,
 ): DaySummary {
-  const out: DaySummary = { ...ZERO, d, count: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 };
+  const out: DaySummary = { ...ZERO, d, count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 };
   for (const e of entries) {
     if (e.d !== d) continue;
     const n = entryNutrition(e, resolve(e.foodId));
@@ -98,6 +96,7 @@ export function daySummary(
     out.carbs += n.carbs;
     out.fat += n.fat;
     out.fiber += n.fiber;
+    if (n.carbsUnknown) out.carbsUnknownGrams += e.grams;
     if (n.fatUnknown) out.fatUnknownGrams += e.grams;
     if (n.fiberUnknown) out.fiberUnknownGrams += e.grams;
     out.count++;

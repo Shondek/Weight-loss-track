@@ -30,6 +30,7 @@ import {
   ENTRY_NOTE_MAX,
   FOOD_NOTE_MAX,
   NOTE_MAX,
+  UNIT_FOOD_SCALE,
   WORKOUT_SCHEMA_VERSION,
 } from '../types';
 import { canonicalExerciseId, exerciseById, resolveExerciseId } from '../data/program';
@@ -388,13 +389,12 @@ export function parseSettings(input: unknown): Settings {
 // ---------- תזונה ----------
 
 /**
- * ערכים ל-100 גרם. מזון אמיתי לא עובר 900 קק"ל (שמן טהור הוא 884) או 100 ג'
- * מאקרו — אבל מזון שלי יכול להיות מוגדר ב"יחידה = 1 ג'" (ערכי היחידה
- * המלאים ל-1 ג', עד שמשקל האריזה נמדד), ואז ל-100 ג' יש פי 100. התקרות
- * מאפשרות את זה: בקבוק PRO 40 = 195 קק"ל ו-40 ג' חלבון ליחידה.
+ * ערכים ל-100 גרם. קלוריות עד 900 (שמן טהור הוא 884), מאקרו עד 100 גרם.
+ * מזון עם `unitFood` (יחידה = 1 ג') מחזיק ערכי יחידה ×100, והתקרה שלו
+ * מוכפלת ב-`UNIT_FOOD_SCALE` — רק לו, במפורש.
  */
-export const MAX_KCAL_PER_100G = 90_000;
-export const MAX_MACRO_PER_100G = 10_000;
+export const MAX_KCAL_PER_100G = 900;
+export const MAX_MACRO_PER_100G = 100;
 export const MIN_GRAMS = 0.1;
 export const MAX_GRAMS = 5000;
 export const MAX_PORTION_GRAMS = 5000;
@@ -445,16 +445,31 @@ function parsePortions(v: unknown): FoodPortion[] {
 function parsePer100(raw: Record<string, unknown>): { error: string } | { ref: FoodRef } {
   const name = cleanText(raw.name, FOOD_NAME_MAX);
   if (name === '') return { error: 'מזון בלי שם' };
-  const kcal = inRange(raw.kcal, 0, MAX_KCAL_PER_100G);
-  if (kcal === null) return { error: `קלוריות מחוץ לטווח 0–${MAX_KCAL_PER_100G} ל-100 ג'` };
-  const protein = inRange(raw.protein, 0, MAX_MACRO_PER_100G);
-  if (protein === null) return { error: `מאקרו מחוץ לטווח 0–${MAX_MACRO_PER_100G} ל-100 ג'` };
+  const unitFood = raw.unitFood === true;
+  const scale = unitFood ? UNIT_FOOD_SCALE : 1;
+  const maxKcal = MAX_KCAL_PER_100G * scale;
+  const maxMacro = MAX_MACRO_PER_100G * scale;
+  const unitNote = unitFood ? ' (ערכי יחידה ×100)' : '';
+  const kcal = inRange(raw.kcal, 0, maxKcal);
+  if (kcal === null) return { error: `קלוריות מחוץ לטווח 0–${maxKcal} ל-100 ג'${unitNote}` };
+  const protein = inRange(raw.protein, 0, maxMacro);
+  if (protein === null) return { error: `מאקרו מחוץ לטווח 0–${maxMacro} ל-100 ג'${unitNote}` };
   // פחמימה, שומן וסיבים יכולים להיות לא ידועים (תווית חלקית). null נשמר כ-null.
-  const carbs = optionalPer100(raw.carbs, MAX_MACRO_PER_100G);
-  const fat = optionalPer100(raw.fat, MAX_MACRO_PER_100G);
-  const fiber = optionalPer100(raw.fiber, MAX_MACRO_PER_100G);
-  if (!carbs.ok || !fat.ok || !fiber.ok) return { error: `מאקרו מחוץ לטווח 0–${MAX_MACRO_PER_100G} ל-100 ג'` };
-  return { ref: { name, kcal, protein, carbs: carbs.value, fat: fat.value, fiber: fiber.value } };
+  const carbs = optionalPer100(raw.carbs, maxMacro);
+  const fat = optionalPer100(raw.fat, maxMacro);
+  const fiber = optionalPer100(raw.fiber, maxMacro);
+  if (!carbs.ok || !fat.ok || !fiber.ok) return { error: `מאקרו מחוץ לטווח 0–${maxMacro} ל-100 ג'${unitNote}` };
+  return {
+    ref: {
+      name,
+      kcal,
+      protein,
+      carbs: carbs.value,
+      fat: fat.value,
+      fiber: fiber.value,
+      ...(unitFood ? { unitFood: true as const } : {}),
+    },
+  };
 }
 
 /**
