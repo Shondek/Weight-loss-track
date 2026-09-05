@@ -253,7 +253,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       id: makeWorkoutId(d, t, newId()),
       d,
       t,
-      ex: prefilledExercises(db.workouts, t),
+      ex: prefilledExercises(db.workouts, t, d),
       knee: null,
       shoulder: null,
     });

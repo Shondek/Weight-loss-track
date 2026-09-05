@@ -102,21 +102,22 @@
           "videoUrl": "https://drive.google.com/file/d/1y9vcT0NOaktUtm9L7UJICLSpjZpJX-OZ/view?usp=share_link"
         },
         {
-          "id": "cable-torso-rotation",
-          "name": "בטן- רוטציות גו פולי אמצעי",
-          "short": "רוטציות גו",
-          "machine": "Cable",
+          "id": "plank",
+          "name": "בטן- פלאנק סטטי",
+          "short": "פלאנק",
+          "machine": null,
           "muscle": "core",
-          "muscles": ["אלכסונים"],
+          "muscles": ["ליבה"],
           "type": "core",
           "sets": 3,
-          "reps": "12-15 לכל צד",
-          "repRangeMin": 12,
-          "repRangeMax": 15,
-          "unilateral": true,
-          "effort": "RIR 1",
-          "note": "אגן נייח. התנועה מגיעה מהגו",
-          "videoUrl": "https://drive.google.com/file/d/1XuEWbaJgXr0hwpjHnetkM6roNsfC_FFd/view?usp=share_link"
+          "reps": "30-45 שנ'",
+          "repRangeMin": 30,
+          "repRangeMax": 45,
+          "isTimed": true,
+          "bodyweightOnly": true,
+          "effort": "—",
+          "note": "45 שנ' × 3 עם פלטה 5 ק\"ג על הגב",
+          "videoUrl": "https://drive.google.com/file/d/1gmiYVdPzQuDcGLAiweQxJiQv5cnFzTWy/view?usp=share_link"
         }
       ]
     },
@@ -364,7 +365,6 @@
     { "id": "db-hip-thrust", "name": "הרמות אגן- משקולת יד", "short": "הרמות אגן", "machine": "Dumbbell", "muscle": "legs", "muscles": ["ישבן", "ירך אחורית"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "single-arm-cable-row", "name": "חתירה- כייבל קרוס יד אחת", "short": "חתירת יד אחת", "machine": "Cable Cross", "muscle": "back", "muscles": ["גב רחב", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "cable-crunch", "name": "בטן- כפיפות בטן עם חבל פולי עליון", "short": "כפיפות בטן", "machine": "Cable Rope", "muscle": "core", "muscles": ["ישרי הבטן"], "type": "isolation", "sets": 3, "repRangeMin": 12, "repRangeMax": 15 },
-    { "id": "plank", "name": "בטן- פלאנק סטטי", "short": "פלאנק", "machine": null, "muscle": "core", "muscles": ["ליבה"], "type": "core", "sets": 3, "repRangeMin": 30, "repRangeMax": 45, "isTimed": true, "bodyweightOnly": true },
     { "id": "machine-hip-thrust", "name": "הרמות אגן- מכונה", "short": "הרמות אגן מכונה", "machine": "Hip Thrust Machine", "muscle": "legs", "muscles": ["ישבן", "ירך אחורית"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "t-bar-row", "name": "חתירה- מכונה ייעודית T-bar", "short": "חתירה T-bar", "machine": "T-Bar Row", "muscle": "back", "muscles": ["גב רחב", "טרפז", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },
     { "id": "hip-thrust", "name": "הרמות אגן- מוט", "short": "הרמות אגן", "machine": "Barbell", "muscle": "legs", "muscles": ["ישבן", "ירך אחורית"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12 },

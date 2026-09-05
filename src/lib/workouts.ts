@@ -17,10 +17,10 @@ import {
 import {
   CARDIO_MODES,
   FINISHER_CARDIO,
-  FINISHER_CARDIO_ENABLED,
+  FINISHER_CARDIO_DAYS,
   WARMUP,
 } from '../data/config';
-import { compareISO, weekDays } from './date';
+import { compareISO, dayOfWeek, weekDays } from './date';
 
 export function sortWorkouts(list: readonly WorkoutEntry[]): WorkoutEntry[] {
   return [...list].sort(
@@ -199,6 +199,11 @@ export function isCardio(ex: LoggedExercise): boolean {
   return isCardioId(ex.exerciseId);
 }
 
+/** האם אימון בתאריך הזה מסתיים באירובי. הימים ב-`FINISHER_CARDIO_DAYS` שב-config.ts. */
+export function finisherEnabledOn(d: ISODate): boolean {
+  return FINISHER_CARDIO_DAYS.includes(dayOfWeek(d));
+}
+
 /** "אופניים" / "הליכון". */
 export function cardioModeLabel(mode: CardioMode): string {
   return CARDIO_MODES.find((m) => m.id === mode)?.label ?? mode;
@@ -308,18 +313,19 @@ export function openingWeight(
 
 /**
  * שורות תרגילים לאימון חדש: חימום בראש, תרגילי התוכנית עם המשקל מהרישום
- * האחרון, ואירובי סיום בסוף כשהוא מופעל. המטרה: לאשר או לשנות, לא
- * להקליד מחדש. החזרות תמיד ריקות — המשקל לבדו אינו נחשב נתון (ראה
- * `hasData`), ולכן אימון כזה עדיין נחשב ריק.
+ * האחרון, ואירובי סיום בסוף כשתאריך האימון הוא יום אירובי. המטרה: לאשר
+ * או לשנות, לא להקליד מחדש. החזרות תמיד ריקות — המשקל לבדו אינו נחשב
+ * נתון (ראה `hasData`), ולכן אימון כזה עדיין נחשב ריק.
  */
 export function prefilledExercises(
   list: readonly WorkoutEntry[],
   t: WorkoutType,
+  d: ISODate,
 ): LoggedExercise[] {
   return [
     blankCardio(WARMUP_ID),
     ...PROGRAM[t].map((spec) => blankLoggedExercise(spec, openingWeight(list, spec.id))),
-    ...(FINISHER_CARDIO_ENABLED ? [blankCardio(FINISHER_ID)] : []),
+    ...(finisherEnabledOn(d) ? [blankCardio(FINISHER_ID)] : []),
   ];
 }
 
@@ -328,8 +334,8 @@ export function prefilledExercises(
  * התוכנית לפי סדרן, תרגילים שנרשמו בעבר ואינם בתוכנית הנוכחית — כדי
  * שהיסטוריה לא תיעלם מהמסך — ואירובי סיום אחרון.
  *
- * רשומה ישנה בלי חימום מקבלת שורה ריקה; האירובי מופיע רק כשהדגל דלוק,
- * או כשהוא כבר נרשם ברשומה (נתון שנרשם לא מוסתר).
+ * רשומה ישנה בלי חימום מקבלת שורה ריקה; האירובי מופיע רק כשתאריך האימון
+ * הוא יום אירובי, או כשהוא כבר נרשם ברשומה (נתון שנרשם לא מוסתר).
  */
 export function exercisesFor(
   entry: WorkoutEntry,
@@ -352,7 +358,7 @@ export function exercisesFor(
     }
   }
   const finisher = byId.get(FINISHER_ID);
-  if (FINISHER_CARDIO_ENABLED) rows.push(finisher ?? blankCardio(FINISHER_ID));
+  if (finisherEnabledOn(entry.d)) rows.push(finisher ?? blankCardio(FINISHER_ID));
   else if (finisher && hasData(finisher)) rows.push(finisher);
   return rows;
 }

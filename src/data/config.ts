@@ -38,14 +38,14 @@ export const WARMUP = {
 } as const;
 
 /**
- * אירובי סיום — התרגיל האחרון באימון. כלי של שלב 2 בתוכנית (מ-1/11/2026):
- * בנוי, כבוי. הפיכת הדגל ל-true מציגה אותו בלי שינוי קוד נוסף.
+ * אירובי סיום — התרגיל האחרון באימון, רק בימים שברשימה (0 = ראשון … 6 = שבת).
+ * רשימה ריקה = כבוי לגמרי. אירובי שכבר נרשם ביום אחר לא מוסתר.
  */
-export const FINISHER_CARDIO_ENABLED = false;
+export const FINISHER_CARDIO_DAYS: readonly number[] = [6];
 
 export const FINISHER_CARDIO = {
   defaultMode: 'bike' as CardioMode,
-  defaultMinutes: 0,
+  defaultMinutes: 10,
 } as const;
 
 /** תקרת דקות לשדה החימום/האירובי. */
