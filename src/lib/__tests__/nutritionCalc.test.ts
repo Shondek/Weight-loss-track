@@ -92,13 +92,23 @@ describe('entryNutrition — רישום בודד', () => {
     const n = entryNutrition(log(cheese, 50, at(2026, 9, 5, 8)), cheese);
     expect(n.fiber).toBe(0);
     expect(n.fiberUnknown).toBe(true);
+    expect(n.fatUnknown).toBe(false);
     expect(n.carbs).toBeCloseTo(1, 10);
+  });
+
+  it('שומן null (תווית חלקית): נספר כאפס ומסומן; הקלוריות מהתווית לא משתנות', () => {
+    const roastbeef: Food = { ...bread, id: 'c:rb', name: 'רוסטביף', source: 'custom', kcal: 102, protein: 19, carbs: null, fat: null, fiber: null };
+    const n = entryNutrition(log(roastbeef, 350, at(2026, 9, 5, 14)), roastbeef);
+    expect(n.kcal).toBeCloseTo(357, 10);
+    expect(n.fat).toBe(0);
+    expect(n.fatUnknown).toBe(true);
+    expect(n.carbsUnknown).toBe(true);
   });
 });
 
 describe('daySummary', () => {
   it('יום ריק — אפסים, count 0, fiberUnknownGrams 0', () => {
-    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, fiberUnknownGrams: 0 });
+    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 });
     const other = log(bread, 30, at(2026, 9, 4, 8));
     expect(daySummary([other], '2026-09-05', resolve).count).toBe(0);
   });
@@ -130,9 +140,19 @@ describe('daySummary', () => {
     const s = daySummary(entries, '2026-09-05', resolve);
     expect(s.fiber).toBeCloseTo(2.4, 10);
     expect(s.fiberUnknownGrams).toBe(80);
+    expect(s.fatUnknownGrams).toBe(0);
     expect(s.carbs).toBeCloseTo(28.2 + 1 + 0.6, 10);
     expect(s.kcal).toBeCloseTo(142.2 + 125 + 75 + 192, 10);
     expect(s.count).toBe(4);
+  });
+
+  it('יום עם רוסטביף (שומן לא ידוע) ולחם: fat הוא חסם תחתון, fatUnknownGrams = גרמי הרוסטביף', () => {
+    const roastbeef: Food = { ...bread, id: 'c:rb', name: 'רוסטביף', source: 'custom', kcal: 102, protein: 19, carbs: null, fat: null, fiber: null };
+    const entries = [log(roastbeef, 350, at(2026, 9, 5, 14)), log(bread, 60, at(2026, 9, 5, 20))];
+    const s = daySummary(entries, '2026-09-05', (id) => (id === 'c:rb' ? roastbeef : resolve(id)));
+    expect(s.fat).toBeCloseTo(0.9, 10);
+    expect(s.fatUnknownGrams).toBe(350);
+    expect(s.kcal).toBeCloseTo(357 + 142.2, 10);
   });
 
   it('מזון שנעלם מהמאגר נספר מ-ref ולא נופל', () => {

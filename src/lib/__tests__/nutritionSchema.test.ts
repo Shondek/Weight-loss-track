@@ -59,22 +59,25 @@ describe('parseCustomFoods', () => {
     expect(r.rejected.every((x) => x.reason.includes('c:'))).toBe(true);
   });
 
-  it('דוחה ערכים מחוץ לטווח ל-100 ג׳, ומקבל carbs/fiber כ-null', () => {
+  it('דוחה ערכים מחוץ לטווח ל-100 ג׳, ומקבל carbs/fat/fiber כ-null', () => {
+    // התקרות גבוהות בכוונה: מזון בקונבנציית "יחידה = 1 ג'" מחזיק ×100 ל-100 ג'.
     const r = parseCustomFoods([
-      custom({ kcal: 901 }),
-      custom({ protein: 101 }),
+      custom({ kcal: 90_001 }),
+      custom({ protein: 10_001 }),
       custom({ fat: -1 }),
-      custom({ carbs: null, fiber: null }),
-      custom({ id: 'c:x', carbs: 150 }),
+      custom({ carbs: null, fat: null, fiber: null }),
+      custom({ id: 'c:x', carbs: 10_500 }),
+      custom({ id: 'c:unit', kcal: 19_500, protein: 4_000 }),
     ]);
-    expect(r.ok).toHaveLength(1);
+    expect(r.ok).toHaveLength(2);
     expect(r.ok[0]?.carbs).toBeNull();
+    expect(r.ok[0]?.fat).toBeNull();
     expect(r.ok[0]?.fiber).toBeNull();
     expect(r.rejected.map((x) => x.reason)).toEqual([
-      "קלוריות מחוץ לטווח 0–900 ל-100 ג'",
-      "מאקרו מחוץ לטווח 0–100 ל-100 ג'",
-      "מאקרו מחוץ לטווח 0–100 ל-100 ג'",
-      "מאקרו מחוץ לטווח 0–100 ל-100 ג'",
+      "קלוריות מחוץ לטווח 0–90000 ל-100 ג'",
+      "מאקרו מחוץ לטווח 0–10000 ל-100 ג'",
+      "מאקרו מחוץ לטווח 0–10000 ל-100 ג'",
+      "מאקרו מחוץ לטווח 0–10000 ל-100 ג'",
     ]);
   });
 
@@ -148,20 +151,21 @@ describe('parseEntries', () => {
   it('רישום בלי ref או עם ref שבור נדחה — הוא לא היה שורד מחיקת מזון', () => {
     const r = parseEntries([
       { ...entry(), ref: undefined },
-      entry({ ref: { ...ref, kcal: 5000 } }),
+      entry({ ref: { ...ref, kcal: 100_000 } }),
       entry({ ref: { ...ref, name: '' } }),
     ]);
     expect(r.ok).toHaveLength(0);
     expect(r.rejected.map((x) => x.reason)).toEqual([
       'רישום בלי ערכי מזון',
-      "ערכי מזון: קלוריות מחוץ לטווח 0–900 ל-100 ג'",
+      "ערכי מזון: קלוריות מחוץ לטווח 0–90000 ל-100 ג'",
       'ערכי מזון: מזון בלי שם',
     ]);
   });
 
-  it('ref עם carbs/fiber null נשמר כ-null, לא כאפס', () => {
-    const r = parseEntries([entry({ ref: { ...ref, carbs: null, fiber: null } })]);
+  it('ref עם carbs/fat/fiber null נשמר כ-null, לא כאפס', () => {
+    const r = parseEntries([entry({ ref: { ...ref, carbs: null, fat: null, fiber: null } })]);
     expect(r.ok[0]?.ref.carbs).toBeNull();
+    expect(r.ok[0]?.ref.fat).toBeNull();
     expect(r.ok[0]?.ref.fiber).toBeNull();
   });
 

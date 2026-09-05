@@ -180,7 +180,7 @@ export default function CustomFoodEditor({
           kcal: parseDecimal(kcal, 0, MAX_KCAL_PER_100G),
           protein: parseDecimal(protein, 0, MAX_MACRO_PER_100G),
           carbs: carbs.trim() === '' ? null : parseDecimal(carbs, 0, MAX_MACRO_PER_100G),
-          fat: parseDecimal(fat, 0, MAX_MACRO_PER_100G),
+          fat: fat.trim() === '' ? null : parseDecimal(fat, 0, MAX_MACRO_PER_100G),
           fiber: fiber.trim() === '' ? null : parseDecimal(fiber, 0, MAX_MACRO_PER_100G),
         }
       : null;
@@ -188,8 +188,8 @@ export default function CustomFoodEditor({
     labelValues !== null &&
     labelValues.kcal !== null &&
     labelValues.protein !== null &&
-    labelValues.fat !== null &&
     (carbs.trim() === '' || labelValues.carbs !== null) &&
+    (fat.trim() === '' || labelValues.fat !== null) &&
     (fiber.trim() === '' || labelValues.fiber !== null);
   const canSave = cleanName !== '' && (mode === 'label' ? labelValid : problems.length === 0);
 
@@ -209,7 +209,7 @@ export default function CustomFoodEditor({
         kcal: labelValues.kcal!,
         protein: labelValues.protein!,
         carbs: labelValues.carbs,
-        fat: labelValues.fat!,
+        fat: labelValues.fat,
         fiber: labelValues.fiber,
       });
     } else if (mode === 'recipe' && finalGrams !== null) {
@@ -286,11 +286,12 @@ export default function CustomFoodEditor({
             <div className="macros">
               <DecimalField label="חלבון" value={protein} onChange={setProtein} min={0} max={MAX_MACRO_PER_100G} />
               <DecimalField label="פחמימה" value={carbs} onChange={setCarbs} min={0} max={MAX_MACRO_PER_100G} optional />
-              <DecimalField label="שומן" value={fat} onChange={setFat} min={0} max={MAX_MACRO_PER_100G} />
+              <DecimalField label="שומן" value={fat} onChange={setFat} min={0} max={MAX_MACRO_PER_100G} optional />
             </div>
             <DecimalField label="סיבים" value={fiber} onChange={setFiber} min={0} max={MAX_MACRO_PER_100G} optional />
             <p className="tiny muted" style={{ margin: 0 }}>
-              פחמימה וסיבים שלא בתווית נשארים ריקים ומוצגים כמקף — לא כאפס.
+              פחמימה, שומן וסיבים שלא בתווית נשארים ריקים ומוצגים כמקף — לא כאפס.
+              ערכי יחידה בלי משקל אריזה: הזן אותם כ"ל-1 ג'" והזן 1 ברישום — עד שתשקול.
             </p>
           </div>
         </section>
@@ -478,7 +479,8 @@ export default function CustomFoodEditor({
                 </div>
                 <div className="stat" role="listitem">
                   <span className="stat__label">שומן</span>
-                  <span className="stat__value num">{macroText(preview.fat)}</span>
+                  <span className="stat__value num">{preview.fat === null ? DASH : macroText(preview.fat)}</span>
+                  {preview.fat === null && <span className="stat__note">לא ידוע במרכיב</span>}
                 </div>
               </div>
             ) : (

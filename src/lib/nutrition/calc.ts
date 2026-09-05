@@ -7,8 +7,8 @@
  *     נגזרות מהמאקרו ולא להפך.
  *  2. המזון החי גובר; `ref` שברישום הוא הגיבוי כשהמזון נעלם.
  *  3. ערכי ביניים בדיוק מלא. העיגול הוא עניין של תצוגה בלבד (display.ts).
- *  4. בסיכום יומי `null` נספר כאפס, ובמקביל נספרים הגרמים שהסיבים בהם
- *     לא ידועים — כדי שהממשק יוכל לומר "לפחות X" במקום מספר שנראה מדויק.
+ *  4. בסיכום יומי `null` נספר כאפס, ובמקביל נספרים הגרמים שהשומן או הסיבים
+ *     בהם לא ידועים — כדי שהממשק יוכל לומר "לפחות X" במקום מספר שנראה מדויק.
  *  5. הנותר יכול להיות שלילי. לא מעגלים לאפס.
  */
 
@@ -32,6 +32,8 @@ export type EntryNutrition = Nutrients & {
   fromRef: boolean;
   /** הפחמימה ל-100 ג' לא ידועה במקור; נספרה כאפס. */
   carbsUnknown: boolean;
+  /** השומן ל-100 ג' לא ידוע במקור; נספר כאפס. */
+  fatUnknown: boolean;
   /** הסיבים ל-100 ג' לא ידועים במקור; נספרו כאפס. */
   fiberUnknown: boolean;
 };
@@ -61,6 +63,7 @@ export function entryNutrition(entry: FoodEntry, live: Food | null): EntryNutrit
     fiber: scale(ref.fiber, entry.grams),
     fromRef,
     carbsUnknown: ref.carbs === null,
+    fatUnknown: ref.fat === null,
     fiberUnknown: ref.fiber === null,
   };
 }
@@ -70,9 +73,11 @@ export type DaySummary = Nutrients & {
   /** כמה רישומים נסכמו. 0 = יום ריק. */
   count: number;
   /**
-   * סך הגרמים מרישומים שהסיבים בהם לא ידועים. כשגדול מאפס, `fiber` הוא
-   * חסם תחתון ("לפחות X ג'"), לא ערך מדויק.
+   * סך הגרמים מרישומים שהשומן בהם לא ידוע. כשגדול מאפס, `fat` הוא חסם
+   * תחתון ("לפחות X ג'"), לא ערך מדויק.
    */
+  fatUnknownGrams: number;
+  /** כנ"ל לסיבים. */
   fiberUnknownGrams: number;
 };
 
@@ -84,7 +89,7 @@ export function daySummary(
   d: ISODate,
   resolve: FoodResolver,
 ): DaySummary {
-  const out: DaySummary = { ...ZERO, d, count: 0, fiberUnknownGrams: 0 };
+  const out: DaySummary = { ...ZERO, d, count: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 };
   for (const e of entries) {
     if (e.d !== d) continue;
     const n = entryNutrition(e, resolve(e.foodId));
@@ -93,6 +98,7 @@ export function daySummary(
     out.carbs += n.carbs;
     out.fat += n.fat;
     out.fiber += n.fiber;
+    if (n.fatUnknown) out.fatUnknownGrams += e.grams;
     if (n.fiberUnknown) out.fiberUnknownGrams += e.grams;
     out.count++;
   }

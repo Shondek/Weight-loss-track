@@ -387,9 +387,14 @@ export function parseSettings(input: unknown): Settings {
 
 // ---------- תזונה ----------
 
-/** ערכים ל-100 גרם. קלוריות עד 900 (שמן טהור הוא 884), מאקרו עד 100 גרם. */
-export const MAX_KCAL_PER_100G = 900;
-export const MAX_MACRO_PER_100G = 100;
+/**
+ * ערכים ל-100 גרם. מזון אמיתי לא עובר 900 קק"ל (שמן טהור הוא 884) או 100 ג'
+ * מאקרו — אבל מזון שלי יכול להיות מוגדר ב"יחידה = 1 ג'" (ערכי היחידה
+ * המלאים ל-1 ג', עד שמשקל האריזה נמדד), ואז ל-100 ג' יש פי 100. התקרות
+ * מאפשרות את זה: בקבוק PRO 40 = 195 קק"ל ו-40 ג' חלבון ליחידה.
+ */
+export const MAX_KCAL_PER_100G = 90_000;
+export const MAX_MACRO_PER_100G = 10_000;
 export const MIN_GRAMS = 0.1;
 export const MAX_GRAMS = 5000;
 export const MAX_PORTION_GRAMS = 5000;
@@ -443,12 +448,13 @@ function parsePer100(raw: Record<string, unknown>): { error: string } | { ref: F
   const kcal = inRange(raw.kcal, 0, MAX_KCAL_PER_100G);
   if (kcal === null) return { error: `קלוריות מחוץ לטווח 0–${MAX_KCAL_PER_100G} ל-100 ג'` };
   const protein = inRange(raw.protein, 0, MAX_MACRO_PER_100G);
-  const fat = inRange(raw.fat, 0, MAX_MACRO_PER_100G);
-  if (protein === null || fat === null) return { error: `מאקרו מחוץ לטווח 0–${MAX_MACRO_PER_100G} ל-100 ג'` };
+  if (protein === null) return { error: `מאקרו מחוץ לטווח 0–${MAX_MACRO_PER_100G} ל-100 ג'` };
+  // פחמימה, שומן וסיבים יכולים להיות לא ידועים (תווית חלקית). null נשמר כ-null.
   const carbs = optionalPer100(raw.carbs, MAX_MACRO_PER_100G);
+  const fat = optionalPer100(raw.fat, MAX_MACRO_PER_100G);
   const fiber = optionalPer100(raw.fiber, MAX_MACRO_PER_100G);
-  if (!carbs.ok || !fiber.ok) return { error: `מאקרו מחוץ לטווח 0–${MAX_MACRO_PER_100G} ל-100 ג'` };
-  return { ref: { name, kcal, protein, carbs: carbs.value, fat, fiber: fiber.value } };
+  if (!carbs.ok || !fat.ok || !fiber.ok) return { error: `מאקרו מחוץ לטווח 0–${MAX_MACRO_PER_100G} ל-100 ג'` };
+  return { ref: { name, kcal, protein, carbs: carbs.value, fat: fat.value, fiber: fiber.value } };
 }
 
 /**

@@ -215,14 +215,17 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
         <div className="macros" style={{ marginTop: 'var(--sp-3)' }} role="list">
           {(
             [
-              ['חלבון', summary.protein, target?.protein],
-              ['פחמימה', summary.carbs, target?.carbs],
-              ['שומן', summary.fat, target?.fat],
+              ['חלבון', summary.protein, target?.protein, false],
+              ['פחמימה', summary.carbs, target?.carbs, false],
+              ['שומן', summary.fat, target?.fat, summary.fatUnknownGrams > 0],
             ] as const
-          ).map(([label, consumed, goal]) => (
+          ).map(([label, consumed, goal, atLeast]) => (
             <div className="stat" role="listitem" key={label}>
               <span className="stat__label">{label}</span>
-              <span className="stat__value num">{macroText(consumed)}</span>
+              <span className="stat__value">
+                {atLeast && <span className="tiny muted">לפחות </span>}
+                <span className="num">{macroText(consumed)}</span>
+              </span>
               <span className="stat__note num">
                 {goal === undefined ? DASH : `/ ${macroText(goal)}`}
               </span>
@@ -327,7 +330,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                 <span className="num">{kcalText(selected.kcal)}</span> קק"ל ·{' '}
                 <span className="num">{macroText(selected.protein)}</span> חלבון ·{' '}
                 <span className="num">{selected.carbs === null ? DASH : macroText(selected.carbs)}</span> פחמימה ·{' '}
-                <span className="num">{macroText(selected.fat)}</span> שומן · ל-100 ג׳
+                <span className="num">{selected.fat === null ? DASH : macroText(selected.fat)}</span> שומן · ל-100 ג׳
                 {selected.suspect && <span className="err"> · ערך חשוד במאגר</span>}
                 {' '}
                 <button type="button" className="btn btn--quiet tiny" onClick={clearPick} style={{ minHeight: 0 }}>

@@ -82,13 +82,38 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     }
   });
 
-  it('שומן לא ידוע = 0 עם הערה; פחמימה null נשמרת', () => {
+  it('שומן לא ידוע = null (לא אפס), עם הערה; פחמימה null נשמרת', () => {
     const rb = foods.find((f) => f.id === libId('roastbeef-hod-maadan'))!;
-    expect(rb.fat).toBe(0);
+    expect(rb.fat).toBeNull();
     expect(rb.carbs).toBeNull();
     expect(rb.note).toContain('שומן לא ידועים');
-    const pita = foods.find((f) => f.id === libId('pita-light'))!;
-    expect(pita.note).toContain('טרם אומתו');
+    // יוגורט 0% ובולגרית 5%: השומן ידוע מהשם.
+    expect(foods.find((f) => f.id === libId('greek-yogurt-0'))?.fat).toBe(0);
+    expect(foods.find((f) => f.id === libId('bulgarit-5'))?.fat).toBe(5);
+  });
+
+  it('יחידה = 1 ג\': הזנת 1 נותנת פיתה / כדור / בקבוק שלמים', () => {
+    for (const [slug, kcal, protein] of [['pita-light', 120, 4], ['date-ball', 130, 0], ['pro40-yotvata', 195, 40]] as const) {
+      const food = resolveFood(index, libId(slug))!;
+      const n = entryNutrition(newEntry(food, 1, 'snack', 1, 't'), food);
+      expect(n.kcal, slug).toBeCloseTo(kcal, 6);
+      expect(n.protein, slug).toBeCloseTo(protein, 6);
+      expect(n.fatUnknown, slug).toBe(true);
+      expect(food.portions).toEqual([{ u: expect.any(String), g: 1 }]);
+      expect(food.name && foods.find((f) => f.id === food.id)?.note).toContain('= 1');
+    }
+    // המנות משתמשות ב-1 ג' לפיתה ולכדור.
+    const shak = foods.find((f) => f.id === libId('dinner-2-shakshuka'))!;
+    expect(shak.recipe?.items.find((i) => i.foodId === libId('pita-light'))?.grams).toBe(1);
+  });
+
+  it('מנה עם מרכיב שהשומן בו לא ידוע → שומן המנה null; ביום — fatUnknownGrams', () => {
+    const shak = resolveFood(index, libId('dinner-2-shakshuka'))!;
+    expect(shak.fat).toBeNull(); // פיתה קלה בלי שומן ידוע
+    const rb = resolveFood(index, libId('lunch-2-roastbeef'))!;
+    expect(rb.fat).toBeNull(); // רוסטביף בלי שומן ידוע
+    const chicken = resolveFood(index, libId('lunch-1-chicken'))!;
+    expect(chicken.fat).not.toBeNull(); // כל המרכיבים מהמאגר
   });
 });
 

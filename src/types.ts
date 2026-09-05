@@ -151,7 +151,8 @@ export type CustomFood = {
   kcal: number;
   protein: number;
   carbs: number | null;
-  fat: number;
+  /** `null` = לא ידוע (למשל תווית חלקית). נספר כאפס בסיכום, ומסומן "לפחות". */
+  fat: number | null;
   fiber: number | null;
   portions: FoodPortion[];
   /** לשימוש עתידי. */
@@ -178,7 +179,7 @@ export type FoodRef = {
   kcal: number;
   protein: number;
   carbs: number | null;
-  fat: number;
+  fat: number | null;
   fiber: number | null;
 };
 

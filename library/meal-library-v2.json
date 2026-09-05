@@ -10,7 +10,7 @@
       "kcal": 102,
       "protein": 19,
       "carbs": null,
-      "fat": 0,
+      "fat": null,
       "fiber": null,
       "portions": [],
       "barcode": null,
@@ -20,19 +20,19 @@
       "id": "c:lib2:pro40-yotvata",
       "name": "יוטבתה PRO 40",
       "cat": 1,
-      "kcal": 55.714285714285715,
-      "protein": 11.428571428571429,
+      "kcal": 19500,
+      "protein": 4000,
       "carbs": null,
-      "fat": 0,
+      "fat": null,
       "fiber": null,
       "portions": [
         {
           "u": "בקבוק",
-          "g": 350
+          "g": 1
         }
       ],
       "barcode": null,
-      "note": "תווית: 193–196 קק\"ל · 40 חלבון לבקבוק 350 מ\"ל (נספר כ-350 ג'). פחמימה ושומן לא ידועים"
+      "note": "בקבוק = 1 (הזן 1 לבקבוק). תווית: 193–196 קק\"ל · 40 חלבון ל-350 מ\"ל. פחמימה ושומן לא ידועים"
     },
     {
       "id": "c:lib2:greek-yogurt-0",
@@ -72,7 +72,7 @@
       "kcal": 103.57142857142857,
       "protein": 25,
       "carbs": null,
-      "fat": 0,
+      "fat": null,
       "fiber": null,
       "portions": [
         {
@@ -87,37 +87,37 @@
       "id": "c:lib2:pita-light",
       "name": "פיתה קלה",
       "cat": 5,
-      "kcal": 120,
-      "protein": 4,
       "carbs": null,
-      "fat": 0,
+      "fat": null,
       "fiber": null,
+      "kcal": 12000,
+      "protein": 400,
       "portions": [
         {
           "u": "יחידה",
-          "g": 100
+          "g": 1
         }
       ],
       "barcode": null,
-      "note": "ערכי אריזה טרם אומתו. 120 קק\"ל · 4 חלבון ליחידה; יחידה נספרת כ-100 ג' עד לאימות המשקל"
+      "note": "יחידה = 1 (הזן 1 לפיתה). ערכי אריזה טרם אומתו: 120 קק\"ל · 4 חלבון ליחידה. פחמימה ושומן לא ידועים"
     },
     {
       "id": "c:lib2:date-ball",
       "name": "כדור תמר",
       "cat": 9,
-      "kcal": 130,
-      "protein": 0,
       "carbs": null,
-      "fat": 0,
+      "fat": null,
       "fiber": null,
+      "kcal": 13000,
+      "protein": 0,
       "portions": [
         {
           "u": "יחידה",
-          "g": 100
+          "g": 1
         }
       ],
       "barcode": null,
-      "note": "ערכי אריזה טרם אומתו. ~130 קק\"ל ליחידה, חלבון לא במסמך (0); יחידה נספרת כ-100 ג' עד לאימות המשקל"
+      "note": "יחידה = 1 (הזן 1 לכדור). ערכי אריזה טרם אומתו: ~130 קק\"ל ליחידה, חלבון לא במסמך (0). פחמימה ושומן לא ידועים"
     },
     {
       "id": "c:lib2:lunch-1-chicken",
@@ -162,7 +162,7 @@
       "kcal": 99.5,
       "protein": 12.02890625,
       "carbs": null,
-      "fat": 3.3187500000000005,
+      "fat": null,
       "fiber": null,
       "recipe": {
         "items": [
@@ -196,7 +196,7 @@
       "kcal": 114.03389830508473,
       "protein": 14.260169491525424,
       "carbs": null,
-      "fat": 4.566101694915254,
+      "fat": null,
       "fiber": null,
       "recipe": {
         "items": [
@@ -266,7 +266,7 @@
       "kcal": 108.43648208469054,
       "protein": 12.86400651465798,
       "carbs": null,
-      "fat": 5.185667752442996,
+      "fat": null,
       "fiber": null,
       "recipe": {
         "items": [
@@ -337,11 +337,11 @@
       "cat": 3,
       "portions": [],
       "barcode": null,
-      "note": "עגבניות טריות, לא רסק. פיתה קלה נספרת כ-100 ג' ליחידה עד לאימות",
-      "kcal": 84.86149768058317,
-      "protein": 7.912524850894632,
+      "note": "עגבניות טריות, לא רסק. פיתה קלה: יחידה = 1 עד לאימות המשקל",
+      "kcal": 97.67810831426392,
+      "protein": 9.107551487414188,
       "carbs": null,
-      "fat": 3.2007952286282304,
+      "fat": null,
       "fiber": null,
       "recipe": {
         "items": [
@@ -363,14 +363,14 @@
           },
           {
             "foodId": "c:lib2:pita-light",
-            "grams": 100
+            "grams": 1
           },
           {
             "foodId": "c:lib2:greek-yogurt-0",
             "grams": 200
           }
         ],
-        "finalGrams": 754.5
+        "finalGrams": 655.5
       }
     },
     {
@@ -379,11 +379,11 @@
       "cat": 3,
       "portions": [],
       "barcode": null,
-      "note": "פיתה קלה נספרת כ-100 ג' ליחידה עד לאימות",
-      "kcal": 89.14667365112622,
-      "protein": 7.346778418019905,
+      "note": "פיתה קלה: יחידה = 1 עד לאימות המשקל",
+      "kcal": 102.42612097502256,
+      "protein": 8.441167619620824,
       "carbs": null,
-      "fat": 4.072812991094814,
+      "fat": null,
       "fiber": null,
       "recipe": {
         "items": [
@@ -405,14 +405,14 @@
           },
           {
             "foodId": "c:lib2:pita-light",
-            "grams": 100
+            "grams": 1
           },
           {
             "foodId": "c:lib2:greek-yogurt-0",
             "grams": 150
           }
         ],
-        "finalGrams": 763.6
+        "finalGrams": 664.6
       }
     },
     {
@@ -492,11 +492,11 @@
       "cat": 9,
       "portions": [],
       "barcode": null,
-      "note": "חלב 100 מ\"ל וקפה 150 מ\"ל נגזרו מהמסמך (190 − 130 = 60 קק\"ל). כדור תמר נספר כ-100 ג' ליחידה עד לאימות",
-      "kcal": 55.57142857142857,
-      "protein": 0.9857142857142855,
+      "note": "חלב 100 מ\"ל וקפה 150 מ\"ל נגזרו מהמסמך (190 − 130 = 60 קק\"ל). כדור תמר: יחידה = 1 עד לאימות המשקל",
+      "kcal": 77.49003984063745,
+      "protein": 1.3745019920318724,
       "carbs": null,
-      "fat": 0.8571428571428571,
+      "fat": null,
       "fiber": null,
       "recipe": {
         "items": [
@@ -510,10 +510,10 @@
           },
           {
             "foodId": "c:lib2:date-ball",
-            "grams": 100
+            "grams": 1
           }
         ],
-        "finalGrams": 350
+        "finalGrams": 251
       }
     }
   ]

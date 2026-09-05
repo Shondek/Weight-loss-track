@@ -122,6 +122,15 @@ describe('מרכיב עם ערך לא ידוע', () => {
     expect(per100.fiber).toBeCloseTo(1.2 / 2.5, 10);
   });
 
+  it('fat=null במרכיב אחד → fat=null במנה; השאר מחושב', () => {
+    const partial: Food = { ...tomato, id: 'c:p', name: 'תווית חלקית', source: 'custom', kcal: 100, protein: 10, carbs: 5, fat: null, fiber: 0 };
+    const r = (id: string) => (id === 'c:p' ? partial : resolve(id));
+    const per100 = recipePer100(recipeTotals([{ foodId: 'c:p', grams: 100 }, { foodId: olive.id, grams: 10 }], r), 110);
+    expect(per100.fat).toBeNull();
+    expect(per100.kcal).toBeCloseTo((100 + 88.4) / 1.1, 10);
+    expect(per100.carbs).toBeCloseTo(5 / 1.1, 10);
+  });
+
   it('fiber=null במרכיב אחד → fiber=null במנה', () => {
     const per100 = recipePer100(recipeTotals([{ foodId: cheese.id, grams: 50 }, { foodId: tomato.id, grams: 100 }], resolve), 150);
     expect(per100.fiber).toBeNull();

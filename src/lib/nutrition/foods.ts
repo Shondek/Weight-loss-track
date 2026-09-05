@@ -17,7 +17,7 @@ export type Food = {
   kcal: number;
   protein: number;
   carbs: number | null;
-  fat: number;
+  fat: number | null;
   fiber: number | null;
   portions: FoodPortion[];
   /** הערך במאגר חשוד (ראה `MohFood.suspect`). מאפיין של המאגר, לא של האכילה. */

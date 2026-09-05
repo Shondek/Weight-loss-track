@@ -7,8 +7,8 @@
  * התוצאה נשמרת בשדות הרגילים של `CustomFood`, ומשם המנה מתנהגת כמו כל מזון.
  * `finalGrams` קטן מסכום המרכיבים = ריכוז (בישול); גדול = דילול (מים).
  *
- * פחמימה או סיבים לא ידועים באחד המרכיבים → לא ידועים במנה כולה (null),
- * במקום מספר שנראה מדויק וחסר חלק.
+ * פחמימה, שומן או סיבים לא ידועים באחד המרכיבים → לא ידועים במנה כולה
+ * (null), במקום מספר שנראה מדויק וחסר חלק.
  */
 
 import type { CustomFood, FoodId, Recipe } from '../../types';
@@ -20,7 +20,7 @@ export type RecipeTotals = {
   kcal: number;
   protein: number;
   carbs: number | null;
-  fat: number;
+  fat: number | null;
   fiber: number | null;
   /** סכום משקלי המרכיבים — ברירת המחדל של המשקל הסופי. */
   sumGrams: number;
@@ -58,8 +58,8 @@ export function recipeTotals(items: readonly RecipeItem[], resolve: (id: FoodId)
     const k = i.grams / 100;
     t.kcal += f.kcal * k;
     t.protein += f.protein * k;
-    t.fat += f.fat * k;
     t.carbs = t.carbs === null || f.carbs === null ? null : t.carbs + f.carbs * k;
+    t.fat = t.fat === null || f.fat === null ? null : t.fat + f.fat * k;
     t.fiber = t.fiber === null || f.fiber === null ? null : t.fiber + f.fiber * k;
     t.sumGrams += i.grams;
   }
@@ -76,7 +76,7 @@ export function recipePer100(
     kcal: totals.kcal * k,
     protein: totals.protein * k,
     carbs: totals.carbs === null ? null : totals.carbs * k,
-    fat: totals.fat * k,
+    fat: totals.fat === null ? null : totals.fat * k,
     fiber: totals.fiber === null ? null : totals.fiber * k,
   };
 }

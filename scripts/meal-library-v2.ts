@@ -60,25 +60,29 @@ export const GRAMS = {
   riceCake: 9.26,
   /** מסמך: קופסת טונה 160 ג' = 112 ג' נטו מסונן. */
   tunaCan: 112,
-  /** מסמך: בקבוק 350 מ"ל. אושר להניח 350 ג'. */
-  pro40Bottle: 350,
   /** ✎ קפה + חלב = 190 − 130 (כדור תמר) = 60 קק"ל = 100 מ"ל חלב 3%. */
   milkInCoffee: 100,
   /** ✎ נפח הקפה עצמו לא במסמך. 150 מ"ל, ~4 קק"ל. */
   coffee: 150,
-  /** יחידה = 100 ג' עד לאימות משקל האריזה (ערכי המסמך הם ליחידה). */
-  unitAs100: 100,
+  /**
+   * יחידה = 1 ג' עד לאימות משקל האריזה: הערכים המלאים של היחידה נשמרים
+   * "ל-1 ג'" (כלומר ×100 ל-100 ג'), והזנת 1 ברישום = יחידה אחת.
+   * כשתשקול — עדכן את המזון לערכים אמיתיים ל-100 ג'.
+   */
+  unitAs1: 1,
 } as const;
 
 // ---------- מוצרים ממותגים: ערכי תווית מהמסמך ----------
 
-/** כמו CustomFood, אבל שומן יכול להיות לא ידוע עד הבנייה (ראה FAT_UNKNOWN). */
-type Custom = Omit<CustomFood, 'recipe' | 'fat'> & { fat: number | null };
+type Custom = Omit<CustomFood, 'recipe'>;
 
 const per100 = (kcal: number, protein: number, grams: number) => ({
   kcal: (kcal * 100) / grams,
   protein: (protein * 100) / grams,
 });
+
+/** ערכי יחידה בקונבנציית "יחידה = 1 ג'": ל-100 ג' = ×100. */
+const perUnitAs1 = (kcal: number, protein: number) => per100(kcal, protein, GRAMS.unitAs1);
 
 export const CUSTOM_FOODS: Custom[] = [
   {
@@ -98,13 +102,13 @@ export const CUSTOM_FOODS: Custom[] = [
     id: id('pro40-yotvata'),
     name: 'יוטבתה PRO 40',
     cat: 1,
-    ...per100(195, 40, GRAMS.pro40Bottle),
+    ...perUnitAs1(195, 40),
     carbs: null,
     fat: null,
     fiber: null,
-    portions: [{ u: 'בקבוק', g: GRAMS.pro40Bottle }],
+    portions: [{ u: 'בקבוק', g: GRAMS.unitAs1 }],
     barcode: null,
-    note: 'תווית: 193–196 קק"ל · 40 חלבון לבקבוק 350 מ"ל (נספר כ-350 ג\'). פחמימה ושומן לא ידועים',
+    note: 'בקבוק = 1 (הזן 1 לבקבוק). תווית: 193–196 קק"ל · 40 חלבון ל-350 מ"ל. פחמימה ושומן לא ידועים',
   },
   {
     id: id('greek-yogurt-0'),
@@ -148,27 +152,25 @@ export const CUSTOM_FOODS: Custom[] = [
     id: id('pita-light'),
     name: 'פיתה קלה',
     cat: 5,
-    kcal: 120,
-    protein: 4,
     carbs: null,
     fat: null,
     fiber: null,
-    portions: [{ u: 'יחידה', g: GRAMS.unitAs100 }],
+    ...perUnitAs1(120, 4),
+    portions: [{ u: 'יחידה', g: GRAMS.unitAs1 }],
     barcode: null,
-    note: `${UNVERIFIED}. 120 קק"ל · 4 חלבון ליחידה; יחידה נספרת כ-100 ג' עד לאימות המשקל`,
+    note: `יחידה = 1 (הזן 1 לפיתה). ${UNVERIFIED}: 120 קק"ל · 4 חלבון ליחידה. פחמימה ושומן לא ידועים`,
   },
   {
     id: id('date-ball'),
     name: 'כדור תמר',
     cat: 9,
-    kcal: 130,
-    protein: 0,
     carbs: null,
     fat: null,
     fiber: null,
-    portions: [{ u: 'יחידה', g: GRAMS.unitAs100 }],
+    ...perUnitAs1(130, 0),
+    portions: [{ u: 'יחידה', g: GRAMS.unitAs1 }],
     barcode: null,
-    note: `${UNVERIFIED}. ~130 קק"ל ליחידה, חלבון לא במסמך (0); יחידה נספרת כ-100 ג' עד לאימות המשקל`,
+    note: `יחידה = 1 (הזן 1 לכדור). ${UNVERIFIED}: ~130 קק"ל ליחידה, חלבון לא במסמך (0). פחמימה ושומן לא ידועים`,
   },
 ];
 
@@ -269,11 +271,11 @@ export const DISHES: DishDef[] = [
       { foodId: MOH.tomato, grams: 200 },
       { foodId: C['bulgarit-5']!, grams: 100 },
       { foodId: MOH.oliveOil, grams: GRAMS.oilTsp },
-      { foodId: C['pita-light']!, grams: GRAMS.unitAs100 },
+      { foodId: C['pita-light']!, grams: GRAMS.unitAs1 },
       { foodId: C['greek-yogurt-0']!, grams: 200 },
     ],
     finalGrams: null,
-    note: 'עגבניות טריות, לא רסק. פיתה קלה נספרת כ-100 ג\' ליחידה עד לאימות',
+    note: 'עגבניות טריות, לא רסק. פיתה קלה: יחידה = 1 עד לאימות המשקל',
     doc: { kcal: 682, protein: 61, label: 'ע2' },
   },
   {
@@ -285,11 +287,11 @@ export const DISHES: DishDef[] = [
       { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp },
       { foodId: C['bulgarit-5']!, grams: 150 },
       { foodId: MOH.salad, grams: 250 },
-      { foodId: C['pita-light']!, grams: GRAMS.unitAs100 },
+      { foodId: C['pita-light']!, grams: GRAMS.unitAs1 },
       { foodId: C['greek-yogurt-0']!, grams: 150 },
     ],
     finalGrams: null,
-    note: 'פיתה קלה נספרת כ-100 ג\' ליחידה עד לאימות',
+    note: 'פיתה קלה: יחידה = 1 עד לאימות המשקל',
     doc: { kcal: 706, protein: 58, label: 'ע3' },
   },
   {
@@ -327,10 +329,10 @@ export const DISHES: DishDef[] = [
     items: [
       { foodId: MOH.coffee, grams: GRAMS.coffee },
       { foodId: MOH.milk3, grams: GRAMS.milkInCoffee },
-      { foodId: C['date-ball']!, grams: GRAMS.unitAs100 },
+      { foodId: C['date-ball']!, grams: GRAMS.unitAs1 },
     ],
     finalGrams: null,
-    note: 'חלב 100 מ"ל וקפה 150 מ"ל נגזרו מהמסמך (190 − 130 = 60 קק"ל). כדור תמר נספר כ-100 ג\' ליחידה עד לאימות',
+    note: 'חלב 100 מ"ל וקפה 150 מ"ל נגזרו מהמסמך (190 − 130 = 60 קק"ל). כדור תמר: יחידה = 1 עד לאימות המשקל',
     doc: { kcal: 190, protein: 4, label: 'קפה' },
   },
 ];
@@ -342,20 +344,13 @@ export const BLOCKS: { label: string; foodId: FoodId; grams: number; doc: { kcal
   { label: "קוטג' 5%, 100 ג'", foodId: MOH.cottage5, grams: 100, doc: { kcal: 95, protein: 11 } },
   { label: 'בולגרית 5%, 100 ג\'', foodId: C['bulgarit-5']!, grams: 100, doc: { kcal: 110, protein: 15 } },
   { label: '3 חלבוני ביצה', foodId: MOH.eggWhite, grams: GRAMS.eggWhites3, doc: { kcal: 52, protein: 11 } },
-  { label: 'PRO 40', foodId: C['pro40-yotvata']!, grams: GRAMS.pro40Bottle, doc: { kcal: 195, protein: 40 } },
+  { label: 'PRO 40 (בקבוק = 1)', foodId: C['pro40-yotvata']!, grams: GRAMS.unitAs1, doc: { kcal: 195, protein: 40 } },
 ];
 
 // ---------- בנייה ----------
 
-/**
- * שומן לא ידוע: הסכימה דורשת `fat: number` (חובה בפרסר). המסמך לא נותן
- * שומן לרוסטביף, PRO 40, טונה, פיתה וכדור תמר. הבחירה: 0 עם הערה,
- * כי המזון לא ייקלט בכלל עם null. ההערה אומרת שהערך לא ידוע.
- */
-export const FAT_UNKNOWN = 0;
-
 export function buildMealLibrary(index: FoodIndex): CustomFood[] {
-  const customs: CustomFood[] = CUSTOM_FOODS.map((f) => ({ ...f, fat: f.fat ?? FAT_UNKNOWN }));
+  const customs: CustomFood[] = CUSTOM_FOODS.map((f) => ({ ...f }));
 
   // המנות פותרות מרכיבים גם מהמאגר וגם מהמוצרים הממותגים שלמעלה.
   const byId = new Map(customs.map((c) => [c.id, fromCustom(c)]));
