@@ -210,7 +210,7 @@ describe('שבוע, ריקנות וכאב', () => {
 
 const PREFILL_SOURCE: WorkoutEntry[] = [
   wk('p1', '2026-08-24', 'A', [
-    le('leg-press-45', 55, [12, 12, 10]),
+    le('leg-press', 55, [12, 12, 10]),
     le('cable-torso-rotation', 15, [15, 15, 12]),
   ]),
 ];
@@ -302,7 +302,7 @@ describe('חימום ואירובי סיום', () => {
 describe('בניית אימון', () => {
   it('prefilledExercises מאכלס משקל אחרון ומשאיר חזרות ריקות', () => {
     const rows = prefilledExercises(PREFILL_SOURCE, 'A');
-    const legPress = rows.find((r) => r.exerciseId === 'leg-press-45');
+    const legPress = rows.find((r) => r.exerciseId === 'leg-press');
     expect(legPress?.sets.map((s) => s.weight)).toEqual([55, 55, 55]);
     expect(legPress?.sets.every((s) => s.reps === null)).toBe(true);
   });
@@ -327,14 +327,13 @@ describe('בניית אימון', () => {
       for (const spec of PROGRAM[t]) {
         expect(spec.isTimed, spec.id).toBe(false);
         expect(spec.bodyweightOnly, spec.id).toBe(false);
-        expect(spec.unilateral, spec.id).toBe(false);
       }
     }
   });
 
   it('מספר הסטים נלקח מהתוכנית, לא קבוע', () => {
     const a = blankExercises('A');
-    expect(a.find((r) => r.exerciseId === 'leg-press-45')?.sets).toHaveLength(3);
+    expect(a.find((r) => r.exerciseId === 'leg-press')?.sets).toHaveLength(3);
     expect(a.find((r) => r.exerciseId === 'leg-extension')?.sets).toHaveLength(2);
     // אותו תרגיל, מספר סטים שונה בכל אימון
     expect(a.find((r) => r.exerciseId === 'leg-curl')?.sets).toHaveLength(2);
@@ -351,17 +350,17 @@ describe('בניית אימון', () => {
     const orphan = le('legacy:RDL משקולות יד', 20, [12, 12, 10], {
       n: 'RDL משקולות יד',
     });
-    const entry = wk('1', '2026-09-01', 'A', [le('leg-press-45', 60, [12, 12, 12]), orphan]);
+    const entry = wk('1', '2026-09-01', 'A', [le('leg-press', 60, [12, 12, 12]), orphan]);
     const rows = exercisesFor(entry, [entry]);
     // חימום + התוכנית + התרגיל שירד (+ אירובי כשהדגל דלוק)
     const strength = rows.filter((r) => r.type !== 'cardio');
     expect(strength).toHaveLength(PROGRAM.A.length + 1);
     expect(strength[strength.length - 1]?.n).toBe('RDL משקולות יד');
-    // תרגיל שירד מהתוכנית (לג-פרס בישיבה) שנרשם ברשומה ישנה נשאר גלוי אחרי תרגילי התוכנית
-    const old = wk('2', '2026-08-01', 'A', [le('leg-press', 40, [12, 12, 12])]);
+    // תרגיל שירד מהתוכנית (לג-פרס חצי שכיבה) שנרשם ברשומה ישנה נשאר גלוי אחרי תרגילי התוכנית
+    const old = wk('2', '2026-08-01', 'A', [le('leg-press-45', 40, [12, 12, 12])]);
     const oldRows = exercisesFor(old, [old]).filter((r) => r.type !== 'cardio');
     expect(oldRows).toHaveLength(PROGRAM.A.length + 1);
-    expect(oldRows[oldRows.length - 1]?.exerciseId).toBe('leg-press');
+    expect(oldRows[oldRows.length - 1]?.exerciseId).toBe('leg-press-45');
   });
 });
 
