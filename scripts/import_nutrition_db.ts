@@ -4,7 +4,9 @@
  *   node scripts/import_nutrition_db.ts [--raw <dir>] [--audit] [--out <file>]
  *
  * מייצר את `public/nutrition/moh-foods.json` — שם, קטגוריה, קלוריות, חלבון,
- * פחמימה, שומן, סיבים ויחידות מידה לכל מזון. לא את שאר 77 הרכיבים.
+ * פחמימה, שומן, סיבים ויחידות מידה לכל מזון. לא את שאר 77 הרכיבים, ולא
+ * שדה חיפוש: הוא מחושב בטעינה ב-`normalizeSearch`, כדי שיהיה מקור אמת אחד
+ * לכללי הנרמול.
  * הקובץ נכנס ל-Git ונפרס מהקומיט; הבנייה עצמה לא פונה לרשת.
  *
  * ריצה חוזרת בטוחה: הפלט דטרמיניסטי (ממוין לפי קוד מזון, כפילויות קוד
@@ -28,7 +30,6 @@ import {
   type MohFoodFile,
   type MohPortion,
 } from '../src/lib/nutrition/foodDb.ts';
-import { normalizeSearch } from '../src/lib/nutrition/search.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_OUT = join(ROOT, 'public', 'nutrition', 'moh-foods.json');
@@ -53,6 +54,18 @@ const TRIVIAL_UNITS = new Set(['700', '2000']);
  * כך שהבסיס ("כף") קודם לתת-הסוגים ("כף שטוחה", "כף גדושה").
  */
 const UNIT_FAMILY_ORDER = [300, 400, 200, 500, 100, 800, 600, 1200, 1000, 1100, 900];
+
+/**
+ * מזונות שהערך הקלורי שלהם במאגר לא מוסבר ע"י המאקרו ואין לו הסבר טבעי
+ * (אלכוהול, סוכרים אלכוהוליים, סיבים). כנראה טעויות הזנה. הערך לא מתוקן —
+ * הממשק רק מסמן שהוא חשוד. נמצאו ב-`--audit`.
+ */
+const SUSPECT_IDS: Record<string, string> = {
+  // 20 קק"ל במאגר, 37 לפי המאקרו (P 2.1 / C 7 / F 0.1)
+  '75302029': 'שעועית ירוקה עדינה, שלמה, קפואה, לא מבושלת, סנפרוסט',
+  // 72 קק"ל במאגר, 126 לפי המאקרו (P 7 / C 12 / F 5.5)
+  '27440109': "סלט ירוק עם קריספי/סלקט צ'יקן, אגוזי מלך, רוטב וינגרט דיאט, מקדונלדס",
+};
 
 // ---------- שורות גולמיות ----------
 
@@ -221,7 +234,6 @@ function build(
       id,
       name,
       en: en === '' ? null : en,
-      search: normalizeSearch(en === '' ? name : `${name} ${en}`),
       cat,
       kcal,
       protein,
@@ -229,7 +241,12 @@ function build(
       fat,
       fiber: num(r.total_dietary_fiber),
       portions,
+      ...(id in SUSPECT_IDS ? { suspect: true as const } : {}),
     });
+  }
+
+  for (const id of Object.keys(SUSPECT_IDS)) {
+    if (!byId.has(id)) issues.push({ kind: 'suspect-missing', detail: `${id} — ${SUSPECT_IDS[id]}` });
   }
 
   for (const code of portionsByCode.keys()) {
@@ -332,7 +349,7 @@ async function main(): Promise<void> {
   console.log(`נכתב ${args.out}`);
   console.log(`  מזונות: ${built.length} מתוך ${foods.length} במקור`);
   console.log(`  עם יחידות מידה: ${withPortions} · סה"כ יחידות: ${portionCount}`);
-  console.log(`  carbs=null: ${built.filter((f) => f.carbs === null).length} · fiber=null: ${built.filter((f) => f.fiber === null).length} · en=null: ${built.filter((f) => f.en === null).length}`);
+  console.log(`  carbs=null: ${built.filter((f) => f.carbs === null).length} · fiber=null: ${built.filter((f) => f.fiber === null).length} · en=null: ${built.filter((f) => f.en === null).length} · suspect: ${built.filter((f) => f.suspect).length}`);
   console.log(`  גודל: ${(Buffer.byteLength(text) / 1024).toFixed(0)}KB`);
 
   const byKind = new Map<string, Issue[]>();

@@ -6,6 +6,9 @@
  * ל-precache של ה-service worker יחד עם כל מה שב-`public/`).
  *
  * הטיפוסים כאן הם החוזה בין הסקריפט לאפליקציה. שינוי כאן = הרצת הייבוא מחדש.
+ *
+ * אין בקובץ שדה חיפוש. הוא מחושב פעם אחת בטעינה מ-`name` ו-`en` דרך
+ * `normalizeSearch` שב-search.ts — מקור אמת אחד לכללי הנרמול.
  */
 
 /**
@@ -45,8 +48,6 @@ export type MohFood = {
   name: string;
   /** השם באנגלית. null כשאין. */
   en: string | null;
-  /** שדה החיפוש: השם העברי והאנגלי אחרי `normalizeSearch`. */
-  search: string;
   cat: FoodCategory;
   kcal: number;
   protein: number;
@@ -54,6 +55,11 @@ export type MohFood = {
   fat: number;
   fiber: number | null;
   portions: MohPortion[];
+  /**
+   * הערך הקלורי במאגר לא מוסבר ע"י המאקרו ובלי הסבר טבעי — כנראה טעות
+   * הזנה. הערך לא תוקן; הממשק מציג סימן. נקבע ברשימה קבועה בסקריפט הייבוא.
+   */
+  suspect?: true;
 };
 
 export type MohFoodFile = {
