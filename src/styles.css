@@ -118,7 +118,7 @@ body {
   max-width: var(--maxw);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .tab {
@@ -867,6 +867,66 @@ button {
 /* מרווח נוסף בתחתית המסך כשהטיימר רץ, כדי שלא יכסה תוכן */
 .app__main--timer {
   padding-bottom: calc(var(--tap) * 2 + var(--sp-6) + env(safe-area-inset-bottom));
+}
+
+/* ---------- תזונה ---------- */
+
+/* שורת המאקרו מתחת למספר הגדול: שלושה אריחים באותה שפה של .stat */
+.macros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+/* תוצאות חיפוש: שורות לחיצות בגובה מגע מלא, בלי מסגרת כפתור */
+.results {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.results__btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: start;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  border-top: 1px solid var(--rule);
+  font-size: 15px;
+}
+
+.results > li:first-child .results__btn {
+  border-top: 0;
+}
+
+.results__btn:active {
+  background: var(--paper-sunk);
+}
+
+/* שדה הגרמים — גדול, להקלדה ביד אחת ליד המשקל */
+.grams input[type='number'] {
+  min-height: 52px;
+  font-size: 19px;
+}
+
+/* undo אחרי מחיקה: שורה שקטה, כפתור בקצה */
+.undo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 14px;
 }
 
 /* ---------- קלט קובץ ---------- */
