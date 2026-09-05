@@ -14,6 +14,7 @@ import {
 } from '../lib/nutrition/recipe';
 import { kcalText, macroText } from '../lib/nutrition/display';
 import { DASH } from '../lib/format';
+import { FOOD_NOTE_MAX } from '../types';
 import {
   FOOD_NAME_MAX,
   MAX_GRAMS,
@@ -126,6 +127,7 @@ export default function CustomFoodEditor({
   const [mode] = useState<EditorMode>(existing ? (existing.recipe ? 'recipe' : 'label') : (initialMode ?? 'label'));
   const [name, setName] = useState(existing?.name ?? initialName ?? '');
   const [cat, setCat] = useState<number | null>(existing?.cat ?? null);
+  const [note, setNote] = useState(existing?.note ?? '');
 
   // ---------- מהתווית ----------
   const [kcal, setKcal] = useState(toText(existing?.recipe ? null : existing?.kcal));
@@ -199,6 +201,7 @@ export default function CustomFoodEditor({
       cat,
       portions: existing?.portions ?? [],
       barcode: existing?.barcode ?? null,
+      ...(note.trim() === '' ? {} : { note: note.trim().slice(0, FOOD_NOTE_MAX) }),
     };
     if (mode === 'label' && labelValues && labelValid) {
       onSave({
@@ -216,6 +219,7 @@ export default function CustomFoodEditor({
 
   const nameId = useId();
   const catId = useId();
+  const noteId = useId();
 
   return (
     <div className="stack--loose">
@@ -253,6 +257,20 @@ export default function CustomFoodEditor({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label htmlFor={noteId}>
+              הערה <span className="muted">(לא חובה)</span>
+            </label>
+            <input
+              id={noteId}
+              type="text"
+              value={note}
+              maxLength={FOOD_NOTE_MAX}
+              autoComplete="off"
+              placeholder="מקור הערכים, מה טרם אומת…"
+              onChange={(e) => setNote(e.target.value)}
+            />
           </div>
         </div>
       </section>

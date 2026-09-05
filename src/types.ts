@@ -157,7 +157,11 @@ export type CustomFood = {
   /** לשימוש עתידי. */
   barcode: string | null;
   recipe?: Recipe;
+  /** טקסט חופשי עד `FOOD_NOTE_MAX` — מקור הערכים, מה טרם אומת. */
+  note?: string;
 };
+
+export const FOOD_NOTE_MAX = 200;
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 

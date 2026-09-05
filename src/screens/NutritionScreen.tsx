@@ -455,6 +455,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                   {f.name}
                   <span className="tiny muted">
                     {f.recipe ? ' · מנה' : ' · מהתווית'} · <span className="num">{kcalText(f.kcal)}</span> קק"ל ל-100 ג׳
+                    {f.note ? ` · ${f.note}` : ''}
                   </span>
                 </span>
                 <button type="button" className="btn btn--quiet" aria-label={`ערוך ${f.name}`} onClick={() => setEditor({ existing: f })}>

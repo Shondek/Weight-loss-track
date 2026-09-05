@@ -8,8 +8,8 @@
 
 import type { CustomFood, FoodId } from '../../types';
 import type { MohFood } from './foodDb';
-import { fromCustom, fromMoh, type Food } from './foods';
-import { matchesSearch, normalizeSearch, searchTerms } from './search';
+import { fromCustom, fromMoh, type Food } from './foods.ts';
+import { matchesSearch, normalizeSearch, searchTerms } from './search.ts';
 
 export type IndexedFood = { food: Food; search: string };
 

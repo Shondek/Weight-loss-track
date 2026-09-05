@@ -6,7 +6,7 @@
  * = מזון שלי. `MohFood` מגיע מקובץ ה-asset, `CustomFood` מהאחסון.
  */
 
-import { CUSTOM_FOOD_PREFIX, type CustomFood, type FoodId, type FoodPortion, type FoodRef } from '../../types';
+import { CUSTOM_FOOD_PREFIX, type CustomFood, type FoodId, type FoodPortion, type FoodRef } from '../../types.ts';
 import type { MohFood } from './foodDb';
 
 /** מזון שאפשר לרשום: מהמאגר או שלי. הממשק לא צריך להבחין ביניהם. */

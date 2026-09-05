@@ -28,6 +28,7 @@ import {
   type WorkoutType,
   DEFAULT_SETTINGS,
   ENTRY_NOTE_MAX,
+  FOOD_NOTE_MAX,
   NOTE_MAX,
   WORKOUT_SCHEMA_VERSION,
 } from '../types';
@@ -491,6 +492,7 @@ export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
     const cat = intInRange(raw.cat, 1, 9);
     const barcode = cleanText(raw.barcode, 64);
     const recipe = parseRecipe(raw.recipe);
+    const note = cleanText(raw.note, FOOD_NOTE_MAX);
     byId.set(id, {
       id,
       ...per100.ref,
@@ -498,6 +500,7 @@ export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
       portions: parsePortions(raw.portions),
       barcode: barcode === '' ? null : barcode,
       ...(recipe ? { recipe } : {}),
+      ...(note === '' ? {} : { note }),
     });
   }
 
