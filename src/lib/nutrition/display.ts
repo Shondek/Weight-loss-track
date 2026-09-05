@@ -5,7 +5,7 @@
  * קלוריות ← מספר שלם. מאקרו ← ספרה אחת אחרי הנקודה. שלילי נשאר שלילי.
  */
 
-import { DASH } from '../format';
+import { DASH } from '../format.ts';
 
 export function kcalText(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return DASH;
