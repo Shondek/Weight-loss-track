@@ -342,6 +342,10 @@ describe('backupJson', () => {
       'waist',
       'checkins',
       'settings',
+      'customFoods',
+      'entries',
+      'targets',
+      'favorites',
     ]);
   });
 

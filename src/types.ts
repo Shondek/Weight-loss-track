@@ -111,6 +111,91 @@ export type WeeklyCheckin = {
 
 export const NOTE_MAX = 280;
 
+// ---------- תזונה ----------
+
+/**
+ * מזהה מזון. 8 ספרות = קוד מזון של משרד הבריאות (`smlmitzrach`).
+ * `"c:"` + uuid = מזון שהוזן ידנית. הקידומת מונעת התנגשות עם קוד עתידי במאגר.
+ */
+export type FoodId = string;
+
+export const CUSTOM_FOOD_PREFIX = 'c:';
+
+/** יחידת מידה נוחה: "כף" = 10 גרם. */
+export type FoodPortion = { u: string; g: number };
+
+/**
+ * מזון שהוזן ידנית, עם המספרים מהתווית. הערכים ל-100 גרם.
+ * `null` = לא ידוע (לא אפס). `cat` לפי `FoodCategory` שב-lib/nutrition/foodDb.ts.
+ */
+export type CustomFood = {
+  id: FoodId;
+  name: string;
+  cat: number | null;
+  kcal: number;
+  protein: number;
+  carbs: number | null;
+  fat: number;
+  fiber: number | null;
+  portions: FoodPortion[];
+  /** לשימוש עתידי. */
+  barcode: string | null;
+};
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+/**
+ * ערכי המקור של מזון ל-100 גרם, כפי שהיו בזמן הרישום. מוקפאים ברישום כדי
+ * שהוא ישרוד אם המזון נמחק או נעלם מגרסה חדשה של המאגר — אותו דפוס כמו
+ * `LoggedExercise.n`. בקריאה, המזון החי גובר; `ref` הוא הגיבוי.
+ *
+ * זה נתון מקור, לא תוצאה: שום קלוריה לא נשמרת ברישום. הסיכום תמיד מחושב
+ * מ-`grams × ref / 100`.
+ */
+export type FoodRef = {
+  name: string;
+  kcal: number;
+  protein: number;
+  carbs: number | null;
+  fat: number;
+  fiber: number | null;
+};
+
+export type FoodEntry = {
+  /** מתחיל ב-`sortableStamp(ts)` כדי שמיון מחרוזות = מיון זמן. */
+  id: string;
+  /** נגזר מ-`ts` ב-`toLocalISO` בזמן הכתיבה, ומוקפא. הסיכום היומי מקבץ לפיו. */
+  d: ISODate;
+  /** epoch ms */
+  ts: number;
+  meal: MealType;
+  foodId: FoodId;
+  grams: number;
+  ref: FoodRef;
+  /** טקסט חופשי, עד `ENTRY_NOTE_MAX` — לסימון אומדנים ואכילה בחוץ. */
+  note?: string;
+};
+
+export const ENTRY_NOTE_MAX = 200;
+
+/**
+ * יעד יומי. `from` = תאריך תחילת תוקף; ההיסטוריה נשמרת ולא נדרסת, כדי
+ * שסיכומים ישנים יישארו נכונים. המאקרו בגרמים.
+ */
+export type NutritionTarget = {
+  from: ISODate;
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+/** מזון לגישה מהירה. `grams` = כמות ברירת מחדל, מה שמאפשר רישום בנגיעה אחת. */
+export type Favorite = {
+  foodId: FoodId;
+  grams: number | null;
+};
+
 export type Settings = {
   /**
    * ראשון של שבוע 1 בתוכנית. null = נגזר אוטומטית מהשקילה הראשונה.
@@ -144,6 +229,11 @@ export type DB = {
   waist: WaistEntry[];
   checkins: WeeklyCheckin[];
   settings: Settings;
+  /** מזונות שהוזנו ידנית. מאגר משרד הבריאות אינו כאן — הוא asset, לא נתון משתמש. */
+  customFoods: CustomFood[];
+  entries: FoodEntry[];
+  targets: NutritionTarget[];
+  favorites: Favorite[];
 };
 
 /**
@@ -158,5 +248,9 @@ export function emptyDb(): DB {
     waist: [],
     checkins: [],
     settings: { ...DEFAULT_SETTINGS },
+    customFoods: [],
+    entries: [],
+    targets: [],
+    favorites: [],
   };
 }

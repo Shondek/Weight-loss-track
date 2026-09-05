@@ -433,7 +433,16 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
 
   it('מקבל את המבנה כמו שהוא ומדווח על דחיות', () => {
     const r = parseDb(legacyExport);
-    expect(r.counts).toEqual({ weights: 1, workouts: 1, waist: 0, checkins: 0 });
+    expect(r.counts).toEqual({
+      weights: 1,
+      workouts: 1,
+      waist: 0,
+      checkins: 0,
+      customFoods: 0,
+      entries: 0,
+      targets: 0,
+      favorites: 0,
+    });
     expect(r.rejected).toEqual([
       { section: 'משקל', reason: 'תאריך לא תקין', count: 1 },
     ]);
@@ -442,7 +451,16 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
 
   it('קלט שאינו אובייקט מחזיר DB ריק בלי לזרוק', () => {
     const r = parseDb('junk');
-    expect(r.counts).toEqual({ weights: 0, workouts: 0, waist: 0, checkins: 0 });
+    expect(r.counts).toEqual({
+      weights: 0,
+      workouts: 0,
+      waist: 0,
+      checkins: 0,
+      customFoods: 0,
+      entries: 0,
+      targets: 0,
+      favorites: 0,
+    });
   });
 
   it('אימון שבור בייבוא נשמר ב-legacyWorkouts ומדווח כ"נשמר כאימון ישן"', () => {

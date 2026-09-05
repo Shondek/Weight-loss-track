@@ -56,3 +56,10 @@ export const WEIGHT_STEP = 0.5;
 
 /** כמה ביצועים קודמים מוצגים מעל שדות הקלט של תרגיל. */
 export const HISTORY_ROWS = 3;
+
+/**
+ * ארוחת ברירת המחדל ברישום אכילה, לפי שעת היום (0–23): לפני `lunchFrom`
+ * בוקר, לפני `dinnerFrom` צהריים, לפני `snackFrom` ערב, ואחרי — ביניים.
+ * רק מה שנבחר מראש בשדה; תמיד ניתן לשינוי.
+ */
+export const MEAL_HOURS = { lunchFrom: 11, dinnerFrom: 17, snackFrom: 22 } as const;

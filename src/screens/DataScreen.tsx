@@ -114,6 +114,12 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <span className="num">{db.waist.length}</span> · צ'ק-אין{' '}
             <span className="num">{db.checkins.length}</span>
           </li>
+          <li>
+            רישומי אכילה <span className="num">{db.entries.length}</span> · מזונות שלי{' '}
+            <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
+            <span className="num">{db.targets.length}</span> · מועדפים{' '}
+            <span className="num">{db.favorites.length}</span>
+          </li>
           <li className="muted tiny">
             מפתחות: {Object.values(STORAGE_KEYS).join(' · ')}
           </li>
@@ -280,6 +286,12 @@ export default function DataScreen({ store, today }: ScreenProps) {
                 <span className="num">{report.counts.workouts}</span> · מותניים{' '}
                 <span className="num">{report.counts.waist}</span> · צ'ק-אין{' '}
                 <span className="num">{report.counts.checkins}</span>
+              </p>
+              <p style={{ margin: 0 }}>
+                רישומי אכילה <span className="num">{report.counts.entries}</span> · מזונות שלי{' '}
+                <span className="num">{report.counts.customFoods}</span> · יעדי תזונה{' '}
+                <span className="num">{report.counts.targets}</span> · מועדפים{' '}
+                <span className="num">{report.counts.favorites}</span>
               </p>
               <p style={{ margin: 0 }}>
                 סה"כ רשומות: <span className="num">{report.totalBefore}</span> →{' '}
