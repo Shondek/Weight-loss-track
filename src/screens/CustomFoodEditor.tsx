@@ -335,7 +335,14 @@ export default function CustomFoodEditor({
                         {f?.isRecipe && <span className="tiny err"> · מנה — לא ניתן לקנן</span>}
                         <span className="tiny muted">
                           {' '}
-                          · <span className="num">{i.grams}</span> ג׳
+                          ·{' '}
+                          {i.u ? (
+                            i.u
+                          ) : (
+                            <>
+                              <span className="num">{i.grams}</span> ג׳
+                            </>
+                          )}
                           {f && (
                             <>
                               {' '}

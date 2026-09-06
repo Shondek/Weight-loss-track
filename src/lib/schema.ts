@@ -29,6 +29,7 @@ import {
   DEFAULT_SETTINGS,
   ENTRY_NOTE_MAX,
   FOOD_NOTE_MAX,
+  RECIPE_UNIT_MAX,
   NOTE_MAX,
   UNIT_FOOD_SCALE,
   WORKOUT_SCHEMA_VERSION,
@@ -484,7 +485,9 @@ function parseRecipe(v: unknown): Recipe | null {
     const foodId = typeof raw.foodId === 'string' ? raw.foodId.trim() : '';
     const grams = inRange(raw.grams, MIN_GRAMS, MAX_GRAMS);
     if ((!isMohFoodId(foodId) && !isCustomFoodId(foodId)) || grams === null) continue;
-    items.push({ foodId, grams });
+    // תווית כמות לתצוגה ("כף מפולסת"). ריקה = מוצג בגרמים.
+    const u = cleanText(raw.u, RECIPE_UNIT_MAX);
+    items.push({ foodId, grams, ...(u === '' ? {} : { u }) });
   }
   const finalGrams = inRange(v.finalGrams, MIN_GRAMS, MAX_GRAMS * 10);
   if (items.length === 0 || finalGrams === null) return null;

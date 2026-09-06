@@ -61,6 +61,34 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     }
   });
 
+  it('תוויות כמות לתצוגה: כלי מטבח וספירה מסומנים, מה ששוקלים לא; הגרמים לא משתנים', () => {
+    const labels = (slug: string) => {
+      const f = foods.find((x) => x.id === libId(slug))!;
+      return f.recipe!.items.map((i) => [resolveFood(index, i.foodId)!.name.split(',')[0], i.u ?? i.grams]);
+    };
+    expect(labels('lunch-1-chicken')).toEqual([
+      ['בשר עוף', 250],
+      ['סלט ירקות ישראלי ללא תוספת שמן', 250],
+      ['טחינה גולמית', 'כף מפולסת'],
+    ]);
+    expect(labels('dinner-1-cottage-eggs')).toEqual([
+      ['ביצה קשה שלמה', '2 ביצים'],
+      ["גבינת קוטג' 5% שומן", 250],
+      ['סלט ירקות ישראלי ללא תוספת שמן', 250],
+      ['פריכיות אורז', '4 פריכיות'],
+      ['טחינה גולמית', 'כף מפולסת'],
+    ]);
+    expect(labels('dinner-2-shakshuka').map((l) => l[1])).toEqual(['3 ביצים', 200, 100, 'כפית', 200]);
+    expect(labels('dinner-3-eggs-cheese').map((l) => l[1])).toEqual(['2 ביצים', 'כף', 150, 250, 150]);
+    expect(labels('dinner-4-broccoli-pie').map((l) => l[1])).toEqual(['4 ביצים', 500, 150, 200, 'כף']);
+    expect(labels('dinner-5-no-cook').map((l) => l[1])).toEqual([250, 300, '5 פריכיות', 250]);
+    // הגרמים במתכון עצמו לא השתנו.
+    const eggs = foods.find((x) => x.id === libId('dinner-1-cottage-eggs'))!.recipe!.items[0]!;
+    expect(eggs.grams).toBe(100);
+    const tahini = foods.find((x) => x.id === libId('lunch-1-chicken'))!.recipe!.items[2]!;
+    expect(tahini.grams).toBe(15);
+  });
+
   it('עותקי מאגר (7 אגוזים, קוטג׳, חלבוני ביצה): ערכים זהים למאגר, ההערה נושאת את המזהה', () => {
     expect(MOH_COPIES).toHaveLength(9);
     expect(MOH_COPIES.filter((d) => d.nut).map((d) => d.mohId)).toEqual([

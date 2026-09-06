@@ -227,12 +227,14 @@ function detail(item: Item) {
       const scale = p.grams / cf.recipe.finalGrams;
       L(`${p.label ? `**${p.label}** — ` : ''}מרכיבים${scale !== 1 ? ` (×${scale.toFixed(2)} מהמנה המוגדרת)` : ''}:`);
       L();
-      L('| מרכיב | גרמים | קק"ל | חלבון |');
+      L('| מרכיב | כמות | קק"ל | חלבון |');
       L('|---|---|---|---|');
       for (const i of cf.recipe.items) {
         const ing = resolveFood(index, i.foodId)!;
         const gr = i.grams * scale;
-        L(`| ${ing.name} | ${g(gr)} | ${kcalText((ing.kcal * gr) / 100)} | ${macroText((ing.protein * gr) / 100)} |`);
+        // כלי מטבח או ספירה — התווית; מה ששוקלים — גרמים. בחלק ממנה (×0.5) התווית לא נכונה, אז גרמים.
+        const qty = i.u && scale === 1 ? i.u : `${g(gr)} ג׳`;
+        L(`| ${ing.name} | ${qty} | ${kcalText((ing.kcal * gr) / 100)} | ${macroText((ing.protein * gr) / 100)} |`);
       }
     } else {
       L(`- ${p.label ?? f.name}: ${g(p.grams)} ג׳ → ${kcalText((f.kcal * p.grams) / 100)} קק"ל · ${macroText((f.protein * p.grams) / 100)} חלבון`);

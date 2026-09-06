@@ -135,9 +135,20 @@ export type FoodPortion = { u: string; g: number };
  * מרכיב הוא מזון מהמאגר או מזון שלי רגיל. מנה בתוך מנה לא נתמכת.
  */
 export type Recipe = {
-  items: { foodId: FoodId; grams: number }[];
+  items: {
+    foodId: FoodId;
+    grams: number;
+    /**
+     * תצוגה בלבד: הכמות כפי שמודדים אותה במטבח — "כף מפולסת", "2 ביצים",
+     * "4 פריכיות". מה ששוקלים נשאר בלי שדה זה ומוצג בגרמים. החישוב תמיד
+     * לפי `grams`. עד `RECIPE_UNIT_MAX` תווים.
+     */
+    u?: string;
+  }[];
   finalGrams: number;
 };
+
+export const RECIPE_UNIT_MAX = 40;
 
 /**
  * מזון שהוזן ידנית, עם המספרים מהתווית. הערכים ל-100 גרם.

@@ -247,7 +247,8 @@ export type DishDef = {
   slug: string;
   name: string;
   cat: number | null;
-  items: { foodId: FoodId; grams: number }[];
+  /** `u` = תווית כמות לתצוגה בלבד (כלי מטבח או ספירה); החישוב לפי `grams`. */
+  items: { foodId: FoodId; grams: number; u?: string }[];
   /** null = סכום המרכיבים (ברירת המחדל). */
   finalGrams: number | null;
   note?: string;
@@ -264,8 +265,12 @@ const C = Object.fromEntries(CUSTOM_FOODS.map((f) => [f.id.slice(LIB_PREFIX.leng
  */
 const lunchBase = [
   { foodId: MOH.salad, grams: 250 },
-  { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp },
+  { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת' },
 ];
+
+/** תוויות כמות לתצוגה: מה שנמדד בכלי מטבח או נספר ביחידות. מה ששוקלים — בלי תווית. */
+const eggs = (n: number) => `${n} ביצים`;
+const riceCakes = (n: number) => `${n} פריכיות`;
 
 /** המסמך (2.1): ערכי המנה בלי השקדים = הערכים של גרסה 2 פחות 145 קק"ל · 5 חלבון. */
 const withoutAlmonds = (kcal: number, protein: number) => ({ kcal: kcal - 145, protein: protein - 5 });
@@ -315,7 +320,7 @@ export const DISHES: DishDef[] = [
     cat: 2,
     items: [
       { foodId: C['tuna-water-drained']!, grams: 2 * GRAMS.tunaCan },
-      { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg },
+      { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg, u: eggs(2) },
       ...lunchBase,
     ],
     finalGrams: null,
@@ -326,11 +331,11 @@ export const DISHES: DishDef[] = [
     name: "ע1 — קוטג' וביצים",
     cat: 1,
     items: [
-      { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg },
+      { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg, u: eggs(2) },
       { foodId: MOH.cottage5, grams: 250 },
       { foodId: MOH.salad, grams: 250 },
-      { foodId: MOH.riceCake, grams: 4 * GRAMS.riceCake },
-      { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp },
+      { foodId: MOH.riceCake, grams: 4 * GRAMS.riceCake, u: riceCakes(4) },
+      { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת' },
     ],
     finalGrams: null,
     doc: { kcal: 685, protein: 50, label: 'ע1' },
@@ -340,10 +345,10 @@ export const DISHES: DishDef[] = [
     name: 'ע2 — שקשוקה',
     cat: 3,
     items: [
-      { foodId: MOH.eggRaw, grams: 3 * GRAMS.egg },
+      { foodId: MOH.eggRaw, grams: 3 * GRAMS.egg, u: eggs(3) },
       { foodId: MOH.tomato, grams: 200 },
       { foodId: C['bulgarit-5']!, grams: 100 },
-      { foodId: MOH.oliveOil, grams: GRAMS.oilTsp },
+      { foodId: MOH.oliveOil, grams: GRAMS.oilTsp, u: 'כפית' },
       { foodId: C['greek-yogurt-0']!, grams: 200 },
     ],
     finalGrams: null,
@@ -356,8 +361,8 @@ export const DISHES: DishDef[] = [
     name: 'ע3 — ביצים בשמן זית וגבינה',
     cat: 3,
     items: [
-      { foodId: MOH.eggRaw, grams: 2 * GRAMS.egg },
-      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp },
+      { foodId: MOH.eggRaw, grams: 2 * GRAMS.egg, u: eggs(2) },
+      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp, u: 'כף' },
       { foodId: C['bulgarit-5']!, grams: 150 },
       { foodId: MOH.salad, grams: 250 },
       { foodId: C['greek-yogurt-0']!, grams: 150 },
@@ -372,11 +377,11 @@ export const DISHES: DishDef[] = [
     name: 'ע4 — פשטידת ברוקולי (תבנית שלמה)',
     cat: 3,
     items: [
-      { foodId: MOH.eggRaw, grams: 4 * GRAMS.egg },
+      { foodId: MOH.eggRaw, grams: 4 * GRAMS.egg, u: eggs(4) },
       { foodId: MOH.broccoliFrozen, grams: 500 },
       { foodId: C['bulgarit-5']!, grams: 150 },
       { foodId: MOH.cottage5, grams: 200 },
-      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp },
+      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp, u: 'כף' },
     ],
     finalGrams: null,
     note: 'נאפית 35 דק\' ומאבדת מים — משקל התבנית אחרי אפייה טרם אומת. שקול את התבנית ועדכן את המשקל הסופי',
@@ -389,7 +394,7 @@ export const DISHES: DishDef[] = [
     items: [
       { foodId: MOH.cottage5, grams: 250 },
       { foodId: C['greek-yogurt-0']!, grams: 300 },
-      { foodId: MOH.riceCake, grams: 5 * GRAMS.riceCake },
+      { foodId: MOH.riceCake, grams: 5 * GRAMS.riceCake, u: riceCakes(5) },
       { foodId: MOH.salad, grams: 250 },
     ],
     finalGrams: null,

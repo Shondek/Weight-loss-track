@@ -190,6 +190,31 @@ describe('parseCustomFoods עם recipe', () => {
     expect(r.rejected).toHaveLength(0);
   });
 
+  it('תווית כמות `u` נשמרת כטקסט נקי; ריקה או לא-מחרוזת — נשמטת; הגרמים לא מושפעים', () => {
+    const r = parseCustomFoods([
+      {
+        ...plain,
+        id: 'c:u',
+        name: 'עם תוויות',
+        recipe: {
+          items: [
+            { foodId: '74101000', grams: 15, u: '  כף   מפולסת ' },
+            { foodId: '82104000', grams: 100, u: '' },
+            { foodId: '31103000', grams: 100, u: 7 },
+            { foodId: '54319039', grams: 37, u: 'x'.repeat(60) },
+          ],
+          finalGrams: 252,
+        },
+      },
+    ]);
+    const items = r.ok[0]!.recipe!.items;
+    expect(items[0]).toEqual({ foodId: '74101000', grams: 15, u: 'כף מפולסת' });
+    expect(items[1]).toEqual({ foodId: '82104000', grams: 100 });
+    expect(items[2]).toEqual({ foodId: '31103000', grams: 100 });
+    expect(items[3]!.u).toHaveLength(40);
+    expect(items[3]!.grams).toBe(37);
+  });
+
   it('מנה בתוך מנה: המתכון מוסר עם סיבה, הערכים והמזון נשארים', () => {
     const r = parseCustomFoods([
       { ...plain, id: 'c:inner', name: 'פנימי', recipe: { items: [{ foodId: '74101000', grams: 100 }], finalGrams: 100 } },
