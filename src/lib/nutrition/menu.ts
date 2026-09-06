@@ -10,6 +10,9 @@ import { libraryFoodId } from './library.ts';
 
 export type MenuGroupKey = 'lunch' | 'dinner' | 'blocks' | 'extras';
 
+/** ברירת מחדל של מנה: תוסף שנרשם יחד איתה כרישום נפרד. `label` לטוסט. */
+export type MenuDefault = { slug: string; grams: number; label: string };
+
 export type MenuItem = {
   /** מזהה בספרייה בלי הקידומת: "c:lib2:<slug>". */
   slug: string;
@@ -19,6 +22,14 @@ export type MenuItem = {
   grams?: number;
   /** נספר בכלל "אגוז אחד ביום". */
   nut?: true;
+  /** תוסף שנספר ב"תוספים" בסיכום היום. */
+  addon?: true;
+  /**
+   * תוספים שנוצרים יחד עם המנה כרישומים נפרדים — פעם אחת ביום לכל מנה:
+   * אם המנה כבר נרשמה היום, לחיצה נוספת יוצרת רק את המנה. כך תוסף שנמחק
+   * לא חוזר באותו יום.
+   */
+  defaults?: readonly MenuDefault[];
 };
 
 export type MenuGroup = {
@@ -118,6 +129,46 @@ export function menuGroupForHour(
   if (hour < bounds.dinnerFrom) return 'lunch';
   if (hour < bounds.snackFrom) return 'dinner';
   return 'blocks';
+}
+
+/** מזהי הספרייה של התוספים הנספרים, מתוך הגדרת התפריט. */
+export function addonFoodIds(groups: readonly MenuGroup[]): Set<string> {
+  const out = new Set<string>();
+  for (const g of groups) for (const i of g.items) if (i.addon) out.add(libraryFoodId(i.slug));
+  return out;
+}
+
+/** מפה: מזהה מנה → ברירות המחדל שלה. */
+function defaultsById(groups: readonly MenuGroup[]): Map<string, readonly MenuDefault[]> {
+  const out = new Map<string, readonly MenuDefault[]>();
+  for (const g of groups) for (const i of g.items) if (i.defaults?.length) out.set(libraryFoodId(i.slug), i.defaults);
+  return out;
+}
+
+/** האם המנה כבר נרשמה היום — ואז ברירות המחדל לא נוצרות שוב. */
+export function dishLoggedOn(entries: readonly FoodEntry[], d: ISODate, dishId: string): boolean {
+  return entries.some((e) => e.d === d && e.foodId === dishId);
+}
+
+/**
+ * כמה תוספים "צפויים" היום: סכום ברירות המחדל (הנספרות כתוספים) של המנות
+ * שנרשמו היום, פעם אחת לכל מנה — תואם את הכלל שברירות המחדל נוצרות פעם
+ * אחת ביום לכל מנה. תוסף שנמחק בכוונה אינו ניתן להבחנה מתוסף שלא נרשם,
+ * ולכן נספר כחסר: עדיף להראות פער מאשר להסתיר אותו.
+ */
+export function expectedAddonCount(entries: readonly FoodEntry[], d: ISODate, groups: readonly MenuGroup[]): number {
+  const defaults = defaultsById(groups);
+  const addons = addonFoodIds(groups);
+  const seen = new Set<string>();
+  let n = 0;
+  for (const e of entries) {
+    if (e.d !== d || seen.has(e.foodId)) continue;
+    const list = defaults.get(e.foodId);
+    if (!list) continue;
+    seen.add(e.foodId);
+    n += list.filter((x) => addons.has(libraryFoodId(x.slug))).length;
+  }
+  return n;
 }
 
 /** מזהי הספרייה של האגוזים, מתוך הגדרת התפריט. */

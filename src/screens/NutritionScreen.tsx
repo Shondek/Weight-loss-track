@@ -36,7 +36,18 @@ import {
   setEntryGrams,
   upsertEntry,
 } from '../lib/nutrition/entries';
-import { menuGroupForHour, nutEntriesOn, nutFoodIds, resolveMenu, type MenuGroupKey, type ResolvedMenuItem } from '../lib/nutrition/menu';
+import {
+  addonFoodIds,
+  dishLoggedOn,
+  expectedAddonCount,
+  menuGroupForHour,
+  nutEntriesOn,
+  nutFoodIds,
+  resolveMenu,
+  type MenuGroupKey,
+  type ResolvedMenuItem,
+} from '../lib/nutrition/menu';
+import { libraryFoodId } from '../lib/nutrition/library';
 import { targetFor, upsertTarget } from '../lib/nutrition/targets';
 import { daySummary, entryNutrition, remaining } from '../lib/nutrition/calc';
 import { kcalText, macroText } from '../lib/nutrition/display';
@@ -44,6 +55,7 @@ import { kcalText, macroText } from '../lib/nutrition/display';
 const SEARCH_LIMIT = 20;
 const UNDO_MS = 5000;
 const NUT_IDS = nutFoodIds(MEAL_MENU);
+const ADDON_IDS = addonFoodIds(MEAL_MENU);
 
 /** חותמת זמן ממוינת + אקראיות — אותו מתכון כמו במסך האימון. */
 function unique(): string {
@@ -84,9 +96,10 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   // ---------- סיכום היום ----------
   const todayEntries = useMemo(() => entriesOn(db.entries, today), [db.entries, today]);
   const summary = useMemo(
-    () => daySummary(todayEntries, today, (id) => resolveFood(foodIndex.index, id)),
+    () => daySummary(todayEntries, today, (id) => resolveFood(foodIndex.index, id), ADDON_IDS),
     [todayEntries, today, foodIndex.index],
   );
+  const expectedAddons = useMemo(() => expectedAddonCount(todayEntries, today, MEAL_MENU), [todayEntries, today]);
   const target = useMemo(() => targetFor(db.targets, today), [db.targets, today]);
   const left = remaining(target, summary);
   const groups = useMemo(() => groupByMeal(todayEntries), [todayEntries]);
@@ -143,7 +156,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   }, [mealTouched]);
 
   // ---------- undo: מחיקה מהרשימה, או רישום בלחיצה מהתפריט ----------
-  type Pending = { kind: 'deleted' | 'added'; entry: FoodEntry; text: string };
+  /** 'added' יכול להיות קבוצה: מנה + ברירות המחדל שלה. "בטל" מסיר את כולן. */
+  type Pending = { kind: 'deleted'; entry: FoodEntry; text: string } | { kind: 'added'; entries: FoodEntry[]; text: string };
   const [undo, setUndo] = useState<Pending | null>(null);
   const undoTimer = useRef<number | undefined>(undefined);
 
@@ -168,10 +182,12 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
 
   const restore = () => {
     if (!undo) return;
-    void store.update(
-      'entries',
-      undo.kind === 'deleted' ? upsertEntry(db.entries, undo.entry) : removeEntry(db.entries, undo.entry.id),
-    );
+    if (undo.kind === 'deleted') void store.update('entries', upsertEntry(db.entries, undo.entry));
+    else {
+      let list = db.entries;
+      for (const e of undo.entries) list = removeEntry(list, e.id);
+      void store.update('entries', list);
+    }
     armUndo(null);
   };
 
@@ -193,11 +209,28 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   const logMenuItem = (r: ResolvedMenuItem) => {
     const ts = Date.now();
     // הארוחה לפי השעה עכשיו — לא לפי הבחירה בטופס החיפוש.
-    const entry = newEntry(r.food, r.grams, defaultMeal(new Date(ts).getHours(), MEAL_HOURS), ts, unique());
-    void store.update('entries', upsertEntry(db.entries, entry));
+    const mealNow = defaultMeal(new Date(ts).getHours(), MEAL_HOURS);
+    const entries = [newEntry(r.food, r.grams, mealNow, ts, unique())];
+    const labels = [r.item.label];
+    let kcal = r.kcal;
+    // ברירות המחדל — רישומים נפרדים, פעם אחת ביום לכל מנה: אם המנה כבר נרשמה
+    // היום, לא נוצרות שוב (תוסף שנמחק לא חוזר).
+    if (r.item.defaults && !dishLoggedOn(db.entries, today, r.food.id)) {
+      for (const d of r.item.defaults) {
+        const food = resolve(libraryFoodId(d.slug));
+        if (!food) continue;
+        entries.push(newEntry(food, d.grams, mealNow, ts, unique()));
+        labels.push(d.label);
+        kcal += (food.kcal * d.grams) / 100;
+      }
+    }
+    let list = db.entries;
+    for (const e of entries) list = upsertEntry(list, e);
+    void store.update('entries', list);
     // אזהרה רכה: אגוז שני היום. נרשם בכל מקרה.
-    const nutAgain = r.item.nut && nutsToday.length > 0 ? ' · כבר נרשם אגוז היום' : '';
-    armUndo({ kind: 'added', entry, text: `${r.item.label} נוסף · ${kcalText(r.kcal)} קק"ל${nutAgain}` });
+    const nutNow = r.item.nut || entries.some((e) => NUT_IDS.has(e.foodId));
+    const nutAgain = nutNow && nutsToday.length > 0 ? ' · כבר נרשם אגוז היום' : '';
+    armUndo({ kind: 'added', entries, text: `${labels.join(' + ')} · ${kcalText(kcal)} קק"ל${nutAgain}` });
   };
 
   // ---------- הזנה ידנית: אוכל בחוץ, ערכים לארוחה שלמה ----------
@@ -322,6 +355,23 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             </div>
           ))}
         </div>
+        {(expectedAddons > 0 || summary.addonCount > 0) &&
+          (summary.addonCount === 0 ? (
+            <p className="tiny err" style={{ margin: '6px 0 0' }} role="status">
+              לא נרשמו תוספים היום
+            </p>
+          ) : (
+            <p className="tiny muted" style={{ margin: '6px 0 0' }} role="status">
+              תוספים: <span className="num">{summary.addonCount}</span>
+              {expectedAddons > 0 && (
+                <>
+                  {' '}
+                  מתוך <span className="num">{expectedAddons}</span> צפויים
+                </>
+              )}{' '}
+              · <span className="num">{kcalText(summary.addonKcal)}</span> קק"ל
+            </p>
+          ))}
         {summary.adhocCount > 0 && (
           <p className="tiny adhoc-note" style={{ margin: '6px 0 0' }}>
             מתוכן <span className="num">{kcalText(summary.adhocKcal)}</span> קק"ל בהזנה ידנית (הערכה) ·{' '}

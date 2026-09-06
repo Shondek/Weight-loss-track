@@ -12,6 +12,7 @@ import { mergeDb } from '../db';
 import { BLOCKS, buildMealLibrary, DISHES, LIB_PREFIX, libId, MOH, MOH_COPIES } from '../../../scripts/meal-library-v2';
 import { MEAL_MENU } from '../../data/mealMenu';
 import { ingredientsLine, resolveMenu } from '../nutrition/menu';
+import { libraryFoodId } from '../nutrition/library';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const moh = JSON.parse(readFileSync(join(ROOT, 'public', 'nutrition', 'moh-foods.json'), 'utf8')) as MohFoodFile;
@@ -200,6 +201,14 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     const tahini = groups[3]!.items.find((i) => i.item.slug === 'tahini-raw')!;
     expect(tahini.grams).toBe(15);
     expect(tahini.kcal).toBeCloseTo(92.55, 5);
+    // כל ברירת מחדל מצביעה על פריט ספרייה קיים, שאינו מנה.
+    for (const g of MEAL_MENU) for (const i of g.items) for (const d of i.defaults ?? []) {
+      const food = resolveFood(index, libraryFoodId(d.slug));
+      expect(food, `${i.slug} → ${d.slug}`).not.toBeNull();
+      expect(food!.isRecipe, d.slug).toBe(false);
+    }
+    // צ1 + טחינה + שקדים = 442.5 + 92.55 + 144.75 = 679.8 — הטוסט מציג 680.
+    expect(groups[0]!.items[0]!.kcal + (92.55 + 144.75)).toBeCloseTo(679.8, 1);
     expect(groups[0]!.items.map((i) => i.item.slug)).toContain('lunch-3b-mixed-beef');
     const corn = groups[3]!.items.filter((i) => i.item.slug.startsWith('corn-cake-'));
     expect(corn.map((i) => [i.grams, Math.round(i.kcal)])).toEqual([[1, 31], [1, 23]]);

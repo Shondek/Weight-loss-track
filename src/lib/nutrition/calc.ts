@@ -109,6 +109,13 @@ export type DaySummary = Nutrients & {
   adhocKcal: number;
   /** כמה מהרישומים ידניים. */
   adhocCount: number;
+  /**
+   * תוספים (טחינה, אגוז, פריכיות) שנרשמו היום — לפי `addonIds`. מול הצפוי
+   * (ראה `expectedAddonCount`) מבחין בין יום נמוך באמת ליום שהתוספים לא
+   * נרשמו בו: שניהם נראים זהים בממוצע, ואחד מהם מפעיל החלטה שגויה.
+   */
+  addonCount: number;
+  addonKcal: number;
 };
 
 export type FoodResolver = (foodId: string) => Food | null;
@@ -118,8 +125,20 @@ export function daySummary(
   entries: readonly FoodEntry[],
   d: ISODate,
   resolve: FoodResolver,
+  addonIds: ReadonlySet<string> = new Set(),
 ): DaySummary {
-  const out: DaySummary = { ...ZERO, d, count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0, adhocKcal: 0, adhocCount: 0 };
+  const out: DaySummary = {
+    ...ZERO,
+    d,
+    count: 0,
+    carbsUnknownGrams: 0,
+    fatUnknownGrams: 0,
+    fiberUnknownGrams: 0,
+    adhocKcal: 0,
+    adhocCount: 0,
+    addonCount: 0,
+    addonKcal: 0,
+  };
   for (const e of entries) {
     if (e.d !== d) continue;
     const n = entryNutrition(e, resolve(e.foodId));
@@ -134,6 +153,10 @@ export function daySummary(
     if (n.adhoc) {
       out.adhocKcal += n.kcal;
       out.adhocCount++;
+    }
+    if (addonIds.has(e.foodId)) {
+      out.addonKcal += n.kcal;
+      out.addonCount++;
     }
     out.count++;
   }

@@ -4,7 +4,19 @@ import { MEAL_MENU, NUT_GRAMS } from '../../data/mealMenu';
 import type { Food } from './foods';
 import { newEntry } from './entries';
 import { libraryFoodId } from './library';
-import { ingredientText, menuGroupForHour, menuItemGrams, nutEntriesOn, nutFoodIds, resolveMenu, type MenuGroup } from './menu';
+import {
+  addonFoodIds,
+  dishLoggedOn,
+  expectedAddonCount,
+  ingredientText,
+  menuGroupForHour,
+  menuItemGrams,
+  nutEntriesOn,
+  nutFoodIds,
+  resolveMenu,
+  type MenuGroup,
+} from './menu';
+import { daySummary } from './calc';
 
 const food = (id: string, extra: Partial<Food> = {}): Food => ({
   id,
@@ -120,6 +132,69 @@ describe('ingredientText — הכלל: כלי מטבח = יחידה, ספירה 
     expect(ingredientText({ foodId: '1', grams: 100, u: '2 ביצים' }, 'ביצה קשה שלמה')).toBe('2 ביצים');
     expect(ingredientText({ foodId: '1', grams: 13.6 }, 'שמן זית')).toBe('שמן זית 13.6');
     expect(ingredientText({ foodId: '1', grams: 37.04 }, 'פריכיות')).toBe('פריכיות 37');
+  });
+});
+
+describe('ברירות מחדל ותוספים (2.5)', () => {
+  const byLabel = Object.fromEntries(MEAL_MENU.flatMap((g) => g.items.map((i) => [i.slug, i])));
+  const noon = new Date(2026, 8, 6, 13).getTime();
+  const f = (slug: string, extra: Partial<Food> = {}) => food(libraryFoodId(slug), extra);
+
+  it('הטבלה: צהריים = טחינה + שקדים; צ6 = 3 פריכיות; ע1 = טחינה + 4; ע4 = 3 + יוגורט 100; ע5 = 5; ע2, ע3, קפה — אין', () => {
+    const d = (slug: string) => byLabel[slug]!.defaults?.map((x) => `${x.slug}:${x.grams}`) ?? [];
+    for (const s of ['lunch-1-chicken', 'lunch-2-roastbeef', 'lunch-3-mixed', 'lunch-3b-mixed-beef', 'lunch-4-pastrami', 'lunch-5-tuna-eggs']) {
+      expect(d(s), s).toEqual(['tahini-raw:15', 'nut-almonds:25']);
+    }
+    expect(d('lunch-6-tuna-cottage')).toEqual(['corn-cake-slim-delis:3']);
+    expect(d('dinner-1-cottage-eggs')).toEqual(['tahini-raw:15', 'corn-cake-slim-delis:4']);
+    expect(d('dinner-4-broccoli-pie')).toEqual(['corn-cake-slim-delis:3', 'greek-yogurt-0:100']);
+    expect(d('dinner-5-no-cook')).toEqual(['corn-cake-slim-delis:5']);
+    for (const s of ['dinner-2-shakshuka', 'dinner-3-eggs-cheese', 'coffee-milk']) expect(d(s), s).toEqual([]);
+    // ברירת המחדל: שקדים וסלים דליס בלבד; אוסטרלית ואגוזים אחרים — ידני.
+    const all = MEAL_MENU.flatMap((g) => g.items.flatMap((i) => i.defaults ?? []));
+    expect(new Set(all.map((x) => x.slug))).toEqual(new Set(['tahini-raw', 'nut-almonds', 'corn-cake-slim-delis', 'greek-yogurt-0']));
+  });
+
+  it('תוספים נספרים: 7 אגוזים, טחינה, שתי הפריכיות. לא פיתה, כדור תמר, קפה, יוגורט', () => {
+    const ids = addonFoodIds(MEAL_MENU);
+    expect(ids.size).toBe(10);
+    expect(ids.has(libraryFoodId('tahini-raw'))).toBe(true);
+    expect(ids.has(libraryFoodId('corn-cake-australian'))).toBe(true);
+    expect(ids.has(libraryFoodId('pita-light'))).toBe(false);
+    expect(ids.has(libraryFoodId('greek-yogurt-0'))).toBe(false);
+  });
+
+  it('צפויים = ברירות המחדל הנספרות של המנות שנרשמו היום, פעם אחת לכל מנה; מנה בלי תוספים = 0', () => {
+    const e = (slug: string, unique: string) => newEntry(f(slug), 100, 'lunch', noon, unique);
+    expect(expectedAddonCount([], '2026-09-06', MEAL_MENU)).toBe(0);
+    expect(expectedAddonCount([e('lunch-1-chicken', 'a')], '2026-09-06', MEAL_MENU)).toBe(2);
+    // לחיצה שנייה על אותה מנה לא מגדילה את הצפוי.
+    expect(expectedAddonCount([e('lunch-1-chicken', 'a'), e('lunch-1-chicken', 'b')], '2026-09-06', MEAL_MENU)).toBe(2);
+    expect(expectedAddonCount([e('lunch-1-chicken', 'a'), e('dinner-1-cottage-eggs', 'c')], '2026-09-06', MEAL_MENU)).toBe(4);
+    // ע4: יוגורט 100 הוא ברירת מחדל אבל לא "תוסף" נספר — צפוי 1 (הפריכיות).
+    expect(expectedAddonCount([e('dinner-4-broccoli-pie', 'd')], '2026-09-06', MEAL_MENU)).toBe(1);
+    expect(expectedAddonCount([e('dinner-2-shakshuka', 'e')], '2026-09-06', MEAL_MENU)).toBe(0);
+    // יום אחר לא נספר.
+    expect(expectedAddonCount([e('lunch-1-chicken', 'a')], '2026-09-07', MEAL_MENU)).toBe(0);
+  });
+
+  it('daySummary סופר תוספים שנרשמו וקלוריות שלהם', () => {
+    const tahini = f('tahini-raw', { kcal: 617, protein: 21.4 });
+    const dish = f('lunch-1-chicken', { kcal: 88.5, protein: 15.5 });
+    const entries = [newEntry(dish, 500, 'lunch', noon, 'a'), newEntry(tahini, 15, 'lunch', noon, 'b')];
+    const s = daySummary(entries, '2026-09-06', () => null, addonFoodIds(MEAL_MENU));
+    expect(s.addonCount).toBe(1);
+    expect(s.addonKcal).toBeCloseTo(92.55, 5);
+    expect(s.count).toBe(2);
+    // בלי רשימת תוספים — 0, תאימות לאחור.
+    expect(daySummary(entries, '2026-09-06', () => null).addonCount).toBe(0);
+  });
+
+  it('dishLoggedOn: המנה נרשמה היום — ברירות המחדל לא נוצרות שוב', () => {
+    const e = newEntry(f('lunch-1-chicken'), 500, 'lunch', noon, 'a');
+    expect(dishLoggedOn([e], '2026-09-06', libraryFoodId('lunch-1-chicken'))).toBe(true);
+    expect(dishLoggedOn([e], '2026-09-07', libraryFoodId('lunch-1-chicken'))).toBe(false);
+    expect(dishLoggedOn([e], '2026-09-06', libraryFoodId('lunch-2-roastbeef'))).toBe(false);
   });
 });
 

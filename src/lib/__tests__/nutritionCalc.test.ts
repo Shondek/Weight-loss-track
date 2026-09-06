@@ -113,7 +113,7 @@ describe('entryNutrition — רישום בודד', () => {
 
 describe('daySummary', () => {
   it('יום ריק — אפסים, count 0, fiberUnknownGrams 0', () => {
-    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0, adhocKcal: 0, adhocCount: 0 });
+    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0, adhocKcal: 0, adhocCount: 0, addonCount: 0, addonKcal: 0 });
     const other = log(bread, 30, at(2026, 9, 4, 8));
     expect(daySummary([other], '2026-09-05', resolve).count).toBe(0);
   });
