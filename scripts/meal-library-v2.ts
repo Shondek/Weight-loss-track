@@ -17,9 +17,10 @@ import type { FoodIndex } from '../src/lib/nutrition/index.ts';
 import { resolveFood } from '../src/lib/nutrition/index.ts';
 import { fromCustom } from '../src/lib/nutrition/foods.ts';
 import { buildRecipeFood } from '../src/lib/nutrition/recipe.ts';
+import { LIB_PREFIX, libraryFoodId } from '../src/lib/nutrition/library.ts';
 
-export const LIB_PREFIX = 'c:lib2:';
-const id = (slug: string): FoodId => `${LIB_PREFIX}${slug}`;
+export { LIB_PREFIX };
+const id = libraryFoodId;
 
 const UNVERIFIED = 'ערכי אריזה טרם אומתו';
 
@@ -30,6 +31,12 @@ export const MOH = {
   pastrami: '90000027', // FFQ-פסטרמה או חזה הודו מעושן — 100/17.7
   salad: '75145058', // סלט ירקות ישראלי ללא תוספת שמן — 17/0.8
   almonds: '42101000', // שקדים לא קלויים, ללא מלח — 579/21.1
+  walnuts: '42116000', // אגוזי מלך, בלי קליפה, לא קלויים, ללא מלח — 654/15.2
+  hazelnuts: '42107000', // אגוזי לוז, בלי קליפה, לא קלויים, ללא מלח — 628/14.9
+  pecans: '42112000', // אגוזי פקאן, בלי קליפה, ללא תוספת מלח — 691/9.2
+  peanuts: '42111020', // בוטנים, טריים — 567/25.8
+  pistachios: '42114000', // אגוז, פיסטוק, בלי קליפה, ללא מלח, לא קלוי — 562/20.3
+  cashews: '42104110', // אגוזי קשיו, קלויים ללא תוספת מלח — 580/16.8
   tahini: '43103119', // טחינה גולמית, שומשום מלא — 617/21.4
   cottage5: '14201019', // גבינת קוטג' 5% שומן, תנובה — 95/11
   eggBoiled: '31103000', // ביצה קשה שלמה, ללא קליפה — 154/12.5
@@ -50,6 +57,8 @@ export const GRAMS = {
   egg: 50,
   /** ✎ 3 חלבונים = 52 קק"ל במסמך = 100 ג' חלבון ביצה במאגר. */
   eggWhites3: 100,
+  /** מסמך (2.1): אגוז אחד ביום, 20–25 ג'. המנה שנרשמת בלחיצה. */
+  nutPortion: 25,
   /** מסמך: "כף 15 גר'" טחינה. */
   tahiniTbsp: 15,
   /** ✎ "כף שמן זית = 120 קק"ל" במסמך / 884 ל-100 ג' = 13.6 ג'. */
@@ -174,6 +183,64 @@ export const CUSTOM_FOODS: Custom[] = [
   },
 ];
 
+// ---------- פריטי ספרייה שמקורם במאגר: עותק של מזון מאגר ----------
+
+/**
+ * הרובריקה "התפריט שלי" מציגה רק פריטי ספרייה (c:lib2:*). פריט שהמקור שלו
+ * הוא מזון במאגר (אגוזים, קוטג', חלבוני ביצה) נכנס לספרייה כעותק מדויק של
+ * המזון במאגר — כל הערכים ל-100 ג' מועתקים כפי שהם, בלי לשנות דבר, והמזהה
+ * במאגר נשמר בהערה. הבדיקה מאמתת שהעותק זהה למאגר.
+ */
+export type MohCopyDef = {
+  slug: string;
+  /** שם קצר לרובריקה; השם המלא במאגר נשמר בהערה. */
+  name: string;
+  mohId: FoodId;
+  /** המנה שנרשמת בלחיצה ברובריקה. נכנסת ראשונה ברשימת היחידות. */
+  portion: { u: string; g: number };
+  nut?: true;
+};
+
+const nut = (slug: string, name: string, mohId: FoodId): MohCopyDef => ({
+  slug,
+  name,
+  mohId,
+  portion: { u: 'מנה', g: GRAMS.nutPortion },
+  nut: true,
+});
+
+export const MOH_COPIES: MohCopyDef[] = [
+  nut('nut-almonds', 'שקדים', MOH.almonds),
+  nut('nut-walnuts', 'אגוזי מלך', MOH.walnuts),
+  nut('nut-hazelnuts', 'אגוזי לוז', MOH.hazelnuts),
+  nut('nut-pecans', 'פקאן', MOH.pecans),
+  nut('nut-peanuts', 'בוטנים', MOH.peanuts),
+  nut('nut-pistachios', 'פיסטוקים', MOH.pistachios),
+  nut('nut-cashews', 'קשיו', MOH.cashews),
+  { slug: 'block-cottage-5', name: "קוטג' 5%", mohId: MOH.cottage5, portion: { u: 'בלוק', g: 100 } },
+  { slug: 'block-egg-whites', name: 'חלבוני ביצה', mohId: MOH.eggWhite, portion: { u: '3 חלבונים', g: GRAMS.eggWhites3 } },
+];
+
+/** עותק מדויק של מזון המאגר, עם מנת הרובריקה ראשונה ברשימת היחידות. */
+export function mohCopy(def: MohCopyDef, index: FoodIndex): CustomFood {
+  const f = resolveFood(index, def.mohId);
+  if (!f) throw new Error(`${def.name}: ${def.mohId} לא נמצא במאגר`);
+  if (f.source !== 'moh') throw new Error(`${def.name}: ${def.mohId} אינו מזון מאגר`);
+  return {
+    id: id(def.slug),
+    name: def.name,
+    cat: Number(def.mohId[0]),
+    kcal: f.kcal,
+    protein: f.protein,
+    carbs: f.carbs,
+    fat: f.fat,
+    fiber: f.fiber,
+    portions: [def.portion, ...f.portions.filter((p) => p.u !== def.portion.u)],
+    barcode: null,
+    note: `מהמאגר הלאומי ${def.mohId}: ${f.name}. ${def.nut ? `אגוז אחד ביום, ${GRAMS.nutPortion} ג'` : `מנה ${def.portion.g} ג'`}`,
+  };
+}
+
 // ---------- מנות מורכבות ----------
 
 export type DishDef = {
@@ -190,12 +257,18 @@ export type DishDef = {
 
 const C = Object.fromEntries(CUSTOM_FOODS.map((f) => [f.id.slice(LIB_PREFIX.length), f.id])) as Record<string, FoodId>;
 
-/** הבסיס המשותף לכל ארוחות הצהריים: סלט 250, שקדים 25, טחינה כף. */
+/**
+ * הבסיס המשותף לכל ארוחות הצהריים: סלט 250, טחינה כף.
+ * גרסה 2.1: השקדים (25 ג') יצאו מהמנות ונרשמים בנפרד מקבוצת "תוספות" —
+ * אגוז אחד ביום, לבחירה. משקל הצלחת ירד ב-25 ג'.
+ */
 const lunchBase = [
   { foodId: MOH.salad, grams: 250 },
-  { foodId: MOH.almonds, grams: 25 },
   { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp },
 ];
+
+/** המסמך (2.1): ערכי המנה בלי השקדים = הערכים של גרסה 2 פחות 145 קק"ל · 5 חלבון. */
+const withoutAlmonds = (kcal: number, protein: number) => ({ kcal: kcal - 145, protein: protein - 5 });
 
 export const DISHES: DishDef[] = [
   {
@@ -205,7 +278,7 @@ export const DISHES: DishDef[] = [
     items: [{ foodId: MOH.chickenBreast, grams: 250 }, ...lunchBase],
     finalGrams: null,
     note: 'חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה',
-    doc: { kcal: 704, protein: 89, label: 'צ1' },
+    doc: { ...withoutAlmonds(704, 89), label: 'צ1' },
   },
   {
     slug: 'lunch-2-roastbeef',
@@ -213,7 +286,7 @@ export const DISHES: DishDef[] = [
     cat: 2,
     items: [{ foodId: C['roastbeef-hod-maadan']!, grams: 350 }, ...lunchBase],
     finalGrams: null,
-    doc: { kcal: 648, protein: 78, label: 'צ2' },
+    doc: { ...withoutAlmonds(648, 78), label: 'צ2' },
   },
   {
     slug: 'lunch-3-mixed',
@@ -226,7 +299,7 @@ export const DISHES: DishDef[] = [
     ],
     finalGrams: null,
     note: 'חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה',
-    doc: { kcal: 692, protein: 87, label: 'צ3' },
+    doc: { ...withoutAlmonds(692, 87), label: 'צ3' },
   },
   {
     slug: 'lunch-4-pastrami',
@@ -234,7 +307,7 @@ export const DISHES: DishDef[] = [
     cat: 2,
     items: [{ foodId: MOH.pastrami, grams: 350 }, ...lunchBase],
     finalGrams: null,
-    doc: { kcal: 676, protein: 69, label: 'צ4' },
+    doc: { ...withoutAlmonds(676, 69), label: 'צ4' },
   },
   {
     slug: 'lunch-5-tuna-eggs',
@@ -246,7 +319,7 @@ export const DISHES: DishDef[] = [
       ...lunchBase,
     ],
     finalGrams: null,
-    doc: { kcal: 679, protein: 76, label: 'צ5' },
+    doc: { ...withoutAlmonds(679, 76), label: 'צ5' },
   },
   {
     slug: 'dinner-1-cottage-eggs',
@@ -350,7 +423,7 @@ export const BLOCKS: { label: string; foodId: FoodId; grams: number; doc: { kcal
 // ---------- בנייה ----------
 
 export function buildMealLibrary(index: FoodIndex): CustomFood[] {
-  const customs: CustomFood[] = CUSTOM_FOODS.map((f) => ({ ...f }));
+  const customs: CustomFood[] = [...CUSTOM_FOODS.map((f) => ({ ...f })), ...MOH_COPIES.map((d) => mohCopy(d, index))];
 
   // המנות פותרות מרכיבים גם מהמאגר וגם מהמוצרים הממותגים שלמעלה.
   const byId = new Map(customs.map((c) => [c.id, fromCustom(c)]));

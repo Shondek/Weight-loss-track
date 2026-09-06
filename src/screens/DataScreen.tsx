@@ -10,8 +10,16 @@ import { daysSinceBackup } from '../lib/backup';
 import DateField from '../components/DateField';
 import CopyBlock from '../components/CopyBlock';
 import { downloadText, readFileAsText } from '../platform/download';
+import { loadMealLibrary } from '../platform/mealLibrary';
+import { isLibraryFoodId, mergeLibrary, type LibraryMerge } from '../lib/nutrition/library';
 
 type Mode = 'merge' | 'replace';
+
+type LibraryState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'done'; merge: Omit<LibraryMerge, 'list'>; rejected: DbParseResult['rejected']; total: number };
 
 type ImportReport = {
   mode: Mode;
@@ -48,6 +56,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const [wipeStep, setWipeStep] = useState(0);
   const [wipeText, setWipeText] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const [library, setLibrary] = useState<LibraryState>({ status: 'idle' });
+  const libraryCount = db.customFoods.filter((f) => isLibraryFoodId(f.id)).length;
 
   const json = useMemo(() => backupJson(db, new Date().toISOString()), [db]);
   const start = useMemo(() => programStartWeek(db), [db]);
@@ -82,6 +92,23 @@ export default function DataScreen({ store, today }: ScreenProps) {
       totalAfter: total(next),
     });
     setRaw('');
+  };
+
+  /**
+   * ספריית המנות מהאתר עצמו — מיזוג בלבד: פריט ספרייה קיים מתעדכן, מזון
+   * שלי אחר לא נוגע, רישומים קודמים לא משתנים. ריצה חוזרת: 0 נוספו, 0 עודכנו.
+   */
+  const loadLibrary = async () => {
+    setLibrary({ status: 'loading' });
+    try {
+      const parsed = parseDb(await loadMealLibrary());
+      if (parsed.counts.customFoods === 0) throw new Error('הקובץ שנטען אינו מכיל מזונות');
+      const { list, ...merge } = mergeLibrary(db.customFoods, parsed.db.customFoods);
+      if (merge.added > 0 || merge.updated > 0) await store.update('customFoods', list);
+      setLibrary({ status: 'done', merge, rejected: parsed.rejected, total: list.filter((f) => isLibraryFoodId(f.id)).length });
+    } catch (err) {
+      setLibrary({ status: 'error', message: err instanceof Error ? err.message : String(err) });
+    }
   };
 
   const pickFile = async (file: File | undefined) => {
@@ -124,6 +151,53 @@ export default function DataScreen({ store, today }: ScreenProps) {
             מפתחות: {Object.values(STORAGE_KEYS).join(' · ')}
           </li>
         </ul>
+      </section>
+
+      <section className="section">
+        <div className="section__head">
+          <h2>ספריית המנות</h2>
+          <span className="tiny muted">
+            <span className="num">{libraryCount}</span> פריטים במכשיר
+          </span>
+        </div>
+        <div className="stack">
+          <p className="small muted" style={{ margin: 0 }}>
+            המנות, הבלוקים והתוספות של "התפריט שלי". מיזוג בלבד: פריט קיים מתעדכן, מזון שלי אחר לא נוגע,
+            רישומים קודמים לא משתנים.
+          </p>
+          <button
+            type="button"
+            className="btn btn--primary btn--block"
+            disabled={library.status === 'loading'}
+            onClick={() => void loadLibrary()}
+          >
+            {library.status === 'loading' ? 'טוען…' : 'טען את ספריית המנות'}
+          </button>
+          {library.status === 'error' && (
+            <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
+              {library.message}
+            </p>
+          )}
+          {library.status === 'done' && (
+            <div className="banner stack--tight" role="status">
+              <p style={{ margin: 0 }}>
+                נוספו <span className="num">{library.merge.added}</span> · עודכנו{' '}
+                <span className="num">{library.merge.updated}</span> · ללא שינוי{' '}
+                <span className="num">{library.merge.unchanged}</span> · בספרייה{' '}
+                <span className="num">{library.total}</span>
+              </p>
+              {library.rejected.length > 0 && (
+                <ul className="list list--block tiny">
+                  {library.rejected.map((r) => (
+                    <li key={`${r.section}-${r.reason}`}>
+                      {r.section}: <span className="num">{r.count}</span> — {r.reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="section">

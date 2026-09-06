@@ -3,7 +3,7 @@
  *
  *   node scripts/build_meal_reference.ts
  *
- * נבנה מהערכים המחושבים בפועל ב-library/meal-library-v2.json (לא מהמסמך
+ * נבנה מהערכים המחושבים בפועל ב-public/library/meal-library-v2.json (לא מהמסמך
  * המקורי), ומעוגל באותן פונקציות של שכבת התצוגה (kcalText, macroText) —
  * כך שכל מספר כאן זהה למה שהאפליקציה תציג ברישום.
  * ערך לא ידוע (null) מוצג כמקף; סכום שמכיל לא ידוע מסומן "לפחות".
@@ -19,12 +19,14 @@ import { kcalText, macroText } from '../src/lib/nutrition/display.ts';
 import { LIB_PREFIX } from './meal-library-v2.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const LIB = JSON.parse(readFileSync(join(ROOT, 'library', 'meal-library-v2.json'), 'utf8')) as { customFoods: CustomFood[] };
+const LIB = JSON.parse(readFileSync(join(ROOT, 'public', 'library', 'meal-library-v2.json'), 'utf8')) as { customFoods: CustomFood[] };
 const MOH = JSON.parse(readFileSync(join(ROOT, 'public', 'nutrition', 'moh-foods.json'), 'utf8')) as MohFoodFile;
 const OUT = join(ROOT, 'docs', 'meal-reference.md');
 
 const TARGET = { kcal: 1900, protein: 190, floor: 1850 };
 const TWO_BLOCKS = 240;
+/** אגוז אחד ביום, 20–25 ג׳ — המנה ברובריקה. */
+const NUT_GRAMS = 25;
 
 const index = buildFoodIndex(MOH.foods, LIB.customFoods);
 const byId = new Map(LIB.customFoods.map((f) => [f.id, f]));
@@ -109,6 +111,11 @@ const COFFEE: Item = {
   separate: ['כדור תמר — הזן 1'],
 };
 
+/** תוספות: אגוז אחד ביום (25 ג׳), לבחירה. עותקי מאגר בספרייה — ההערה נושאת את מזהה המאגר. */
+const NUTS: Item[] = LIB.customFoods
+  .filter((f) => f.id.startsWith(`${LIB_PREFIX}nut-`))
+  .map((f) => ({ label: `${f.name} — ${NUT_GRAMS} ג׳`, kind: 'pareve' as const, eggs: 0, carbsEvening: false, parts: [{ food: f, grams: NUT_GRAMS }], separate: [] }));
+
 const BLOCKS: Item[] = [
   { label: 'טונה במים, מסוננת — קופסה', kind: 'pareve', eggs: 0, carbsEvening: false, parts: [{ food: lib('tuna-water-drained'), grams: 112 }], separate: [] },
   { label: 'יוגורט יווני 0% — 200 ג׳', kind: 'dairy', eggs: 0, carbsEvening: false, parts: [{ food: lib('greek-yogurt-0'), grams: 200 }], separate: [] },
@@ -165,7 +172,7 @@ const L = (s = '') => out.push(s);
 
 L('# ייחוס מנות — ספרייה v2');
 L();
-L(`יעד יומי: **${TARGET.kcal.toLocaleString('en')} קק"ל · ${TARGET.protein} ג׳ חלבון** · רצפה ${TARGET.floor.toLocaleString('en')}. הערכים מחושבים מ-\`library/meal-library-v2.json\` באותו עיגול של האפליקציה. מקף = לא ידוע (לא אפס).`);
+L(`יעד יומי: **${TARGET.kcal.toLocaleString('en')} קק"ל · ${TARGET.protein} ג׳ חלבון** · רצפה ${TARGET.floor.toLocaleString('en')}. הערכים מחושבים מ-\`public/library/meal-library-v2.json\` באותו עיגול של האפליקציה. מקף = לא ידוע (לא אפס).`);
 L();
 
 // 1. summary
@@ -188,7 +195,20 @@ for (const { item, n, kind } of rows) {
   L(`| ${item.label}${kind === 'block' ? ' (בלוק)' : ''} | ${kcalText(n.kcal)} | ${macroText(n.protein)} | ${carbs} | ${fat} | ${weight} | ${kcalText(TARGET.kcal - n.kcal)} |`);
 }
 L();
-L('≥ = חלק מהמרכיבים בלי ערך ידוע; זה חסם תחתון. "+ נפרד" = הפריטים שברשימת "נרשם בנפרד" של המנה.');
+L('≥ = חלק מהמרכיבים בלי ערך ידוע; זה חסם תחתון. "+ נפרד" = הפריטים שברשימת "נרשם בנפרד" של המנה. ארוחות הצהריים בלי אגוז — הוא נרשם בנפרד (טבלת התוספות).');
+L();
+L(`### תוספות — אגוז אחד ביום, ${NUT_GRAMS} ג׳`);
+L();
+L('לחיצה ברובריקה = 25 ג׳. אגוז שני באותו יום — אזהרה, לא חסימה. ערכי המאגר הלאומי; המזהה בהערת הפריט.');
+L();
+L('| אגוז | קק"ל | חלבון | פחמימה | שומן | מזהה מאגר |');
+L('|---|---|---|---|---|---|');
+for (const item of [...NUTS].sort((a, b) => nutritionOf(a.parts).kcal - nutritionOf(b.parts).kcal)) {
+  const n = nutritionOf(item.parts);
+  const f = item.parts[0]!.food as CustomFood;
+  const mohId = /\b(\d{8})\b/.exec(f.note ?? '')?.[1] ?? '—';
+  L(`| ${f.name} | ${kcalText(n.kcal)} | ${macroText(n.protein)} | ${macroText(n.carbs)} | ${macroText(n.fat)} | ${mohId} |`);
+}
 L();
 
 // 2. details
@@ -256,11 +276,14 @@ detail(COFFEE);
 L('### בלוקים');
 L();
 for (const i of BLOCKS) detail(i);
+L('### תוספות — אגוזים');
+L();
+for (const i of NUTS) detail(i);
 
 // 3. combos
 L('## 3. יום שלם — צהריים + ערב');
 L();
-L(`נשאר = ${TARGET.kcal.toLocaleString('en')} − צהריים − ערב, לפני בלוקים, קפה ומילוי. שני בלוקים ≈ ${TWO_BLOCKS} קק"ל. ⚠ = פחות מ-${TWO_BLOCKS} לבלוקים · ✗ = חריגה מהיעד · 🥚 = שני ביצים ביום מוצו.`);
+L(`נשאר = ${TARGET.kcal.toLocaleString('en')} − צהריים − ערב, לפני אגוז (141–173), בלוקים, קפה ומילוי. שני בלוקים ≈ ${TWO_BLOCKS} קק"ל. ⚠ = פחות מ-${TWO_BLOCKS} לבלוקים · ✗ = חריגה מהיעד · 🥚 = שני ביצים ביום מוצו.`);
 L();
 L('| צהריים | ערב | קק"ל | חלבון | פחמימה | שומן | נשאר קק"ל | נשאר חלבון | |');
 L('|---|---|---|---|---|---|---|---|---|');
@@ -289,6 +312,7 @@ L();
 L('- בשר וגבינה לא באותה ארוחה: צ1–צ4 בשרי, ע1–ע5 חלבי, צ5 פרווה. בלוקים חלביים (יוגורט, קוטג\', בולגרית) לא צמודים לצהריים בשרי.');
 L('- מקסימום 2 ביצים ביום. ע2 = 3, ואז 0 בשאר היום. חלבוני ביצה לא נספרים.');
 L('- כל הפחמימות בערב: פריכיות, פיתה קלה. כדור התמר בקפה — אחרי שתי ארוחות, לא בבוקר.');
+L(`- אגוז אחד ביום, 20–${NUT_GRAMS} ג׳, לבחירה מטבלת התוספות. לא בתוך הצלחת — נרשם בנפרד.`);
 L();
 
 // 5. known gaps

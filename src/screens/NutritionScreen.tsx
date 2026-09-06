@@ -5,6 +5,7 @@ import { useFoodIndex } from '../useFoodIndex';
 import NumberField from '../components/NumberField';
 import CustomFoodEditor, { type EditorMode } from './CustomFoodEditor';
 import { MEAL_HOURS } from '../data/config';
+import { MEAL_MENU, NUT_GRAMS } from '../data/mealMenu';
 import { formatDM } from '../lib/date';
 import { DASH } from '../lib/format';
 import {
@@ -26,14 +27,17 @@ import {
   MEAL_ORDER,
   newEntry,
   removeEntry,
+  setEntryGrams,
   upsertEntry,
 } from '../lib/nutrition/entries';
+import { menuGroupForHour, nutEntriesOn, nutFoodIds, resolveMenu, type MenuGroupKey, type ResolvedMenuItem } from '../lib/nutrition/menu';
 import { targetFor, upsertTarget } from '../lib/nutrition/targets';
 import { daySummary, entryNutrition, remaining } from '../lib/nutrition/calc';
 import { kcalText, macroText } from '../lib/nutrition/display';
 
 const SEARCH_LIMIT = 20;
 const UNDO_MS = 5000;
+const NUT_IDS = nutFoodIds(MEAL_MENU);
 
 /** חותמת זמן ממוינת + אקראיות — אותו מתכון כמו במסך האימון. */
 function unique(): string {
@@ -123,14 +127,15 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     return () => window.clearInterval(id);
   }, [mealTouched]);
 
-  // ---------- מחיקה עם undo ----------
-  const [undo, setUndo] = useState<FoodEntry | null>(null);
+  // ---------- undo: מחיקה מהרשימה, או רישום בלחיצה מהתפריט ----------
+  type Pending = { kind: 'deleted' | 'added'; entry: FoodEntry; text: string };
+  const [undo, setUndo] = useState<Pending | null>(null);
   const undoTimer = useRef<number | undefined>(undefined);
 
-  const armUndo = (entry: FoodEntry | null) => {
+  const armUndo = (pending: Pending | null) => {
     if (undoTimer.current !== undefined) window.clearTimeout(undoTimer.current);
-    setUndo(entry);
-    if (entry) undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS);
+    setUndo(pending);
+    if (pending) undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS);
   };
 
   // מעבר מסך מפרק את הקומפוננטה — ה-undo נעלם איתה, וזה בכוונה.
@@ -143,13 +148,51 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
 
   const del = (entry: FoodEntry) => {
     void store.update('entries', removeEntry(db.entries, entry.id));
-    armUndo(entry);
+    armUndo({ kind: 'deleted', entry, text: `נמחק: ${entry.ref.name} · ${entry.grams} ג׳` });
   };
 
   const restore = () => {
     if (!undo) return;
-    void store.update('entries', upsertEntry(db.entries, undo));
+    void store.update(
+      'entries',
+      undo.kind === 'deleted' ? upsertEntry(db.entries, undo.entry) : removeEntry(db.entries, undo.entry.id),
+    );
     armUndo(null);
+  };
+
+  // ---------- "התפריט שלי": רישום בלחיצה אחת ----------
+  const menu = useMemo(
+    () =>
+      resolveMenu(
+        MEAL_MENU,
+        (id) => resolveFood(foodIndex.index, id),
+        (id) => db.customFoods.find((f) => f.id === id)?.recipe?.finalGrams ?? null,
+      ),
+    [foodIndex.index, db.customFoods],
+  );
+  const menuEmpty = menu.every((g) => g.items.length === 0);
+  // הקבוצה הפתוחה לפי השעה בכניסה למסך; לא נשמרת.
+  const [openGroup, setOpenGroup] = useState<MenuGroupKey | null>(() => menuGroupForHour(new Date().getHours(), MEAL_HOURS));
+  const nutsToday = useMemo(() => nutEntriesOn(db.entries, today, NUT_IDS), [db.entries, today]);
+
+  const logMenuItem = (r: ResolvedMenuItem) => {
+    const ts = Date.now();
+    // הארוחה לפי השעה עכשיו — לא לפי הבחירה בטופס החיפוש.
+    const entry = newEntry(r.food, r.grams, defaultMeal(new Date(ts).getHours(), MEAL_HOURS), ts, unique());
+    void store.update('entries', upsertEntry(db.entries, entry));
+    // אזהרה רכה: אגוז שני היום. נרשם בכל מקרה.
+    const nutAgain = r.item.nut && nutsToday.length > 0 ? ' · כבר נרשם אגוז היום' : '';
+    armUndo({ kind: 'added', entry, text: `${r.item.label} נוסף · ${kcalText(r.kcal)} קק"ל${nutAgain}` });
+  };
+
+  // ---------- עריכת גרמים בשורת היום ----------
+  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+
+  const commitGrams = () => {
+    if (!editing) return;
+    const g = parseGrams(editing.text);
+    if (g !== null) void store.update('entries', setEntryGrams(db.entries, editing.id, g));
+    setEditing(null);
   };
 
   // ---------- יעד ----------
@@ -263,6 +306,74 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
               setEditingTarget(false);
             }}
           />
+        )}
+      </section>
+
+      <section className="section">
+        <div className="section__head">
+          <h2>התפריט שלי</h2>
+          <span className="tiny muted">לחיצה = רישום</span>
+        </div>
+        {menuEmpty ? (
+          <p className="small muted" style={{ margin: 0 }}>
+            {foodIndex.status === 'ready'
+              ? 'ספריית המנות לא נטענה. במסך "נתונים" → "טען את ספריית המנות".'
+              : 'טוען מאגר…'}
+          </p>
+        ) : (
+          <div className="menu">
+            {menu.map((g) => {
+              const open = openGroup === g.group.key;
+              return (
+                <div className="menu__group" key={g.group.key}>
+                  <button
+                    type="button"
+                    className="menu__head"
+                    aria-expanded={open}
+                    onClick={() => setOpenGroup(open ? null : g.group.key)}
+                  >
+                    <span className="grow">{g.group.label}</span>
+                    {g.group.key === 'extras' && (
+                      <span className="tiny muted">
+                        אגוז = <span className="num">{NUT_GRAMS}</span> ג׳
+                      </span>
+                    )}
+                    <span className="tiny muted num">{g.items.length}</span>
+                    <span className="muted" aria-hidden="true">
+                      {open ? '▾' : '▸'}
+                    </span>
+                  </button>
+                  {open && (
+                    <ul className="menu__items">
+                      {g.items.map((r) => (
+                        <li key={r.item.slug}>
+                          <button type="button" className="menu__btn" onClick={() => logMenuItem(r)}>
+                            <span className="grow">{r.item.label}</span>
+                            <span className="muted small">
+                              <span className="num">{kcalText(r.kcal)}</span> · <span className="num">{kcalText(r.protein)}</span>ח
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                      {g.group.key === 'extras' && nutsToday.length > 0 && (
+                        <li className="tiny muted" style={{ padding: 'var(--sp-1) var(--sp-3) var(--sp-2)' }} role="note">
+                          כבר נרשם אגוז היום: {nutsToday.map((e) => resolve(e.foodId)?.name ?? e.ref.name).join(', ')}
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {undo?.kind === 'added' && (
+          <div className="undo" role="status" style={{ marginTop: 'var(--sp-3)' }}>
+            <span className="grow">{undo.text}</span>
+            <button type="button" className="btn" onClick={restore}>
+              בטל
+            </button>
+          </div>
         )}
       </section>
 
@@ -388,11 +499,9 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
 
       <section className="section">
         <h2 style={{ marginBottom: 'var(--sp-3)' }}>מה אכלתי היום</h2>
-        {undo && (
+        {undo?.kind === 'deleted' && (
           <div className="undo" role="status" style={{ marginBottom: 'var(--sp-3)' }}>
-            <span className="grow">
-              נמחק: {undo.ref.name} · <span className="num">{undo.grams}</span> ג׳
-            </span>
+            <span className="grow">{undo.text}</span>
             <button type="button" className="btn" onClick={restore}>
               בטל
             </button>
@@ -418,8 +527,37 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                         {live ? live.name : e.ref.name}
                         <span className="tiny muted">
                           {' '}
-                          · <span className="num">{e.grams}</span> ג׳ ·{' '}
-                          <span className="num">{timeText(e.ts)}</span>
+                          ·{' '}
+                          {editing?.id === e.id ? (
+                            <input
+                              className="list__grams"
+                              type="number"
+                              inputMode="decimal"
+                              step={0.1}
+                              min={MIN_GRAMS}
+                              max={MAX_GRAMS}
+                              aria-label={`גרמים — ${e.ref.name}`}
+                              autoFocus
+                              value={editing.text}
+                              onChange={(ev) => setEditing({ id: e.id, text: ev.target.value })}
+                              onBlur={commitGrams}
+                              onKeyDown={(ev) => {
+                                if (ev.key === 'Enter') commitGrams();
+                                if (ev.key === 'Escape') setEditing(null);
+                              }}
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn--quiet tiny"
+                              style={{ minHeight: 0, padding: '0 2px' }}
+                              aria-label={`שנה גרמים — ${e.ref.name}`}
+                              onClick={() => setEditing({ id: e.id, text: String(e.grams) })}
+                            >
+                              <span className="num">{e.grams}</span> ג׳
+                            </button>
+                          )}{' '}
+                          · <span className="num">{timeText(e.ts)}</span>
                           {live?.isRecipe && ' · מנה'}
                           {n.fromRef && ' · מהרישום'}
                           {live?.suspect && <span className="err"> · ערך חשוד</span>}

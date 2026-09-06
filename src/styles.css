@@ -980,3 +980,69 @@ input[type='file']::file-selector-button {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- "התפריט שלי": קבוצות מתקפלות של כפתורי רישום בלחיצה אחת ---------- */
+
+.menu__group {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.menu__group + .menu__group {
+  margin-top: var(--sp-2);
+}
+
+.menu__head {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: start;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.menu__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.menu__btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: start;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  border-top: 1px solid var(--rule);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.menu__items > li:first-child .menu__btn {
+  border-top: 0;
+}
+
+.menu__btn:active {
+  background: var(--paper-sunk);
+}
+
+/* עריכת גרמים בשורת "מה אכלתי היום": שדה קצר במקום הטקסט, בלי לשבור את השורה */
+.list__grams {
+  width: 5.5em;
+  min-height: 36px;
+  padding: 4px var(--sp-2);
+  font-size: 15px;
+}

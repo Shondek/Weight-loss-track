@@ -1,10 +1,10 @@
 /**
  * בונה את קובץ הייבוא של ספריית המנות v2:
  *
- *   node scripts/build_meal_library.ts [--out library/meal-library-v2.json]
+ *   node scripts/build_meal_library.ts [--out public/library/meal-library-v2.json]
  *
  * הפלט הוא קובץ בפורמט הגיבוי של האפליקציה (v: 2, רק customFoods), שנטען
- * דרך מסך "נתונים" → ייבוא → מיזוג. לא חלק מה-build ולא נטען אוטומטית.
+ * במסך "נתונים" → "טען את ספריית המנות" (מיזוג בלבד). יושב ב-public/ ולכן ב-precache.
  * מזהים דטרמיניסטיים: ייבוא חוזר מעדכן, לא משכפל.
  *
  * מדפיס טבלת אימות: לכל מנה ובלוק, קק"ל וחלבון שחושבו מול המסמך.
@@ -24,7 +24,7 @@ const scaled = (f: Food, grams: number) => ({ kcal: (f.kcal * grams) / 100, prot
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MOH_PATH = join(ROOT, 'public', 'nutrition', 'moh-foods.json');
-const DEFAULT_OUT = join(ROOT, 'library', 'meal-library-v2.json');
+const DEFAULT_OUT = join(ROOT, 'public', 'library', 'meal-library-v2.json');
 const FLAG_PCT = 5;
 
 const outArg = process.argv.indexOf('--out');
