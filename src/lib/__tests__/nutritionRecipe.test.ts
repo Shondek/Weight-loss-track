@@ -156,7 +156,7 @@ describe('recipeProblems', () => {
 });
 
 describe('עריכת מנה לא משנה רישום ישן', () => {
-  it('ה-ref שהוקפא ברישום נשאר; רק רישום חדש רואה את הערכים החדשים', () => {
+  it('ה-ref שהוקפא ברישום קובע; רק רישום חדש רואה את הערכים החדשים, והישן מסומן "השתנה"', () => {
     const v1 = buildRecipeFood(base, [{ foodId: tomato.id, grams: 200 }, { foodId: olive.id, grams: 10 }], 210, resolve);
     const entry = newEntry(fromCustom(v1), 100, 'lunch', 1, 'a');
     const kcalV1 = entryNutrition(entry, fromCustom(v1)).kcal;
@@ -165,12 +165,15 @@ describe('עריכת מנה לא משנה רישום ישן', () => {
     const v2 = buildRecipeFood(base, [{ foodId: tomato.id, grams: 200 }, { foodId: olive.id, grams: 30 }], 230, resolve);
     expect(v2.kcal).toBeGreaterThan(v1.kcal);
 
-    // המזון החי גובר (v2), ולכן הרישום הישן מוצג לפי v2 כל עוד המזון קיים —
-    expect(entryNutrition(entry, fromCustom(v2)).kcal).toBeCloseTo(v2.kcal, 10);
-    // — אבל ה-ref שהוקפא ברישום לא השתנה, ואם המזון יימחק הוא יחזור ל-v1.
+    // snapshot גובר: הרישום הישן נשאר לפי v1 גם כשהמזון החי הוא v2 — ומסומן.
+    expect(entryNutrition(entry, fromCustom(v2)).kcal).toBeCloseTo(kcalV1, 10);
+    expect(entryNutrition(entry, fromCustom(v2)).live).toBe('differs');
     expect(entry.ref.kcal).toBeCloseTo(v1.kcal, 10);
+    // רישום חדש של אותה מנה רואה את v2.
+    expect(entryNutrition(newEntry(fromCustom(v2), 100, 'lunch', 2, 'b'), fromCustom(v2)).kcal).toBeCloseTo(v2.kcal, 10);
+    // המזון נמחק — עדיין v1, מסומן "נעלם".
     expect(entryNutrition(entry, null).kcal).toBeCloseTo(kcalV1, 10);
-    expect(entryNutrition(entry, null).fromRef).toBe(true);
+    expect(entryNutrition(entry, null).live).toBe('missing');
   });
 });
 

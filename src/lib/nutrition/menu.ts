@@ -89,7 +89,7 @@ export function resolveMenu(
       const food = resolve(id);
       const recipe = recipeOf(id);
       const grams = food ? menuItemGrams(item, food, recipe?.finalGrams ?? null) : null;
-      if (!food || grams === null) {
+      if (!food || food.archived || grams === null) {
         missing += 1;
         continue;
       }

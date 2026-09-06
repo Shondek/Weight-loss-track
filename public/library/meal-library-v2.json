@@ -438,6 +438,8 @@
       "cat": 2,
       "portions": [],
       "barcode": null,
+      "note": "בוטלה (2.3) — הוחלפה במעורב ב׳ (רוסטביף מוביל). בארכיון: לא ברובריקה ולא בחיפוש; רישומים קודמים נשמרים",
+      "archived": true,
       "kcal": 80.00813008130082,
       "protein": 11.660162601626014,
       "carbs": null,
@@ -467,7 +469,7 @@
     },
     {
       "id": "c:lib2:lunch-3-mixed",
-      "name": "צ3 — מעורב",
+      "name": "צ3 — מעורב א', עוף מוביל",
       "cat": 2,
       "portions": [],
       "barcode": null,
@@ -502,6 +504,45 @@
           }
         ],
         "finalGrams": 565
+      }
+    },
+    {
+      "id": "c:lib2:lunch-3b-mixed-beef",
+      "name": "צ3ב — מעורב ב', רוסטביף מוביל",
+      "cat": 2,
+      "portions": [],
+      "barcode": null,
+      "note": "חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה",
+      "kcal": 89.43902439024389,
+      "protein": 13.465040650406502,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "c:lib2:roastbeef-hod-maadan",
+            "grams": 250,
+            "n": "רוסטביף"
+          },
+          {
+            "foodId": "24122120",
+            "grams": 100,
+            "n": "חזה עוף"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "סלט"
+          },
+          {
+            "foodId": "43103119",
+            "grams": 15,
+            "u": "כף מפולסת",
+            "n": "טחינה"
+          }
+        ],
+        "finalGrams": 615
       }
     },
     {

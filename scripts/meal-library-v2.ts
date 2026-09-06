@@ -277,8 +277,13 @@ export type DishDef = {
   /** null = סכום המרכיבים (ברירת המחדל). */
   finalGrams: number | null;
   note?: string;
-  /** מה שכתוב במסמך, לאימות. */
-  doc: { kcal: number; protein: number; label: string };
+  /** בארכיון: לא ברובריקה ולא בחיפוש; נשמר להיסטוריה. */
+  archived?: true;
+  /**
+   * אומדן המסמך המקורי (לפני 2.3, כשהמסמך יושר לקוד), לאימות ולדיווח פערים.
+   * מנה שנולדה בקוד — בלי אומדן: המתכון מחשב, לא מקודדים סכומים.
+   */
+  doc?: { kcal: number; protein: number; label: string };
 };
 
 const C = Object.fromEntries(CUSTOM_FOODS.map((f) => [f.id.slice(LIB_PREFIX.length), f.id])) as Record<string, FoodId>;
@@ -323,11 +328,15 @@ export const DISHES: DishDef[] = [
     cat: 2,
     items: [{ foodId: C['roastbeef-hod-maadan']!, grams: 350, n: 'רוסטביף' }, ...lunchBase],
     finalGrams: null,
-    doc: { ...withoutAlmonds(648, 78), label: 'צ2' },
+    // 2.3: המנה בוטלה (350 ג' רוסטביף = 2,800 מ"ג נתרן). בארכיון — לא נמחקת, הרישומים שלה נשארים.
+    archived: true,
+    note: 'בוטלה (2.3) — הוחלפה במעורב ב׳ (רוסטביף מוביל). בארכיון: לא ברובריקה ולא בחיפוש; רישומים קודמים נשמרים',
+    doc: { ...withoutAlmonds(648, 78), label: 'צ2 (בארכיון)' },
   },
   {
     slug: 'lunch-3-mixed',
-    name: 'צ3 — מעורב',
+    // 2.3: שם תצוגה בלבד השתנה; ה-slug וה-id נשארו.
+    name: "צ3 — מעורב א', עוף מוביל",
     cat: 2,
     items: [
       { foodId: MOH.chickenBreast, grams: 150, n: 'חזה עוף' },
@@ -337,6 +346,19 @@ export const DISHES: DishDef[] = [
     finalGrams: null,
     note: 'חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה',
     doc: { ...withoutAlmonds(692, 87), label: 'צ3' },
+  },
+  {
+    slug: 'lunch-3b-mixed-beef',
+    name: "צ3ב — מעורב ב', רוסטביף מוביל",
+    cat: 2,
+    items: [
+      { foodId: C['roastbeef-hod-maadan']!, grams: 250, n: 'רוסטביף' },
+      { foodId: MOH.chickenBreast, grams: 100, n: 'חזה עוף' },
+      ...lunchBase,
+    ],
+    finalGrams: null,
+    note: 'חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה',
+    // נולדה בקוד (2.3) — אין אומדן מסמך.
   },
   {
     slug: 'lunch-4-pastrami',
@@ -495,6 +517,7 @@ export function buildMealLibrary(index: FoodIndex): CustomFood[] {
         portions: [],
         barcode: null,
         ...(d.note ? { note: d.note } : {}),
+        ...(d.archived ? { archived: true as const } : {}),
       },
       d.items,
       d.finalGrams ?? sum,

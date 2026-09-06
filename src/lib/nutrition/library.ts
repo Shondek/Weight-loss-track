@@ -52,6 +52,7 @@ function normalize(f: CustomFood): unknown {
     recipe: f.recipe ?? null,
     note: f.note ?? null,
     unitFood: f.unitFood === true,
+    archived: f.archived === true,
   };
 }
 

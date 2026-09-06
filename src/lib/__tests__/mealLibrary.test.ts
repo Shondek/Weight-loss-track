@@ -28,17 +28,43 @@ function dishNutrition(slug: string) {
 }
 
 describe('ספריית המנות v2 — חישוב מול המסמך', () => {
-  it('נבנים 30 מזונות: 9 ממותגים + 9 עותקי מאגר + 12 מנות, כולם עם קידומת הספרייה', () => {
-    expect(foods).toHaveLength(30);
-    expect(foods.filter((f) => f.recipe)).toHaveLength(12);
+  it('נבנים 31 מזונות: 9 ממותגים + 9 עותקי מאגר + 13 מנות (אחת בארכיון), כולם עם קידומת הספרייה', () => {
+    expect(foods).toHaveLength(31);
+    expect(foods.filter((f) => f.recipe)).toHaveLength(13);
+    expect(foods.filter((f) => f.archived).map((f) => f.id)).toEqual([libId('lunch-2-roastbeef')]);
     expect(foods.every((f) => f.id.startsWith(LIB_PREFIX))).toBe(true);
   });
 
-  it('צ2 רוסטביף (2.1, בלי שקדים): 350 תווית + סלט + טחינה = 492.1 / 71.7 (מסמך 503 / 73)', () => {
+  it('צ2 רוסטביף (בארכיון מ-2.3): נשארת בספרייה עם אותו מזהה וערכים, 492.1 / 71.7', () => {
     const n = dishNutrition('lunch-2-roastbeef');
     expect(n.kcal).toBeCloseTo(357 + 42.5 + 92.55, 1);
     expect(n.protein).toBeCloseTo(66.5 + 2 + 3.21, 1);
-    expect(Math.abs(n.kcal - 503) / 503).toBeLessThan(0.05);
+    const f = foods.find((x) => x.id === libId('lunch-2-roastbeef'))!;
+    expect(f.archived).toBe(true);
+    expect(f.recipe!.finalGrams).toBe(615);
+  });
+
+  it('2.3: צ3 = מעורב א׳ (שם בלבד השתנה, slug נשאר); צ3ב = מעורב ב׳ ממרכיבים בלבד; בלי שקדים', () => {
+    const a = foods.find((x) => x.id === libId('lunch-3-mixed'))!;
+    expect(a.name).toBe("צ3 — מעורב א', עוף מוביל");
+    expect(a.recipe!.items.map((i) => i.grams)).toEqual([150, 150, 250, 15]);
+    const b = foods.find((x) => x.id === libId('lunch-3b-mixed-beef'))!;
+    expect(b.name).toBe("צ3ב — מעורב ב', רוסטביף מוביל");
+    expect(b.recipe!.items.map((i) => [i.foodId, i.grams])).toEqual([
+      [libId('roastbeef-hod-maadan'), 250],
+      [MOH.chickenBreast, 100],
+      [MOH.salad, 250],
+      [MOH.tahini, 15],
+    ]);
+    expect(b.recipe!.finalGrams).toBe(615);
+    expect(b.archived).toBeUndefined();
+    // המתכון מחשב: 250 × 1.02 + 100 × 1.60 + 42.5 + 92.55 = 550.05 · 47.5 + 30.1 + 2 + 3.21 = 82.8
+    const n = dishNutrition('lunch-3b-mixed-beef');
+    expect(n.kcal).toBeCloseTo(255 + 160 + 42.5 + 92.55, 1);
+    expect(n.protein).toBeCloseTo(47.5 + 30.1 + 2 + 3.21, 1);
+    // טחינה וסלט מהמאגר, לא מזון תווית.
+    expect(resolveFood(mohIndex, MOH.tahini)!.source).toBe('moh');
+    expect(resolveFood(mohIndex, MOH.salad)!.source).toBe('moh');
   });
 
   it('השקדים יצאו מכל ארוחות הצהריים; משקל הצלחת ירד ב-25 ג׳', () => {
@@ -166,6 +192,8 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     expect(groups.map((g) => g.group.key)).toEqual(['lunch', 'dinner', 'blocks', 'extras']);
     for (const g of groups) expect(g.missing, g.group.key).toBe(0);
     expect(groups.map((g) => g.items.length)).toEqual([6, 5, 6, 12]);
+    expect(groups[0]!.items.map((i) => i.item.slug)).not.toContain('lunch-2-roastbeef');
+    expect(groups[0]!.items.map((i) => i.item.slug)).toContain('lunch-3b-mixed-beef');
     const corn = groups[3]!.items.filter((i) => i.item.slug.startsWith('corn-cake-'));
     expect(corn.map((i) => [i.grams, Math.round(i.kcal)])).toEqual([[1, 31], [1, 23]]);
     const lunch1 = groups[0]!.items[0]!;
@@ -279,10 +307,11 @@ describe('קובץ הייבוא', () => {
     expect(buildMealLibrary(mohIndex)).toEqual(foods);
   });
 
-  it('parseDb קולט את הקובץ כגיבוי: 30 מזונות, 12 מתכונים, בלי דחיות', () => {
+  it('parseDb קולט את הקובץ כגיבוי: 31 מזונות, 13 מתכונים, בלי דחיות; archived שורד את הפרסר', () => {
     const r = parseDb(parsed);
-    expect(r.counts.customFoods).toBe(30);
-    expect(r.db.customFoods.filter((f) => f.recipe)).toHaveLength(12);
+    expect(r.counts.customFoods).toBe(31);
+    expect(r.db.customFoods.find((f) => f.id === 'c:lib2:lunch-2-roastbeef')?.archived).toBe(true);
+    expect(r.db.customFoods.filter((f) => f.recipe)).toHaveLength(13);
     expect(r.rejected).toEqual([]);
     expect(r.counts.entries).toBe(0);
     expect(r.counts.targets).toBe(0);
@@ -299,7 +328,7 @@ describe('קובץ הייבוא', () => {
     };
     const once = mergeDb(existing, parseDb(parsed).db);
     const twice = mergeDb(once, parseDb(parsed).db);
-    expect(once.customFoods).toHaveLength(31);
+    expect(once.customFoods).toHaveLength(32);
     expect(twice.customFoods).toEqual(once.customFoods);
     expect(once.customFoods.find((f) => f.id === 'c:mine')).toEqual(mine);
     expect(once.customFoods.find((f) => f.id === stale.id)?.kcal).toBe(foods[0]!.kcal);

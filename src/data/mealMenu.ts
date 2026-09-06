@@ -18,8 +18,9 @@ export const MEAL_MENU: readonly MenuGroup[] = [
     label: 'צהריים',
     items: [
       { slug: 'lunch-1-chicken', label: 'צ1 חזה עוף' },
-      { slug: 'lunch-2-roastbeef', label: 'צ2 רוסטביף' },
-      { slug: 'lunch-3-mixed', label: 'צ3 מעורב' },
+      // צ2 (רוסטביף 350) בארכיון מ-2.3 — לא ברובריקה; הרישומים שלה נשארים.
+      { slug: 'lunch-3-mixed', label: "צ3 מעורב א' (עוף)" },
+      { slug: 'lunch-3b-mixed-beef', label: "צ3ב מעורב ב' (רוסטביף)" },
       { slug: 'lunch-4-pastrami', label: 'צ4 פסטרמה' },
       { slug: 'lunch-5-tuna-eggs', label: 'צ5 טונה וביצים' },
       { slug: 'lunch-6-tuna-cottage', label: "צ6 טונה וקוטג'" },

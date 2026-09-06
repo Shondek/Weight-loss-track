@@ -1055,3 +1055,14 @@ input[type='file']::file-selector-button {
   margin-top: 2px;
   line-height: 1.35;
 }
+
+/* רישום ידני (הערכה): מסומן בבירור מול רישום מדוד */
+.list > li.is-adhoc {
+  border-inline-start: 3px dashed var(--rule-strong);
+  padding-inline-start: var(--sp-2);
+}
+
+.adhoc-note {
+  color: var(--ink-2);
+  font-style: italic;
+}

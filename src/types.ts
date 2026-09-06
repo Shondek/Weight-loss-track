@@ -182,6 +182,11 @@ export type CustomFood = {
    * ל-100 ג' (ראה `UNIT_FOOD_SCALE`), ולכן ניתן רק במפורש.
    */
   unitFood?: true;
+  /**
+   * בארכיון: לא מוצע ברובריקה ובחיפוש, אבל לא נמחק — רישומים ישנים ממשיכים
+   * להצביע עליו ולהציג את שמו. ארכוב במקום מחיקה.
+   */
+  archived?: true;
 };
 
 export const FOOD_NOTE_MAX = 200;
@@ -209,6 +214,15 @@ export type FoodRef = {
   unitFood?: true;
 };
 
+/**
+ * מזהה המזון של רישום ידני: לא מזון אמיתי, לא בחיפוש ולא ברובריקה. הערכים
+ * חיים רק ב-`ref` של הרישום (ראה `newAdhocEntry` ב-lib/nutrition/entries.ts).
+ */
+export const ADHOC_FOOD_ID = 'c:adhoc';
+/** תקרות להזנה ידנית — ארוחה אחת, לא יום. הפרסר מרים את תקרת ה-100 ג' רק לרישום עם `adhoc`. */
+export const ADHOC_MAX_KCAL = 5000;
+export const ADHOC_MAX_MACRO = 500;
+
 export type FoodEntry = {
   /** מתחיל ב-`sortableStamp(ts)` כדי שמיון מחרוזות = מיון זמן. */
   id: string;
@@ -219,7 +233,21 @@ export type FoodEntry = {
   meal: MealType;
   foodId: FoodId;
   grams: number;
+  /**
+   * ערכי המקור ל-100 ג' כפי שהיו ברגע הרישום. **זה מה שקובע** — המזון החי
+   * משמש רק לשם ולסימון שההגדרה השתנתה מאז (ראה lib/nutrition/calc.ts).
+   */
   ref: FoodRef;
+  /**
+   * השם בזמן הרישום, לרישום ידני — אותו דפוס כמו `LoggedExercise.n`.
+   * ברישום רגיל השם נלקח מהמזון החי ואם נעלם — מ-`ref.name`.
+   */
+  n?: string;
+  /**
+   * רישום ידני: קלוריות ומאקרו שהוזנו ביד (אוכל בחוץ, הערכה). מסומן
+   * בהיסטוריה ונספר בנפרד בסיכום היום — הערכה, לא מדידה.
+   */
+  adhoc?: true;
   /** טקסט חופשי, עד `ENTRY_NOTE_MAX` — לסימון אומדנים ואכילה בחוץ. */
   note?: string;
 };

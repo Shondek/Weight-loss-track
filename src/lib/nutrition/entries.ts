@@ -1,6 +1,8 @@
 /** רישומי אכילה. מודול טהור. */
 
-import type { FoodEntry, FoodRef, ISODate, MealType } from '../../types';
+import { ADHOC_FOOD_ID, ADHOC_MAX_KCAL, ADHOC_MAX_MACRO, UNIT_FOOD_SCALE, type FoodEntry, type FoodRef, type ISODate, type MealType } from '../../types';
+
+export { ADHOC_MAX_KCAL, ADHOC_MAX_MACRO };
 import { toLocalISO } from '../date';
 import { sortableStamp } from '../workouts';
 import { refOf, type Food } from './foods';
@@ -64,6 +66,65 @@ export function newEntry(
     ref,
     ...(note.trim() === '' ? {} : { note: note.trim() }),
   };
+}
+
+/** מה שמוזן ברישום ידני: הערכה לארוחה שלמה, לא ל-100 ג'. */
+export type AdhocValues = {
+  name: string;
+  kcal: number;
+  protein: number;
+  carbs: number | null;
+  fat: number | null;
+};
+
+/**
+ * רישום ידני (אוכל בחוץ, הערכה מהצ'אט). אין מזון בספרייה: הערכים חיים
+ * ב-`ref` בלבד, והשם ב-`n` — כמו `n` באימון.
+ *
+ * נשמר כ"יחידה אחת" (`unitFood`, ערכים ×100, grams = 1) ולא כ-100 ג':
+ * תקרת הסבירות של הפרסר היא 900 קק"ל ל-100 ג', וארוחת מסעדה של 1,200 קק"ל
+ * הייתה נדחית בקריאה הבאה. `grams × ref / 100` מחזיר בדיוק מה שהוזן.
+ */
+export function newAdhocEntry(values: AdhocValues, meal: MealType, ts: number, unique: string): FoodEntry {
+  const name = values.name.trim();
+  const ref: FoodRef = {
+    name,
+    kcal: values.kcal * UNIT_FOOD_SCALE,
+    protein: values.protein * UNIT_FOOD_SCALE,
+    carbs: values.carbs === null ? null : values.carbs * UNIT_FOOD_SCALE,
+    fat: values.fat === null ? null : values.fat * UNIT_FOOD_SCALE,
+    fiber: null,
+    unitFood: true,
+  };
+  return {
+    id: makeEntryId(ts, unique),
+    d: toLocalISO(new Date(ts)),
+    ts,
+    meal,
+    foodId: ADHOC_FOOD_ID,
+    grams: 1,
+    ref,
+    n: name,
+    adhoc: true,
+  };
+}
+
+/**
+ * בדיקת שפיות להזנה ידנית: 4·חלבון + 4·פחמימה + 9·שומן מול הקלוריות.
+ * רצה רק כששלושת המאקרו מולאו. מחזירה את הפער היחסי (0.2 = 20%), או null.
+ * אזהרה בלבד — שומרים בכל מקרה.
+ */
+export function macroKcalGap(kcal: number, protein: number, carbs: number | null, fat: number | null): number | null {
+  if (carbs === null || fat === null || kcal <= 0) return null;
+  const fromMacros = 4 * protein + 4 * carbs + 9 * fat;
+  return Math.abs(fromMacros - kcal) / kcal;
+}
+
+export const MACRO_GAP_WARN = 0.2;
+
+/** השם להצגה: מה שהוקפא ברישום ידני, אחרת המזון החי, אחרת ההקפאה. */
+export function entryName(entry: FoodEntry, liveName: string | null): string {
+  return entry.n ?? liveName ?? entry.ref.name;
 }
 
 /** הרישומים של יום, לפי סדר הזמן. */

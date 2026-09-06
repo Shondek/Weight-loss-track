@@ -60,7 +60,7 @@ describe('entryNutrition — רישום בודד', () => {
     expect(n.fiber).toBeCloseTo(1.2, 10);
     // 4P + 4C + 9F = 71.13 ≠ 71.1 — לא נגזר, נלקח מהמאגר.
     expect(n.kcal).not.toBeCloseTo(4 * 2.67 + 4 * 14.1 + 9 * 0.45, 3);
-    expect(n).toMatchObject({ fromRef: false, carbsUnknown: false, fiberUnknown: false });
+    expect(n).toMatchObject({ live: 'same', adhoc: false, carbsUnknown: false, fiberUnknown: false });
   });
 
   it('לא מעוגל בשכבת החישוב', () => {
@@ -69,14 +69,19 @@ describe('entryNutrition — רישום בודד', () => {
     expect(n.fat).toBeCloseTo(7, 10);
   });
 
-  it('המזון החי גובר על ref; בלי מזון חי — ref, ומסומן', () => {
+  it('ה-ref שברישום קובע תמיד; המזון החי רק מסמן: זהה / השתנה / נעלם', () => {
     const e = log(bread, 100, at(2026, 9, 5, 8));
+    expect(entryNutrition(e, bread).kcal).toBe(237);
+    expect(entryNutrition(e, bread).live).toBe('same');
+    // תיקון בספרייה אחרי הרישום — ההיסטוריה לא זזה, רק מסומנת.
     const updated: Food = { ...bread, kcal: 250 };
-    expect(entryNutrition(e, updated).kcal).toBe(250);
-    expect(entryNutrition(e, updated).fromRef).toBe(false);
+    expect(entryNutrition(e, updated).kcal).toBe(237);
+    expect(entryNutrition(e, updated).live).toBe('differs');
+    // שינוי שם בלבד אינו שינוי ערכים.
+    expect(entryNutrition(e, { ...bread, name: 'לחם' }).live).toBe('same');
     const gone = entryNutrition(e, null);
     expect(gone.kcal).toBe(237);
-    expect(gone.fromRef).toBe(true);
+    expect(gone.live).toBe('missing');
     expect(sourceOf(e, null).ref.name).toBe('לחם אחיד, כהה, פרוס');
   });
 
@@ -108,7 +113,7 @@ describe('entryNutrition — רישום בודד', () => {
 
 describe('daySummary', () => {
   it('יום ריק — אפסים, count 0, fiberUnknownGrams 0', () => {
-    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 });
+    expect(daySummary([], '2026-09-05', resolve)).toEqual({ ...ZERO, d: '2026-09-05', count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0, adhocKcal: 0, adhocCount: 0 });
     const other = log(bread, 30, at(2026, 9, 4, 8));
     expect(daySummary([other], '2026-09-05', resolve).count).toBe(0);
   });

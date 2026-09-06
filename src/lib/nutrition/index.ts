@@ -50,6 +50,7 @@ export function searchFoods(index: FoodIndex, query: string, limit: number): Foo
   const first = terms[0]!;
   const hits: { food: Food; rank: number }[] = [];
   for (const { food, search } of index.all) {
+    if (food.archived) continue; // נפתר לפי מזהה, לא מוצע
     if (!matchesSearch(search, terms)) continue;
     const rank = (search.startsWith(first) ? 0 : 1_000_000) + search.length;
     hits.push({ food, rank });

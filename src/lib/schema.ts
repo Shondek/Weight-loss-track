@@ -30,6 +30,8 @@ import {
   ENTRY_NOTE_MAX,
   FOOD_NOTE_MAX,
   RECIPE_UNIT_MAX,
+  ADHOC_MAX_KCAL,
+  ADHOC_MAX_MACRO,
   NOTE_MAX,
   UNIT_FOOD_SCALE,
   WORKOUT_SCHEMA_VERSION,
@@ -443,13 +445,16 @@ function parsePortions(v: unknown): FoodPortion[] {
  * ערכי מקור ל-100 גרם — משותף למזון custom ול-`ref` שברישום.
  * מחזיר את סיבת הדחייה או את הערכים.
  */
-function parsePer100(raw: Record<string, unknown>): { error: string } | { ref: FoodRef } {
+function parsePer100(
+  raw: Record<string, unknown>,
+  caps: { kcal: number; macro: number } = { kcal: MAX_KCAL_PER_100G, macro: MAX_MACRO_PER_100G },
+): { error: string } | { ref: FoodRef } {
   const name = cleanText(raw.name, FOOD_NAME_MAX);
   if (name === '') return { error: 'מזון בלי שם' };
   const unitFood = raw.unitFood === true;
   const scale = unitFood ? UNIT_FOOD_SCALE : 1;
-  const maxKcal = MAX_KCAL_PER_100G * scale;
-  const maxMacro = MAX_MACRO_PER_100G * scale;
+  const maxKcal = caps.kcal * scale;
+  const maxMacro = caps.macro * scale;
   const unitNote = unitFood ? ' (ערכי יחידה ×100)' : '';
   const kcal = inRange(raw.kcal, 0, maxKcal);
   if (kcal === null) return { error: `קלוריות מחוץ לטווח 0–${maxKcal} ל-100 ג'${unitNote}` };
@@ -518,6 +523,7 @@ export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
     const barcode = cleanText(raw.barcode, 64);
     const recipe = parseRecipe(raw.recipe);
     const note = cleanText(raw.note, FOOD_NOTE_MAX);
+    const archived = raw.archived === true;
     byId.set(id, {
       id,
       ...per100.ref,
@@ -526,6 +532,7 @@ export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
       barcode: barcode === '' ? null : barcode,
       ...(recipe ? { recipe } : {}),
       ...(note === '' ? {} : { note }),
+      ...(archived ? { archived: true as const } : {}),
     });
   }
 
@@ -582,7 +589,11 @@ export function parseEntries(input: unknown): ParseResult<FoodEntry> {
       rejected.push({ reason: 'רישום בלי ערכי מזון' });
       continue;
     }
-    const per100 = parsePer100(raw.ref);
+    // רישום ידני: השם והדגל מוקפאים ברישום, כמו `n` באימון. הפרסר חייב להכיר אותם.
+    // התקרה שלו היא ארוחה שלמה (יחידה אחת), לא 900 קק"ל ל-100 ג'.
+    const n = cleanText(raw.n, FOOD_NAME_MAX);
+    const adhoc = raw.adhoc === true;
+    const per100 = parsePer100(raw.ref, adhoc ? { kcal: ADHOC_MAX_KCAL, macro: ADHOC_MAX_MACRO } : undefined);
     if ('error' in per100) {
       rejected.push({ reason: `ערכי מזון: ${per100.error}` });
       continue;
@@ -597,6 +608,8 @@ export function parseEntries(input: unknown): ParseResult<FoodEntry> {
       foodId,
       grams,
       ref: per100.ref,
+      ...(n === '' ? {} : { n }),
+      ...(adhoc ? { adhoc: true as const } : {}),
       ...(note === '' ? {} : { note }),
     });
   }

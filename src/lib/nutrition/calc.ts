@@ -5,7 +5,9 @@
  * כללים:
  *  1. ערך רישום = ערך ל-100 גרם × גרמים / 100. הקלוריות מהמאגר, לא
  *     נגזרות מהמאקרו ולא להפך.
- *  2. המזון החי גובר; `ref` שברישום הוא הגיבוי כשהמזון נעלם.
+ *  2. `ref` שברישום קובע תמיד (snapshot). המזון החי משמש רק לשם ולסימון
+ *     שההגדרה השתנתה מאז הרישום. תיקון בספרייה חל מכאן והלאה; ההיסטוריה
+ *     לא משתנה רטרואקטיבית — כלל שנשען עליה חייב בסיס יציב.
  *  3. ערכי ביניים בדיוק מלא. העיגול הוא עניין של תצוגה בלבד (display.ts).
  *  4. בסיכום יומי `null` נספר כאפס, ובמקביל נספרים הגרמים שהפחמימה, השומן
  *     או הסיבים בהם לא ידועים — כדי שהממשק יוכל לומר "לפחות X" במקום מספר
@@ -28,9 +30,17 @@ export type Nutrients = {
 
 export const ZERO: Nutrients = { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
 
+/**
+ * יחס המזון החי לרישום: `same` — ההגדרה כיום זהה ל-`ref`; `differs` — המזון
+ * קיים אבל ערכיו השתנו מאז (הרישום עדיין לפי `ref`); `missing` — המזון נעלם.
+ */
+export type LiveStatus = 'same' | 'differs' | 'missing';
+
 export type EntryNutrition = Nutrients & {
-  /** הערכים הגיעו מ-`ref` כי המזון לא נמצא — הממשק מסמן "מהרישום". */
-  fromRef: boolean;
+  /** מה מצב המזון החי מול ה-`ref` — לסימון בלבד, לא משפיע על המספרים. */
+  live: LiveStatus;
+  /** רישום ידני (הערכה). */
+  adhoc: boolean;
   /** הפחמימה ל-100 ג' לא ידועה במקור; נספרה כאפס. */
   carbsUnknown: boolean;
   /** השומן ל-100 ג' לא ידוע במקור; נספר כאפס. */
@@ -39,10 +49,24 @@ export type EntryNutrition = Nutrients & {
   fiberUnknown: boolean;
 };
 
-/** ערכי המקור בפועל לרישום: המזון החי כשהוא קיים, אחרת ההקפאה שברישום. */
-export function sourceOf(entry: FoodEntry, live: Food | null): { ref: FoodRef; fromRef: boolean } {
-  if (live) return { ref: refOf(live), fromRef: false };
-  return { ref: entry.ref, fromRef: true };
+function sameRef(a: FoodRef, b: FoodRef): boolean {
+  return (
+    a.kcal === b.kcal &&
+    a.protein === b.protein &&
+    a.carbs === b.carbs &&
+    a.fat === b.fat &&
+    a.fiber === b.fiber &&
+    (a.unitFood === true) === (b.unitFood === true)
+  );
+}
+
+/**
+ * ערכי המקור לרישום: תמיד ה-`ref` שהוקפא. המזון החי רק מדווח אם ההגדרה
+ * הנוכחית שונה ממה שנרשם.
+ */
+export function sourceOf(entry: FoodEntry, live: Food | null): { ref: FoodRef; live: LiveStatus } {
+  if (!live) return { ref: entry.ref, live: 'missing' };
+  return { ref: entry.ref, live: sameRef(refOf(live), entry.ref) ? 'same' : 'differs' };
 }
 
 function scale(per100: number | null, grams: number): number {
@@ -50,14 +74,15 @@ function scale(per100: number | null, grams: number): number {
 }
 
 export function entryNutrition(entry: FoodEntry, live: Food | null): EntryNutrition {
-  const { ref, fromRef } = sourceOf(entry, live);
+  const { ref, live: status } = sourceOf(entry, live);
   return {
     kcal: scale(ref.kcal, entry.grams),
     protein: scale(ref.protein, entry.grams),
     carbs: scale(ref.carbs, entry.grams),
     fat: scale(ref.fat, entry.grams),
     fiber: scale(ref.fiber, entry.grams),
-    fromRef,
+    live: status,
+    adhoc: entry.adhoc === true,
     carbsUnknown: ref.carbs === null,
     fatUnknown: ref.fat === null,
     fiberUnknown: ref.fiber === null,
@@ -77,6 +102,13 @@ export type DaySummary = Nutrients & {
   fatUnknownGrams: number;
   /** כנ"ל לסיבים. */
   fiberUnknownGrams: number;
+  /**
+   * קלוריות מרישומים ידניים (הערכות). כשגדול מאפס, חלק מהיום הוא אומדן —
+   * הממוצע השבועי רך יותר ממה שהוא נראה, וצריך לראות את זה לפני החלטה.
+   */
+  adhocKcal: number;
+  /** כמה מהרישומים ידניים. */
+  adhocCount: number;
 };
 
 export type FoodResolver = (foodId: string) => Food | null;
@@ -87,7 +119,7 @@ export function daySummary(
   d: ISODate,
   resolve: FoodResolver,
 ): DaySummary {
-  const out: DaySummary = { ...ZERO, d, count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0 };
+  const out: DaySummary = { ...ZERO, d, count: 0, carbsUnknownGrams: 0, fatUnknownGrams: 0, fiberUnknownGrams: 0, adhocKcal: 0, adhocCount: 0 };
   for (const e of entries) {
     if (e.d !== d) continue;
     const n = entryNutrition(e, resolve(e.foodId));
@@ -99,6 +131,10 @@ export function daySummary(
     if (n.carbsUnknown) out.carbsUnknownGrams += e.grams;
     if (n.fatUnknown) out.fatUnknownGrams += e.grams;
     if (n.fiberUnknown) out.fiberUnknownGrams += e.grams;
+    if (n.adhoc) {
+      out.adhocKcal += n.kcal;
+      out.adhocCount++;
+    }
     out.count++;
   }
   return out;

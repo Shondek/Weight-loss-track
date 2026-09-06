@@ -33,6 +33,8 @@ export type Food = {
   isRecipe: boolean;
   /** יחידה = 1 ג': הערכים ל-100 ג' הם ערכי יחידה ×100. הזנת 1 = יחידה. */
   unitFood: boolean;
+  /** בארכיון: נפתר לפי מזהה (להיסטוריה), לא מוצע בחיפוש וברובריקה. */
+  archived: boolean;
 };
 
 export function isCustomFoodId(id: string): boolean {
@@ -62,6 +64,7 @@ export function fromMoh(f: MohFood): Food {
     suspect: f.suspect === true,
     isRecipe: false,
     unitFood: false,
+    archived: false,
   };
 }
 
@@ -79,6 +82,7 @@ export function fromCustom(f: CustomFood): Food {
     suspect: false,
     isRecipe: f.recipe !== undefined,
     unitFood: f.unitFood === true,
+    archived: f.archived === true,
   };
 }
 

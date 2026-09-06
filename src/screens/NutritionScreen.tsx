@@ -20,11 +20,17 @@ import {
 import { displayValues, fromCustom, removeCustomFood, upsertCustomFood, type Food } from '../lib/nutrition/foods';
 import { resolveFood, searchFoods } from '../lib/nutrition/index';
 import {
+  ADHOC_MAX_KCAL,
+  ADHOC_MAX_MACRO,
   defaultMeal,
   entriesOn,
+  entryName,
   groupByMeal,
+  MACRO_GAP_WARN,
+  macroKcalGap,
   MEAL_LABELS,
   MEAL_ORDER,
+  newAdhocEntry,
   newEntry,
   removeEntry,
   setEntryGrams,
@@ -52,6 +58,15 @@ function parseGrams(text: string): number | null {
   if (t === '') return null;
   const n = Number(t);
   if (!Number.isFinite(n) || n < MIN_GRAMS || n > MAX_GRAMS) return null;
+  return Math.round(n * 10) / 10;
+}
+
+/** מספר להזנה ידנית: ריק = null; מחוץ לטווח = undefined (לא תקין). */
+function parseAmount(text: string, max: number): number | null | undefined {
+  const t = text.trim().replace(',', '.');
+  if (t === '') return null;
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 0 || n > max) return undefined;
   return Math.round(n * 10) / 10;
 }
 
@@ -185,6 +200,38 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     armUndo({ kind: 'added', entry, text: `${r.item.label} נוסף · ${kcalText(r.kcal)} קק"ל${nutAgain}` });
   };
 
+  // ---------- הזנה ידנית: אוכל בחוץ, ערכים לארוחה שלמה ----------
+  const [adhocOpen, setAdhocOpen] = useState(false);
+  const [adhoc, setAdhoc] = useState({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
+  const adhocKcal = parseAmount(adhoc.kcal, ADHOC_MAX_KCAL);
+  const adhocProtein = parseAmount(adhoc.protein, ADHOC_MAX_MACRO);
+  const adhocCarbs = parseAmount(adhoc.carbs, ADHOC_MAX_MACRO);
+  const adhocFat = parseAmount(adhoc.fat, ADHOC_MAX_MACRO);
+  const adhocValid =
+    adhoc.name.trim() !== '' &&
+    typeof adhocKcal === 'number' &&
+    typeof adhocProtein === 'number' &&
+    adhocCarbs !== undefined &&
+    adhocFat !== undefined;
+  const adhocGap =
+    typeof adhocKcal === 'number' && typeof adhocProtein === 'number' && typeof adhocCarbs === 'number' && typeof adhocFat === 'number'
+      ? macroKcalGap(adhocKcal, adhocProtein, adhocCarbs, adhocFat)
+      : null;
+
+  const saveAdhoc = () => {
+    if (!adhocValid || typeof adhocKcal !== 'number' || typeof adhocProtein !== 'number') return;
+    const ts = Date.now();
+    const entry = newAdhocEntry(
+      { name: adhoc.name, kcal: adhocKcal, protein: adhocProtein, carbs: adhocCarbs ?? null, fat: adhocFat ?? null },
+      meal,
+      ts,
+      unique(),
+    );
+    void store.update('entries', upsertEntry(db.entries, entry));
+    setAdhoc({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
+    setAdhocOpen(false);
+  };
+
   // ---------- עריכת גרמים בשורת היום ----------
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
 
@@ -275,6 +322,12 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             </div>
           ))}
         </div>
+        {summary.adhocCount > 0 && (
+          <p className="tiny adhoc-note" style={{ margin: '6px 0 0' }}>
+            מתוכן <span className="num">{kcalText(summary.adhocKcal)}</span> קק"ל בהזנה ידנית (הערכה) ·{' '}
+            <span className="num">{summary.adhocCount}</span> {summary.adhocCount === 1 ? 'רישום' : 'רישומים'}
+          </p>
+        )}
         <p className="tiny muted" style={{ margin: '6px 0 0' }}>
           סיבים {summary.fiberUnknownGrams > 0 ? 'לפחות ' : ''}
           <span className="num">{macroText(summary.fiber)}</span> ג׳
@@ -395,6 +448,85 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             )}
           </span>
         </div>
+        {adhocOpen ? (
+          <div className="stack">
+            <p className="small muted" style={{ margin: 0 }}>
+              אוכל בחוץ או בלי תווית: הערכה לארוחה שלמה, לא ל-100 ג׳. נרשם כהערכה ומסומן בהיסטוריה.
+            </p>
+            <div>
+              <label htmlFor="adhoc-name">שם</label>
+              <input
+                id="adhoc-name"
+                type="text"
+                autoComplete="off"
+                placeholder="המבורגר, מסעדה"
+                value={adhoc.name}
+                onChange={(e) => setAdhoc({ ...adhoc, name: e.target.value })}
+              />
+            </div>
+            <div className="macros">
+              {(
+                [
+                  ['adhoc-kcal', 'קלוריות', 'kcal', ADHOC_MAX_KCAL, true],
+                  ['adhoc-protein', 'חלבון ג׳', 'protein', ADHOC_MAX_MACRO, true],
+                  ['adhoc-carbs', 'פחמימה ג׳', 'carbs', ADHOC_MAX_MACRO, false],
+                  ['adhoc-fat', 'שומן ג׳', 'fat', ADHOC_MAX_MACRO, false],
+                ] as const
+              ).map(([id, label, key, max, required]) => (
+                <div key={id}>
+                  <label htmlFor={id}>
+                    {label}
+                    {!required && <span className="muted"> (לא חובה)</span>}
+                  </label>
+                  <input
+                    id={id}
+                    type="number"
+                    inputMode="decimal"
+                    step={0.1}
+                    min={0}
+                    max={max}
+                    value={adhoc[key]}
+                    onChange={(e) => setAdhoc({ ...adhoc, [key]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+            {adhocGap !== null && adhocGap > MACRO_GAP_WARN && (
+              <p className="notice" style={{ margin: 0 }}>
+                המאקרו מסתכם ל-
+                <span className="num">{kcalText(4 * (adhocProtein as number) + 4 * (adhocCarbs as number) + 9 * (adhocFat as number))}</span> קק"ל,
+                פער של <span className="num">{Math.round(adhocGap * 100)}%</span> מהקלוריות שהוזנו. אפשר לשמור בכל מקרה.
+              </p>
+            )}
+            <div role="group" aria-label="ארוחה">
+              <span className="label">ארוחה</span>
+              <div className="choice">
+                {MEAL_ORDER.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className="choice__btn"
+                    aria-pressed={meal === m}
+                    onClick={() => {
+                      setMeal(m);
+                      setMealTouched(true);
+                    }}
+                  >
+                    {MEAL_LABELS[m]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="row">
+              <button type="button" className="btn btn--primary btn--block" disabled={!adhocValid} onClick={saveAdhoc}>
+                שמור הזנה ידנית
+              </button>
+              <button type="button" className="btn" onClick={() => setAdhocOpen(false)}>
+                ביטול
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="stack">
           <div>
             <label htmlFor="food-search">מזון</label>
@@ -499,7 +631,16 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           <button type="button" className="btn btn--primary btn--block" disabled={!canAdd} onClick={add}>
             הוסף
           </button>
+          <button
+            type="button"
+            className="btn btn--quiet"
+            style={{ marginInlineStart: 'calc(-1 * var(--sp-2))' }}
+            onClick={() => setAdhocOpen(true)}
+          >
+            הזנה ידנית — אוכל בחוץ, בלי תווית
+          </button>
         </div>
+        )}
       </section>
 
       <section className="section">
@@ -527,10 +668,18 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                   const live = resolve(e.foodId);
                   const n = entryNutrition(e, live);
                   return (
-                    <li key={e.id}>
+                    <li key={e.id} className={n.adhoc ? 'is-adhoc' : undefined}>
                       <span className="grow">
-                        {live ? live.name : e.ref.name}
+                        {entryName(e, live?.name ?? null)}
                         <span className="tiny muted">
+                          {n.adhoc ? (
+                            <>
+                              {' '}
+                              · <span className="adhoc-note">הזנה ידנית · הערכה</span> ·{' '}
+                              <span className="num">{macroText(n.protein)}</span> חלבון
+                            </>
+                          ) : (
+                            <>
                           {' '}
                           ·{' '}
                           {editing?.id === e.id ? (
@@ -561,10 +710,13 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                             >
                               <span className="num">{e.grams}</span> ג׳
                             </button>
+                          )}
+                            </>
                           )}{' '}
                           · <span className="num">{timeText(e.ts)}</span>
                           {live?.isRecipe && ' · מנה'}
-                          {n.fromRef && ' · מהרישום'}
+                          {n.live === 'differs' && ' · ההגדרה השתנתה מאז הרישום'}
+                          {n.live === 'missing' && !n.adhoc && ' · המזון נמחק'}
                           {live?.suspect && <span className="err"> · ערך חשוד</span>}
                         </span>
                       </span>
@@ -600,6 +752,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                 <span className="grow">
                   {f.name}
                   <span className="tiny muted">
+                    {f.archived && ' · בארכיון'}
                     {f.recipe ? ' · מנה' : ' · מהתווית'} ·{' '}
                     <span className="num">{kcalText(displayValues(fromCustom(f)).kcal)}</span> קק"ל {displayValues(fromCustom(f)).per}
                     {f.note ? ` · ${f.note}` : ''}

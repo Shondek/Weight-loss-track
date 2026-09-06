@@ -60,6 +60,10 @@ for (const d of DISHES) {
   if (!food) throw new Error(`${d.name} לא נבנתה`);
   const grams = d.items.reduce((n, i) => n + i.grams, 0); // המנה כולה כפי שהוגדרה
   const n = scaled(food, grams);
+  if (!d.doc) {
+    console.log(`${d.name.padEnd(38)} | ${fmt(n.kcal).padStart(6)} / ${fmt(n.protein).padStart(5)} |   — (מחושב)   |`);
+    continue;
+  }
   const pk = pct(n.kcal, d.doc.kcal);
   const pp = pct(n.protein, d.doc.protein);
   console.log(
@@ -84,6 +88,7 @@ for (const d of DISHES) {
   const food = resolveFood(index, libId(d.slug))!;
   const grams = d.items.reduce((n, i) => n + i.grams, 0);
   const n = scaled(food, grams);
+  if (!d.doc) continue;
   if (Math.abs(pct(n.kcal, d.doc.kcal)) <= FLAG_PCT && Math.abs(pct(n.protein, d.doc.protein)) <= FLAG_PCT) continue;
   console.log(`\n  ${d.name}`);
   for (const i of d.items) {

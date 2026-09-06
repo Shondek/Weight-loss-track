@@ -19,6 +19,7 @@ const food = (id: string, extra: Partial<Food> = {}): Food => ({
   suspect: false,
   isRecipe: false,
   unitFood: false,
+  archived: false,
   ...extra,
 });
 
@@ -93,6 +94,16 @@ describe('resolveMenu', () => {
     expect(resolved[1]!.items[0]!.grams).toBe(25);
     expect(resolved[1]!.items[0]!.kcal).toBeCloseTo(144.75, 5);
     expect(resolved[1]!.items[0]!.protein).toBeCloseTo(5.275, 5);
+  });
+
+  it('פריט בארכיון לא מוצע ברובריקה, גם אם מוגדר בתפריט', () => {
+    const archived = resolveMenu(
+      groups,
+      (id) => (id === libraryFoodId('nut') ? food(id, { archived: true }) : (foods.get(id) ?? null)),
+      () => null,
+    );
+    expect(archived[1]!.items).toHaveLength(0);
+    expect(archived[1]!.missing).toBe(1);
   });
 
   it('ספרייה שלא נטענה: הכול חסר, בלי שגיאה', () => {
