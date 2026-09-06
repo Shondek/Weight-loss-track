@@ -123,6 +123,44 @@
       "note": "יחידה = 1 ג' (הזן 1 לכדור). ערכי אריזה טרם אומתו: ~130 קק\"ל ליחידה, חלבון לא במסמך (0). פחמימה ושומן לא ידועים"
     },
     {
+      "id": "c:lib2:corn-cake-slim-delis",
+      "name": "פריכית תירס סלים דליס",
+      "cat": 5,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "kcal": 3100,
+      "protein": 0,
+      "unitFood": true,
+      "portions": [
+        {
+          "u": "יחידה",
+          "g": 1
+        }
+      ],
+      "barcode": null,
+      "note": "ערכי אריזה חלקיים — קלוריות בלבד מהתווית. לעדכן. יחידה = 1 (הזן 1 לפריכית): 31 קק\"ל; חלבון לא בתווית (0), פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:corn-cake-australian",
+      "name": "פריכית תירס אוסטרלית",
+      "cat": 5,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "kcal": 2300,
+      "protein": 0,
+      "unitFood": true,
+      "portions": [
+        {
+          "u": "יחידה",
+          "g": 1
+        }
+      ],
+      "barcode": null,
+      "note": "ערכי אריזה חלקיים — קלוריות בלבד מהתווית. לעדכן. יחידה = 1 (הזן 1 לפריכית): 23 קק\"ל; חלבון לא בתווית (0), פחמימה ושומן לא ידועים"
+    },
+    {
       "id": "c:lib2:nut-almonds",
       "name": "שקדים",
       "cat": 4,
@@ -515,7 +553,7 @@
           {
             "foodId": "c:lib2:tuna-water-drained",
             "grams": 224,
-            "n": "טונה"
+            "u": "2 קופסאות"
           },
           {
             "foodId": "31103000",
@@ -538,16 +576,50 @@
       }
     },
     {
+      "id": "c:lib2:lunch-6-tuna-cottage",
+      "name": "צ6 — טונה וקוטג'",
+      "cat": 1,
+      "portions": [],
+      "barcode": null,
+      "note": "משמרת בוקר (שישי). חלבי-פרווה, בלי בשר. הפריכיות ביחידות (3) — משקל הצלחת כפי שהוגדר לא כולל את משקלן",
+      "kcal": 117.92452830188678,
+      "protein": 17.50524109014675,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "c:lib2:tuna-water-drained",
+            "grams": 224,
+            "u": "2 קופסאות"
+          },
+          {
+            "foodId": "14201019",
+            "grams": 250,
+            "n": "קוטג'"
+          },
+          {
+            "foodId": "c:lib2:corn-cake-slim-delis",
+            "grams": 3,
+            "u": "3 פריכיות תירס"
+          }
+        ],
+        "finalGrams": 477
+      }
+    },
+    {
       "id": "c:lib2:dinner-1-cottage-eggs",
       "name": "ע1 — קוטג' וביצים",
       "cat": 1,
       "portions": [],
       "barcode": null,
-      "kcal": 102.2270412858107,
-      "protein": 7.405116250536778,
-      "carbs": 6.483037850438624,
-      "fat": 5.0460278510520835,
-      "fiber": 0.8930801791301148,
+      "note": "הפריכיות ביחידות (4) — משקל הצלחת כפי שהוגדר לא כולל את משקלן",
+      "kcal": 105.09693053311793,
+      "protein": 7.303715670436188,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
       "recipe": {
         "items": [
           {
@@ -566,9 +638,9 @@
             "n": "ירקות"
           },
           {
-            "foodId": "54319039",
-            "grams": 37.04,
-            "u": "4 פריכיות"
+            "foodId": "c:lib2:corn-cake-slim-delis",
+            "grams": 4,
+            "u": "4 פריכיות תירס"
           },
           {
             "foodId": "43103119",
@@ -577,7 +649,7 @@
             "n": "טחינה"
           }
         ],
-        "finalGrams": 652.04
+        "finalGrams": 619
       }
     },
     {
@@ -718,10 +790,11 @@
       "cat": 1,
       "portions": [],
       "barcode": null,
-      "kcal": 75.03414864705188,
-      "protein": 7.484686281460475,
+      "note": "הפריכיות ביחידות (5) — משקל הצלחת כפי שהוגדר לא כולל את משקלן",
+      "kcal": 76.3975155279503,
+      "protein": 7.391304347826087,
       "carbs": null,
-      "fat": 1.6892827602505023,
+      "fat": null,
       "fiber": null,
       "recipe": {
         "items": [
@@ -736,9 +809,9 @@
             "n": "יוגורט"
           },
           {
-            "foodId": "54319039",
-            "grams": 46.3,
-            "u": "5 פריכיות"
+            "foodId": "c:lib2:corn-cake-slim-delis",
+            "grams": 5,
+            "u": "5 פריכיות תירס"
           },
           {
             "foodId": "75145058",
@@ -746,7 +819,7 @@
             "n": "ירקות"
           }
         ],
-        "finalGrams": 846.3
+        "finalGrams": 805
       }
     },
     {

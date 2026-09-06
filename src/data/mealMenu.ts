@@ -22,6 +22,7 @@ export const MEAL_MENU: readonly MenuGroup[] = [
       { slug: 'lunch-3-mixed', label: 'צ3 מעורב' },
       { slug: 'lunch-4-pastrami', label: 'צ4 פסטרמה' },
       { slug: 'lunch-5-tuna-eggs', label: 'צ5 טונה וביצים' },
+      { slug: 'lunch-6-tuna-cottage', label: "צ6 טונה וקוטג'" },
     ],
   },
   {
@@ -59,6 +60,8 @@ export const MEAL_MENU: readonly MenuGroup[] = [
       { slug: 'nut-pistachios', label: 'פיסטוקים', grams: NUT_GRAMS, nut: true },
       { slug: 'nut-cashews', label: 'קשיו', grams: NUT_GRAMS, nut: true },
       { slug: 'pita-light', label: 'פיתה קלה', grams: 1 },
+      { slug: 'corn-cake-slim-delis', label: 'פריכית תירס סלים דליס', grams: 1 },
+      { slug: 'corn-cake-australian', label: 'פריכית תירס אוסטרלית', grams: 1 },
       { slug: 'date-ball', label: 'כדור תמר', grams: 1 },
       { slug: 'coffee-milk', label: 'קפה עם חלב' },
     ],

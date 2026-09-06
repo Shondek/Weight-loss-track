@@ -65,7 +65,7 @@ export const GRAMS = {
   oliveOilTbsp: 13.6,
   /** ✎ "כפית שמן = 40 קק"ל" במסמך / 884 = 4.5 ג'. */
   oilTsp: 4.5,
-  /** ✎ פריכית = 35 קק"ל במסמך / 378 ל-100 ג' במאגר = 9.26 ג'. */
+  /** ✎ פריכית אורז = 35 קק"ל במסמך / 378 ל-100 ג' במאגר = 9.26 ג'. (2.2: הוחלפה בפריכית תירס, יחידה = 1.) */
   riceCake: 9.26,
   /** מסמך: קופסת טונה 160 ג' = 112 ג' נטו מסונן. */
   tunaCan: 112,
@@ -181,6 +181,31 @@ export const CUSTOM_FOODS: Custom[] = [
     barcode: null,
     note: `יחידה = 1 ג' (הזן 1 לכדור). ${UNVERIFIED}: ~130 קק"ל ליחידה, חלבון לא במסמך (0). פחמימה ושומן לא ידועים`,
   },
+  // 2.2: פריכיות תירס — ערכי תווית, קלוריות בלבד. חלבון חובה בסכימה ולכן 0 (חסם תחתון), כמו כדור התמר.
+  {
+    id: id('corn-cake-slim-delis'),
+    name: 'פריכית תירס סלים דליס',
+    cat: 5,
+    carbs: null,
+    fat: null,
+    fiber: null,
+    ...perUnitAs1(31, 0),
+    portions: [{ u: 'יחידה', g: GRAMS.unitAs1 }],
+    barcode: null,
+    note: 'ערכי אריזה חלקיים — קלוריות בלבד מהתווית. לעדכן. יחידה = 1 (הזן 1 לפריכית): 31 קק"ל; חלבון לא בתווית (0), פחמימה ושומן לא ידועים',
+  },
+  {
+    id: id('corn-cake-australian'),
+    name: 'פריכית תירס אוסטרלית',
+    cat: 5,
+    carbs: null,
+    fat: null,
+    fiber: null,
+    ...perUnitAs1(23, 0),
+    portions: [{ u: 'יחידה', g: GRAMS.unitAs1 }],
+    barcode: null,
+    note: 'ערכי אריזה חלקיים — קלוריות בלבד מהתווית. לעדכן. יחידה = 1 (הזן 1 לפריכית): 23 קק"ל; חלבון לא בתווית (0), פחמימה ושומן לא ידועים',
+  },
 ];
 
 // ---------- פריטי ספרייה שמקורם במאגר: עותק של מזון מאגר ----------
@@ -270,7 +295,14 @@ const lunchBase = [
 
 /** תוויות כמות לתצוגה: מה שנמדד בכלי מטבח או נספר ביחידות. מה ששוקלים — בלי תווית. */
 const eggs = (n: number) => `${n} ביצים`;
-const riceCakes = (n: number) => `${n} פריכיות`;
+/**
+ * פריכיות תירס בתוך מנה (2.2): ברירת המחדל סלים דליס — הגבוה מהשניים, עדיף
+ * להעריך למעלה. מזון יחידה: grams = מספר הפריכיות, ולכן משקל המנה כפי
+ * שהוגדרה כולל N "גרם" לפריכיות במקום משקלן האמיתי (טרם נמדד).
+ */
+const cornCakes = (n: number) => ({ foodId: C['corn-cake-slim-delis']!, grams: n * GRAMS.unitAs1, u: `${n} פריכיות תירס` });
+/** המסמך: פריכית אורז 35 קק"ל ← פריכית תירס סלים דליס 31 קק"ל, חלבון 0 במקום ~0.8. */
+const cornInsteadOfRice = (kcal: number, protein: number, n: number) => ({ kcal: kcal - 35 * n + 31 * n, protein: Math.round((protein - 0.77 * n) * 10) / 10 });
 
 /** המסמך (2.1): ערכי המנה בלי השקדים = הערכים של גרסה 2 פחות 145 קק"ל · 5 חלבון. */
 const withoutAlmonds = (kcal: number, protein: number) => ({ kcal: kcal - 145, protein: protein - 5 });
@@ -319,12 +351,26 @@ export const DISHES: DishDef[] = [
     name: 'צ5 — טונה וביצים',
     cat: 2,
     items: [
-      { foodId: C['tuna-water-drained']!, grams: 2 * GRAMS.tunaCan, n: 'טונה' },
+      { foodId: C['tuna-water-drained']!, grams: 2 * GRAMS.tunaCan, u: '2 קופסאות' },
       { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg, u: eggs(2) },
       ...lunchBase,
     ],
     finalGrams: null,
     doc: { ...withoutAlmonds(679, 76), label: 'צ5' },
+  },
+  {
+    slug: 'lunch-6-tuna-cottage',
+    name: "צ6 — טונה וקוטג'",
+    cat: 1,
+    items: [
+      { foodId: C['tuna-water-drained']!, grams: 2 * GRAMS.tunaCan, u: '2 קופסאות' },
+      { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
+      cornCakes(3),
+    ],
+    finalGrams: null,
+    note: 'משמרת בוקר (שישי). חלבי-פרווה, בלי בשר. הפריכיות ביחידות (3) — משקל הצלחת כפי שהוגדר לא כולל את משקלן',
+    // המסמך (2.2): 2 × 116 + 238 + 3 × 31 = 563 · 2 × 28 + 27.5 + 0 = 83.5.
+    doc: { kcal: 2 * 116 + 238 + 3 * 31, protein: 2 * 28 + 27.5, label: 'צ6' },
   },
   {
     slug: 'dinner-1-cottage-eggs',
@@ -334,11 +380,12 @@ export const DISHES: DishDef[] = [
       { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg, u: eggs(2) },
       { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
       { foodId: MOH.salad, grams: 250, n: 'ירקות' },
-      { foodId: MOH.riceCake, grams: 4 * GRAMS.riceCake, u: riceCakes(4) },
+      cornCakes(4),
       { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת', n: 'טחינה' },
     ],
     finalGrams: null,
-    doc: { kcal: 685, protein: 50, label: 'ע1' },
+    note: 'הפריכיות ביחידות (4) — משקל הצלחת כפי שהוגדר לא כולל את משקלן',
+    doc: { ...cornInsteadOfRice(685, 50, 4), label: 'ע1' },
   },
   {
     slug: 'dinner-2-shakshuka',
@@ -394,11 +441,12 @@ export const DISHES: DishDef[] = [
     items: [
       { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
       { foodId: C['greek-yogurt-0']!, grams: 300, n: 'יוגורט' },
-      { foodId: MOH.riceCake, grams: 5 * GRAMS.riceCake, u: riceCakes(5) },
+      cornCakes(5),
       { foodId: MOH.salad, grams: 250, n: 'ירקות' },
     ],
     finalGrams: null,
-    doc: { kcal: 649, protein: 65, label: 'ע5' },
+    note: 'הפריכיות ביחידות (5) — משקל הצלחת כפי שהוגדר לא כולל את משקלן',
+    doc: { ...cornInsteadOfRice(649, 65, 5), label: 'ע5' },
   },
   {
     slug: 'coffee-milk',
