@@ -45,7 +45,6 @@ export const MOH = {
   oliveOil: '82104000', // שמן זית — 884/100
   tomato: '74101000', // עגבניה, טריה — 18/0.9
   broccoliFrozen: '72201219', // ברוקולי, קפוא, לא מבושל, סנפרוסט — 31/3.3
-  riceCake: '54319039', // פריכיות אורז, ללא מלח, אסם — 378/8.3
   milk3: '11111009', // חלב 3% שומן — 60/3.3
   coffee: '92103000', // קפה, מוכן מאבקת אינסטנט, רגיל — 3/0.1
 } as const;
@@ -65,8 +64,6 @@ export const GRAMS = {
   oliveOilTbsp: 13.6,
   /** ✎ "כפית שמן = 40 קק"ל" במסמך / 884 = 4.5 ג'. */
   oilTsp: 4.5,
-  /** ✎ פריכית אורז = 35 קק"ל במסמך / 378 ל-100 ג' במאגר = 9.26 ג'. (2.2: הוחלפה בפריכית תירס, יחידה = 1.) */
-  riceCake: 9.26,
   /** מסמך: קופסת טונה 160 ג' = 112 ג' נטו מסונן. */
   tunaCan: 112,
   /** ✎ קפה + חלב = 190 − 130 (כדור תמר) = 60 קק"ל = 100 מ"ל חלב 3%. */
@@ -242,6 +239,8 @@ export const MOH_COPIES: MohCopyDef[] = [
   nut('nut-peanuts', 'בוטנים', MOH.peanuts),
   nut('nut-pistachios', 'פיסטוקים', MOH.pistachios),
   nut('nut-cashews', 'קשיו', MOH.cashews),
+  // 2.4: טחינה יצאה מכל המנות — תוסף נפרד בכף מפולסת, כמו השקדים.
+  { slug: 'tahini-raw', name: 'טחינה גולמית', mohId: MOH.tahini, portion: { u: 'כף מפולסת', g: GRAMS.tahiniTbsp } },
   { slug: 'block-cottage-5', name: "קוטג' 5%", mohId: MOH.cottage5, portion: { u: 'בלוק', g: 100 } },
   { slug: 'block-egg-whites', name: 'חלבוני ביצה', mohId: MOH.eggWhite, portion: { u: '3 חלבונים', g: GRAMS.eggWhites3 } },
 ];
@@ -289,28 +288,23 @@ export type DishDef = {
 const C = Object.fromEntries(CUSTOM_FOODS.map((f) => [f.id.slice(LIB_PREFIX.length), f.id])) as Record<string, FoodId>;
 
 /**
- * הבסיס המשותף לכל ארוחות הצהריים: סלט 250, טחינה כף.
- * גרסה 2.1: השקדים (25 ג') יצאו מהמנות ונרשמים בנפרד מקבוצת "תוספות" —
- * אגוז אחד ביום, לבחירה. משקל הצלחת ירד ב-25 ג'.
+ * הבסיס המשותף לכל ארוחות הצהריים: סלט 250 בלבד.
+ * 2.1: השקדים יצאו מהמנות. 2.4: גם הטחינה. כל פריט שהכמות שלו משתנה
+ * בפועל נרשם בנפרד מקבוצת "תוספות" — הכמות היא נתון, לא הנחה.
  */
-const lunchBase = [
-  { foodId: MOH.salad, grams: 250, n: 'סלט' },
-  { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת', n: 'טחינה' },
-];
+const lunchBase = [{ foodId: MOH.salad, grams: 250, n: 'סלט' }];
 
 /** תוויות כמות לתצוגה: מה שנמדד בכלי מטבח או נספר ביחידות. מה ששוקלים — בלי תווית. */
 const eggs = (n: number) => `${n} ביצים`;
-/**
- * פריכיות תירס בתוך מנה (2.2): ברירת המחדל סלים דליס — הגבוה מהשניים, עדיף
- * להעריך למעלה. מזון יחידה: grams = מספר הפריכיות, ולכן משקל המנה כפי
- * שהוגדרה כולל N "גרם" לפריכיות במקום משקלן האמיתי (טרם נמדד).
- */
-const cornCakes = (n: number) => ({ foodId: C['corn-cake-slim-delis']!, grams: n * GRAMS.unitAs1, u: `${n} פריכיות תירס` });
-/** המסמך: פריכית אורז 35 קק"ל ← פריכית תירס סלים דליס 31 קק"ל, חלבון 0 במקום ~0.8. */
-const cornInsteadOfRice = (kcal: number, protein: number, n: number) => ({ kcal: kcal - 35 * n + 31 * n, protein: Math.round((protein - 0.77 * n) * 10) / 10 });
 
-/** המסמך (2.1): ערכי המנה בלי השקדים = הערכים של גרסה 2 פחות 145 קק"ל · 5 חלבון. */
+/**
+ * אומדני המסמך המקורי (לפני 2.3), מותאמים למה שיצא מהמנות: שקדים (145 · 5),
+ * טחינה (90 · 3 בצהריים, 95 · 3 בע1), פריכיות (35 · 0.77 ליחידה במסמך המקורי).
+ * לאימות ולדיווח פערים בלבד.
+ */
 const withoutAlmonds = (kcal: number, protein: number) => ({ kcal: kcal - 145, protein: protein - 5 });
+const withoutTahini = (d: { kcal: number; protein: number }, tahiniKcal = 90) => ({ kcal: d.kcal - tahiniKcal, protein: d.protein - 3 });
+const withoutCakes = (d: { kcal: number; protein: number }, n: number) => ({ kcal: d.kcal - 35 * n, protein: Math.round((d.protein - 0.77 * n) * 10) / 10 });
 
 export const DISHES: DishDef[] = [
   {
@@ -320,18 +314,18 @@ export const DISHES: DishDef[] = [
     items: [{ foodId: MOH.chickenBreast, grams: 250, n: 'חזה עוף' }, ...lunchBase],
     finalGrams: null,
     note: 'חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה',
-    doc: { ...withoutAlmonds(704, 89), label: 'צ1' },
+    doc: { ...withoutTahini(withoutAlmonds(704, 89)), label: 'צ1' },
   },
   {
     slug: 'lunch-2-roastbeef',
-    name: 'צ2 — רוסטביף',
+    // 2.3 ארכבה אותה (350 ג' = 2,800 מ"ג נתרן). 2.4 מחזירה אותה עם 300 ג' — אותו slug ו-id,
+    // הרישומים הישנים (350 ג' + טחינה) נשארים על ה-ref שלהם ומסומנים "ההגדרה השתנתה".
+    name: 'צ2 — רוסטביף וסלט',
     cat: 2,
-    items: [{ foodId: C['roastbeef-hod-maadan']!, grams: 350, n: 'רוסטביף' }, ...lunchBase],
+    items: [{ foodId: C['roastbeef-hod-maadan']!, grams: 300, n: 'רוסטביף' }, ...lunchBase],
     finalGrams: null,
-    // 2.3: המנה בוטלה (350 ג' רוסטביף = 2,800 מ"ג נתרן). בארכיון — לא נמחקת, הרישומים שלה נשארים.
-    archived: true,
-    note: 'בוטלה (2.3) — הוחלפה במעורב ב׳ (רוסטביף מוביל). בארכיון: לא ברובריקה ולא בחיפוש; רישומים קודמים נשמרים',
-    doc: { ...withoutAlmonds(648, 78), label: 'צ2 (בארכיון)' },
+    note: '300 ג\' רוסטביף = ~2,400 מ"ג נתרן. לא יותר מפעמיים-שלוש בשבוע, ולא בערב שלפני שבת. טחינה ושקדים נרשמים בנפרד',
+    // הורכבה מחדש בקוד (2.4) — אין אומדן מסמך.
   },
   {
     slug: 'lunch-3-mixed',
@@ -345,7 +339,7 @@ export const DISHES: DishDef[] = [
     ],
     finalGrams: null,
     note: 'חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה',
-    doc: { ...withoutAlmonds(692, 87), label: 'צ3' },
+    doc: { ...withoutTahini(withoutAlmonds(692, 87)), label: 'צ3' },
   },
   {
     slug: 'lunch-3b-mixed-beef',
@@ -366,7 +360,7 @@ export const DISHES: DishDef[] = [
     cat: 2,
     items: [{ foodId: MOH.pastrami, grams: 350, n: 'פסטרמה' }, ...lunchBase],
     finalGrams: null,
-    doc: { ...withoutAlmonds(676, 69), label: 'צ4' },
+    doc: { ...withoutTahini(withoutAlmonds(676, 69)), label: 'צ4' },
   },
   {
     slug: 'lunch-5-tuna-eggs',
@@ -378,7 +372,7 @@ export const DISHES: DishDef[] = [
       ...lunchBase,
     ],
     finalGrams: null,
-    doc: { ...withoutAlmonds(679, 76), label: 'צ5' },
+    doc: { ...withoutTahini(withoutAlmonds(679, 76)), label: 'צ5' },
   },
   {
     slug: 'lunch-6-tuna-cottage',
@@ -387,12 +381,11 @@ export const DISHES: DishDef[] = [
     items: [
       { foodId: C['tuna-water-drained']!, grams: 2 * GRAMS.tunaCan, u: '2 קופסאות' },
       { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
-      cornCakes(3),
     ],
     finalGrams: null,
-    note: 'משמרת בוקר (שישי). חלבי-פרווה, בלי בשר. הפריכיות ביחידות (3) — משקל הצלחת כפי שהוגדר לא כולל את משקלן',
-    // המסמך (2.2): 2 × 116 + 238 + 3 × 31 = 563 · 2 × 28 + 27.5 + 0 = 83.5.
-    doc: { kcal: 2 * 116 + 238 + 3 * 31, protein: 2 * 28 + 27.5, label: 'צ6' },
+    note: 'משמרת בוקר (שישי). חלבי-פרווה, בלי בשר. 3 פריכיות תירס נרשמות בנפרד (תוספות)',
+    // המסמך (2.2): 2 × 116 + 238 = 470 · 2 × 28 + 27.5 = 83.5 (הפריכיות בנפרד).
+    doc: { kcal: 2 * 116 + 238, protein: 2 * 28 + 27.5, label: 'צ6' },
   },
   {
     slug: 'dinner-1-cottage-eggs',
@@ -402,12 +395,10 @@ export const DISHES: DishDef[] = [
       { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg, u: eggs(2) },
       { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
       { foodId: MOH.salad, grams: 250, n: 'ירקות' },
-      cornCakes(4),
-      { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת', n: 'טחינה' },
     ],
     finalGrams: null,
-    note: 'הפריכיות ביחידות (4) — משקל הצלחת כפי שהוגדר לא כולל את משקלן',
-    doc: { ...cornInsteadOfRice(685, 50, 4), label: 'ע1' },
+    note: '4 פריכיות תירס וטחינה כף מפולסת נרשמות בנפרד (תוספות)',
+    doc: { ...withoutTahini(withoutCakes({ kcal: 685, protein: 50 }, 4), 95), label: 'ע1' },
   },
   {
     slug: 'dinner-2-shakshuka',
@@ -463,12 +454,11 @@ export const DISHES: DishDef[] = [
     items: [
       { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
       { foodId: C['greek-yogurt-0']!, grams: 300, n: 'יוגורט' },
-      cornCakes(5),
       { foodId: MOH.salad, grams: 250, n: 'ירקות' },
     ],
     finalGrams: null,
-    note: 'הפריכיות ביחידות (5) — משקל הצלחת כפי שהוגדר לא כולל את משקלן',
-    doc: { ...cornInsteadOfRice(649, 65, 5), label: 'ע5' },
+    note: '5 פריכיות תירס נרשמות בנפרד (תוספות)',
+    doc: { ...withoutCakes({ kcal: 649, protein: 65 }, 5), label: 'ע5' },
   },
   {
     slug: 'coffee-milk',

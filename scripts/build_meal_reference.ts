@@ -58,25 +58,31 @@ const dish = (slug: string, grams?: number) => {
   return { food: f, grams: grams ?? f.recipe!.finalGrams };
 };
 
+/** 2.4: כל תוסף שהכמות שלו משתנה בפועל נרשם בנפרד. אלה ברירות המחדל, לא חלק מהמנה. */
+const TAHINI = 'טחינה גולמית — כף מפולסת 15 ג׳ (תוספות)';
+const NUT = 'אגוז — 25 ג׳ (תוספות, אחד ביום)';
+const cakes = (n: number) => `פריכיות תירס — הזן ${n} (תוספות; סלים דליס או אוסטרלית)`;
+
 const LUNCH: Item[] = [
-  { label: 'צ1 — חזה עוף מתובל', kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-1-chicken')], separate: [] },
-  { label: "צ3 — מעורב א', עוף מוביל", kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-3-mixed')], separate: [] },
-  { label: "צ3ב — מעורב ב', רוסטביף מוביל", kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-3b-mixed-beef')], separate: [] },
-  { label: 'צ4 — פסטרמת הודו', kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-4-pastrami')], separate: [] },
-  { label: 'צ5 — טונה וביצים', kind: 'pareve', eggs: 2, carbsEvening: false, parts: [dish('lunch-5-tuna-eggs')], separate: [] },
+  { label: 'צ1 — חזה עוף מתובל', kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-1-chicken')], separate: [TAHINI, NUT] },
+  { label: 'צ2 — רוסטביף וסלט', kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-2-roastbeef')], separate: [TAHINI, NUT], note: '300 ג׳ = ~2,400 מ"ג נתרן. לא יותר מפעמיים-שלוש בשבוע, ולא בערב שלפני שבת' },
+  { label: "צ3 — מעורב א', עוף מוביל", kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-3-mixed')], separate: [TAHINI, NUT] },
+  { label: "צ3ב — מעורב ב', רוסטביף מוביל", kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-3b-mixed-beef')], separate: [TAHINI, NUT] },
+  { label: 'צ4 — פסטרמת הודו', kind: 'meat', eggs: 0, carbsEvening: false, parts: [dish('lunch-4-pastrami')], separate: [TAHINI, NUT] },
+  { label: 'צ5 — טונה וביצים', kind: 'pareve', eggs: 2, carbsEvening: false, parts: [dish('lunch-5-tuna-eggs')], separate: [TAHINI, NUT] },
   {
     label: "צ6 — טונה וקוטג'",
     kind: 'dairyPareve',
     eggs: 0,
     carbsEvening: false,
     parts: [dish('lunch-6-tuna-cottage')],
-    separate: [],
-    note: 'משמרת בוקר (שישי). בלי בשר — לא עם צהריים בשרי באותו יום. הפריכיות ביחידות (הזן N = N פריכיות) — משקל הצלחת המוגדר לא כולל את משקלן',
+    separate: [cakes(3)],
+    note: 'משמרת בוקר (שישי). בלי בשר — לא עם צהריים בשרי באותו יום',
   },
 ];
 
 const DINNER: Item[] = [
-  { label: "ע1 — קוטג' וביצים", kind: 'dairy', eggs: 2, carbsEvening: true, parts: [dish('dinner-1-cottage-eggs')], separate: [], note: 'הפריכיות ביחידות (הזן N = N פריכיות) — משקל הצלחת המוגדר לא כולל את משקלן' },
+  { label: "ע1 — קוטג' וביצים", kind: 'dairy', eggs: 2, carbsEvening: true, parts: [dish('dinner-1-cottage-eggs')], separate: [cakes(4), TAHINI] },
   {
     label: 'ע2 — שקשוקה',
     kind: 'dairy',
@@ -104,10 +110,10 @@ const DINNER: Item[] = [
       { food: lib('corn-cake-slim-delis'), grams: 3, label: 'פריכיות תירס סלים דליס × 3' },
       { food: lib('greek-yogurt-0'), grams: 100, label: 'יוגורט יווני 0% × 100 ג׳' },
     ],
-    separate: ['פריכיות תירס סלים דליס — הזן 3', 'יוגורט יווני 0% — 100 ג׳'],
+    separate: [cakes(3), 'יוגורט יווני 0% — 100 ג׳'],
     note: 'חצי תבנית = מחצית משקל התבנית כפי שהוגדרה (עד שתשקול אחרי אפייה)',
   },
-  { label: 'ע5 — בלי בישול', kind: 'dairy', eggs: 0, carbsEvening: true, parts: [dish('dinner-5-no-cook')], separate: [], note: 'הפריכיות ביחידות (הזן N = N פריכיות) — משקל הצלחת המוגדר לא כולל את משקלן' },
+  { label: 'ע5 — בלי בישול', kind: 'dairy', eggs: 0, carbsEvening: true, parts: [dish('dinner-5-no-cook')], separate: [cakes(5)] },
 ];
 
 const COFFEE: Item = {
@@ -123,6 +129,12 @@ const COFFEE: Item = {
 const NUTS: Item[] = LIB.customFoods
   .filter((f) => f.id.startsWith(`${LIB_PREFIX}nut-`))
   .map((f) => ({ label: `${f.name} — ${NUT_GRAMS} ג׳`, kind: 'pareve' as const, eggs: 0, carbsEvening: false, parts: [{ food: f, grams: NUT_GRAMS }], separate: [] }));
+/** תוספים נוספים שנרשמים בנפרד (2.4): טחינה כף מפולסת, פריכיות תירס ליחידה. */
+const ADDONS: Item[] = [
+  { label: 'טחינה גולמית — כף מפולסת 15 ג׳', kind: 'pareve', eggs: 0, carbsEvening: false, parts: [{ food: lib('tahini-raw'), grams: 15 }], separate: [] },
+  { label: 'פריכית תירס סלים דליס — יחידה', kind: 'pareve', eggs: 0, carbsEvening: false, parts: [{ food: lib('corn-cake-slim-delis'), grams: 1 }], separate: [] },
+  { label: 'פריכית תירס אוסטרלית — יחידה', kind: 'pareve', eggs: 0, carbsEvening: false, parts: [{ food: lib('corn-cake-australian'), grams: 1 }], separate: [] },
+];
 
 const BLOCKS: Item[] = [
   { label: 'טונה במים, מסוננת — קופסה', kind: 'pareve', eggs: 0, carbsEvening: false, parts: [{ food: lib('tuna-water-drained'), grams: 112 }], separate: [] },
@@ -205,17 +217,17 @@ for (const { item, n, kind } of rows) {
 L();
 L('≥ = חלק מהמרכיבים בלי ערך ידוע; זה חסם תחתון. "+ נפרד" = הפריטים שברשימת "נרשם בנפרד" של המנה. ארוחות הצהריים בלי אגוז — הוא נרשם בנפרד (טבלת התוספות).');
 L();
-L(`### תוספות — אגוז אחד ביום, ${NUT_GRAMS} ג׳`);
+L(`### תוספות — נרשמות בנפרד`);
 L();
-L('לחיצה ברובריקה = 25 ג׳. אגוז שני באותו יום — אזהרה, לא חסימה. ערכי המאגר הלאומי; המזהה בהערת הפריט.');
+L(`מ-2.4 כל תוסף שהכמות שלו משתנה בפועל יוצא מהגדרת המנה: אגוז (אחד ביום, ${NUT_GRAMS} ג׳; שני = אזהרה, לא חסימה), טחינה (כף מפולסת), פריכיות תירס (ליחידה). ערכי המאגר הלאומי; המזהה בהערת הפריט. פריכיות — ערכי תווית, קלוריות בלבד.`);
 L();
-L('| אגוז | קק"ל | חלבון | פחמימה | שומן | מזהה מאגר |');
+L('| תוסף | קק"ל | חלבון | פחמימה | שומן | מזהה מאגר |');
 L('|---|---|---|---|---|---|');
-for (const item of [...NUTS].sort((a, b) => nutritionOf(a.parts).kcal - nutritionOf(b.parts).kcal)) {
+for (const item of [...NUTS.sort((a, b) => nutritionOf(a.parts).kcal - nutritionOf(b.parts).kcal), ...ADDONS]) {
   const n = nutritionOf(item.parts);
   const f = item.parts[0]!.food as CustomFood;
-  const mohId = /\b(\d{8})\b/.exec(f.note ?? '')?.[1] ?? '—';
-  L(`| ${f.name} | ${kcalText(n.kcal)} | ${macroText(n.protein)} | ${macroText(n.carbs)} | ${macroText(n.fat)} | ${mohId} |`);
+  const mohId = /\b(\d{8})\b/.exec(f.note ?? '')?.[1] ?? '— (תווית)';
+  L(`| ${item.label} | ${kcalText(n.kcal)} | ${macroText(n.protein)} | ${n.carbsUnknown ? '—' : macroText(n.carbs)} | ${n.fatUnknown ? '—' : macroText(n.fat)} | ${mohId} |`);
 }
 L();
 
@@ -286,14 +298,14 @@ detail(COFFEE);
 L('### בלוקים');
 L();
 for (const i of BLOCKS) detail(i);
-L('### תוספות — אגוזים');
+L('### תוספות');
 L();
-for (const i of NUTS) detail(i);
+for (const i of [...NUTS, ...ADDONS]) detail(i);
 
 // 3. combos
 L('## 3. יום שלם — צהריים + ערב');
 L();
-L(`נשאר = ${TARGET.kcal.toLocaleString('en')} − צהריים − ערב, לפני אגוז (141–173), בלוקים, קפה ומילוי. שני בלוקים ≈ ${TWO_BLOCKS} קק"ל. ⚠ = פחות מ-${TWO_BLOCKS} לבלוקים · ✗ = חריגה מהיעד · 🥚 = שני ביצים ביום מוצו.`);
+L(`נשאר = ${TARGET.kcal.toLocaleString('en')} − צהריים − ערב, **לפני התוספים** (טחינה 93 לכל ארוחה, אגוז 141–173, פריכיות 31 ליחידה), בלוקים, קפה ומילוי. שני בלוקים ≈ ${TWO_BLOCKS} קק"ל. ⚠ = פחות מ-${TWO_BLOCKS} לבלוקים · ✗ = חריגה מהיעד · 🥚 = שני ביצים ביום מוצו.`);
 L();
 L('| צהריים | ערב | קק"ל | חלבון | פחמימה | שומן | נשאר קק"ל | נשאר חלבון | |');
 L('|---|---|---|---|---|---|---|---|---|');
@@ -319,11 +331,12 @@ L('| מנה | סוג | ביצים | פחמימות |');
 L('|---|---|---|---|');
 for (const i of [...LUNCH, ...DINNER, COFFEE, ...BLOCKS]) L(`| ${i.label} | ${KIND_LABEL[i.kind]} | ${i.eggs || '—'} | ${i.carbsEvening ? 'ערב' : '—'} |`);
 L();
-L('- צ2 (רוסטביף 350 ג׳) בוטלה ב-2.3 ונמצאת בארכיון: לא ברובריקה ולא בחיפוש, הרישומים הקודמים שלה נשמרו.');
+L('- צ2 חזרה ב-2.4 כ"רוסטביף וסלט" עם 300 ג׳ (~2,400 מ"ג נתרן): לא יותר מפעמיים-שלוש בשבוע, ולא בערב שלפני שבת. רישומי צ2 הישנים (350 ג׳ + טחינה) נשארו על ערכיהם ומסומנים "ההגדרה השתנתה".');
+L('- טחינה, שקדים ופריכיות אינם בשום מנה (2.4). הם ברירת מחדל בכל ארוחה, אבל נרשמים בנפרד לפי הכמות בפועל.');
 L('- בשר וגבינה לא באותה ארוחה: צ1–צ4 בשרי, ע1–ע5 חלבי, צ5 פרווה, צ6 חלבי-פרווה (טונה + קוטג\', בלי בשר — משמרת בוקר של שישי). בלוקים חלביים (יוגורט, קוטג\', בולגרית) לא צמודים לצהריים בשרי.');
 L('- מקסימום 2 ביצים ביום. ע2 = 3, ואז 0 בשאר היום. חלבוני ביצה לא נספרים.');
 L('- כל הפחמימות בערב: פריכיות תירס, פיתה קלה. חריג: צ6 (משמרת בוקר) כולל 3 פריכיות. כדור התמר בקפה — אחרי שתי ארוחות, לא בבוקר.');
-L(`- אגוז אחד ביום, 20–${NUT_GRAMS} ג׳, לבחירה מטבלת התוספות. לא בתוך הצלחת — נרשם בנפרד.`);
+L(`- אגוז אחד ביום, 20–${NUT_GRAMS} ג׳, לבחירה מטבלת התוספות. לא בתוך הצלחת — נרשם בנפרד. כך גם טחינה (כף מפולסת) ופריכיות תירס.`);
 L();
 
 // 5. known gaps
@@ -334,7 +347,7 @@ L('|---|---|---|');
 L('| פיתה קלה | משקל יחידה + פחמימה/שומן מהאריזה | היום יחידה = 1 ג\' (הזן 1). אחרי מדידה: ערכים ל-100 ג\', ואפשר לשקול. פחמימה/שומן ליום יפסיקו להיות "לפחות" |');
 L('| כדור תמר | משקל, קלוריות, חלבון, פחמימה, שומן מהאריזה | ~130 קק"ל וחלבון 0 הם הערכה מהמסמך. כל הערכים ליום עם קפה הם "לפחות" |');
 L('| PRO 40 | פחמימה ושומן מהתווית | היום בקבוק = 1. קלוריות וחלבון מהתווית; מאקרו אחר לא ידוע |');
-L('| פריכית תירס — סלים דליס ואוסטרלית | חלבון, פחמימה ושומן מהאריזה, שני המותגים; ומשקל יחידה | היום יחידה = 1, קלוריות בלבד (31 / 23), חלבון 0 כחסם תחתון. ע1, ע5, צ6: חלבון "לפחות", פחמימה "לפחות"; משקל המנה כפי שהוגדרה לא כולל את משקל הפריכיות |');
+L('| פריכית תירס — סלים דליס ואוסטרלית | חלבון, פחמימה ושומן מהאריזה, שני המותגים | היום יחידה = 1, קלוריות בלבד (31 / 23), חלבון 0 כחסם תחתון. נרשמות בנפרד, ולכן החסם משפיע רק על שורת התוסף |');
 L('| רוסטביף הוד מעדן | פחמימה ושומן מהתווית | צ3 וצ3ב: פחמימה ושומן "לפחות" |');
 L('| טונה במים | שומן ופחמימה מהתווית | צ5 ובלוק הטונה: שומן "לפחות" |');
 L('| יוגורט יווני 0% | פחמימה מהתווית | ע2–ע5 ובלוק: פחמימה "לפחות" |');

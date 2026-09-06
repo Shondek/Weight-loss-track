@@ -18,7 +18,7 @@ export const MEAL_MENU: readonly MenuGroup[] = [
     label: 'צהריים',
     items: [
       { slug: 'lunch-1-chicken', label: 'צ1 חזה עוף' },
-      // צ2 (רוסטביף 350) בארכיון מ-2.3 — לא ברובריקה; הרישומים שלה נשארים.
+      { slug: 'lunch-2-roastbeef', label: 'צ2 רוסטביף וסלט' },
       { slug: 'lunch-3-mixed', label: "צ3 מעורב א' (עוף)" },
       { slug: 'lunch-3b-mixed-beef', label: "צ3ב מעורב ב' (רוסטביף)" },
       { slug: 'lunch-4-pastrami', label: 'צ4 פסטרמה' },
@@ -60,6 +60,7 @@ export const MEAL_MENU: readonly MenuGroup[] = [
       { slug: 'nut-peanuts', label: 'בוטנים', grams: NUT_GRAMS, nut: true },
       { slug: 'nut-pistachios', label: 'פיסטוקים', grams: NUT_GRAMS, nut: true },
       { slug: 'nut-cashews', label: 'קשיו', grams: NUT_GRAMS, nut: true },
+      { slug: 'tahini-raw', label: 'טחינה כף מפולסת', grams: 15 },
       { slug: 'pita-light', label: 'פיתה קלה', grams: 1 },
       { slug: 'corn-cake-slim-delis', label: 'פריכית תירס סלים דליס', grams: 1 },
       { slug: 'corn-cake-australian', label: 'פריכית תירס אוסטרלית', grams: 1 },

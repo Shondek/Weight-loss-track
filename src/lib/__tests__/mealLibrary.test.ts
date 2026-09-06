@@ -28,40 +28,42 @@ function dishNutrition(slug: string) {
 }
 
 describe('ספריית המנות v2 — חישוב מול המסמך', () => {
-  it('נבנים 31 מזונות: 9 ממותגים + 9 עותקי מאגר + 13 מנות (אחת בארכיון), כולם עם קידומת הספרייה', () => {
-    expect(foods).toHaveLength(31);
+  it('נבנים 32 מזונות: 9 ממותגים + 10 עותקי מאגר + 13 מנות, אף אחת בארכיון, כולם עם קידומת הספרייה', () => {
+    expect(foods).toHaveLength(32);
     expect(foods.filter((f) => f.recipe)).toHaveLength(13);
-    expect(foods.filter((f) => f.archived).map((f) => f.id)).toEqual([libId('lunch-2-roastbeef')]);
+    expect(foods.filter((f) => f.archived)).toHaveLength(0);
     expect(foods.every((f) => f.id.startsWith(LIB_PREFIX))).toBe(true);
   });
 
-  it('צ2 רוסטביף (בארכיון מ-2.3): נשארת בספרייה עם אותו מזהה וערכים, 492.1 / 71.7', () => {
+  it('צ2 רוסטביף וסלט (2.4, חזרה מהארכיון): אותו מזהה, רוסטביף 300 + סלט 250 = 348.5 / 59.0, 550 ג׳', () => {
     const n = dishNutrition('lunch-2-roastbeef');
-    expect(n.kcal).toBeCloseTo(357 + 42.5 + 92.55, 1);
-    expect(n.protein).toBeCloseTo(66.5 + 2 + 3.21, 1);
+    expect(n.kcal).toBeCloseTo(306 + 42.5, 1);
+    expect(n.protein).toBeCloseTo(57 + 2, 1);
     const f = foods.find((x) => x.id === libId('lunch-2-roastbeef'))!;
-    expect(f.archived).toBe(true);
-    expect(f.recipe!.finalGrams).toBe(615);
+    expect(f.archived).toBeUndefined();
+    expect(f.name).toBe('צ2 — רוסטביף וסלט');
+    expect(f.recipe!.items.map((i) => [i.foodId, i.grams])).toEqual([[libId('roastbeef-hod-maadan'), 300], [MOH.salad, 250]]);
+    expect(f.recipe!.finalGrams).toBe(550);
+    expect(f.note).toContain('2,400');
   });
 
   it('2.3: צ3 = מעורב א׳ (שם בלבד השתנה, slug נשאר); צ3ב = מעורב ב׳ ממרכיבים בלבד; בלי שקדים', () => {
     const a = foods.find((x) => x.id === libId('lunch-3-mixed'))!;
     expect(a.name).toBe("צ3 — מעורב א', עוף מוביל");
-    expect(a.recipe!.items.map((i) => i.grams)).toEqual([150, 150, 250, 15]);
+    expect(a.recipe!.items.map((i) => i.grams)).toEqual([150, 150, 250]);
     const b = foods.find((x) => x.id === libId('lunch-3b-mixed-beef'))!;
     expect(b.name).toBe("צ3ב — מעורב ב', רוסטביף מוביל");
     expect(b.recipe!.items.map((i) => [i.foodId, i.grams])).toEqual([
       [libId('roastbeef-hod-maadan'), 250],
       [MOH.chickenBreast, 100],
       [MOH.salad, 250],
-      [MOH.tahini, 15],
     ]);
-    expect(b.recipe!.finalGrams).toBe(615);
+    expect(b.recipe!.finalGrams).toBe(600);
     expect(b.archived).toBeUndefined();
-    // המתכון מחשב: 250 × 1.02 + 100 × 1.60 + 42.5 + 92.55 = 550.05 · 47.5 + 30.1 + 2 + 3.21 = 82.8
+    // המתכון מחשב: 250 × 1.02 + 100 × 1.60 + 42.5 = 457.5 · 47.5 + 30.1 + 2 = 79.6
     const n = dishNutrition('lunch-3b-mixed-beef');
-    expect(n.kcal).toBeCloseTo(255 + 160 + 42.5 + 92.55, 1);
-    expect(n.protein).toBeCloseTo(47.5 + 30.1 + 2 + 3.21, 1);
+    expect(n.kcal).toBeCloseTo(255 + 160 + 42.5, 1);
+    expect(n.protein).toBeCloseTo(47.5 + 30.1 + 2, 1);
     // טחינה וסלט מהמאגר, לא מזון תווית.
     expect(resolveFood(mohIndex, MOH.tahini)!.source).toBe('moh');
     expect(resolveFood(mohIndex, MOH.salad)!.source).toBe('moh');
@@ -69,11 +71,11 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
 
   it('השקדים יצאו מכל ארוחות הצהריים; משקל הצלחת ירד ב-25 ג׳', () => {
     const weights: Record<string, number> = {
-      'lunch-1-chicken': 515,
-      'lunch-2-roastbeef': 615,
-      'lunch-3-mixed': 565,
-      'lunch-4-pastrami': 615,
-      'lunch-5-tuna-eggs': 589,
+      'lunch-1-chicken': 500,
+      'lunch-2-roastbeef': 550,
+      'lunch-3-mixed': 550,
+      'lunch-4-pastrami': 600,
+      'lunch-5-tuna-eggs': 574,
     };
     for (const [slug, grams] of Object.entries(weights)) {
       const f = foods.find((x) => x.id === libId(slug))!;
@@ -95,40 +97,44 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     expect(labels('lunch-1-chicken')).toEqual([
       ['בשר עוף', 250],
       ['סלט ירקות ישראלי ללא תוספת שמן', 250],
-      ['טחינה גולמית', 'כף מפולסת'],
     ]);
     expect(labels('dinner-1-cottage-eggs')).toEqual([
       ['ביצה קשה שלמה', '2 ביצים'],
       ["גבינת קוטג' 5% שומן", 250],
       ['סלט ירקות ישראלי ללא תוספת שמן', 250],
-      ['פריכית תירס סלים דליס', '4 פריכיות תירס'],
-      ['טחינה גולמית', 'כף מפולסת'],
     ]);
     expect(labels('dinner-2-shakshuka').map((l) => l[1])).toEqual(['3 ביצים', 200, 100, 'כפית', 200]);
     expect(labels('dinner-3-eggs-cheese').map((l) => l[1])).toEqual(['2 ביצים', 'כף', 150, 250, 150]);
     expect(labels('dinner-4-broccoli-pie').map((l) => l[1])).toEqual(['4 ביצים', 500, 150, 200, 'כף']);
-    expect(labels('dinner-5-no-cook').map((l) => l[1])).toEqual([250, 300, '5 פריכיות תירס', 250]);
-    expect(labels('lunch-6-tuna-cottage').map((l) => l[1])).toEqual(['2 קופסאות', 250, '3 פריכיות תירס']);
+    expect(labels('dinner-5-no-cook').map((l) => l[1])).toEqual([250, 300, 250]);
+    expect(labels('lunch-6-tuna-cottage').map((l) => l[1])).toEqual(['2 קופסאות', 250]);
     // שורת המרכיבים ברובריקה — הפורמט המדויק שנדרש.
     const line = (slug: string) => ingredientsLine(foods.find((x) => x.id === libId(slug))!.recipe!, (id) => resolveFood(index, id));
-    expect(line('lunch-1-chicken')).toBe('חזה עוף 250 · סלט 250 · טחינה כף מפולסת');
-    expect(line('dinner-1-cottage-eggs')).toBe("2 ביצים · קוטג' 250 · ירקות 250 · 4 פריכיות תירס · טחינה כף מפולסת");
-    expect(line('lunch-6-tuna-cottage')).toBe("2 קופסאות · קוטג' 250 · 3 פריכיות תירס");
-    expect(line('lunch-3-mixed')).toBe('חזה עוף 150 · רוסטביף 150 · סלט 250 · טחינה כף מפולסת');
-    expect(line('lunch-5-tuna-eggs')).toBe('2 קופסאות · 2 ביצים · סלט 250 · טחינה כף מפולסת');
+    expect(line('lunch-1-chicken')).toBe('חזה עוף 250 · סלט 250');
+    expect(line('lunch-2-roastbeef')).toBe('רוסטביף 300 · סלט 250');
+    expect(line('dinner-1-cottage-eggs')).toBe("2 ביצים · קוטג' 250 · ירקות 250");
+    expect(line('lunch-6-tuna-cottage')).toBe("2 קופסאות · קוטג' 250");
+    expect(line('lunch-3-mixed')).toBe('חזה עוף 150 · רוסטביף 150 · סלט 250');
+    expect(line('lunch-5-tuna-eggs')).toBe('2 קופסאות · 2 ביצים · סלט 250');
     expect(line('dinner-2-shakshuka')).toBe('3 ביצים · עגבניות 200 · בולגרית 100 · שמן כפית · יוגורט 200');
     expect(line('dinner-3-eggs-cheese')).toBe('2 ביצים · שמן זית כף · בולגרית 150 · ירקות 250 · יוגורט 150');
     expect(line('dinner-4-broccoli-pie')).toBe("4 ביצים · ברוקולי 500 · בולגרית 150 · קוטג' 200 · שמן זית כף");
-    expect(line('dinner-5-no-cook')).toBe("קוטג' 250 · יוגורט 300 · 5 פריכיות תירס · ירקות 250");
+    expect(line('dinner-5-no-cook')).toBe("קוטג' 250 · יוגורט 300 · ירקות 250");
     // הגרמים במתכון עצמו לא השתנו.
     const eggs = foods.find((x) => x.id === libId('dinner-1-cottage-eggs'))!.recipe!.items[0]!;
     expect(eggs.grams).toBe(100);
-    const tahini = foods.find((x) => x.id === libId('lunch-1-chicken'))!.recipe!.items[2]!;
-    expect(tahini.grams).toBe(15);
+    const oil = foods.find((x) => x.id === libId('dinner-3-eggs-cheese'))!.recipe!.items[1]!;
+    expect(oil.u).toBe('כף');
+    expect(oil.grams).toBe(13.6);
   });
 
   it('עותקי מאגר (7 אגוזים, קוטג׳, חלבוני ביצה): ערכים זהים למאגר, ההערה נושאת את המזהה', () => {
-    expect(MOH_COPIES).toHaveLength(9);
+    expect(MOH_COPIES).toHaveLength(10);
+    // 2.4: טחינה — עותק מאגר, כף מפולסת 15 ג׳ = 92.6 / 3.2; לא בשום מנה.
+    const tahini = foods.find((f) => f.id === libId('tahini-raw'))!;
+    expect(tahini.portions[0]).toEqual({ u: 'כף מפולסת', g: 15 });
+    expect((tahini.kcal * 15) / 100).toBeCloseTo(92.55, 5);
+    for (const f of foods) if (f.recipe) expect(f.recipe.items.some((i) => i.foodId === MOH.tahini || i.foodId === tahini.id), f.name).toBe(false);
     expect(MOH_COPIES.filter((d) => d.nut).map((d) => d.mohId)).toEqual([
       '42101000', '42116000', '42107000', '42112000', '42111020', '42114000', '42104110',
     ]);
@@ -149,14 +155,14 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     expect((almonds.protein * 25) / 100).toBeCloseTo(5.275, 5);
   });
 
-  it('צ6 — טונה וקוטג׳: 2 קופסאות + גביע + 3 פריכיות תירס = 562.5 / 83.5, משקל 477', () => {
+  it('צ6 — טונה וקוטג׳ (2.4, בלי פריכיות): 2 קופסאות + גביע = 469.5 / 83.5, משקל 474', () => {
     const n = dishNutrition('lunch-6-tuna-cottage');
-    expect(n.kcal).toBeCloseTo(232 + 237.5 + 93, 1);
-    expect(n.protein).toBeCloseTo(56 + 27.5 + 0, 1);
-    expect(foods.find((f) => f.id === libId('lunch-6-tuna-cottage'))!.recipe!.finalGrams).toBe(224 + 250 + 3);
+    expect(n.kcal).toBeCloseTo(232 + 237.5, 1);
+    expect(n.protein).toBeCloseTo(56 + 27.5, 1);
+    expect(foods.find((f) => f.id === libId('lunch-6-tuna-cottage'))!.recipe!.finalGrams).toBe(224 + 250);
   });
 
-  it('פריכיות תירס (2.2): שני מותגים כיחידה = 1, קלוריות בלבד; סלים דליס בע1, ע5 וצ6; אין פריכית אורז באף מנה', () => {
+  it('פריכיות תירס: שני מותגים כיחידה = 1, קלוריות בלבד; מ-2.4 לא בשום מנה; אין פריכית אורז', () => {
     const slim = foods.find((f) => f.id === libId('corn-cake-slim-delis'))!;
     const aus = foods.find((f) => f.id === libId('corn-cake-australian'))!;
     for (const [f, kcal] of [[slim, 31], [aus, 23]] as const) {
@@ -165,19 +171,17 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
       expect([f.protein, f.carbs, f.fat, f.fiber]).toEqual([0, null, null, null]);
       expect(f.note).toContain('ערכי אריזה חלקיים — קלוריות בלבד מהתווית. לעדכן.');
     }
-    const usesSlim = (slug: string, n: number) => {
-      const item = foods.find((f) => f.id === libId(slug))!.recipe!.items.find((i) => i.foodId === slim.id);
-      expect(item?.grams, slug).toBe(n);
-    };
-    usesSlim('dinner-1-cottage-eggs', 4);
-    usesSlim('dinner-5-no-cook', 5);
-    usesSlim('lunch-6-tuna-cottage', 3);
-    for (const f of foods) if (f.recipe) expect(f.recipe.items.some((i) => i.foodId === MOH.riceCake), f.name).toBe(false);
-    // ההפרש מול פריכיות אורז: ע1 −16 · ע5 −20 קק"ל; המשקל המוגדר ירד ל-619 ו-805.
-    expect(dishNutrition('dinner-1-cottage-eggs').kcal).toBeCloseTo(650.5, 1);
-    expect(dishNutrition('dinner-5-no-cook').kcal).toBeCloseTo(615.0, 1);
-    expect(foods.find((f) => f.id === libId('dinner-1-cottage-eggs'))!.recipe!.finalGrams).toBe(619);
-    expect(foods.find((f) => f.id === libId('dinner-5-no-cook'))!.recipe!.finalGrams).toBe(805);
+    // 2.4: הפריכיות לא בשום מנה — תוסף נפרד. אין פריכית אורז בספרייה ולא במנות.
+    for (const f of foods) {
+      if (f.recipe) expect(f.recipe.items.some((i) => i.foodId === slim.id || i.foodId === aus.id || i.foodId === '54319039'), f.name).toBe(false);
+    }
+    expect(foods.some((f) => /אורז/.test(f.name))).toBe(false);
+    // ע1 אחרי שני התיקונים (בלי פריכיות ובלי טחינה): 434.0 / 42.0, 600 ג׳; ע5: 460.0 / 59.5, 800 ג׳.
+    expect(dishNutrition('dinner-1-cottage-eggs').kcal).toBeCloseTo(434.0, 1);
+    expect(dishNutrition('dinner-1-cottage-eggs').protein).toBeCloseTo(42.0, 1);
+    expect(dishNutrition('dinner-5-no-cook').kcal).toBeCloseTo(460.0, 1);
+    expect(foods.find((f) => f.id === libId('dinner-1-cottage-eggs'))!.recipe!.finalGrams).toBe(600);
+    expect(foods.find((f) => f.id === libId('dinner-5-no-cook'))!.recipe!.finalGrams).toBe(800);
   });
 
   it('כל פריט ברובריקה "התפריט שלי" קיים בספרייה, עם כמות מוגדרת', () => {
@@ -187,18 +191,21 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
       (id) => resolveFood(index, id),
       (id) => byId.get(id)?.recipe ?? null,
     );
-    expect(groups[0]!.items[0]!.ingredients).toBe('חזה עוף 250 · סלט 250 · טחינה כף מפולסת');
+    expect(groups[0]!.items[0]!.ingredients).toBe('חזה עוף 250 · סלט 250');
     expect(groups[2]!.items[0]!.ingredients).toBeNull(); // בלוק — לא מנה
     expect(groups.map((g) => g.group.key)).toEqual(['lunch', 'dinner', 'blocks', 'extras']);
     for (const g of groups) expect(g.missing, g.group.key).toBe(0);
-    expect(groups.map((g) => g.items.length)).toEqual([6, 5, 6, 12]);
-    expect(groups[0]!.items.map((i) => i.item.slug)).not.toContain('lunch-2-roastbeef');
+    expect(groups.map((g) => g.items.length)).toEqual([7, 5, 6, 13]);
+    expect(groups[0]!.items.map((i) => i.item.slug)).toContain('lunch-2-roastbeef');
+    const tahini = groups[3]!.items.find((i) => i.item.slug === 'tahini-raw')!;
+    expect(tahini.grams).toBe(15);
+    expect(tahini.kcal).toBeCloseTo(92.55, 5);
     expect(groups[0]!.items.map((i) => i.item.slug)).toContain('lunch-3b-mixed-beef');
     const corn = groups[3]!.items.filter((i) => i.item.slug.startsWith('corn-cake-'));
     expect(corn.map((i) => [i.grams, Math.round(i.kcal)])).toEqual([[1, 31], [1, 23]]);
     const lunch1 = groups[0]!.items[0]!;
-    expect(lunch1.grams).toBe(515);
-    expect(lunch1.kcal).toBeCloseTo(535, 0);
+    expect(lunch1.grams).toBe(500);
+    expect(lunch1.kcal).toBeCloseTo(442.5, 0);
     const pro = groups[2]!.items.find((i) => i.item.slug === 'pro40-yotvata')!;
     expect(pro.grams).toBe(1);
     expect(pro.kcal).toBeCloseTo(195, 5);
@@ -207,23 +214,23 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     for (const n of nuts) expect(n.grams).toBe(25);
   });
 
-  it("ע1 קוטג' וביצים (2.2, פריכיות תירס): 650.5 / 45.2 (מסמך 669 / 46.9)", () => {
+  it("ע1 קוטג' וביצים (2.4, בלי פריכיות ובלי טחינה): 434.0 / 42.0 (אומדן מסמך 450 / 43.9)", () => {
     const n = dishNutrition('dinner-1-cottage-eggs');
-    expect(n.kcal).toBeCloseTo(154 + 237.5 + 42.5 + 4 * 31 + 92.55, 0);
-    expect(n.protein).toBeCloseTo(12.5 + 27.5 + 2 + 0 + 3.21, 0);
-    expect(Math.abs(n.kcal - 669) / 669).toBeLessThan(0.05);
+    expect(n.kcal).toBeCloseTo(154 + 237.5 + 42.5, 0);
+    expect(n.protein).toBeCloseTo(12.5 + 27.5 + 2, 0);
+    expect(Math.abs(n.kcal - 450) / 450).toBeLessThan(0.05);
   });
 
-  it('ע5 בלי בישול (2.2, פריכיות תירס): 615.0 / 59.5 (מסמך 629 / 61.2)', () => {
+  it('ע5 בלי בישול (2.4, בלי פריכיות): 460.0 / 59.5 (אומדן מסמך 474 / 61.2)', () => {
     const n = dishNutrition('dinner-5-no-cook');
-    expect(n.kcal).toBeCloseTo(237.5 + 180 + 5 * 31 + 42.5, 0);
-    expect(n.protein).toBeCloseTo(27.5 + 30 + 0 + 2, 0);
-    expect(Math.abs(n.kcal - 629) / 629).toBeLessThan(0.05);
+    expect(n.kcal).toBeCloseTo(237.5 + 180 + 42.5, 0);
+    expect(n.protein).toBeCloseTo(27.5 + 30 + 2, 0);
+    expect(Math.abs(n.kcal - 474) / 474).toBeLessThan(0.05);
   });
 
   it('הפערים שדווחו נשארים כפי שהם — לא מתוקנים בשקט', () => {
     // הסלט מהמאגר (42.5) מול 56 במסמך, וכדור התמר בלי חלבון — פערים מוכרים.
-    expect(dishNutrition('lunch-4-pastrami').kcal / 531 - 1).toBeCloseTo(-0.087, 2);
+    expect(dishNutrition('lunch-4-pastrami').kcal / 441 - 1).toBeCloseTo(-0.11, 2);
     expect(dishNutrition('dinner-2-shakshuka').kcal / (682 - 120) - 1).toBeCloseTo(-0.074, 2);
     expect(dishNutrition('dinner-4-broccoli-pie').kcal / 978 - 1).toBeCloseTo(-0.063, 2);
     expect(dishNutrition('coffee-milk').protein / 4 - 1).toBeCloseTo(-0.138, 2);
@@ -307,10 +314,10 @@ describe('קובץ הייבוא', () => {
     expect(buildMealLibrary(mohIndex)).toEqual(foods);
   });
 
-  it('parseDb קולט את הקובץ כגיבוי: 31 מזונות, 13 מתכונים, בלי דחיות; archived שורד את הפרסר', () => {
+  it('parseDb קולט את הקובץ כגיבוי: 32 מזונות, 13 מתכונים, בלי דחיות', () => {
     const r = parseDb(parsed);
-    expect(r.counts.customFoods).toBe(31);
-    expect(r.db.customFoods.find((f) => f.id === 'c:lib2:lunch-2-roastbeef')?.archived).toBe(true);
+    expect(r.counts.customFoods).toBe(32);
+    expect(r.db.customFoods.find((f) => f.id === 'c:lib2:lunch-2-roastbeef')?.archived).toBeUndefined();
     expect(r.db.customFoods.filter((f) => f.recipe)).toHaveLength(13);
     expect(r.rejected).toEqual([]);
     expect(r.counts.entries).toBe(0);
@@ -328,7 +335,7 @@ describe('קובץ הייבוא', () => {
     };
     const once = mergeDb(existing, parseDb(parsed).db);
     const twice = mergeDb(once, parseDb(parsed).db);
-    expect(once.customFoods).toHaveLength(32);
+    expect(once.customFoods).toHaveLength(33);
     expect(twice.customFoods).toEqual(once.customFoods);
     expect(once.customFoods.find((f) => f.id === 'c:mine')).toEqual(mine);
     expect(once.customFoods.find((f) => f.id === stale.id)?.kcal).toBe(foods[0]!.kcal);
