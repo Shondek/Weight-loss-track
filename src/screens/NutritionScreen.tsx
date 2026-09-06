@@ -166,7 +166,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
       resolveMenu(
         MEAL_MENU,
         (id) => resolveFood(foodIndex.index, id),
-        (id) => db.customFoods.find((f) => f.id === id)?.recipe?.finalGrams ?? null,
+        (id) => db.customFoods.find((f) => f.id === id)?.recipe ?? null,
       ),
     [foodIndex.index, db.customFoods],
   );
@@ -348,7 +348,12 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                       {g.items.map((r) => (
                         <li key={r.item.slug}>
                           <button type="button" className="menu__btn" onClick={() => logMenuItem(r)}>
-                            <span className="grow">{r.item.label}</span>
+                            <span className="grow">
+                              {r.item.label}
+                              {r.ingredients && (g.group.key === 'lunch' || g.group.key === 'dinner') && (
+                                <span className="menu__ingredients">{r.ingredients}</span>
+                              )}
+                            </span>
                             <span className="muted small">
                               <span className="num">{kcalText(r.kcal)}</span> · <span className="num">{kcalText(r.protein)}</span>ח
                             </span>

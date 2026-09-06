@@ -247,8 +247,8 @@ export type DishDef = {
   slug: string;
   name: string;
   cat: number | null;
-  /** `u` = תווית כמות לתצוגה בלבד (כלי מטבח או ספירה); החישוב לפי `grams`. */
-  items: { foodId: FoodId; grams: number; u?: string }[];
+  /** `u` = תווית כמות לתצוגה בלבד (כלי מטבח או ספירה); `n` = שם קצר לשורת המרכיבים. החישוב לפי `grams`. */
+  items: { foodId: FoodId; grams: number; u?: string; n?: string }[];
   /** null = סכום המרכיבים (ברירת המחדל). */
   finalGrams: number | null;
   note?: string;
@@ -264,8 +264,8 @@ const C = Object.fromEntries(CUSTOM_FOODS.map((f) => [f.id.slice(LIB_PREFIX.leng
  * אגוז אחד ביום, לבחירה. משקל הצלחת ירד ב-25 ג'.
  */
 const lunchBase = [
-  { foodId: MOH.salad, grams: 250 },
-  { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת' },
+  { foodId: MOH.salad, grams: 250, n: 'סלט' },
+  { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת', n: 'טחינה' },
 ];
 
 /** תוויות כמות לתצוגה: מה שנמדד בכלי מטבח או נספר ביחידות. מה ששוקלים — בלי תווית. */
@@ -280,7 +280,7 @@ export const DISHES: DishDef[] = [
     slug: 'lunch-1-chicken',
     name: 'צ1 — חזה עוף מתובל',
     cat: 2,
-    items: [{ foodId: MOH.chickenBreast, grams: 250 }, ...lunchBase],
+    items: [{ foodId: MOH.chickenBreast, grams: 250, n: 'חזה עוף' }, ...lunchBase],
     finalGrams: null,
     note: 'חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה',
     doc: { ...withoutAlmonds(704, 89), label: 'צ1' },
@@ -289,7 +289,7 @@ export const DISHES: DishDef[] = [
     slug: 'lunch-2-roastbeef',
     name: 'צ2 — רוסטביף',
     cat: 2,
-    items: [{ foodId: C['roastbeef-hod-maadan']!, grams: 350 }, ...lunchBase],
+    items: [{ foodId: C['roastbeef-hod-maadan']!, grams: 350, n: 'רוסטביף' }, ...lunchBase],
     finalGrams: null,
     doc: { ...withoutAlmonds(648, 78), label: 'צ2' },
   },
@@ -298,8 +298,8 @@ export const DISHES: DishDef[] = [
     name: 'צ3 — מעורב',
     cat: 2,
     items: [
-      { foodId: MOH.chickenBreast, grams: 150 },
-      { foodId: C['roastbeef-hod-maadan']!, grams: 150 },
+      { foodId: MOH.chickenBreast, grams: 150, n: 'חזה עוף' },
+      { foodId: C['roastbeef-hod-maadan']!, grams: 150, n: 'רוסטביף' },
       ...lunchBase,
     ],
     finalGrams: null,
@@ -310,7 +310,7 @@ export const DISHES: DishDef[] = [
     slug: 'lunch-4-pastrami',
     name: 'צ4 — פסטרמת הודו',
     cat: 2,
-    items: [{ foodId: MOH.pastrami, grams: 350 }, ...lunchBase],
+    items: [{ foodId: MOH.pastrami, grams: 350, n: 'פסטרמה' }, ...lunchBase],
     finalGrams: null,
     doc: { ...withoutAlmonds(676, 69), label: 'צ4' },
   },
@@ -319,7 +319,7 @@ export const DISHES: DishDef[] = [
     name: 'צ5 — טונה וביצים',
     cat: 2,
     items: [
-      { foodId: C['tuna-water-drained']!, grams: 2 * GRAMS.tunaCan },
+      { foodId: C['tuna-water-drained']!, grams: 2 * GRAMS.tunaCan, n: 'טונה' },
       { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg, u: eggs(2) },
       ...lunchBase,
     ],
@@ -332,10 +332,10 @@ export const DISHES: DishDef[] = [
     cat: 1,
     items: [
       { foodId: MOH.eggBoiled, grams: 2 * GRAMS.egg, u: eggs(2) },
-      { foodId: MOH.cottage5, grams: 250 },
-      { foodId: MOH.salad, grams: 250 },
+      { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
+      { foodId: MOH.salad, grams: 250, n: 'ירקות' },
       { foodId: MOH.riceCake, grams: 4 * GRAMS.riceCake, u: riceCakes(4) },
-      { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת' },
+      { foodId: MOH.tahini, grams: GRAMS.tahiniTbsp, u: 'כף מפולסת', n: 'טחינה' },
     ],
     finalGrams: null,
     doc: { kcal: 685, protein: 50, label: 'ע1' },
@@ -346,10 +346,10 @@ export const DISHES: DishDef[] = [
     cat: 3,
     items: [
       { foodId: MOH.eggRaw, grams: 3 * GRAMS.egg, u: eggs(3) },
-      { foodId: MOH.tomato, grams: 200 },
-      { foodId: C['bulgarit-5']!, grams: 100 },
-      { foodId: MOH.oliveOil, grams: GRAMS.oilTsp, u: 'כפית' },
-      { foodId: C['greek-yogurt-0']!, grams: 200 },
+      { foodId: MOH.tomato, grams: 200, n: 'עגבניות' },
+      { foodId: C['bulgarit-5']!, grams: 100, n: 'בולגרית' },
+      { foodId: MOH.oliveOil, grams: GRAMS.oilTsp, u: 'כפית', n: 'שמן' },
+      { foodId: C['greek-yogurt-0']!, grams: 200, n: 'יוגורט' },
     ],
     finalGrams: null,
     note: 'עגבניות טריות, לא רסק. בלי הפיתה — נרשמת בנפרד כ-1',
@@ -362,10 +362,10 @@ export const DISHES: DishDef[] = [
     cat: 3,
     items: [
       { foodId: MOH.eggRaw, grams: 2 * GRAMS.egg, u: eggs(2) },
-      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp, u: 'כף' },
-      { foodId: C['bulgarit-5']!, grams: 150 },
-      { foodId: MOH.salad, grams: 250 },
-      { foodId: C['greek-yogurt-0']!, grams: 150 },
+      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp, u: 'כף', n: 'שמן זית' },
+      { foodId: C['bulgarit-5']!, grams: 150, n: 'בולגרית' },
+      { foodId: MOH.salad, grams: 250, n: 'ירקות' },
+      { foodId: C['greek-yogurt-0']!, grams: 150, n: 'יוגורט' },
     ],
     finalGrams: null,
     note: 'בלי הפיתה — נרשמת בנפרד כ-1',
@@ -378,10 +378,10 @@ export const DISHES: DishDef[] = [
     cat: 3,
     items: [
       { foodId: MOH.eggRaw, grams: 4 * GRAMS.egg, u: eggs(4) },
-      { foodId: MOH.broccoliFrozen, grams: 500 },
-      { foodId: C['bulgarit-5']!, grams: 150 },
-      { foodId: MOH.cottage5, grams: 200 },
-      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp, u: 'כף' },
+      { foodId: MOH.broccoliFrozen, grams: 500, n: 'ברוקולי' },
+      { foodId: C['bulgarit-5']!, grams: 150, n: 'בולגרית' },
+      { foodId: MOH.cottage5, grams: 200, n: "קוטג'" },
+      { foodId: MOH.oliveOil, grams: GRAMS.oliveOilTbsp, u: 'כף', n: 'שמן זית' },
     ],
     finalGrams: null,
     note: 'נאפית 35 דק\' ומאבדת מים — משקל התבנית אחרי אפייה טרם אומת. שקול את התבנית ועדכן את המשקל הסופי',
@@ -392,10 +392,10 @@ export const DISHES: DishDef[] = [
     name: 'ע5 — בלי בישול',
     cat: 1,
     items: [
-      { foodId: MOH.cottage5, grams: 250 },
-      { foodId: C['greek-yogurt-0']!, grams: 300 },
+      { foodId: MOH.cottage5, grams: 250, n: "קוטג'" },
+      { foodId: C['greek-yogurt-0']!, grams: 300, n: 'יוגורט' },
       { foodId: MOH.riceCake, grams: 5 * GRAMS.riceCake, u: riceCakes(5) },
-      { foodId: MOH.salad, grams: 250 },
+      { foodId: MOH.salad, grams: 250, n: 'ירקות' },
     ],
     finalGrams: null,
     doc: { kcal: 649, protein: 65, label: 'ע5' },
@@ -405,8 +405,8 @@ export const DISHES: DishDef[] = [
     name: 'קפה קר עם חלב',
     cat: 9,
     items: [
-      { foodId: MOH.coffee, grams: GRAMS.coffee },
-      { foodId: MOH.milk3, grams: GRAMS.milkInCoffee },
+      { foodId: MOH.coffee, grams: GRAMS.coffee, n: 'קפה' },
+      { foodId: MOH.milk3, grams: GRAMS.milkInCoffee, n: 'חלב' },
     ],
     finalGrams: null,
     note: 'חלב 100 מ"ל וקפה 150 מ"ל נגזרו מהמסמך (190 − 130 כדור תמר = 60 קק"ל). כדור התמר נרשם בנפרד כ-1',

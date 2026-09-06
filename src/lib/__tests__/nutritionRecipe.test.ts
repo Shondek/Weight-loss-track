@@ -198,7 +198,7 @@ describe('parseCustomFoods עם recipe', () => {
         name: 'עם תוויות',
         recipe: {
           items: [
-            { foodId: '74101000', grams: 15, u: '  כף   מפולסת ' },
+            { foodId: '74101000', grams: 15, u: '  כף   מפולסת ', n: ' טחינה ' },
             { foodId: '82104000', grams: 100, u: '' },
             { foodId: '31103000', grams: 100, u: 7 },
             { foodId: '54319039', grams: 37, u: 'x'.repeat(60) },
@@ -208,7 +208,7 @@ describe('parseCustomFoods עם recipe', () => {
       },
     ]);
     const items = r.ok[0]!.recipe!.items;
-    expect(items[0]).toEqual({ foodId: '74101000', grams: 15, u: 'כף מפולסת' });
+    expect(items[0]).toEqual({ foodId: '74101000', grams: 15, u: 'כף מפולסת', n: 'טחינה' });
     expect(items[1]).toEqual({ foodId: '82104000', grams: 100 });
     expect(items[2]).toEqual({ foodId: '31103000', grams: 100 });
     expect(items[3]!.u).toHaveLength(40);

@@ -144,6 +144,11 @@ export type Recipe = {
      * לפי `grams`. עד `RECIPE_UNIT_MAX` תווים.
      */
     u?: string;
+    /**
+     * תצוגה בלבד: שם קצר לשורת המרכיבים ברובריקה ("חזה עוף", "ירקות")
+     * במקום השם המלא במאגר. עד `RECIPE_UNIT_MAX` תווים.
+     */
+    n?: string;
   }[];
   finalGrams: number;
 };

@@ -487,7 +487,8 @@ function parseRecipe(v: unknown): Recipe | null {
     if ((!isMohFoodId(foodId) && !isCustomFoodId(foodId)) || grams === null) continue;
     // תווית כמות לתצוגה ("כף מפולסת"). ריקה = מוצג בגרמים.
     const u = cleanText(raw.u, RECIPE_UNIT_MAX);
-    items.push({ foodId, grams, ...(u === '' ? {} : { u }) });
+    const n = cleanText(raw.n, RECIPE_UNIT_MAX);
+    items.push({ foodId, grams, ...(u === '' ? {} : { u }), ...(n === '' ? {} : { n }) });
   }
   const finalGrams = inRange(v.finalGrams, MIN_GRAMS, MAX_GRAMS * 10);
   if (items.length === 0 || finalGrams === null) return null;

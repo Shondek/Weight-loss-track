@@ -3,7 +3,7 @@
  * "אגוז אחד ביום". מודול טהור; הנתונים ב-data/mealMenu.ts.
  */
 
-import type { FoodEntry, ISODate } from '../../types.ts';
+import type { FoodEntry, ISODate, Recipe } from '../../types.ts';
 import { entriesOn } from './entries.ts';
 import type { Food } from './foods.ts';
 import { libraryFoodId } from './library.ts';
@@ -34,6 +34,8 @@ export type ResolvedMenuItem = {
   grams: number;
   kcal: number;
   protein: number;
+  /** שורת המרכיבים של מנה ("חזה עוף 250 · סלט 250 · טחינה כף מפולסת"); null למזון שאינו מנה. */
+  ingredients: string | null;
 };
 
 export type ResolvedMenuGroup = {
@@ -42,6 +44,26 @@ export type ResolvedMenuGroup = {
   /** כמה פריטים בהגדרה לא נמצאו בספרייה (טרם נטענה, או נמחקו). */
   missing: number;
 };
+
+/** גרמים לתצוגה: שלם כשאפשר, אחרת ספרה אחת. */
+function gramsText(g: number): string {
+  return (Math.round(g * 10) / 10).toString();
+}
+
+/**
+ * מרכיב אחד בשורת המרכיבים. הכלל: מה שנמדד בכלי מטבח — "טחינה כף מפולסת";
+ * מה שנספר — "2 ביצים" (התווית היא כל הטקסט); מה ששוקלים — "חזה עוף 250".
+ * `n` הוא השם הקצר לתצוגה; בלעדיו — שם המזון.
+ */
+export function ingredientText(item: Recipe['items'][number], foodName: string): string {
+  if (item.n) return `${item.n} ${item.u ?? gramsText(item.grams)}`;
+  if (item.u) return item.u;
+  return `${foodName} ${gramsText(item.grams)}`;
+}
+
+export function ingredientsLine(recipe: Recipe, resolve: (id: string) => Food | null): string {
+  return recipe.items.map((i) => ingredientText(i, resolve(i.foodId)?.name ?? i.foodId)).join(' · ');
+}
 
 /** כמות ברירת המחדל לפריט: מה שהוגדר, ואם לא — משקל המנה. */
 export function menuItemGrams(item: MenuItem, food: Food, finalGrams: number | null): number | null {
@@ -52,12 +74,12 @@ export function menuItemGrams(item: MenuItem, food: Food, finalGrams: number | n
 
 /**
  * פותר את כל הקבוצות. פריט שאין לו מזון או כמות — מדולג ונספר ב-missing.
- * `finalGramsOf` מחזיר את משקל המנה של מזון ספרייה (null למזון שאינו מנה).
+ * `recipeOf` מחזיר את המתכון של מזון ספרייה (null למזון שאינו מנה) — למשקל המנה ולשורת המרכיבים.
  */
 export function resolveMenu(
   groups: readonly MenuGroup[],
   resolve: (id: string) => Food | null,
-  finalGramsOf: (id: string) => number | null,
+  recipeOf: (id: string) => Recipe | null,
 ): ResolvedMenuGroup[] {
   return groups.map((group) => {
     const items: ResolvedMenuItem[] = [];
@@ -65,12 +87,20 @@ export function resolveMenu(
     for (const item of group.items) {
       const id = libraryFoodId(item.slug);
       const food = resolve(id);
-      const grams = food ? menuItemGrams(item, food, finalGramsOf(id)) : null;
+      const recipe = recipeOf(id);
+      const grams = food ? menuItemGrams(item, food, recipe?.finalGrams ?? null) : null;
       if (!food || grams === null) {
         missing += 1;
         continue;
       }
-      items.push({ item, food, grams, kcal: (food.kcal * grams) / 100, protein: (food.protein * grams) / 100 });
+      items.push({
+        item,
+        food,
+        grams,
+        kcal: (food.kcal * grams) / 100,
+        protein: (food.protein * grams) / 100,
+        ingredients: recipe ? ingredientsLine(recipe, resolve) : null,
+      });
     }
     return { group, items, missing };
   });

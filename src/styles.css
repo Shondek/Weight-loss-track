@@ -1046,3 +1046,12 @@ input[type='file']::file-selector-button {
   padding: 4px var(--sp-2);
   font-size: 15px;
 }
+
+/* שורת המרכיבים מתחת לשם המנה ברובריקה */
+.menu__ingredients {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  line-height: 1.35;
+}

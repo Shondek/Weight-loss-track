@@ -4,7 +4,7 @@ import { MEAL_MENU, NUT_GRAMS } from '../../data/mealMenu';
 import type { Food } from './foods';
 import { newEntry } from './entries';
 import { libraryFoodId } from './library';
-import { menuGroupForHour, menuItemGrams, nutEntriesOn, nutFoodIds, resolveMenu, type MenuGroup } from './menu';
+import { ingredientText, menuGroupForHour, menuItemGrams, nutEntriesOn, nutFoodIds, resolveMenu, type MenuGroup } from './menu';
 
 const food = (id: string, extra: Partial<Food> = {}): Food => ({
   id,
@@ -80,13 +80,15 @@ describe('resolveMenu', () => {
   const resolved = resolveMenu(
     groups,
     (id) => foods.get(id) ?? null,
-    (id) => (id === libraryFoodId('dish') ? 515 : null),
+    (id) => (id === libraryFoodId('dish') ? { items: [{ foodId: '24122120', grams: 250, n: 'חזה עוף' }, { foodId: '43103119', grams: 15, u: 'כף מפולסת', n: 'טחינה' }], finalGrams: 515 } : null),
   );
 
   it('פריט חסר מדולג ונספר; הערכים לפי הכמות', () => {
     expect(resolved[0]!.items.map((i) => i.item.slug)).toEqual(['dish']);
     expect(resolved[0]!.missing).toBe(1);
     expect(resolved[0]!.items[0]!.grams).toBe(515);
+    expect(resolved[0]!.items[0]!.ingredients).toBe('חזה עוף 250 · טחינה כף מפולסת');
+    expect(resolved[1]!.items[0]!.ingredients).toBeNull();
     expect(resolved[0]!.items[0]!.kcal).toBeCloseTo(535.1, 1);
     expect(resolved[1]!.items[0]!.grams).toBe(25);
     expect(resolved[1]!.items[0]!.kcal).toBeCloseTo(144.75, 5);
@@ -97,6 +99,16 @@ describe('resolveMenu', () => {
     const empty = resolveMenu(groups, () => null, () => null);
     expect(empty.map((g) => g.items.length)).toEqual([0, 0]);
     expect(empty.map((g) => g.missing)).toEqual([2, 1]);
+  });
+});
+
+describe('ingredientText — הכלל: כלי מטבח = יחידה, ספירה = התווית, שקילה = גרמים', () => {
+  it('שם קצר + יחידה / שם קצר + גרמים / תווית ספירה לבדה / שם המזון + גרמים', () => {
+    expect(ingredientText({ foodId: '1', grams: 15, u: 'כף מפולסת', n: 'טחינה' }, 'טחינה גולמית, שומשום מלא')).toBe('טחינה כף מפולסת');
+    expect(ingredientText({ foodId: '1', grams: 250, n: 'חזה עוף' }, 'בשר עוף, חזה')).toBe('חזה עוף 250');
+    expect(ingredientText({ foodId: '1', grams: 100, u: '2 ביצים' }, 'ביצה קשה שלמה')).toBe('2 ביצים');
+    expect(ingredientText({ foodId: '1', grams: 13.6 }, 'שמן זית')).toBe('שמן זית 13.6');
+    expect(ingredientText({ foodId: '1', grams: 37.04 }, 'פריכיות')).toBe('פריכיות 37');
   });
 });
 

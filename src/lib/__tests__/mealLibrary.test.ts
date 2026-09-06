@@ -11,7 +11,7 @@ import { parseDb } from '../schema';
 import { mergeDb } from '../db';
 import { BLOCKS, buildMealLibrary, DISHES, LIB_PREFIX, libId, MOH, MOH_COPIES } from '../../../scripts/meal-library-v2';
 import { MEAL_MENU } from '../../data/mealMenu';
-import { resolveMenu } from '../nutrition/menu';
+import { ingredientsLine, resolveMenu } from '../nutrition/menu';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const moh = JSON.parse(readFileSync(join(ROOT, 'public', 'nutrition', 'moh-foods.json'), 'utf8')) as MohFoodFile;
@@ -82,6 +82,16 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     expect(labels('dinner-3-eggs-cheese').map((l) => l[1])).toEqual(['2 ביצים', 'כף', 150, 250, 150]);
     expect(labels('dinner-4-broccoli-pie').map((l) => l[1])).toEqual(['4 ביצים', 500, 150, 200, 'כף']);
     expect(labels('dinner-5-no-cook').map((l) => l[1])).toEqual([250, 300, '5 פריכיות', 250]);
+    // שורת המרכיבים ברובריקה — הפורמט המדויק שנדרש.
+    const line = (slug: string) => ingredientsLine(foods.find((x) => x.id === libId(slug))!.recipe!, (id) => resolveFood(index, id));
+    expect(line('lunch-1-chicken')).toBe('חזה עוף 250 · סלט 250 · טחינה כף מפולסת');
+    expect(line('dinner-1-cottage-eggs')).toBe("2 ביצים · קוטג' 250 · ירקות 250 · 4 פריכיות · טחינה כף מפולסת");
+    expect(line('lunch-3-mixed')).toBe('חזה עוף 150 · רוסטביף 150 · סלט 250 · טחינה כף מפולסת');
+    expect(line('lunch-5-tuna-eggs')).toBe('טונה 224 · 2 ביצים · סלט 250 · טחינה כף מפולסת');
+    expect(line('dinner-2-shakshuka')).toBe('3 ביצים · עגבניות 200 · בולגרית 100 · שמן כפית · יוגורט 200');
+    expect(line('dinner-3-eggs-cheese')).toBe('2 ביצים · שמן זית כף · בולגרית 150 · ירקות 250 · יוגורט 150');
+    expect(line('dinner-4-broccoli-pie')).toBe("4 ביצים · ברוקולי 500 · בולגרית 150 · קוטג' 200 · שמן זית כף");
+    expect(line('dinner-5-no-cook')).toBe("קוטג' 250 · יוגורט 300 · 5 פריכיות · ירקות 250");
     // הגרמים במתכון עצמו לא השתנו.
     const eggs = foods.find((x) => x.id === libId('dinner-1-cottage-eggs'))!.recipe!.items[0]!;
     expect(eggs.grams).toBe(100);
@@ -116,8 +126,10 @@ describe('ספריית המנות v2 — חישוב מול המסמך', () => {
     const groups = resolveMenu(
       MEAL_MENU,
       (id) => resolveFood(index, id),
-      (id) => byId.get(id)?.recipe?.finalGrams ?? null,
+      (id) => byId.get(id)?.recipe ?? null,
     );
+    expect(groups[0]!.items[0]!.ingredients).toBe('חזה עוף 250 · סלט 250 · טחינה כף מפולסת');
+    expect(groups[2]!.items[0]!.ingredients).toBeNull(); // בלוק — לא מנה
     expect(groups.map((g) => g.group.key)).toEqual(['lunch', 'dinner', 'blocks', 'extras']);
     for (const g of groups) expect(g.missing, g.group.key).toBe(0);
     expect(groups.map((g) => g.items.length)).toEqual([5, 5, 6, 10]);
