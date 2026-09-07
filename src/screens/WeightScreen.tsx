@@ -169,6 +169,14 @@ export default function WeightScreen({ store, today }: ScreenProps) {
                 {missing === 1 ? 'שקילה' : 'שקילות'} להשוואה מול השבוע הקודם.
               </p>
             )}
+            {/* מותניים גוברות על משקל, ולכן הן כאן ולא רק בטופס למטה.
+                אותם ערכים של הדוח: המדידה בשבוע והאחרונה שלפניו. בלי כיוון. */}
+            <p className="sub" style={{ margin: 0 }}>
+              מותניים · השבוע{' '}
+              <span className="num">{waistThisWeek ? waistThisWeek.cm.toFixed(1) : DASH}</span>
+              {' '}· קודם{' '}
+              <span className="num">{waistPrev ? waistPrev.cm.toFixed(1) : DASH}</span>
+            </p>
           </div>
         </div>
 
