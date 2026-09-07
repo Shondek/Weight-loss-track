@@ -106,6 +106,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   const groups = useMemo(() => groupByMeal(todayEntries), [todayEntries]);
 
   // ---------- הוספת רישום ----------
+  /** התרחיש הנדיר. סגור כברירת מחדל — הרובריקה מכסה את היום-יום. */
+  const [addOpen, setAddOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Food | null>(null);
   const [gramsText, setGramsText] = useState('');
@@ -562,14 +564,26 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           <span className="tiny muted">
             {foodIndex.status === 'loading' && 'טוען מאגר…'}
             {foodIndex.status === 'error' && <span className="err">מאגר המזון לא נטען</span>}
-            {foodIndex.status === 'ready' && (
-              <>
-                <span className="num">{foodIndex.index.all.length}</span> מזונות
-              </>
+            {foodIndex.status === 'ready' && addOpen && (
+              <button type="button" className="btn btn--quiet" onClick={() => setAddOpen(false)}>
+                סגור
+              </button>
             )}
           </span>
         </div>
-        {adhocOpen ? (
+        {!addOpen ? (
+          <button
+            type="button"
+            className="btn btn--quiet disclosure"
+            aria-expanded={false}
+            onClick={() => setAddOpen(true)}
+          >
+            <span className="grow">חיפוש במאגר · הזנה ידנית</span>
+            <span className="muted" aria-hidden="true">
+              ▸
+            </span>
+          </button>
+        ) : adhocOpen ? (
           <div className="stack">
             <p className="small muted" style={{ margin: 0 }}>
               אוכל בחוץ או בלי תווית: הערכה לארוחה שלמה, לא ל-100 ג׳. נרשם כהערכה ומסומן בהיסטוריה.
@@ -654,6 +668,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             <input
               id="food-search"
               ref={searchRef}
+              // הטופס נפתח בטאפ מפורש, אז הפוקוס הוא המשך המחווה.
+              autoFocus
               type="search"
               autoComplete="off"
               autoCorrect="off"

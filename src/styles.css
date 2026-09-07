@@ -454,6 +454,16 @@ button {
   color: var(--ink);
 }
 
+/* שורה מכווצת שפותחת סעיף: רוחב מלא, יישור להתחלה, חץ טיפוגרפי בקצה.
+   אותה צורה של .menu__head, בלי המסגרת של קבוצה. */
+.disclosure {
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 0;
+  color: var(--ink);
+  gap: var(--sp-3);
+}
+
 /* ---------- stepper ---------- */
 
 .stepper {
