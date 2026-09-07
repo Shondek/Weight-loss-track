@@ -280,6 +280,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
 
   // ---------- עריכת גרמים בשורת היום ----------
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+  /** שורת רישום פתוחה: רק בה מוצגים עריכת גרמים ו"מחק". שאר השורות שקטות. */
+  const [openEntry, setOpenEntry] = useState<string | null>(null);
 
   const commitGrams = () => {
     if (!editing) return;
@@ -784,68 +786,87 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                 {g.entries.map((e) => {
                   const live = resolve(e.foodId);
                   const n = entryNutrition(e, live);
+                  const isOpen = openEntry === e.id;
                   return (
-                    <li key={e.id} className={n.adhoc ? 'is-adhoc' : undefined}>
-                      <span className="grow">
-                        {entryName(e, live?.name ?? null)}
-                        <span className="tiny muted">
-                          {n.adhoc ? (
-                            <>
-                              {' '}
-                              · <span className="adhoc-note">הזנה ידנית · הערכה</span> ·{' '}
-                              <span className="num">{macroText(n.protein)}</span> חלבון
-                            </>
-                          ) : (
-                            <>
-                          {' '}
-                          ·{' '}
-                          {editing?.id === e.id ? (
-                            <input
-                              className="list__grams"
-                              type="number"
-                              inputMode="decimal"
-                              step={0.1}
-                              min={MIN_GRAMS}
-                              max={MAX_GRAMS}
-                              aria-label={`גרמים — ${e.ref.name}`}
-                              autoFocus
-                              value={editing.text}
-                              onChange={(ev) => setEditing({ id: e.id, text: ev.target.value })}
-                              onBlur={commitGrams}
-                              onKeyDown={(ev) => {
-                                if (ev.key === 'Enter') commitGrams();
-                                if (ev.key === 'Escape') setEditing(null);
-                              }}
-                            />
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn btn--quiet tiny"
-                              style={{ minHeight: 0, padding: '0 2px' }}
-                              aria-label={`שנה גרמים — ${e.ref.name}`}
-                              onClick={() => setEditing({ id: e.id, text: String(e.grams) })}
-                            >
-                              <span className="num">{e.grams}</span> ג׳
-                            </button>
-                          )}
-                            </>
-                          )}{' '}
-                          · <span className="num">{timeText(e.ts)}</span>
-                          {live?.isRecipe && ' · מנה'}
-                          {n.live === 'differs' && ' · ההגדרה השתנתה מאז הרישום'}
-                          {n.live === 'missing' && !n.adhoc && ' · המזון נמחק'}
-                          {live?.suspect && <span className="err"> · ערך חשוד</span>}
-                        </span>
-                      </span>
-                      <span className="num strong">{kcalText(n.kcal)}</span>
+                    <li key={e.id} className={n.adhoc ? 'is-adhoc' : undefined} style={{ flexWrap: 'wrap' }}>
+                      {/* השורה עצמה היא הכפתור: שם, גרמים, שעה, דגלים רק כשיש. */}
                       <button
                         type="button"
-                        className="btn btn--quiet"
-                        aria-label={`מחק ${e.ref.name}`}
-                        onClick={() => del(e)}
+                        className="btn btn--quiet grow"
+                        style={{ justifyContent: 'flex-start', textAlign: 'start', paddingInline: 0 }}
+                        aria-expanded={isOpen}
+                        onClick={() => {
+                          setOpenEntry(isOpen ? null : e.id);
+                          if (isOpen) setEditing(null);
+                        }}
                       >
-                        מחק
+                        <span className="grow">
+                          {entryName(e, live?.name ?? null)}
+                          <span className="tiny muted">
+                            {n.adhoc ? (
+                              <>
+                                {' '}· <span className="adhoc-note">הזנה ידנית · הערכה</span> ·{' '}
+                                <span className="num">{macroText(n.protein)}</span> חלבון
+                              </>
+                            ) : (
+                              <>
+                                {' '}· <span className="num">{e.grams}</span> ג׳
+                              </>
+                            )}
+                            {' '}· <span className="num">{timeText(e.ts)}</span>
+                            {live?.isRecipe && ' · מנה'}
+                            {n.live === 'differs' && ' · ההגדרה השתנתה מאז הרישום'}
+                            {n.live === 'missing' && !n.adhoc && ' · המזון נמחק'}
+                            {live?.suspect && <span className="err"> · ערך חשוד</span>}
+                          </span>
+                        </span>
+                        <span className="num strong">{kcalText(n.kcal)}</span>
                       </button>
+                      {isOpen && (
+                        <div className="row" style={{ width: '100%', paddingBottom: 'var(--sp-1)' }}>
+                          {!n.adhoc &&
+                            (editing?.id === e.id ? (
+                              <input
+                                className="list__grams"
+                                type="number"
+                                inputMode="decimal"
+                                step={0.1}
+                                min={MIN_GRAMS}
+                                max={MAX_GRAMS}
+                                aria-label={`גרמים — ${e.ref.name}`}
+                                autoFocus
+                                value={editing.text}
+                                onChange={(ev) => setEditing({ id: e.id, text: ev.target.value })}
+                                onBlur={commitGrams}
+                                onKeyDown={(ev) => {
+                                  if (ev.key === 'Enter') commitGrams();
+                                  if (ev.key === 'Escape') setEditing(null);
+                                }}
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn--quiet btn--outlined"
+                                aria-label={`שנה גרמים — ${e.ref.name}`}
+                                onClick={() => setEditing({ id: e.id, text: String(e.grams) })}
+                              >
+                                שנה גרמים
+                              </button>
+                            ))}
+                          <span className="grow" />
+                          <button
+                            type="button"
+                            className="btn btn--quiet"
+                            aria-label={`מחק ${e.ref.name}`}
+                            onClick={() => {
+                              setOpenEntry(null);
+                              del(e);
+                            }}
+                          >
+                            מחק
+                          </button>
+                        </div>
+                      )}
                     </li>
                   );
                 })}
