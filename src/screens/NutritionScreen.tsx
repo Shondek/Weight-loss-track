@@ -373,36 +373,29 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             </>
           )}
         </p>
-        {(expectedAddons > 0 || summary.addonCount > 0) &&
-          (summary.addonCount === 0 ? (
-            <p className="tiny err" style={{ margin: '6px 0 0' }} role="status">
-              לא נרשמו תוספים היום
-            </p>
-          ) : (
-            <p className="tiny muted" style={{ margin: '6px 0 0' }} role="status">
-              תוספים: <span className="num">{summary.addonCount}</span>
+        {/* שורת מצב אחת: רישומים, תוספים מול הצפוי, הזנה ידנית. נתונים, בלי צבע —
+            פער בתוספים הוא ממצא לניתוח, לא שגיאה. סיבים כבר באריח למעלה. */}
+        <p className="tiny muted" style={{ margin: '6px 0 0' }} role="status">
+          <span className="num">{summary.count}</span> {summary.count === 1 ? 'רישום' : 'רישומים'}
+          {(expectedAddons > 0 || summary.addonCount > 0) && (
+            <>
+              {' '}· תוספים <span className="num">{summary.addonCount}</span>
               {expectedAddons > 0 && (
                 <>
-                  {' '}
-                  מתוך <span className="num">{expectedAddons}</span> צפויים
+                  {' '}מתוך <span className="num">{expectedAddons}</span>
                 </>
-              )}{' '}
-              · <span className="num">{kcalText(summary.addonKcal)}</span> קק"ל
-            </p>
-          ))}
-        {summary.adhocCount > 0 && (
-          <p className="tiny adhoc-note" style={{ margin: '6px 0 0' }}>
-            מתוכן <span className="num">{kcalText(summary.adhocKcal)}</span> קק"ל בהזנה ידנית (הערכה) ·{' '}
-            <span className="num">{summary.adhocCount}</span> {summary.adhocCount === 1 ? 'רישום' : 'רישומים'}
-          </p>
-        )}
-        <p className="tiny muted" style={{ margin: '6px 0 0' }}>
-          סיבים {summary.fiberUnknownGrams > 0 ? 'לפחות ' : ''}
-          <span className="num">{macroText(summary.fiber)}</span> ג׳
-          {summary.count > 0 && (
+              )}
+              {summary.addonCount > 0 && (
+                <>
+                  {' '}· <span className="num">{kcalText(summary.addonKcal)}</span> קק"ל
+                </>
+              )}
+            </>
+          )}
+          {summary.adhocCount > 0 && (
             <>
-              {' '}
-              · <span className="num">{summary.count}</span> רישומים
+              {' '}· הזנה ידנית <span className="num">{kcalText(summary.adhocKcal)}</span> קק"ל (
+              <span className="num">{summary.adhocCount}</span>, הערכה)
             </>
           )}
         </p>
