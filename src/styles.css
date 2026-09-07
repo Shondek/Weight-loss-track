@@ -49,6 +49,7 @@
   /* מספר-הגיבור: גדול ומלא רק לשבוע 7/7; חלקי וריק מושתקים באותו גודל */
   --hero-size: 64px;
   --hero-size-muted: 44px;
+  --text-chart-label: 11px;
 
   color-scheme: light;
 }
@@ -630,6 +631,12 @@ button {
   height: 96px;
   display: block;
   overflow: visible;
+}
+
+/* גבולות ציר ה-Y בשולי הגרף. שני מספרים, בלי קווי רשת. */
+.chart__value {
+  font-size: var(--text-chart-label);
+  fill: var(--ink-3);
 }
 
 /* ---------- תיבת ייצוא ---------- */
