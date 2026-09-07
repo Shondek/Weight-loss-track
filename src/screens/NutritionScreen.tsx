@@ -293,6 +293,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
 
   // ---------- מזונות שלי ----------
   const [editor, setEditor] = useState<{ existing: CustomFood | null; name?: string; mode?: EditorMode } | null>(null);
+  /** תחזוקה, לא יום-יום: 32 שורות ספרייה סגורות כברירת מחדל. */
+  const [foodsOpen, setFoodsOpen] = useState(false);
 
   const saveCustom = (food: CustomFood) => {
     void store.update('customFoods', upsertCustomFood(db.customFoods, food));
@@ -411,28 +413,6 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             </>
           )}
         </p>
-
-        {!editingTarget && (
-          <button
-            type="button"
-            className="btn btn--quiet"
-            style={{ marginTop: 'var(--sp-2)', marginInlineStart: 'calc(-1 * var(--sp-2))' }}
-            onClick={() => setEditingTarget(true)}
-          >
-            {target ? 'שנה יעד' : 'הגדר יעד'}
-          </button>
-        )}
-        {editingTarget && (
-          <TargetForm
-            current={target}
-            today={today}
-            onCancel={() => setEditingTarget(false)}
-            onSave={(t) => {
-              void store.update('targets', upsertTarget(db.targets, t));
-              setEditingTarget(false);
-            }}
-          />
-        )}
       </section>
 
       <section className="section">
@@ -876,14 +856,23 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
       </section>
 
       <section className="section">
-        <div className="section__head">
-          <h2>מזונות שלי</h2>
-          <span className="tiny muted">
-            <span className="num">{db.customFoods.length}</span>
+        <button
+          type="button"
+          className="btn btn--quiet disclosure"
+          aria-expanded={foodsOpen}
+          onClick={() => setFoodsOpen((v) => !v)}
+        >
+          <span className="grow">
+            מזונות שלי · <span className="num">{db.customFoods.length}</span>
           </span>
-        </div>
+          <span className="muted" aria-hidden="true">
+            {foodsOpen ? '▾' : '▸'}
+          </span>
+        </button>
+        {foodsOpen && (
+          <div className="stack" style={{ marginTop: 'var(--sp-3)' }}>
         {db.customFoods.length > 0 && (
-          <ul className="list" style={{ marginBottom: 'var(--sp-3)' }}>
+          <ul className="list">
             {db.customFoods.map((f) => (
               <li key={f.id}>
                 <span className="grow">
@@ -910,9 +899,48 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             מנה ממרכיבים
           </button>
         </div>
-        <p className="tiny muted" style={{ margin: '6px 0 0' }}>
+        <p className="tiny muted" style={{ margin: 0 }}>
           מנה: בונים פעם אחת ממרכיבים, שוקלים את הצלחת ומזינים גרמים כמו בכל מזון.
         </p>
+          </div>
+        )}
+      </section>
+
+      {/* היעד: נקבע פעם בכמה שבועות. שורה סגורה עם המספרים; הטופס בטאפ. */}
+      <section className="section">
+        <button
+          type="button"
+          className="btn btn--quiet disclosure"
+          aria-expanded={editingTarget}
+          onClick={() => setEditingTarget((v) => !v)}
+        >
+          <span className="grow">
+            {target ? (
+              <>
+                יעד יומי · <span className="num">{kcalText(target.kcal)}</span> קק"ל ·{' '}
+                <span className="num">{gramsWholeText(target.protein)}</span> חלבון ·{' '}
+                <span className="num">{gramsWholeText(target.carbs)}</span> פחמימה ·{' '}
+                <span className="num">{gramsWholeText(target.fat)}</span> שומן
+              </>
+            ) : (
+              'יעד יומי · לא הוגדר'
+            )}
+          </span>
+          <span className="muted" aria-hidden="true">
+            {editingTarget ? '▾' : '▸'}
+          </span>
+        </button>
+        {editingTarget && (
+          <TargetForm
+            current={target}
+            today={today}
+            onCancel={() => setEditingTarget(false)}
+            onSave={(t) => {
+              void store.update('targets', upsertTarget(db.targets, t));
+              setEditingTarget(false);
+            }}
+          />
+        )}
       </section>
 
       <p className="tiny muted" style={{ margin: 0 }}>
