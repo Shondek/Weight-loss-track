@@ -433,6 +433,14 @@ button {
   flex: 0 0 var(--tap);
 }
 
+/* שדה תאריך מכווץ: שורה אחת, יישור להתחלה, אזור מגע מלא. */
+.datefield__summary {
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 0;
+  color: var(--ink);
+}
+
 /* ---------- stepper ---------- */
 
 .stepper {

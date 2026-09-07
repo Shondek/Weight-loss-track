@@ -212,10 +212,13 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           {existing && <span className="tiny muted">נרשם כבר — שמירה תעדכן</span>}
         </div>
         <div className="stack">
+          {/* כמעט תמיד "היום": שורה אחת, כדי ששדה המשקל וכפתור השמירה יעלו. */}
           <DateField
-            label="תאריך"
+            label="תאריך השקילה"
             value={entryDate}
             max={today}
+            collapsible
+            today={today}
             onChange={(d) => {
               setEntryDate(d);
               setDraft(null);

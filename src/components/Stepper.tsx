@@ -100,6 +100,8 @@ export default function Stepper({
           max={max}
           value={text}
           placeholder={placeholder}
+          // הערך מאוכלס מראש; טאפ ואז הקלדה מחליפים אותו במקום למחוק קודם.
+          onFocus={(e) => e.currentTarget.select()}
           onChange={(e) => {
             typing.current = true;
             setText(e.target.value);
