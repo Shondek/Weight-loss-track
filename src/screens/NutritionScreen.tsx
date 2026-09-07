@@ -513,7 +513,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                               )}
                             </span>
                             <span className="muted small">
-                              <span className="num">{kcalText(r.kcal)}</span> · <span className="num">{kcalText(r.protein)}</span>ח
+                              <span className="num">{kcalText(r.protein)}</span> ח · <span className="num">{kcalText(r.kcal)}</span>
                             </span>
                           </button>
                         </li>
