@@ -480,6 +480,16 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                 )}
               </div>
             )}
+            {/* undo מיד מתחת לבלוקים, לא אחרי כל הקבוצות — כשתוספות (13) פתוחות
+                הוא היה בורח מתחת למסך. */}
+            {undo?.kind === 'added' && (
+              <div className="undo" role="status" style={{ marginBottom: 'var(--sp-2)' }}>
+                <span className="grow">{undo.text}</span>
+                <button type="button" className="btn" onClick={restore}>
+                  בטל
+                </button>
+              </div>
+            )}
             {menu.filter((g) => g.group.key !== 'blocks').map((g) => {
               const open = openGroup === g.group.key;
               return (
@@ -528,14 +538,6 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                 </div>
               );
             })}
-          </div>
-        )}
-        {undo?.kind === 'added' && (
-          <div className="undo" role="status" style={{ marginTop: 'var(--sp-3)' }}>
-            <span className="grow">{undo.text}</span>
-            <button type="button" className="btn" onClick={restore}>
-              בטל
-            </button>
           </div>
         )}
       </section>
