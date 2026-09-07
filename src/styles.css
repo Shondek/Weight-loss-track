@@ -35,6 +35,12 @@
   --rule-strong: #8e8a81;
   --error: #a32a22;
 
+  /* ביטחון בנתון — מלאות השבוע בלבד (7/7, 4–6, פחות מ-4). נבדק מול AA
+     על --paper: 4.70, 4.83, 5.28. לעולם לא על כיוון שינוי או על משקל. */
+  --confidence-high: #4e7a57;
+  --confidence-mid: #946512;
+  --confidence-low: #5d6a74;
+
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -45,6 +51,13 @@
   --tap: 44px;
   --radius: 6px;
   --maxw: 620px;
+
+  /* מספר-הגיבור: גדול ומלא רק לשבוע 7/7; חלקי וריק מושתקים באותו גודל */
+  --hero-size: 64px;
+  --hero-size-muted: 44px;
+  --text-chart-label: 11px;
+  /* תוויות משניות: אותיות ימים, תאריך ריק, תווית אריח, רמז בכפתור */
+  --text-label-sm: 12px;
 
   color-scheme: light;
 }
@@ -185,7 +198,7 @@ h3 {
 }
 
 .hero {
-  font-size: 64px;
+  font-size: var(--hero-size);
   font-weight: 300;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -195,7 +208,13 @@ h3 {
 
 .hero--empty {
   color: var(--ink-3);
-  font-size: 44px;
+  font-size: var(--hero-size-muted);
+}
+
+/* שבוע חלקי: אותו טיפול כמו ריק. שקילה אחת אינה מגמה. */
+.hero--partial {
+  color: var(--ink-3);
+  font-size: var(--hero-size-muted);
 }
 
 .sub {
@@ -221,6 +240,20 @@ h3 {
 
 .strong {
   font-weight: 600;
+}
+
+/* ---------- ביטחון בנתון (מלאות השבוע) ---------- */
+
+.confidence--high {
+  color: var(--confidence-high);
+}
+
+.confidence--mid {
+  color: var(--confidence-mid);
+}
+
+.confidence--low {
+  color: var(--confidence-low);
 }
 
 /* ---------- מבנים ---------- */
@@ -385,6 +418,11 @@ button {
   font-size: 14px;
 }
 
+/* כפתור שקט עם גבול דק: פעולה משנית שצריכה להיבדל משורה שנפתחת. */
+.btn--outlined {
+  border-color: var(--rule);
+}
+
 .btn--danger {
   color: var(--error);
   border-color: var(--error);
@@ -400,6 +438,14 @@ button {
   font-size: 18px;
   font-weight: 400;
   flex: 0 0 var(--tap);
+}
+
+/* שדה תאריך מכווץ: שורה אחת, יישור להתחלה, אזור מגע מלא. */
+.datefield__summary {
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 0;
+  color: var(--ink);
 }
 
 /* ---------- stepper ---------- */
@@ -446,7 +492,8 @@ button {
 
 .choice--scale {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  /* חמש עמודות: 1–10 יוצא 5+5, 0–10 יוצא 5+5+1, 0–7 יוצא 5+3 */
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .choice--big .choice__btn {
@@ -457,7 +504,7 @@ button {
 
 .choice__hint {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   font-weight: 400;
 }
 
@@ -521,7 +568,7 @@ button {
 }
 
 .day__letter {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
 }
 
@@ -534,7 +581,7 @@ button {
 }
 
 .day__empty {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   direction: ltr;
@@ -597,8 +644,21 @@ button {
   min-height: 72px;
 }
 
+/* מסגרת האריח של ממוצע השבוע — אותו קידוד מלאות כמו התג במסך המשקל. */
+.stat--confidence-high {
+  border-color: var(--confidence-high);
+}
+
+.stat--confidence-mid {
+  border-color: var(--confidence-mid);
+}
+
+.stat--confidence-low {
+  border-color: var(--confidence-low);
+}
+
 .stat__label {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
 }
 
@@ -620,6 +680,12 @@ button {
   height: 96px;
   display: block;
   overflow: visible;
+}
+
+/* גבולות ציר ה-Y בשולי הגרף. שני מספרים, בלי קווי רשת. */
+.chart__value {
+  font-size: var(--text-chart-label);
+  fill: var(--ink-3);
 }
 
 /* ---------- תיבת ייצוא ---------- */

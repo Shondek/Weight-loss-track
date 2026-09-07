@@ -3,6 +3,7 @@ import type { WeekReport } from '../lib/weekSummary';
 import { WEEK_LENGTH } from '../lib/weights';
 import { compareISO, dayLetter, formatDM, weekDays } from '../lib/date';
 import { DASH } from '../lib/format';
+import { confidenceOf } from './confidence';
 
 type Props = { report: WeekReport; today: ISODate };
 
@@ -38,7 +39,8 @@ export default function WeekSummary({ report, today }: Props) {
   return (
     <div className="stack">
       <div className="stats" role="list">
-        <div className="stat" role="listitem">
+        {/* המסגרת מקודדת מלאות (7/7, 4–6, פחות) — לא הצלחה ולא כיוון. */}
+        <div className={`stat stat--confidence-${confidenceOf(cur.count)}`} role="listitem">
           <span className="stat__label">ממוצע השבוע</span>
           <span className="stat__value num">{fixed(cur.avg, 2)}</span>
           <span className="stat__note num">

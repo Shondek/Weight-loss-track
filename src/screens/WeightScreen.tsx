@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
 import Stepper from '../components/Stepper';
@@ -36,9 +36,12 @@ import { MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../lib/schema';
 import { programStartWeek } from '../lib/db';
 import { daysSinceBackup, needsBackupReminder } from '../lib/backup';
 import { DASH } from '../lib/format';
+import { confidenceOf } from '../components/confidence';
 
 const RECENT_COUNT = 10;
 const MIN_FULL_WEEKS_FOR_CHART = 3;
+/** כמה זמן הכפתור אומר "נשמר" — אותו דפוס כמו "הועתק" ב-CopyBlock. */
+const SAVED_MS = 2500;
 
 export default function WeightScreen({ store, today }: ScreenProps) {
   const { db } = store;
@@ -47,6 +50,16 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   const [draft, setDraft] = useState<number | null>(null);
   const [waistDate, setWaistDate] = useState(today);
   const [waistDraft, setWaistDraft] = useState<number | null>(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const savedTimer = useRef<number | undefined>(undefined);
+  /** שורת שקילה פתוחה ב"שקילות אחרונות" — רק בה מוצג כפתור המחיקה. */
+  const [openRecent, setOpenRecent] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimer.current !== undefined) window.clearTimeout(savedTimer.current);
+    };
+  }, []);
 
   const weeks = useMemo(() => weeklyAverages(db.weights), [db.weights]);
   const current = useMemo(() => summarizeWeek(db.weights, week), [db.weights, week]);
@@ -80,6 +93,9 @@ export default function WeightScreen({ store, today }: ScreenProps) {
     if (weightValue === null) return;
     void store.update('weights', upsertWeight(db.weights, { d: entryDate, w: weightValue }));
     setDraft(null);
+    setSavedFlash(true);
+    if (savedTimer.current !== undefined) window.clearTimeout(savedTimer.current);
+    savedTimer.current = window.setTimeout(() => setSavedFlash(false), SAVED_MS);
   };
 
   const saveWaist = () => {
@@ -116,7 +132,13 @@ export default function WeightScreen({ store, today }: ScreenProps) {
         />
 
         <div style={{ marginTop: 'var(--sp-4)' }}>
-          <p className={`hero${current.avg === null ? ' hero--empty' : ''}`} style={{ margin: 0 }}>
+          {/* רק שבוע מלא מקבל את המספר הגדול והכהה. ממוצע חלקי הוא נתון גולמי. */}
+          <p
+            className={`hero${
+              current.avg === null ? ' hero--empty' : current.complete ? '' : ' hero--partial'
+            }`}
+            style={{ margin: 0 }}
+          >
             <span className="num">
               {current.avg === null ? DASH : current.avg.toFixed(2)}
             </span>
@@ -124,7 +146,10 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           <p className="sub" style={{ margin: '6px 0 0' }}>
             <span className="num">{current.count}</span> מתוך{' '}
             <span className="num">{WEEK_LENGTH}</span> שקילות ·{' '}
-            {current.complete ? 'שבוע מלא' : 'חלקי'}
+            {/* הצבע מקודד מלאות בלבד, לא כיוון. */}
+            <span className={`confidence--${confidenceOf(current.count)}`}>
+              {current.complete ? 'שבוע מלא' : 'חלקי'}
+            </span>
           </p>
 
           <div className="stack--tight" style={{ marginTop: 'var(--sp-3)' }}>
@@ -163,6 +188,14 @@ export default function WeightScreen({ store, today }: ScreenProps) {
                 {missing === 1 ? 'שקילה' : 'שקילות'} להשוואה מול השבוע הקודם.
               </p>
             )}
+            {/* מותניים גוברות על משקל, ולכן הן כאן ולא רק בטופס למטה.
+                אותם ערכים של הדוח: המדידה בשבוע והאחרונה שלפניו. בלי כיוון. */}
+            <p className="sub" style={{ margin: 0 }}>
+              מותניים · השבוע{' '}
+              <span className="num">{waistThisWeek ? waistThisWeek.cm.toFixed(1) : DASH}</span>
+              {' '}· קודם{' '}
+              <span className="num">{waistPrev ? waistPrev.cm.toFixed(1) : DASH}</span>
+            </p>
           </div>
         </div>
 
@@ -194,10 +227,13 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           {existing && <span className="tiny muted">נרשם כבר — שמירה תעדכן</span>}
         </div>
         <div className="stack">
+          {/* כמעט תמיד "היום": שורה אחת, כדי ששדה המשקל וכפתור השמירה יעלו. */}
           <DateField
-            label="תאריך"
+            label="תאריך השקילה"
             value={entryDate}
             max={today}
+            collapsible
+            today={today}
             onChange={(d) => {
               setEntryDate(d);
               setDraft(null);
@@ -221,7 +257,7 @@ export default function WeightScreen({ store, today }: ScreenProps) {
             disabled={weightValue === null}
             onClick={saveWeight}
           >
-            {existing ? 'עדכן שקילה' : 'שמור שקילה'}
+            {savedFlash ? 'נשמר' : existing ? 'עדכן שקילה' : 'שמור שקילה'}
           </button>
         </div>
       </section>
@@ -315,19 +351,37 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           </p>
         ) : (
           <ul className="list">
-            {recent.map((e) => (
-              <li key={e.d}>
-                <span className="grow">
-                  <span className="num">{formatDMY(e.d)}</span>{' '}
-                  <span className="muted small">{dayLetter(e.d)}</span>
-                </span>
-                <span className="num strong">{e.w.toFixed(1)}</span>
-                <ConfirmButton
-                  ariaLabel={`מחק שקילה של ${formatDMY(e.d)}`}
-                  onConfirm={() => void store.update('weights', removeWeight(db.weights, e.d))}
-                />
-              </li>
-            ))}
+            {/* המחיקה מוסתרת עד פתיחת שורה, כמו במסך האימונים — עשרה
+                כפתורי "מחק" ליד המספרים היו רעש. */}
+            {recent.map((e) => {
+              const isOpen = openRecent === e.d;
+              return (
+                <li key={e.d}>
+                  <button
+                    type="button"
+                    className="btn btn--quiet grow"
+                    style={{ justifyContent: 'flex-start', textAlign: 'start' }}
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenRecent(isOpen ? null : e.d)}
+                  >
+                    <span className="grow">
+                      <span className="num">{formatDMY(e.d)}</span>{' '}
+                      <span className="muted small">{dayLetter(e.d)}</span>
+                    </span>
+                    <span className="num strong">{e.w.toFixed(1)}</span>
+                  </button>
+                  {isOpen && (
+                    <ConfirmButton
+                      ariaLabel={`מחק שקילה של ${formatDMY(e.d)}`}
+                      onConfirm={() => {
+                        void store.update('weights', removeWeight(db.weights, e.d));
+                        setOpenRecent(null);
+                      }}
+                    />
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

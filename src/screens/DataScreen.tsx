@@ -3,7 +3,7 @@ import type { ScreenProps } from './types';
 import { parseDb, type DbParseResult } from '../lib/schema';
 import { mergeDb } from '../lib/db';
 import { backupJson } from '../lib/exportText';
-import { currentBackend, STORAGE_KEYS } from '../lib/store';
+import { currentBackend } from '../lib/store';
 import { formatDM, formatDMY, toLocalISO, weekRangeLabel, weekStart } from '../lib/date';
 import { firstDataDate, programStartWeek, recordCount } from '../lib/db';
 import { daysSinceBackup } from '../lib/backup';
@@ -146,9 +146,6 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
             <span className="num">{db.targets.length}</span> · מועדפים{' '}
             <span className="num">{db.favorites.length}</span>
-          </li>
-          <li className="muted tiny">
-            מפתחות: {Object.values(STORAGE_KEYS).join(' · ')}
           </li>
         </ul>
       </section>
