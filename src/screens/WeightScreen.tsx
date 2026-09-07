@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
 import Stepper from '../components/Stepper';
@@ -40,6 +40,8 @@ import { confidenceOf } from '../components/confidence';
 
 const RECENT_COUNT = 10;
 const MIN_FULL_WEEKS_FOR_CHART = 3;
+/** כמה זמן הכפתור אומר "נשמר" — אותו דפוס כמו "הועתק" ב-CopyBlock. */
+const SAVED_MS = 2500;
 
 export default function WeightScreen({ store, today }: ScreenProps) {
   const { db } = store;
@@ -48,6 +50,16 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   const [draft, setDraft] = useState<number | null>(null);
   const [waistDate, setWaistDate] = useState(today);
   const [waistDraft, setWaistDraft] = useState<number | null>(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const savedTimer = useRef<number | undefined>(undefined);
+  /** שורת שקילה פתוחה ב"שקילות אחרונות" — רק בה מוצג כפתור המחיקה. */
+  const [openRecent, setOpenRecent] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimer.current !== undefined) window.clearTimeout(savedTimer.current);
+    };
+  }, []);
 
   const weeks = useMemo(() => weeklyAverages(db.weights), [db.weights]);
   const current = useMemo(() => summarizeWeek(db.weights, week), [db.weights, week]);
@@ -81,6 +93,9 @@ export default function WeightScreen({ store, today }: ScreenProps) {
     if (weightValue === null) return;
     void store.update('weights', upsertWeight(db.weights, { d: entryDate, w: weightValue }));
     setDraft(null);
+    setSavedFlash(true);
+    if (savedTimer.current !== undefined) window.clearTimeout(savedTimer.current);
+    savedTimer.current = window.setTimeout(() => setSavedFlash(false), SAVED_MS);
   };
 
   const saveWaist = () => {
@@ -242,7 +257,7 @@ export default function WeightScreen({ store, today }: ScreenProps) {
             disabled={weightValue === null}
             onClick={saveWeight}
           >
-            {existing ? 'עדכן שקילה' : 'שמור שקילה'}
+            {savedFlash ? 'נשמר' : existing ? 'עדכן שקילה' : 'שמור שקילה'}
           </button>
         </div>
       </section>
@@ -336,19 +351,37 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           </p>
         ) : (
           <ul className="list">
-            {recent.map((e) => (
-              <li key={e.d}>
-                <span className="grow">
-                  <span className="num">{formatDMY(e.d)}</span>{' '}
-                  <span className="muted small">{dayLetter(e.d)}</span>
-                </span>
-                <span className="num strong">{e.w.toFixed(1)}</span>
-                <ConfirmButton
-                  ariaLabel={`מחק שקילה של ${formatDMY(e.d)}`}
-                  onConfirm={() => void store.update('weights', removeWeight(db.weights, e.d))}
-                />
-              </li>
-            ))}
+            {/* המחיקה מוסתרת עד פתיחת שורה, כמו במסך האימונים — עשרה
+                כפתורי "מחק" ליד המספרים היו רעש. */}
+            {recent.map((e) => {
+              const isOpen = openRecent === e.d;
+              return (
+                <li key={e.d}>
+                  <button
+                    type="button"
+                    className="btn btn--quiet grow"
+                    style={{ justifyContent: 'flex-start', textAlign: 'start' }}
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenRecent(isOpen ? null : e.d)}
+                  >
+                    <span className="grow">
+                      <span className="num">{formatDMY(e.d)}</span>{' '}
+                      <span className="muted small">{dayLetter(e.d)}</span>
+                    </span>
+                    <span className="num strong">{e.w.toFixed(1)}</span>
+                  </button>
+                  {isOpen && (
+                    <ConfirmButton
+                      ariaLabel={`מחק שקילה של ${formatDMY(e.d)}`}
+                      onConfirm={() => {
+                        void store.update('weights', removeWeight(db.weights, e.d));
+                        setOpenRecent(null);
+                      }}
+                    />
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

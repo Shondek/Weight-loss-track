@@ -56,6 +56,8 @@
   --hero-size: 64px;
   --hero-size-muted: 44px;
   --text-chart-label: 11px;
+  /* תוויות משניות: אותיות ימים, תאריך ריק, תווית אריח, רמז בכפתור */
+  --text-label-sm: 12px;
 
   color-scheme: light;
 }
@@ -416,6 +418,11 @@ button {
   font-size: 14px;
 }
 
+/* כפתור שקט עם גבול דק: פעולה משנית שצריכה להיבדל משורה שנפתחת. */
+.btn--outlined {
+  border-color: var(--rule);
+}
+
 .btn--danger {
   color: var(--error);
   border-color: var(--error);
@@ -485,7 +492,8 @@ button {
 
 .choice--scale {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  /* חמש עמודות: 1–10 יוצא 5+5, 0–10 יוצא 5+5+1, 0–7 יוצא 5+3 */
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .choice--big .choice__btn {
@@ -496,7 +504,7 @@ button {
 
 .choice__hint {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   font-weight: 400;
 }
 
@@ -560,7 +568,7 @@ button {
 }
 
 .day__letter {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
 }
 
@@ -573,7 +581,7 @@ button {
 }
 
 .day__empty {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   direction: ltr;
@@ -650,7 +658,7 @@ button {
 }
 
 .stat__label {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
 }
 
