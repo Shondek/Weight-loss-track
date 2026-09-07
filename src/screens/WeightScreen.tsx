@@ -116,7 +116,13 @@ export default function WeightScreen({ store, today }: ScreenProps) {
         />
 
         <div style={{ marginTop: 'var(--sp-4)' }}>
-          <p className={`hero${current.avg === null ? ' hero--empty' : ''}`} style={{ margin: 0 }}>
+          {/* רק שבוע מלא מקבל את המספר הגדול והכהה. ממוצע חלקי הוא נתון גולמי. */}
+          <p
+            className={`hero${
+              current.avg === null ? ' hero--empty' : current.complete ? '' : ' hero--partial'
+            }`}
+            style={{ margin: 0 }}
+          >
             <span className="num">
               {current.avg === null ? DASH : current.avg.toFixed(2)}
             </span>

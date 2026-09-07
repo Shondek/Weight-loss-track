@@ -46,6 +46,10 @@
   --radius: 6px;
   --maxw: 620px;
 
+  /* מספר-הגיבור: גדול ומלא רק לשבוע 7/7; חלקי וריק מושתקים באותו גודל */
+  --hero-size: 64px;
+  --hero-size-muted: 44px;
+
   color-scheme: light;
 }
 
@@ -185,7 +189,7 @@ h3 {
 }
 
 .hero {
-  font-size: 64px;
+  font-size: var(--hero-size);
   font-weight: 300;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -195,7 +199,13 @@ h3 {
 
 .hero--empty {
   color: var(--ink-3);
-  font-size: 44px;
+  font-size: var(--hero-size-muted);
+}
+
+/* שבוע חלקי: אותו טיפול כמו ריק. שקילה אחת אינה מגמה. */
+.hero--partial {
+  color: var(--ink-3);
+  font-size: var(--hero-size-muted);
 }
 
 .sub {
