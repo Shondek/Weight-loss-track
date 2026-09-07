@@ -36,6 +36,7 @@ import { MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../lib/schema';
 import { programStartWeek } from '../lib/db';
 import { daysSinceBackup, needsBackupReminder } from '../lib/backup';
 import { DASH } from '../lib/format';
+import { confidenceOf } from '../components/confidence';
 
 const RECENT_COUNT = 10;
 const MIN_FULL_WEEKS_FOR_CHART = 3;
@@ -130,7 +131,10 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           <p className="sub" style={{ margin: '6px 0 0' }}>
             <span className="num">{current.count}</span> מתוך{' '}
             <span className="num">{WEEK_LENGTH}</span> שקילות ·{' '}
-            {current.complete ? 'שבוע מלא' : 'חלקי'}
+            {/* הצבע מקודד מלאות בלבד, לא כיוון. */}
+            <span className={`confidence--${confidenceOf(current.count)}`}>
+              {current.complete ? 'שבוע מלא' : 'חלקי'}
+            </span>
           </p>
 
           <div className="stack--tight" style={{ marginTop: 'var(--sp-3)' }}>

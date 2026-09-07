@@ -35,6 +35,12 @@
   --rule-strong: #8e8a81;
   --error: #a32a22;
 
+  /* ביטחון בנתון — מלאות השבוע בלבד (7/7, 4–6, פחות מ-4). נבדק מול AA
+     על --paper: 4.70, 4.83, 5.28. לעולם לא על כיוון שינוי או על משקל. */
+  --confidence-high: #4e7a57;
+  --confidence-mid: #946512;
+  --confidence-low: #5d6a74;
+
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -232,6 +238,20 @@ h3 {
 
 .strong {
   font-weight: 600;
+}
+
+/* ---------- ביטחון בנתון (מלאות השבוע) ---------- */
+
+.confidence--high {
+  color: var(--confidence-high);
+}
+
+.confidence--mid {
+  color: var(--confidence-mid);
+}
+
+.confidence--low {
+  color: var(--confidence-low);
 }
 
 /* ---------- מבנים ---------- */
@@ -606,6 +626,19 @@ button {
   flex-direction: column;
   gap: 2px;
   min-height: 72px;
+}
+
+/* מסגרת האריח של ממוצע השבוע — אותו קידוד מלאות כמו התג במסך המשקל. */
+.stat--confidence-high {
+  border-color: var(--confidence-high);
+}
+
+.stat--confidence-mid {
+  border-color: var(--confidence-mid);
+}
+
+.stat--confidence-low {
+  border-color: var(--confidence-low);
 }
 
 .stat__label {
