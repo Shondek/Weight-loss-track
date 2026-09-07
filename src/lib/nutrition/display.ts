@@ -20,6 +20,11 @@ export function macroText(n: number | null | undefined): string {
   return (r === 0 ? 0 : r).toFixed(1);
 }
 
+/** גרמים שלמים — למספר הגדול בראש המסך. "142.3" ב-64px הוא רעש. */
+export function gramsWholeText(n: number | null | undefined): string {
+  return kcalText(n);
+}
+
 /** "12.3" או "לפחות 12.3" כשחלק מהסיבים לא ידוע. */
 export function fiberText(fiber: number, unknownGrams: number): string {
   return unknownGrams > 0 ? `לפחות ${macroText(fiber)}` : macroText(fiber);

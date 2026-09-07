@@ -48,9 +48,9 @@ import {
   type ResolvedMenuItem,
 } from '../lib/nutrition/menu';
 import { libraryFoodId } from '../lib/nutrition/library';
-import { targetFor, upsertTarget } from '../lib/nutrition/targets';
-import { daySummary, entryNutrition, remaining } from '../lib/nutrition/calc';
-import { kcalText, macroText } from '../lib/nutrition/display';
+import { KCAL_FLOOR, targetFor, upsertTarget } from '../lib/nutrition/targets';
+import { daySummary, entryNutrition } from '../lib/nutrition/calc';
+import { gramsWholeText, kcalText, macroText } from '../lib/nutrition/display';
 
 const SEARCH_LIMIT = 20;
 const UNDO_MS = 5000;
@@ -101,7 +101,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   );
   const expectedAddons = useMemo(() => expectedAddonCount(todayEntries, today, MEAL_MENU), [todayEntries, today]);
   const target = useMemo(() => targetFor(db.targets, today), [db.targets, today]);
-  const left = remaining(target, summary);
+  /** מעל היעד: עובדה בלבד, בלי צבע. מתחת ליעד לא נאמר דבר — "נשאר" מתגמל תת-אכילה. */
+  const overTarget = target ? Math.max(0, summary.kcal - target.kcal) : 0;
   const groups = useMemo(() => groupByMeal(todayEntries), [todayEntries]);
 
   // ---------- הוספת רישום ----------
@@ -317,44 +318,61 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     <div className="stack--loose">
       <section className="section section--first">
         <p className="sub" style={{ margin: 0 }}>
-          היום · <span className="num">{formatDM(today)}</span>
-          {target ? ' · נשאר' : ' · נצרך'}
+          היום · <span className="num">{formatDM(today)}</span> · חלבון
         </p>
-        <p className={`hero${summary.count === 0 && !target ? ' hero--empty' : ''}`} style={{ margin: 0 }}>
-          <span className="num">{target && left ? kcalText(left.kcal) : kcalText(summary.kcal)}</span>
+        {/* חלבון הוא היעד היחיד שלא נחתך, ולכן הוא המספר הגדול. יום ריק מושתק. */}
+        <p className={`hero${summary.count === 0 ? ' hero--empty' : ''}`} style={{ margin: 0 }}>
+          <span className="num">{gramsWholeText(summary.protein)}</span>
         </p>
         <p className="sub" style={{ margin: '6px 0 0' }}>
-          {target && left ? (
+          {target ? (
             <>
-              נצרך <span className="num">{kcalText(summary.kcal)}</span> מתוך{' '}
-              <span className="num">{kcalText(target.kcal)}</span>
-              {left.kcal < 0 ? ' · חריגה' : ''}
+              ג׳ מתוך <span className="num">{gramsWholeText(target.protein)}</span>
             </>
           ) : (
-            <>קק"ל נצרכו · אין יעד מוגדר</>
+            <>ג׳ · אין יעד מוגדר</>
           )}
         </p>
 
+        {/* המאקרו המשני: אריחים קטנים מהאריח הרגיל — רמה שנייה, לא שווה לחלבון. */}
         <div className="macros" style={{ marginTop: 'var(--sp-3)' }} role="list">
           {(
             [
-              ['חלבון', summary.protein, target?.protein, false],
               ['פחמימה', summary.carbs, target?.carbs, summary.carbsUnknownGrams > 0],
               ['שומן', summary.fat, target?.fat, summary.fatUnknownGrams > 0],
+              ['סיבים', summary.fiber, undefined, summary.fiberUnknownGrams > 0],
             ] as const
           ).map(([label, consumed, goal, atLeast]) => (
-            <div className="stat" role="listitem" key={label}>
+            <div className="stat stat--small" role="listitem" key={label}>
               <span className="stat__label">{label}</span>
               <span className="stat__value">
                 {atLeast && <span className="tiny muted">לפחות </span>}
                 <span className="num">{macroText(consumed)}</span>
               </span>
               <span className="stat__note num">
-                {goal === undefined ? DASH : `/ ${macroText(goal)}`}
+                {goal === undefined ? 'ג׳' : `/ ${macroText(goal)}`}
               </span>
             </div>
           ))}
         </div>
+
+        {/* קלוריות: נתון, יעד ורצפה באותה שורה. בלי "נשאר", בלי צבע. */}
+        <p className="sub" style={{ margin: 'var(--sp-3) 0 0' }}>
+          קלוריות <span className="num">{kcalText(summary.kcal)}</span>
+          {target ? (
+            <>
+              {' '}· יעד <span className="num">{kcalText(target.kcal)}</span>
+            </>
+          ) : (
+            ' · אין יעד מוגדר'
+          )}
+          {' '}· רצפה <span className="num">{kcalText(KCAL_FLOOR)}</span>
+          {overTarget > 0 && (
+            <>
+              {' '}· מעל היעד ב-<span className="num">{kcalText(overTarget)}</span>
+            </>
+          )}
+        </p>
         {(expectedAddons > 0 || summary.addonCount > 0) &&
           (summary.addonCount === 0 ? (
             <p className="tiny err" style={{ margin: '6px 0 0' }} role="status">

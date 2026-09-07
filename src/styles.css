@@ -58,6 +58,9 @@
   --text-chart-label: 11px;
   /* תוויות משניות: אותיות ימים, תאריך ריק, תווית אריח, רמז בכפתור */
   --text-label-sm: 12px;
+  /* אריח מאקרו משני (פחמימה/שומן/סיבים): קטן מהאריח הרגיל, רמה שנייה */
+  --stat-small-value: 17px;
+  --stat-small-min-height: 56px;
 
   color-scheme: light;
 }
@@ -642,6 +645,16 @@ button {
   flex-direction: column;
   gap: 2px;
   min-height: 72px;
+}
+
+/* אריח קטן: אותה שפה, פחות משקל. למאקרו המשני מתחת לחלבון. */
+.stat--small {
+  min-height: var(--stat-small-min-height);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.stat--small .stat__value {
+  font-size: var(--stat-small-value);
 }
 
 /* מסגרת האריח של ממוצע השבוע — אותו קידוד מלאות כמו התג במסך המשקל. */

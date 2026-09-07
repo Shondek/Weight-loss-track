@@ -3,6 +3,13 @@
 import type { ISODate, NutritionTarget } from '../../types';
 import { compareISO } from '../date';
 
+/**
+ * רצפה קלורית יומית. יום מתחתיה הוא ממצא, לא הישג — המסך מציג אותה כמספר
+ * ליד היעד, בלי צבע ובלי שיפוט. קבוע ולא חלק מהיעד: הוספה ליעד היא שינוי
+ * סכימה, והוא לא כאן.
+ */
+export const KCAL_FLOOR = 1850;
+
 export function sortTargets(list: readonly NutritionTarget[]): NutritionTarget[] {
   return [...list].sort((a, b) => compareISO(a.from, b.from));
 }
