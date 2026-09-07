@@ -61,6 +61,9 @@
   /* אריח מאקרו משני (פחמימה/שומן/סיבים): קטן מהאריח הרגיל, רמה שנייה */
   --stat-small-value: 17px;
   --stat-small-min-height: 56px;
+  /* כפתורי בלוק ברובריקה: שניים רחבים למעלה, ארבעה קטנים מתחת */
+  --block-primary-height: 56px;
+  --text-block-secondary: 13px;
 
   color-scheme: light;
 }
@@ -1061,6 +1064,62 @@ input[type='file']::file-selector-button {
 }
 
 /* ---------- "התפריט שלי": קבוצות מתקפלות של כפתורי רישום בלחיצה אחת ---------- */
+
+/* בלוקים: תמיד גלויים מעל האקורדיונים. שתי רמות — שני הבלוקים היומיים
+   רחבים, ארבעת הנותרים קטנים. */
+.menu__blocks {
+  margin-bottom: var(--sp-2);
+}
+
+.menu__blocks-primary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-2);
+}
+
+.menu__blocks-secondary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.block-btn {
+  appearance: none;
+  min-height: var(--tap);
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.block-btn--primary {
+  min-height: var(--block-primary-height);
+  font-weight: 500;
+}
+
+.block-btn--secondary {
+  font-size: var(--text-block-secondary);
+  padding-inline: 2px;
+}
+
+.block-btn:active {
+  background: var(--paper-sunk);
+}
+
+/* נרשם היום: מושתק, לא מושבת — לפעמים רושמים פעמיים. נתון, לא חסימה. */
+.block-btn.is-logged {
+  color: var(--ink-3);
+  border-color: var(--rule);
+}
 
 .menu__group {
   border: 1px solid var(--rule);

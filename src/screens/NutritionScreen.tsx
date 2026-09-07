@@ -203,6 +203,16 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     [foodIndex.index, db.customFoods],
   );
   const menuEmpty = menu.every((g) => g.items.length === 0);
+  /**
+   * הבלוקים תמיד גלויים, מחוץ לאקורדיונים: הם נרשמים פעמיים ביום בכל שעה,
+   * והשעה לא מנבאת אותם. שני הראשונים בהגדרה (טונה, יוגורט) הם בלוק 1 ו-2
+   * בפועל ומקבלים כפתור רחב; השאר בשורה קטנה מתחת.
+   */
+  const blocks = menu.find((g) => g.group.key === 'blocks');
+  const blockPrimary = blocks?.items.slice(0, 2) ?? [];
+  const blockSecondary = blocks?.items.slice(2) ?? [];
+  /** כמה פעמים המזון נרשם היום — מוצג בתוך הכפתור. נתון, לא חסימה. */
+  const loggedToday = (foodId: string) => todayEntries.filter((e) => e.foodId === foodId).length;
   // הקבוצה הפתוחה לפי השעה בכניסה למסך; לא נשמרת.
   const [openGroup, setOpenGroup] = useState<MenuGroupKey | null>(() => menuGroupForHour(new Date().getHours(), MEAL_HOURS));
   const nutsToday = useMemo(() => nutEntriesOn(db.entries, today, NUT_IDS), [db.entries, today]);
@@ -436,7 +446,57 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           </p>
         ) : (
           <div className="menu">
-            {menu.map((g) => {
+            {blocks && blocks.items.length > 0 && (
+              <div className="menu__blocks" role="group" aria-label="בלוקים">
+                <div className="menu__blocks-primary">
+                  {blockPrimary.map((r) => {
+                    const n = loggedToday(r.food.id);
+                    return (
+                      <button
+                        key={r.item.slug}
+                        type="button"
+                        className={`block-btn block-btn--primary${n > 0 ? ' is-logged' : ''}`}
+                        onClick={() => logMenuItem(r)}
+                      >
+                        {r.item.label}
+                        <span className="choice__hint">
+                          <span className="num">{kcalText(r.protein)}</span> ח · <span className="num">{kcalText(r.kcal)}</span>
+                          {n > 0 && (
+                            <>
+                              {' '}· נרשם{n > 1 ? <> ×<span className="num">{n}</span></> : ''}
+                            </>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {blockSecondary.length > 0 && (
+                  <div className="menu__blocks-secondary">
+                    {blockSecondary.map((r) => {
+                      const n = loggedToday(r.food.id);
+                      return (
+                        <button
+                          key={r.item.slug}
+                          type="button"
+                          className={`block-btn block-btn--secondary${n > 0 ? ' is-logged' : ''}`}
+                          aria-label={`${r.item.label}${n > 0 ? `, נרשם היום ${n}` : ''}`}
+                          onClick={() => logMenuItem(r)}
+                        >
+                          {r.item.label}
+                          {n > 0 && (
+                            <span className="choice__hint">
+                              נרשם{n > 1 ? <> ×<span className="num">{n}</span></> : ''}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            {menu.filter((g) => g.group.key !== 'blocks').map((g) => {
               const open = openGroup === g.group.key;
               return (
                 <div className="menu__group" key={g.group.key}>
