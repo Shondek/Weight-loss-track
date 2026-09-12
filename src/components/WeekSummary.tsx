@@ -16,7 +16,7 @@ function fixed(v: number | null, digits: number): string {
  * "שינוי" פשוט לא מציגה מספר בו — אותם כללים של הדוח.
  */
 export default function WeekSummary({ report, today }: Props) {
-  const { weight, waist, workouts, gaps } = report;
+  const { weight, waist, workouts, cardio, gaps } = report;
   const cur = weight.current;
   const prev = weight.previous;
 
@@ -65,6 +65,16 @@ export default function WeekSummary({ report, today }: Props) {
           <span className="stat__label">מותניים</span>
           <span className="stat__value num">{fixed(waist.now, 1)}</span>
           <span className="stat__note num">קודם {fixed(waist.previous, 1)}</span>
+        </div>
+        {/* אירובי בדקות, לא במפגשים — ולא חלק מ"אימונים". */}
+        <div className="stat" role="listitem">
+          <span className="stat__label">אירובי (דק׳)</span>
+          <span className="stat__value num">
+            {cardio.total}/{cardio.budget}
+          </span>
+          <span className="stat__note num">
+            סיום {cardio.finisher} · עצמאי {cardio.standalone}
+          </span>
         </div>
       </div>
 
@@ -119,6 +129,29 @@ export default function WeekSummary({ report, today }: Props) {
           <span className="num">{workouts.shoulder ?? DASH}</span>
         </p>
       </div>
+
+      {cardio.standaloneItems.length > 0 && (
+        <div>
+          <p className="label" style={{ marginBottom: 'var(--sp-1)' }}>
+            אירובי עצמאי
+          </p>
+          <ul className="list list--block small">
+            {cardio.standaloneItems.map((e) => (
+              <li key={e.id}>
+                <div>
+                  <span className="num">{formatDM(e.d)}</span>{' '}
+                  <span className="muted tiny">{dayLetter(e.d)}</span> — {e.text}
+                </div>
+                {e.note.trim() !== '' && (
+                  <p className="tiny muted" style={{ margin: 0 }}>
+                    {e.note}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <p className="small" style={{ margin: 0 }}>
         <span className="muted">חסר:</span> {gaps.length ? gaps.join(' · ') : DASH}

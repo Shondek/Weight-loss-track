@@ -112,7 +112,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
             )}{' '}
             · מותניים{' '}
             <span className="num">{db.waist.length}</span> · צ'ק-אין{' '}
-            <span className="num">{db.checkins.length}</span>
+            <span className="num">{db.checkins.length}</span> · אירובי עצמאי{' '}
+            <span className="num">{db.standaloneCardio.length}</span>
           </li>
           <li className="muted tiny">
             מפתחות: {Object.values(STORAGE_KEYS).join(' · ')}
@@ -279,7 +280,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
                 <span className="num">{report.counts.weights}</span> · אימונים{' '}
                 <span className="num">{report.counts.workouts}</span> · מותניים{' '}
                 <span className="num">{report.counts.waist}</span> · צ'ק-אין{' '}
-                <span className="num">{report.counts.checkins}</span>
+                <span className="num">{report.counts.checkins}</span> · אירובי עצמאי{' '}
+                <span className="num">{report.counts.standaloneCardio}</span>
               </p>
               <p style={{ margin: 0 }}>
                 סה"כ רשומות: <span className="num">{report.totalBefore}</span> →{' '}

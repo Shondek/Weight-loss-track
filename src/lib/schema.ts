@@ -13,6 +13,7 @@ import {
   type LoggedExercise,
   type LoggedSet,
   type Settings,
+  type StandaloneCardio,
   type WaistEntry,
   type WeeklyCheckin,
   type WeightEntry,
@@ -25,6 +26,8 @@ import {
 import { canonicalExerciseId, exerciseById, resolveExerciseId } from '../data/program';
 import { compareISO, isValidISO, weekStart } from './date';
 import { isCardioId } from './workouts';
+import { sortStandalone } from './cardio';
+import { CARDIO_INCLINE_MAX, CARDIO_SPEED_MAX } from '../data/config';
 
 export type Rejection = { reason: string };
 
@@ -131,11 +134,22 @@ const EXERCISE_TYPES: readonly ExerciseType[] = ['compound', 'isolation', 'core'
 const CARDIO_MODES: readonly CardioMode[] = ['bike', 'treadmill'];
 const MAX_CARDIO_MINUTES = 1000;
 
-/** מספר חזרות/שניות תקין, או null. */
+/** מספר חזרות/דקות תקין, או null. */
 function count(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null;
   const n = num(v);
   return n === null || n < 0 || n > 1000 ? null : Math.round(n);
+}
+
+/**
+ * שניות של סט. תקרה נפרדת מחזרות: אירובי של 30 דק׳ הוא 1,800 שניות,
+ * ותקרת ה-1000 של `count` הייתה מוחקת אותו בקריאה — כאילו לא בוצע.
+ */
+const MAX_SET_SECONDS = 24 * 60 * 60;
+function seconds(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = num(v);
+  return n === null || n < 0 || n > MAX_SET_SECONDS ? null : Math.round(n);
 }
 
 function weight(v: unknown): number | null {
@@ -165,7 +179,7 @@ function parseLoggedSets(input: unknown): LoggedSet[] {
     out.push({
       weight: weight(raw.weight),
       reps: count(raw.reps),
-      seconds: count(raw.seconds),
+      seconds: seconds(raw.seconds),
     });
   }
   return trimTrailingEmpty(out);
@@ -181,7 +195,7 @@ function upcastLegacySets(r: unknown, w: unknown, timed: boolean): LoggedSet[] {
   const sets = asArray(r)
     .slice(0, MAX_SETS)
     .map((v) => {
-      const n = count(v);
+      const n = timed ? seconds(v) : count(v);
       return {
         weight: timed ? null : n === null ? null : value,
         reps: timed ? null : n,
@@ -191,9 +205,16 @@ function upcastLegacySets(r: unknown, w: unknown, timed: boolean): LoggedSet[] {
   return trimTrailingEmpty(sets);
 }
 
+/** שיפוע / מהירות: מספר בטווח, או null. ערך שבור לא דוחה את הרשומה. */
+function gauge(v: unknown, max: number): number | null {
+  const n = num(v);
+  return n !== null && n >= 0 && n <= max ? n : null;
+}
+
 /**
  * חימום / אירובי: מצב ודקות. רשומה שנקלטה בלי `cardio` (או עם ערכים
  * שבורים) מקבלת "אופניים" והדקות נגזרות ממה שבוצע — לא נדחית.
+ * שיפוע ומהירות נכנסים רק כשהם קיימים ותקינים — רשומה ישנה נשארת בלעדיהם.
  */
 function parseCardio(v: unknown, sets: LoggedSet[]): CardioLog {
   const rec = isRecord(v) ? v : {};
@@ -201,7 +222,14 @@ function parseCardio(v: unknown, sets: LoggedSet[]): CardioLog {
   const doneSeconds = sets[0]?.seconds ?? null;
   const minutes =
     count(rec.minutes) ?? (doneSeconds === null ? 0 : Math.round(doneSeconds / 60));
-  return { mode, minutes: Math.min(minutes, MAX_CARDIO_MINUTES) };
+  const incline = gauge(rec.incline, CARDIO_INCLINE_MAX);
+  const speed = gauge(rec.speed, CARDIO_SPEED_MAX);
+  return {
+    mode,
+    minutes: Math.min(minutes, MAX_CARDIO_MINUTES),
+    ...(incline !== null ? { incline } : {}),
+    ...(speed !== null ? { speed } : {}),
+  };
 }
 
 /** ברירות מחדל לתרגיל שכבר לא קיים בתוכנית ולכן אין לו מפרט. */
@@ -359,6 +387,49 @@ export function parseCheckins(input: unknown): ParseResult<WeeklyCheckin> {
   return { ok, rejected };
 }
 
+// ---------- אירובי עצמאי ----------
+
+/**
+ * אירובי עצמאי. נדחה רק מה שאי אפשר להציג: לא אובייקט, תאריך שבור,
+ * או דקות שאינן מספר חיובי. מצב לא מוכר → הליכון; שיפוע/מהירות שבורים → null.
+ */
+export function parseStandaloneCardio(input: unknown): ParseResult<StandaloneCardio> {
+  const rejected: Rejection[] = [];
+  const byId = new Map<string, StandaloneCardio>();
+  let generated = 0;
+
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      continue;
+    }
+    if (!isValidISO(raw.d)) {
+      rejected.push({ reason: 'תאריך לא תקין' });
+      continue;
+    }
+    const minutes = count(raw.minutes);
+    if (minutes === null || minutes <= 0) {
+      rejected.push({ reason: 'דקות שאינן מספר חיובי' });
+      continue;
+    }
+    const id =
+      typeof raw.id === 'string' && raw.id.trim() !== ''
+        ? raw.id
+        : `${raw.d}-imported-${generated++}-cardio`;
+    byId.set(id, {
+      id,
+      d: raw.d,
+      mode: CARDIO_MODES.find((m) => m === raw.mode) ?? 'treadmill',
+      minutes: Math.min(minutes, MAX_CARDIO_MINUTES),
+      incline: gauge(raw.incline, CARDIO_INCLINE_MAX),
+      speed: gauge(raw.speed, CARDIO_SPEED_MAX),
+      note: typeof raw.note === 'string' ? raw.note.slice(0, NOTE_MAX) : '',
+    });
+  }
+
+  return { ok: sortStandalone([...byId.values()]), rejected };
+}
+
 // ---------- הגדרות ----------
 
 export function parseSettings(input: unknown): Settings {
@@ -378,7 +449,7 @@ export function parseSettings(input: unknown): Settings {
 
 export type DbParseResult = {
   db: DB;
-  counts: Record<'weights' | 'workouts' | 'waist' | 'checkins', number>;
+  counts: Record<'weights' | 'workouts' | 'waist' | 'checkins' | 'standaloneCardio', number>;
   rejected: { section: string; reason: string; count: number }[];
 };
 
@@ -398,6 +469,8 @@ export function parseDb(input: unknown): DbParseResult {
   const workouts = parseWorkouts([...asArray(src.workouts), ...legacyRaw]);
   const waist = parseWaist(src.waist);
   const checkins = parseCheckins(src.checkins);
+  // גיבוי מלפני המפתח הזה פשוט לא מכיל אותו — ריק, בלי דחייה.
+  const standaloneCardio = parseStandaloneCardio(src.standaloneCardio);
 
   return {
     db: {
@@ -407,6 +480,7 @@ export function parseDb(input: unknown): DbParseResult {
       legacyWorkouts: workouts.unparsed,
       waist: waist.ok,
       checkins: checkins.ok,
+      standaloneCardio: standaloneCardio.ok,
       settings: parseSettings(src.settings),
     },
     counts: {
@@ -414,6 +488,7 @@ export function parseDb(input: unknown): DbParseResult {
       workouts: workouts.ok.length,
       waist: waist.ok.length,
       checkins: checkins.ok.length,
+      standaloneCardio: standaloneCardio.ok.length,
     },
     rejected: [
       ...tally('משקל', weights.rejected),
@@ -423,6 +498,7 @@ export function parseDb(input: unknown): DbParseResult {
       ),
       ...tally('מותניים', waist.rejected),
       ...tally("צ'ק-אין", checkins.rejected),
+      ...tally('אירובי עצמאי', standaloneCardio.rejected),
     ],
   };
 }

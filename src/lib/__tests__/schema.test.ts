@@ -271,6 +271,36 @@ describe('parseWorkouts — חימום ואירובי', () => {
     });
   });
 
+  it('אירובי ארוך (30 דק׳ = 1,800 שנ׳) שורד קריאה — התקרה של חזרות לא חלה על שניות', () => {
+    const r = parseWorkouts([
+      {
+        schemaVersion: 2,
+        id: 'w',
+        d: '2026-09-05',
+        t: 'A',
+        ex: [
+          {
+            exerciseId: 'finisher-cardio',
+            n: 'אירובי',
+            sets: [{ weight: null, reps: null, seconds: 1800 }],
+            cardio: { mode: 'treadmill', minutes: 30, incline: 2.5, speed: 5 },
+          },
+          { exerciseId: 'leg-press', n: 'x', sets: [{ weight: 60, reps: 5000, seconds: null }] },
+        ],
+        knee: null,
+        shoulder: null,
+      },
+    ]);
+    expect(r.ok[0]?.ex[0]?.sets).toEqual([{ weight: null, reps: null, seconds: 1800 }]);
+    expect(r.ok[0]?.ex[0]?.cardio).toEqual({ mode: 'treadmill', minutes: 30, incline: 2.5, speed: 5 });
+    // חזרות עדיין מוגבלות ל-1000; שיפוע/מהירות מחוץ לטווח נשמטים בלי לדחות.
+    expect(r.ok[0]?.ex[1]?.sets).toEqual([{ weight: 60, reps: null, seconds: null }]);
+    const bad = parseWorkouts([
+      { d: '2026-09-05', t: 'A', ex: [{ exerciseId: 'finisher-cardio', sets: [], cardio: { mode: 'bike', minutes: 10, incline: 99, speed: 'x' } }] },
+    ]);
+    expect(bad.ok[0]?.ex[0]?.cardio).toEqual({ mode: 'bike', minutes: 10 });
+  });
+
   it('חימום בלי cardio או עם מצב לא מוכר — אופניים, דקות מהביצוע', () => {
     const r = parseWorkouts([
       {
@@ -433,7 +463,7 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
 
   it('מקבל את המבנה כמו שהוא ומדווח על דחיות', () => {
     const r = parseDb(legacyExport);
-    expect(r.counts).toEqual({ weights: 1, workouts: 1, waist: 0, checkins: 0 });
+    expect(r.counts).toEqual({ weights: 1, workouts: 1, waist: 0, checkins: 0, standaloneCardio: 0 });
     expect(r.rejected).toEqual([
       { section: 'משקל', reason: 'תאריך לא תקין', count: 1 },
     ]);
@@ -442,7 +472,7 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
 
   it('קלט שאינו אובייקט מחזיר DB ריק בלי לזרוק', () => {
     const r = parseDb('junk');
-    expect(r.counts).toEqual({ weights: 0, workouts: 0, waist: 0, checkins: 0 });
+    expect(r.counts).toEqual({ weights: 0, workouts: 0, waist: 0, checkins: 0, standaloneCardio: 0 });
   });
 
   it('אימון שבור בייבוא נשמר ב-legacyWorkouts ומדווח כ"נשמר כאימון ישן"', () => {

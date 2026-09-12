@@ -88,6 +88,7 @@ describe('buildChatReport — snapshot של הפורמט', () => {
       02/09 A — לג-פרס 60×12,12,10 · לחיצת חזה 30×10,10,8 · חתירת כבל 40×12,12,12 · פשיטת ברכיים 25×15,15 · כפיפת מרפקים 15×12,12 · פלאנק 45,40,40 שנ׳
       05/09 B — הרמות אגן 60×12,12,12 · פולי עליון 45×10,10,9 · Dead bug 10,10,10
       כאב: ברך 1 · כתף 2
+      אירובי: 0/60 דק׳ · סיום 0 · עצמאי 0
 
       צ'ק-אין
       היצמדות 8 · רעב 5 · אנרגיה 6 · שינה 6.5 שעות · נשנוש בלתי מתוכנן 1 ימים
@@ -192,7 +193,10 @@ describe('חימום ואירובי סיום בדוח', () => {
     };
     const text = buildChatReport(untouched, '2026-08-30', '2026-09-05');
     expect(text).not.toContain('חימום');
-    expect(text).not.toContain('אירובי');
+    // שורת האימון עצמה נקייה; שורת "אירובי: 0/60" השבועית מודפסת תמיד.
+    expect(text).toContain('02/09 A — לג-פרס 60×12,12,10 · לחיצת חזה');
+    expect(text).not.toMatch(/A — .*אירובי/);
+    expect(text).toContain('אירובי: 0/60 דק׳ · סיום 0 · עצמאי 0');
     expect(text).not.toContain('דולגו');
   });
 });
@@ -341,6 +345,7 @@ describe('backupJson', () => {
       'legacyWorkouts',
       'waist',
       'checkins',
+      'standaloneCardio',
       'settings',
     ]);
   });

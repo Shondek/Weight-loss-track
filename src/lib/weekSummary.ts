@@ -10,6 +10,7 @@ import { addDays, compareISO, formatDM, weekEnd, weekNumber } from './date';
 import { programStartWeek } from './db';
 import { clean, DASH } from './format';
 import { getCheckin } from './checkins';
+import { cardioWeek, standaloneInWeek, standaloneLine, type CardioWeek } from './cardio';
 import {
   cardioMinutesDone,
   cardioModeLabel,
@@ -54,9 +55,24 @@ function weightText(ex: LoggedExercise): string {
   return weights.map((w) => (w === null ? DASH : clean(w))).join(',');
 }
 
-/** "חימום אופניים 10 דק׳" — בלי נקודות-אמצע, שהן המפריד בין תרגילים. */
+/**
+ * "חימום אופניים 10 דק׳" — בלי נקודות-אמצע, שהן המפריד בין תרגילים.
+ * אירובי סיום עם שיפוע/מהירות: "אירובי הליכון 30 דק׳ 2.5% 5 קמ״ש".
+ */
 function cardioText(e: LoggedExercise): string {
-  return `${e.n} ${cardioModeLabel(cardioOf(e).mode)} ${n(cardioMinutesDone(e))} דק׳`;
+  const c = cardioOf(e);
+  const parts = [e.n, cardioModeLabel(c.mode), `${n(cardioMinutesDone(e))} דק׳`];
+  if (c.incline !== undefined) parts.push(`${c.incline}%`);
+  if (c.speed !== undefined) parts.push(`${c.speed} קמ״ש`);
+  return parts.join(' ');
+}
+
+/**
+ * שורת האירובי בדוח: "אירובי: 45/60 דק׳ · סיום 15 · עצמאי 30".
+ * תמיד מודפסת, גם באפס — כדי שהניתוח יראה שנרשם "לא היה" ולא "לא נמדד".
+ */
+export function cardioLineText(c: CardioWeek): string {
+  return `אירובי: ${c.total}/${c.budget} דק׳ · סיום ${c.finisher} · עצמאי ${c.standalone}`;
 }
 
 /** תרגיל אחד כפי שהוא מופיע בדוח: "לג-פרס 60×12,12,10". */
@@ -138,6 +154,10 @@ export type WeekReport = {
     knee: number | null;
     shoulder: number | null;
   };
+  /** דקות אירובי מול התקציב, ופירוט האירובי העצמאי. אינו חלק מ-`workouts`. */
+  cardio: CardioWeek & {
+    standaloneItems: { id: string; d: ISODate; text: string; note: string }[];
+  };
   checkin: WeeklyCheckin | null;
   /** ממוצעים שבועיים עד השבוע הזה ועד בכלל, מהישן לחדש. */
   recentWeeks: WeekSummary[];
@@ -183,6 +203,15 @@ export function buildWeekSummary(db: DB, week: ISODate, today: ISODate): WeekRep
       })),
       knee: peakPain(all, 'knee'),
       shoulder: peakPain(all, 'shoulder'),
+    },
+    cardio: {
+      ...cardioWeek(db, week),
+      standaloneItems: standaloneInWeek(db.standaloneCardio, week).map((e) => ({
+        id: e.id,
+        d: e.d,
+        text: standaloneLine(e),
+        note: e.note,
+      })),
     },
     checkin: getCheckin(db.checkins, week),
     recentWeeks: weeklyAverages(db.weights)

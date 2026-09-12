@@ -6,7 +6,7 @@
  * שום קובץ אחר לא מגדיר שניות.
  */
 
-import type { CardioMode, ExerciseType } from '../types';
+import type { CardioMode, ExerciseType, ISODate } from '../types';
 
 /**
  * מנוחה בשניות לפי סוג התנועה (`type` בכל תרגיל ב-program-abc.json).
@@ -38,18 +38,41 @@ export const WARMUP = {
 } as const;
 
 /**
- * אירובי סיום — התרגיל האחרון באימון, רק בימים שברשימה (0 = ראשון … 6 = שבת).
- * רשימה ריקה = כבוי לגמרי. אירובי שכבר נרשם ביום אחר לא מוסתר.
+ * אירובי סיום — התרגיל האחרון בכל אימון. השורה תמיד קיימת וריקה עד
+ * שלוחצים "התחל" (ראה `hasData`); אימון בלי אירובי פשוט לא רושם אותה.
+ * הדקות/שיפוע/מהירות ממולאים מהאירובי האחרון שנרשם; אלה ברירות המחדל
+ * כשאין כזה.
  */
-export const FINISHER_CARDIO_DAYS: readonly number[] = [6];
-
 export const FINISHER_CARDIO = {
   defaultMode: 'bike' as CardioMode,
-  defaultMinutes: 10,
+  defaultMinutes: 30,
+} as const;
+
+/** אירובי עצמאי — הכרטיס הרביעי במסך אימונים. אינו אימון. */
+export const STANDALONE_CARDIO = {
+  defaultMode: 'treadmill' as CardioMode,
+  defaultMinutes: 60,
+  defaultIncline: 2.5,
+  defaultSpeed: 5.0,
 } as const;
 
 /** תקרת דקות לשדה החימום/האירובי. */
 export const CARDIO_MAX_MINUTES = 120;
+
+/** שיפוע (%) ומהירות (קמ"ש): קפיצת ה-± והתקרה. */
+export const CARDIO_STEP = 0.5;
+export const CARDIO_INCLINE_MAX = 30;
+export const CARDIO_SPEED_MAX = 30;
+
+/**
+ * תקציב אירובי שבועי בדקות. סיום + עצמאי יחד, ראשון–שבת.
+ * הערך הבסיסי הוא שלב 1; `CARDIO_BUDGET_SCHEDULE` מעלה אותו מתאריך נתון
+ * (ראשון של השבוע שממנו התקציב החדש בתוקף). `cardioBudgetFor` ב-lib/cardio.ts.
+ */
+export const CARDIO_WEEKLY_BUDGET_MIN = 60;
+export const CARDIO_BUDGET_SCHEDULE: readonly { from: ISODate; minutes: number }[] = [
+  { from: '2026-11-01', minutes: 120 },
+];
 
 /** קפיצת כפתורי ה-± בשדה המשקל, בק"ג. */
 export const WEIGHT_STEP = 0.5;

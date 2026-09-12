@@ -4,6 +4,7 @@ import { useWeek } from '../useWeek';
 import {
   WORKOUT_SCHEMA_VERSION,
   type LoggedExercise,
+  type StandaloneCardio,
   type WorkoutEntry,
   type WorkoutType,
 } from '../types';
@@ -27,6 +28,8 @@ import {
   lastWeightOf,
   isTimedExercise,
   isWorkoutEmpty,
+  lastFinisherCardio,
+  FINISHER_ID,
   makeWorkoutId,
   nextType,
   prefilledExercises,
@@ -42,6 +45,16 @@ import {
   workoutsInWeek,
   WARMUP_ID,
 } from '../lib/workouts';
+import {
+  blankStandalone,
+  cardioWeek,
+  lastStandalone,
+  makeStandaloneId,
+  removeStandalone,
+  standaloneInWeek,
+  standaloneLine,
+  upsertStandalone,
+} from '../lib/cardio';
 import { compareISO, dayLetter, formatDM, formatDMY, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import { clean, DASH } from '../lib/format';
@@ -51,6 +64,7 @@ import Choice from '../components/Choice';
 import ConfirmButton from '../components/ConfirmButton';
 import ExerciseFocus from '../components/ExerciseFocus';
 import CardioFocus from '../components/CardioFocus';
+import StandaloneCardioEditor from '../components/StandaloneCardioEditor';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
 import { readEditor, writeEditor } from '../platform/uiState';
@@ -180,9 +194,22 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const [openId, setOpenId] = useState<string | null>(() => readEditor()?.openId ?? null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [focus, setFocus] = useState(() => readEditor()?.focus ?? 0);
+  /**
+   * אירובי עצמאי פתוח לעריכה. טיוטה במסך עד "שמור" — הטופס נפתח ממולא,
+   * ולכן "ריק = טיוטה" של האימון לא חל כאן. `existing` = כבר באחסון.
+   */
+  const [cardioOpen, setCardioOpen] = useState<StandaloneCardio | null>(null);
 
   const start = useMemo(() => programStartWeek(db), [db]);
+  // כוח בלבד. אירובי עצמאי חי ב-db.standaloneCardio ולא נכנס לכאן.
   const inWeek = useMemo(() => workoutsInWeek(db.workouts, week), [db.workouts, week]);
+  const cardioInWeek = useMemo(
+    () => standaloneInWeek(db.standaloneCardio, week),
+    [db.standaloneCardio, week],
+  );
+  const cardioSum = useMemo(() => cardioWeek(db, week), [db, week]);
+  const cardioExisting =
+    cardioOpen !== null && db.standaloneCardio.some((e) => e.id === cardioOpen.id);
   const upNext = useMemo(() => nextType(db.workouts), [db.workouts]);
   const history = useMemo(
     () => sortWorkouts(db.workouts).slice(-HISTORY_COUNT).reverse(),
@@ -247,16 +274,37 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const startWorkout = (t: WorkoutType) => {
     const d = defaultDate;
     setOpenId(null);
+    setCardioOpen(null);
     setFocus(0);
     setDraft({
       schemaVersion: WORKOUT_SCHEMA_VERSION,
       id: makeWorkoutId(d, t, newId()),
       d,
       t,
-      ex: prefilledExercises(db.workouts, t, d),
+      ex: prefilledExercises(db.workouts, t),
       knee: null,
       shoulder: null,
     });
+  };
+
+  /** הכרטיס הרביעי. פותח טופס ממולא — לא כותב עד "שמור". */
+  const startStandalone = () => {
+    const d = defaultDate;
+    setDraft(null);
+    setOpenId(null);
+    timer.skip();
+    setCardioOpen(blankStandalone(db.standaloneCardio, d, makeStandaloneId(d, newId())));
+  };
+
+  const saveStandalone = () => {
+    if (!cardioOpen || cardioOpen.minutes <= 0) return;
+    void store.update('standaloneCardio', upsertStandalone(db.standaloneCardio, cardioOpen));
+    setCardioOpen(null);
+  };
+
+  const deleteStandalone = (id: string) => {
+    void store.update('standaloneCardio', removeStandalone(db.standaloneCardio, id));
+    if (cardioOpen?.id === id) setCardioOpen(null);
   };
 
   /**
@@ -286,6 +334,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   /** פותח אימון קיים לעריכה ומעביר את התצוגה לשבוע שלו. */
   const editWorkout = (w: WorkoutEntry) => {
     setDraft(null);
+    setCardioOpen(null);
     setOpenId(w.id);
     setWeek(weekStart(w.d));
     setExpanded(null);
@@ -347,6 +396,15 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           <span className="num">{WORKOUTS_PER_WEEK}</span> אימונים השבוע · הבא בתור:{' '}
           <span className="strong">{upNext}</span>
         </p>
+        {/* דקות, לא מפגשים. סיום מתוך האימונים, עצמאי מהמפתח שלו. */}
+        <p className="sub" style={{ margin: 'var(--sp-1) 0 0' }}>
+          אירובי: <span className="num">{cardioSum.total}</span> /{' '}
+          <span className="num">{cardioSum.budget}</span> דק׳{' '}
+          <span className="muted tiny">
+            · סיום: <span className="num">{cardioSum.finisher}</span> · עצמאי:{' '}
+            <span className="num">{cardioSum.standalone}</span>
+          </span>
+        </p>
         {/* האימונים של השבוע שנבחר. ההיסטוריה למטה מציגה רק את האחרונים,
             וזו הדרך להגיע לאימון ישן יותר — לנווט לשבוע שלו. */}
         {inWeek.length > 0 && (
@@ -354,9 +412,36 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
             {[...inWeek].reverse().map(renderRow('week'))}
           </ul>
         )}
+        {/* אירובי עצמאי של השבוע — רשימה נפרדת, כי הוא לא אימון. */}
+        {cardioInWeek.length > 0 && (
+          <ul className="list list--block small" style={{ marginTop: 'var(--sp-2)' }}>
+            {[...cardioInWeek].reverse().map((e) => (
+              <li key={e.id}>
+                <div className="row">
+                  <span className="grow">
+                    <span className="num">{formatDM(e.d)}</span>{' '}
+                    <span className="muted tiny">{dayLetter(e.d)}</span>{' '}
+                    <span className="muted">אירובי</span> — {standaloneLine(e)}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn--quiet"
+                    onClick={() => {
+                      setDraft(null);
+                      setOpenId(null);
+                      setCardioOpen(e);
+                    }}
+                  >
+                    ערוך
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
-      {!open && (
+      {!open && !cardioOpen && (
         <section className="section">
           <h2 style={{ marginBottom: 'var(--sp-3)' }}>אימון חדש</h2>
           <div className="choice choice--big">
@@ -372,8 +457,31 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                 {t === upNext && <span className="choice__hint">הבא בתור</span>}
               </button>
             ))}
+            {/* לא אימון: שורה משלו, מקווקו, בלי "הבא בתור". */}
+            <button
+              type="button"
+              className="choice__btn choice__btn--aside"
+              aria-pressed={false}
+              onClick={startStandalone}
+            >
+              אירובי — עצמאי
+              <span className="choice__hint">לא נספר כאימון</span>
+            </button>
           </div>
         </section>
+      )}
+
+      {cardioOpen && (
+        <StandaloneCardioEditor
+          value={cardioOpen}
+          existing={cardioExisting}
+          today={today}
+          onChange={setCardioOpen}
+          onSave={saveStandalone}
+          onClose={() => setCardioOpen(null)}
+          onDelete={() => deleteStandalone(cardioOpen.id)}
+          defaultsFor={(mode) => lastStandalone(db.standaloneCardio, mode)}
+        />
       )}
 
       {open && (
@@ -436,6 +544,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                 });
               }}
               onStart={(minutes) => onCardioStart(current, minutes)}
+              detailed={current.exerciseId === FINISHER_ID}
+              defaultsFor={
+                current.exerciseId === FINISHER_ID
+                  ? (mode) => lastFinisherCardio(db.workouts, mode, open.id)
+                  : undefined
+              }
             />
           )}
 
