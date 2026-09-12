@@ -461,6 +461,33 @@ button {
   font-weight: 400;
 }
 
+/*
+ * כרטיס שאינו אימון (אירובי עצמאי): שורה משלו מתחת ל-A/B/C, מסגרת
+ * מקווקוות, בלי משקל — כדי שלא ייקרא כאימון רביעי.
+ */
+.choice--big .choice__btn--aside {
+  flex: 1 0 100%;
+  min-height: 48px;
+  border-style: dashed;
+  background: var(--paper-sunk);
+  color: var(--ink-2);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.choice--big .choice__btn--aside[aria-pressed='true'] {
+  background: var(--ink-2);
+  color: var(--paper);
+  border-style: solid;
+}
+
+/* סקשן של דבר שאינו אימון — אותו סימון מקווקו כמו הכרטיס. */
+.section--aside {
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+}
+
 /* ---------- באנרים ---------- */
 
 .banner {
@@ -822,6 +849,17 @@ button {
   width: 84px;
   min-height: 52px;
   font-size: 19px;
+}
+
+/* שיפוע | מהירות — לאירובי סיום בלבד */
+.cardio__gauges {
+  margin-top: var(--sp-3);
+  align-items: flex-start;
+}
+
+.cardio__gauges > * {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* ---------- טיימר מנוחה ---------- */

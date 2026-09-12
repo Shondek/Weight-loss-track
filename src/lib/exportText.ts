@@ -27,7 +27,8 @@ import {
   WEEK_LENGTH,
   type WeekSummary,
 } from './weights';
-import { weekGaps, workoutText } from './weekSummary';
+import { cardioLineText, weekGaps, workoutText } from './weekSummary';
+import { cardioWeek, standaloneInWeek, standaloneLine } from './cardio';
 
 function n(v: number | null | undefined, digits = 0): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return DASH;
@@ -102,6 +103,12 @@ function build(db: DB, week: ISODate, today: ISODate, opts: Options): string {
     }
   }
   L.push(`כאב: ברך ${n(peakPain(all, 'knee'))} · כתף ${n(peakPain(all, 'shoulder'))}`);
+  // אירובי: סיום (מתוך האימונים) + עצמאי, מול התקציב. העצמאי מפורט בשורות
+  // משלו כי הוא אינו אימון ולא נספר ב-"אימונים: n/3".
+  L.push(cardioLineText(cardioWeek(db, week)));
+  for (const e of standaloneInWeek(db.standaloneCardio, week)) {
+    L.push(`${formatDM(e.d)} עצמאי — ${standaloneLine(e)}`);
+  }
   L.push('');
 
   // ---- צ'ק-אין ----
@@ -171,6 +178,8 @@ export type BackupFile = {
   legacyWorkouts: DB['legacyWorkouts'];
   waist: DB['waist'];
   checkins: DB['checkins'];
+  /** אירובי עצמאי. גיבוי מלפני המפתח הזה פשוט לא מכיל אותו, ונקלט כרגיל. */
+  standaloneCardio: DB['standaloneCardio'];
   settings: DB['settings'];
 };
 
@@ -184,6 +193,7 @@ export function buildBackup(db: DB, exportedAt: string): BackupFile {
     legacyWorkouts: db.legacyWorkouts,
     waist: db.waist,
     checkins: db.checkins,
+    standaloneCardio: db.standaloneCardio,
     settings: db.settings,
   };
 }

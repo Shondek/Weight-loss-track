@@ -5,6 +5,7 @@ import { compareISO, weekStart } from './date';
 import { upsertCheckin } from './checkins';
 import { upsertWaist, upsertWeight } from './weights';
 import { upsertWorkout } from './workouts';
+import { upsertStandalone } from './cardio';
 
 /** התאריך המוקדם ביותר שיש עליו נתון כלשהו. */
 export function firstDataDate(db: DB): ISODate | null {
@@ -16,6 +17,7 @@ export function firstDataDate(db: DB): ISODate | null {
   for (const e of db.workouts) take(e.d);
   for (const e of db.waist) take(e.d);
   for (const c of db.checkins) take(c.weekStart);
+  for (const e of db.standaloneCardio) take(e.d);
   return best;
 }
 
@@ -31,7 +33,13 @@ export function programStartWeek(db: DB): ISODate | null {
 
 /** כמה רשומות נתונים יש בסך הכול. הגדרות אינן רשומה. */
 export function recordCount(db: DB): number {
-  return db.weights.length + db.workouts.length + db.waist.length + db.checkins.length;
+  return (
+    db.weights.length +
+    db.workouts.length +
+    db.waist.length +
+    db.checkins.length +
+    db.standaloneCardio.length
+  );
 }
 
 /** המאוחר מבין שני תאריכים, או מה שקיים כשאחד מהם חסר. */
@@ -43,7 +51,7 @@ function laterOf(a: ISODate | null, b: ISODate | null): ISODate | null {
 
 /**
  * מיזוג ייבוא לתוך הנתונים הקיימים. הרשומה המיובאת גוברת על התנגשות:
- * משקל ומותניים לפי תאריך, אימון לפי מזהה, צ'ק-אין לפי שבוע.
+ * משקל ומותניים לפי תאריך, אימון ואירובי עצמאי לפי מזהה, צ'ק-אין לפי שבוע.
  * שום דבר קיים לא נמחק — לכן ייבוא בטעות אינו מאבד נתונים.
  *
  * הגדרות מתמזגות שדה-שדה: תחילת התוכנית מהקובץ אם יש בו כזו, הצליל הוא
@@ -62,12 +70,18 @@ export function mergeDb(current: DB, incoming: DB): DB {
   let checkins = current.checkins;
   for (const c of incoming.checkins) checkins = upsertCheckin(checkins, c);
 
+  let standaloneCardio = current.standaloneCardio;
+  for (const e of incoming.standaloneCardio) {
+    standaloneCardio = upsertStandalone(standaloneCardio, e);
+  }
+
   return {
     weights,
     waist,
     workouts,
     legacyWorkouts: mergeLegacy(current.legacyWorkouts, incoming.legacyWorkouts),
     checkins,
+    standaloneCardio,
     settings: {
       programStart: incoming.settings.programStart ?? current.settings.programStart,
       soundEnabled: current.settings.soundEnabled,

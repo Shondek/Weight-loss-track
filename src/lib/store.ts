@@ -8,13 +8,21 @@
 
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { emptyDb, type DB } from '../types';
-import { parseSettings, parseWeights, parseWorkouts, parseWaist, parseCheckins } from './schema';
+import {
+  parseCheckins,
+  parseSettings,
+  parseStandaloneCardio,
+  parseWaist,
+  parseWeights,
+  parseWorkouts,
+} from './schema';
 
 export const STORAGE_KEYS = {
   weights: 'fatloss:weights',
   workouts: 'fatloss:workouts',
   waist: 'fatloss:waist',
   checkins: 'fatloss:checkins',
+  standaloneCardio: 'fatloss:cardio-standalone',
   settings: 'fatloss:settings',
 } as const;
 
@@ -41,6 +49,7 @@ export const KEY_LABELS: Record<DbKey, string> = {
   workouts: 'אימונים',
   waist: 'מותניים',
   checkins: "צ'ק-אין",
+  standaloneCardio: 'אירובי עצמאי',
   settings: 'הגדרות',
 };
 
@@ -205,6 +214,11 @@ export async function loadDB(): Promise<LoadResult> {
         const r = parseCheckins(raw);
         db.checkins = r.ok;
         if (fromLegacy && r.ok.length) migrated.push(`${r.ok.length} צ'ק-אינים`);
+        break;
+      }
+      case 'standaloneCardio': {
+        // מפתח חדש: לפני שנוצר אין מה לקרוא, ו-parse על undefined מחזיר ריק.
+        db.standaloneCardio = parseStandaloneCardio(raw).ok;
         break;
       }
       case 'settings':

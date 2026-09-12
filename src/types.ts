@@ -27,8 +27,33 @@ export type CardioMode = 'bike' | 'treadmill';
 /**
  * חימום או אירובי סיום. `minutes` הוא מה שהוזן בשדה; הביצוע עצמו נרשם
  * ב-`sets[0].seconds` ברגע שלוחצים "התחל" — עד אז השורה ריקה ולא נחשבת נתון.
+ *
+ * `incline` (אחוז) ו-`speed` (קמ"ש) אופציונליים: נוספו אחרי שרשומות כבר
+ * נשמרו בלעדיהם, ורשומה ישנה נטענת כמו שהיא. רלוונטיים לאירובי סיום.
  */
-export type CardioLog = { mode: CardioMode; minutes: number };
+export type CardioLog = {
+  mode: CardioMode;
+  minutes: number;
+  incline?: number;
+  speed?: number;
+};
+
+/**
+ * אירובי עצמאי — לא חלק מאימון כוח, ולכן לא ברשומת אימון ולא בספירת
+ * "אימונים השבוע". מפתח אחסון משלו (`fatloss:cardio-standalone`).
+ * `incline`/`speed` הם null כשלא הוזנו.
+ */
+export type StandaloneCardio = {
+  id: string;
+  d: ISODate;
+  mode: CardioMode;
+  minutes: number;
+  /** אחוז */
+  incline: number | null;
+  /** קמ"ש */
+  speed: number | null;
+  note: string;
+};
 
 /** סט בודד. `seconds` לתרגילי זמן, `reps` לכל השאר. */
 export type LoggedSet = {
@@ -143,6 +168,8 @@ export type DB = {
   legacyWorkouts: LegacyWorkout[];
   waist: WaistEntry[];
   checkins: WeeklyCheckin[];
+  /** אירובי עצמאי. נפרד מ-`workouts` בכוונה — ראה `StandaloneCardio`. */
+  standaloneCardio: StandaloneCardio[];
   settings: Settings;
 };
 
@@ -157,6 +184,7 @@ export function emptyDb(): DB {
     legacyWorkouts: [],
     waist: [],
     checkins: [],
+    standaloneCardio: [],
     settings: { ...DEFAULT_SETTINGS },
   };
 }

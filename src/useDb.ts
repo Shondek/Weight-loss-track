@@ -44,7 +44,14 @@ export type DbApi = DbState & {
 
 const WRITE_HELP = 'ייצא גיבוי ממסך "נתונים" לפני שתמשיך.';
 
-const ALL_KEYS: DbKey[] = ['weights', 'workouts', 'waist', 'checkins', 'settings'];
+const ALL_KEYS: DbKey[] = [
+  'weights',
+  'workouts',
+  'waist',
+  'checkins',
+  'standaloneCardio',
+  'settings',
+];
 
 export function useDb(): DbApi {
   const [state, setState] = useState<DbState>({
