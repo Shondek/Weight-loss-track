@@ -9,7 +9,8 @@
  * המונה השבועי סוכם דקות משני המקורות מול תקציב בדקות (config.ts).
  */
 
-import type { CardioMode, DB, ISODate, StandaloneCardio, WorkoutEntry } from '../types';
+import type { CardioMode, CardioSegment, DB, ISODate, StandaloneCardio, WorkoutEntry } from '../types';
+import { dominantSegment, segmentsOf, segmentsText, stepsText, totalMinutes } from './cardioSession';
 import {
   CARDIO_BUDGET_SCHEDULE,
   CARDIO_WEEKLY_BUDGET_MIN,
@@ -94,10 +95,45 @@ export function blankStandalone(
   };
 }
 
-/** "הליכון · 60 דק׳ · שיפוע 2.5% · 5 קמ״ש" — השורה ברשימה ובדוח. */
+/**
+ * "הליכון · 60 דק׳ · שיפוע 2.5% · 5 קמ״ש" — השורה ברשימה ובדוח. השיפוע
+ * והמהירות הם של המקטע הארוך ביותר; הפירוט ב-`standaloneDetailLine`.
+ */
 export function standaloneLine(e: StandaloneCardio): string {
   const gauges = cardioGaugeText(e.incline, e.speed);
   return `${cardioModeLabel(e.mode)} · ${e.minutes} דק׳${gauges ? ` · ${gauges}` : ''}`;
+}
+
+/** פירוט מקטעים (כשיש יותר מאחד) וצעדים (כשנרשמו). null כשאין מה להוסיף. */
+export function standaloneDetailLine(e: StandaloneCardio): string | null {
+  const parts: string[] = [];
+  const segs = segmentsOf(e);
+  if (segs.length > 1) parts.push(segmentsText(segs));
+  if (e.steps !== undefined) parts.push(stepsText(e.steps));
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/**
+ * סיום ריצה עצמאית: מקטעים וצעדים לתוך הרשומה, `minutes` = הסכום,
+ * שיפוע/מהירות = של המקטע הארוך ביותר.
+ */
+export function finishStandalone(
+  base: Pick<StandaloneCardio, 'id' | 'd' | 'mode' | 'note'>,
+  segments: readonly CardioSegment[],
+  steps: number | null,
+): StandaloneCardio {
+  const dom = dominantSegment(segments);
+  return {
+    id: base.id,
+    d: base.d,
+    mode: base.mode,
+    note: base.note,
+    minutes: totalMinutes(segments),
+    incline: dom?.incline ?? null,
+    speed: dom?.speed ?? null,
+    ...(segments.length > 0 ? { segments: segments.map((x) => ({ ...x })) } : {}),
+    ...(steps !== null ? { steps } : {}),
+  };
 }
 
 // ---------- מונה שבועי ----------
@@ -142,11 +178,45 @@ export type CardioWeek = {
   standalone: number;
   total: number;
   budget: number;
+  /**
+   * סך צעדי הליכון בשבוע (סיום + עצמאי). null כשאף רשומה לא רשמה צעדים —
+   * ואז לא מוצג. לא מד צעדים יומי: בלי יעד, בלי אחוזים.
+   */
+  steps: number | null;
 };
+
+/** Σ צעדים ברשומות שרשמו; null כשאין אף אחת. */
+export function stepsInWeek(db: DB, ws: ISODate): number | null {
+  let sum = 0;
+  let any = false;
+  for (const w of workoutsInWeek(db.workouts, ws)) {
+    for (const ex of w.ex) {
+      if (ex.exerciseId !== FINISHER_ID || cardioMinutesDone(ex) === null) continue;
+      const steps = ex.cardio?.steps;
+      if (steps !== undefined) {
+        sum += steps;
+        any = true;
+      }
+    }
+  }
+  for (const e of standaloneInWeek(db.standaloneCardio, ws)) {
+    if (e.steps !== undefined) {
+      sum += e.steps;
+      any = true;
+    }
+  }
+  return any ? sum : null;
+}
 
 /** "X / 60 דק׳ · סיום: __ · עצמאי: __" — המספרים מאחורי המונה. */
 export function cardioWeek(db: DB, ws: ISODate): CardioWeek {
   const finisher = finisherMinutesInWeek(db.workouts, ws);
   const standalone = standaloneMinutesInWeek(db.standaloneCardio, ws);
-  return { finisher, standalone, total: finisher + standalone, budget: cardioBudgetFor(ws) };
+  return {
+    finisher,
+    standalone,
+    total: finisher + standalone,
+    budget: cardioBudgetFor(ws),
+    steps: stepsInWeek(db, ws),
+  };
 }

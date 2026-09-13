@@ -10,7 +10,14 @@ import { addDays, compareISO, formatDM, weekEnd, weekNumber } from './date';
 import { programStartWeek } from './db';
 import { clean, DASH } from './format';
 import { getCheckin } from './checkins';
-import { cardioWeek, standaloneInWeek, standaloneLine, type CardioWeek } from './cardio';
+import {
+  cardioWeek,
+  standaloneDetailLine,
+  standaloneInWeek,
+  standaloneLine,
+  type CardioWeek,
+} from './cardio';
+import { segmentsOf, segmentsText, stepsText } from './cardioSession';
 import {
   cardioMinutesDone,
   cardioModeLabel,
@@ -57,22 +64,28 @@ function weightText(ex: LoggedExercise): string {
 
 /**
  * "חימום אופניים 10 דק׳" — בלי נקודות-אמצע, שהן המפריד בין תרגילים.
- * אירובי סיום עם שיפוע/מהירות: "אירובי הליכון 30 דק׳ 2.5% 5 קמ״ש".
+ * אירובי סיום עם שיפוע/מהירות: "אירובי הליכון 30 דק׳ 10% 3.5 קמ״ש" (של
+ * המקטע הארוך ביותר), ואחריו המקטעים בסוגריים כשיש יותר מאחד, וצעדים.
  */
 function cardioText(e: LoggedExercise): string {
   const c = cardioOf(e);
   const parts = [e.n, cardioModeLabel(c.mode), `${n(cardioMinutesDone(e))} דק׳`];
   if (c.incline !== undefined) parts.push(`${c.incline}%`);
   if (c.speed !== undefined) parts.push(`${c.speed} קמ״ש`);
+  const segs = segmentsOf(c);
+  if (segs.length > 1) parts.push(`(${segmentsText(segs)})`);
+  if (c.steps !== undefined) parts.push(stepsText(c.steps));
   return parts.join(' ');
 }
 
 /**
- * שורת האירובי בדוח: "אירובי: 45/60 דק׳ · סיום 15 · עצמאי 30".
- * תמיד מודפסת, גם באפס — כדי שהניתוח יראה שנרשם "לא היה" ולא "לא נמדד".
+ * שורת האירובי בדוח: "אירובי: 45/60 דק׳ · סיום 15 · עצמאי 30", ו-"· 7,200
+ * צעדים" רק כשלפחות רשומה אחת רשמה צעדים. תמיד מודפסת, גם באפס — כדי
+ * שהניתוח יראה שנרשם "לא היה" ולא "לא נמדד".
  */
 export function cardioLineText(c: CardioWeek): string {
-  return `אירובי: ${c.total}/${c.budget} דק׳ · סיום ${c.finisher} · עצמאי ${c.standalone}`;
+  const base = `אירובי: ${c.total}/${c.budget} דק׳ · סיום ${c.finisher} · עצמאי ${c.standalone}`;
+  return c.steps === null ? base : `${base} · ${stepsText(c.steps)}`;
 }
 
 /** תרגיל אחד כפי שהוא מופיע בדוח: "לג-פרס 60×12,12,10". */
@@ -156,7 +169,14 @@ export type WeekReport = {
   };
   /** דקות אירובי מול התקציב, ופירוט האירובי העצמאי. אינו חלק מ-`workouts`. */
   cardio: CardioWeek & {
-    standaloneItems: { id: string; d: ISODate; text: string; note: string }[];
+    standaloneItems: {
+      id: string;
+      d: ISODate;
+      text: string;
+      /** פירוט מקטעים וצעדים, או null. */
+      detail: string | null;
+      note: string;
+    }[];
   };
   checkin: WeeklyCheckin | null;
   /** ממוצעים שבועיים עד השבוע הזה ועד בכלל, מהישן לחדש. */
@@ -210,6 +230,7 @@ export function buildWeekSummary(db: DB, week: ISODate, today: ISODate): WeekRep
         id: e.id,
         d: e.d,
         text: standaloneLine(e),
+        detail: standaloneDetailLine(e),
         note: e.note,
       })),
     },

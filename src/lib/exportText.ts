@@ -28,7 +28,7 @@ import {
   type WeekSummary,
 } from './weights';
 import { cardioLineText, weekGaps, workoutText } from './weekSummary';
-import { cardioWeek, standaloneInWeek, standaloneLine } from './cardio';
+import { cardioWeek, standaloneDetailLine, standaloneInWeek, standaloneLine } from './cardio';
 
 function n(v: number | null | undefined, digits = 0): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return DASH;
@@ -107,7 +107,8 @@ function build(db: DB, week: ISODate, today: ISODate, opts: Options): string {
   // משלו כי הוא אינו אימון ולא נספר ב-"אימונים: n/3".
   L.push(cardioLineText(cardioWeek(db, week)));
   for (const e of standaloneInWeek(db.standaloneCardio, week)) {
-    L.push(`${formatDM(e.d)} עצמאי — ${standaloneLine(e)}`);
+    const detail = standaloneDetailLine(e);
+    L.push(`${formatDM(e.d)} עצמאי — ${standaloneLine(e)}${detail ? ` (${detail})` : ''}`);
   }
   L.push('');
 
