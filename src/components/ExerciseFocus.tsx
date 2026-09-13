@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { LoggedExercise, LoggedSet } from '../types';
 import type { Exercise } from '../data/program';
 import { WEIGHT_STEP } from '../data/config';
@@ -20,6 +20,12 @@ type Props = {
   fullHistory: ExerciseHistory[];
   /** נקרא כשסט עובר מריק למלא — מפעיל את טיימר המנוחה. */
   onSetLogged: (setIndex: number) => void;
+  /**
+   * האם "ביצועים קודמים" פתוח. חי מעל הקומפוננטה כדי שהבחירה תהיה אחת
+   * לכל התרגילים ותישמר בין פתיחות (uiState), לא תתאפס במעבר תרגיל.
+   */
+  historyOpen: boolean;
+  onToggleHistory: () => void;
 };
 
 const MAX_WEIGHT = 500;
@@ -62,12 +68,15 @@ export default function ExerciseFocus({
   history,
   fullHistory,
   onSetLogged,
+  historyOpen,
+  onToggleHistory,
 }: Props) {
   const timed = spec.isTimed;
   const usesWeight = !timed && !spec.bodyweightOnly;
   const side = sideLabel(spec);
   const weight = lastWeightOf(log);
   const [showAll, setShowAll] = useState(false);
+  const historyId = useId();
   const measure = timed ? 'seconds' : usesWeight ? 'weight' : 'reps';
   const unit = timed ? 'שנ׳' : usesWeight ? 'ק״ג' : 'חזרות';
   const points = progressPoints(fullHistory, measure);
@@ -131,41 +140,63 @@ export default function ExerciseFocus({
 
       {spec.note && <p className="focus__note small">{spec.note}</p>}
 
-      {/* היסטוריה לקריאה בלבד: הביצועים האחרונים, לפני שדות הקלט. */}
-      <div className="focus__history" aria-label={`ביצועים קודמים — ${spec.name}`}>
-        {history.length === 0 ? (
-          <p className="tiny muted" style={{ margin: 0 }}>
-            אין ביצוע קודם
-          </p>
-        ) : (
-          <ul className="list list--block tiny muted">
-            {history.map((h) => (
-              <li key={h.workoutId} className="num">
-                {historyText(h, timed, usesWeight)}
-              </li>
-            ))}
-          </ul>
-        )}
-        {fullHistory.length >= 2 && (
-          <button
-            type="button"
-            className="btn btn--quiet"
-            aria-expanded={showAll}
-            onClick={() => setShowAll((v) => !v)}
-          >
-            {showAll ? 'הסתר' : 'כל ההיסטוריה'} (<span className="num">{fullHistory.length}</span>)
-          </button>
-        )}
-        {showAll && (
-          <div className="stack--tight" style={{ marginTop: 'var(--sp-2)' }}>
-            <ExerciseChart points={points} unit={unit} label={`התקדמות ${spec.name}`} />
-            <ul className="list list--block tiny muted" aria-label={`כל הביצועים — ${spec.name}`}>
-              {[...fullHistory].reverse().map((h) => (
+      {/*
+        היסטוריה לקריאה בלבד, מקופלת: הכותרת תמיד גלויה ואומרת כמה יש
+        (או "אין"), התוכן נפתח בלחיצה. הגרף ו"כל ההיסטוריה" מקוננים בפנים.
+      */}
+      <div className="focus__history">
+        <button
+          type="button"
+          className="btn btn--quiet focus__history-toggle"
+          aria-expanded={historyOpen}
+          aria-controls={historyId}
+          onClick={onToggleHistory}
+        >
+          <span className="grow" style={{ textAlign: 'start' }}>
+            ביצועים קודמים
+            {history.length === 0 ? (
+              <span className="muted"> · אין</span>
+            ) : (
+              <>
+                {' '}
+                (<span className="num">{fullHistory.length}</span>)
+              </>
+            )}
+          </span>
+          <span aria-hidden="true">{historyOpen ? '▾' : '▸'}</span>
+        </button>
+
+        {historyOpen && history.length > 0 && (
+          <div id={historyId} aria-label={`ביצועים קודמים — ${spec.name}`}>
+            <ul className="list list--block tiny muted">
+              {history.map((h) => (
                 <li key={h.workoutId} className="num">
                   {historyText(h, timed, usesWeight)}
                 </li>
               ))}
             </ul>
+            {fullHistory.length >= 2 && (
+              <button
+                type="button"
+                className="btn btn--quiet"
+                aria-expanded={showAll}
+                onClick={() => setShowAll((v) => !v)}
+              >
+                {showAll ? 'הסתר' : 'כל ההיסטוריה'} (<span className="num">{fullHistory.length}</span>)
+              </button>
+            )}
+            {showAll && (
+              <div className="stack--tight" style={{ marginTop: 'var(--sp-2)' }}>
+                <ExerciseChart points={points} unit={unit} label={`התקדמות ${spec.name}`} />
+                <ul className="list list--block tiny muted" aria-label={`כל הביצועים — ${spec.name}`}>
+                  {[...fullHistory].reverse().map((h) => (
+                    <li key={h.workoutId} className="num">
+                      {historyText(h, timed, usesWeight)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>

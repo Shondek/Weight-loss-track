@@ -12,6 +12,7 @@
 
 const TIMER_KEY = 'fatloss:ui:timer';
 const EDITOR_KEY = 'fatloss:ui:editor';
+const PREFS_KEY = 'fatloss:ui:prefs';
 
 /** אימון פתוח שנשכח נחשב נטוש אחרי שש שעות. */
 const EDITOR_TTL_MS = 6 * 60 * 60 * 1000;
@@ -30,6 +31,14 @@ export type TimerState = {
   pausedMs: number | null;
 };
 export type EditorState = { openId: string; focus: number; at: number };
+
+/**
+ * העדפות תצוגה. `historyOpen` — האם "ביצועים קודמים" במסך האימון פתוח.
+ * ברירת המחדל הראשונית סגורה; הבחירה האחרונה נשמרת בין פתיחות.
+ */
+export type Prefs = { historyOpen: boolean };
+
+export const DEFAULT_PREFS: Prefs = { historyOpen: false };
 
 function read<T>(key: string): T | null {
   try {
@@ -77,4 +86,17 @@ export function readEditor(): EditorState | null {
 
 export function writeEditor(v: { openId: string; focus: number } | null): void {
   write(EDITOR_KEY, v === null ? null : { ...v, at: Date.now() });
+}
+
+/** העדפות התצוגה. שדה חסר או שבור חוזר לברירת המחדל שלו. */
+export function readPrefs(): Prefs {
+  const v = read<Partial<Prefs>>(PREFS_KEY);
+  return {
+    historyOpen:
+      typeof v?.historyOpen === 'boolean' ? v.historyOpen : DEFAULT_PREFS.historyOpen,
+  };
+}
+
+export function writePrefs(v: Prefs): void {
+  write(PREFS_KEY, v);
 }
