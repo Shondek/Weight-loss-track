@@ -872,6 +872,20 @@ button {
   margin: 0;
 }
 
+/* כותרת האקורדיון: שורה מלאה, אזור מגע 44px, בלי מסגרת. */
+.focus__history-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--tap);
+  padding-inline: 0;
+  font-size: 14px;
+}
+
+.focus__history-toggle + div {
+  margin-top: var(--sp-1);
+}
+
 .focus__weight {
   margin-top: var(--sp-4);
 }

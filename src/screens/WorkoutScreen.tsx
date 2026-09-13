@@ -67,7 +67,7 @@ import CardioFocus from '../components/CardioFocus';
 import StandaloneCardioEditor from '../components/StandaloneCardioEditor';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
-import { readEditor, writeEditor } from '../platform/uiState';
+import { readEditor, readPrefs, writeEditor, writePrefs } from '../platform/uiState';
 
 const HISTORY_COUNT = 12;
 const PAIN_SCALE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -199,6 +199,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
    * ולכן "ריק = טיוטה" של האימון לא חל כאן. `existing` = כבר באחסון.
    */
   const [cardioOpen, setCardioOpen] = useState<StandaloneCardio | null>(null);
+  /** "ביצועים קודמים" פתוח/סגור — בחירה אחת לכל התרגילים, נשמרת בין פתיחות. */
+  const [historyOpen, setHistoryOpen] = useState(() => readPrefs().historyOpen);
 
   const start = useMemo(() => programStartWeek(db), [db]);
   // כוח בלבד. אירובי עצמאי חי ב-db.standaloneCardio ולא נכנס לכאן.
@@ -239,6 +241,10 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   useEffect(() => {
     writeEditor(openId ? { openId, focus } : null);
   }, [openId, focus]);
+
+  useEffect(() => {
+    writePrefs({ historyOpen });
+  }, [historyOpen]);
 
   const defaultDate = compareISO(week, weekStart(today)) === 0 ? today : weekEnd(week);
 
@@ -571,6 +577,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                 });
               }}
               onSetLogged={(i) => onSetLogged(current, i)}
+              historyOpen={historyOpen}
+              onToggleHistory={() => setHistoryOpen((v) => !v)}
             />
           )}
 
