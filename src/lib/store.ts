@@ -10,8 +10,12 @@ import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { emptyDb, type DB } from '../types';
 import {
   parseCheckins,
+  parseCustomFoods,
+  parseEntries,
+  parseFavorites,
   parseSettings,
   parseStandaloneCardio,
+  parseTargets,
   parseWaist,
   parseWeights,
   parseWorkouts,
@@ -24,6 +28,10 @@ export const STORAGE_KEYS = {
   checkins: 'fatloss:checkins',
   standaloneCardio: 'fatloss:cardio-standalone',
   settings: 'fatloss:settings',
+  customFoods: 'fatloss:customFoods',
+  entries: 'fatloss:entries',
+  targets: 'fatloss:targets',
+  favorites: 'fatloss:favorites',
 } as const;
 
 /**
@@ -51,6 +59,10 @@ export const KEY_LABELS: Record<DbKey, string> = {
   checkins: "צ'ק-אין",
   standaloneCardio: 'אירובי עצמאי',
   settings: 'הגדרות',
+  customFoods: 'מזונות שלי',
+  entries: 'רישומי אכילה',
+  targets: 'יעדי תזונה',
+  favorites: 'מועדפים',
 };
 
 export type Backend = 'indexeddb' | 'localstorage' | 'memory';
@@ -223,6 +235,19 @@ export async function loadDB(): Promise<LoadResult> {
       }
       case 'settings':
         db.settings = parseSettings(raw);
+        break;
+      // מפתחות התזונה חדשים — אין להם גרסת HTML ישנה ואין מהם מיגרציה.
+      case 'customFoods':
+        db.customFoods = parseCustomFoods(raw).ok;
+        break;
+      case 'entries':
+        db.entries = parseEntries(raw).ok;
+        break;
+      case 'targets':
+        db.targets = parseTargets(raw).ok;
+        break;
+      case 'favorites':
+        db.favorites = parseFavorites(raw).ok;
         break;
     }
 

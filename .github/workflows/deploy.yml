@@ -19,6 +19,7 @@ on:
     branches:
       - main
       - claude/personal-tracking-app-4xbd81
+      - claude/nutrition-tracking-module-w3701c
   workflow_dispatch:
 
 permissions:

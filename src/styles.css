@@ -35,6 +35,12 @@
   --rule-strong: #8e8a81;
   --error: #a32a22;
 
+  /* ביטחון בנתון — מלאות השבוע בלבד (7/7, 4–6, פחות מ-4). נבדק מול AA
+     על --paper: 4.70, 4.83, 5.28. לעולם לא על כיוון שינוי או על משקל. */
+  --confidence-high: #4e7a57;
+  --confidence-mid: #946512;
+  --confidence-low: #5d6a74;
+
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -45,6 +51,19 @@
   --tap: 44px;
   --radius: 6px;
   --maxw: 620px;
+
+  /* מספר-הגיבור: גדול ומלא רק לשבוע 7/7; חלקי וריק מושתקים באותו גודל */
+  --hero-size: 64px;
+  --hero-size-muted: 44px;
+  --text-chart-label: 11px;
+  /* תוויות משניות: אותיות ימים, תאריך ריק, תווית אריח, רמז בכפתור */
+  --text-label-sm: 12px;
+  /* אריח מאקרו משני (פחמימה/שומן/סיבים): קטן מהאריח הרגיל, רמה שנייה */
+  --stat-small-value: 17px;
+  --stat-small-min-height: 56px;
+  /* כפתורי בלוק ברובריקה: שניים רחבים למעלה, ארבעה קטנים מתחת */
+  --block-primary-height: 56px;
+  --text-block-secondary: 13px;
 
   color-scheme: light;
 }
@@ -118,7 +137,7 @@ body {
   max-width: var(--maxw);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .tab {
@@ -185,7 +204,7 @@ h3 {
 }
 
 .hero {
-  font-size: 64px;
+  font-size: var(--hero-size);
   font-weight: 300;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -195,7 +214,13 @@ h3 {
 
 .hero--empty {
   color: var(--ink-3);
-  font-size: 44px;
+  font-size: var(--hero-size-muted);
+}
+
+/* שבוע חלקי: אותו טיפול כמו ריק. שקילה אחת אינה מגמה. */
+.hero--partial {
+  color: var(--ink-3);
+  font-size: var(--hero-size-muted);
 }
 
 .sub {
@@ -221,6 +246,20 @@ h3 {
 
 .strong {
   font-weight: 600;
+}
+
+/* ---------- ביטחון בנתון (מלאות השבוע) ---------- */
+
+.confidence--high {
+  color: var(--confidence-high);
+}
+
+.confidence--mid {
+  color: var(--confidence-mid);
+}
+
+.confidence--low {
+  color: var(--confidence-low);
 }
 
 /* ---------- מבנים ---------- */
@@ -385,6 +424,11 @@ button {
   font-size: 14px;
 }
 
+/* כפתור שקט עם גבול דק: פעולה משנית שצריכה להיבדל משורה שנפתחת. */
+.btn--outlined {
+  border-color: var(--rule);
+}
+
 .btn--danger {
   color: var(--error);
   border-color: var(--error);
@@ -400,6 +444,24 @@ button {
   font-size: 18px;
   font-weight: 400;
   flex: 0 0 var(--tap);
+}
+
+/* שדה תאריך מכווץ: שורה אחת, יישור להתחלה, אזור מגע מלא. */
+.datefield__summary {
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 0;
+  color: var(--ink);
+}
+
+/* שורה מכווצת שפותחת סעיף: רוחב מלא, יישור להתחלה, חץ טיפוגרפי בקצה.
+   אותה צורה של .menu__head, בלי המסגרת של קבוצה. */
+.disclosure {
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 0;
+  color: var(--ink);
+  gap: var(--sp-3);
 }
 
 /* ---------- stepper ---------- */
@@ -446,7 +508,8 @@ button {
 
 .choice--scale {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  /* חמש עמודות: 1–10 יוצא 5+5, 0–10 יוצא 5+5+1, 0–7 יוצא 5+3 */
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .choice--big .choice__btn {
@@ -457,7 +520,7 @@ button {
 
 .choice__hint {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   font-weight: 400;
 }
 
@@ -548,7 +611,7 @@ button {
 }
 
 .day__letter {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
 }
 
@@ -561,7 +624,7 @@ button {
 }
 
 .day__empty {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   direction: ltr;
@@ -624,8 +687,31 @@ button {
   min-height: 72px;
 }
 
+/* אריח קטן: אותה שפה, פחות משקל. למאקרו המשני מתחת לחלבון. */
+.stat--small {
+  min-height: var(--stat-small-min-height);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.stat--small .stat__value {
+  font-size: var(--stat-small-value);
+}
+
+/* מסגרת האריח של ממוצע השבוע — אותו קידוד מלאות כמו התג במסך המשקל. */
+.stat--confidence-high {
+  border-color: var(--confidence-high);
+}
+
+.stat--confidence-mid {
+  border-color: var(--confidence-mid);
+}
+
+.stat--confidence-low {
+  border-color: var(--confidence-low);
+}
+
 .stat__label {
-  font-size: 11px;
+  font-size: var(--text-label-sm);
   color: var(--ink-3);
 }
 
@@ -647,6 +733,12 @@ button {
   height: 96px;
   display: block;
   overflow: visible;
+}
+
+/* גבולות ציר ה-Y בשולי הגרף. שני מספרים, בלי קווי רשת. */
+.chart__value {
+  font-size: var(--text-chart-label);
+  fill: var(--ink-3);
 }
 
 /* ---------- תיבת ייצוא ---------- */
@@ -907,6 +999,66 @@ button {
   padding-bottom: calc(var(--tap) * 2 + var(--sp-6) + env(safe-area-inset-bottom));
 }
 
+/* ---------- תזונה ---------- */
+
+/* שורת המאקרו מתחת למספר הגדול: שלושה אריחים באותה שפה של .stat */
+.macros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+/* תוצאות חיפוש: שורות לחיצות בגובה מגע מלא, בלי מסגרת כפתור */
+.results {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.results__btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: start;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  border-top: 1px solid var(--rule);
+  font-size: 15px;
+}
+
+.results > li:first-child .results__btn {
+  border-top: 0;
+}
+
+.results__btn:active {
+  background: var(--paper-sunk);
+}
+
+/* שדה הגרמים — גדול, להקלדה ביד אחת ליד המשקל */
+.grams input[type='number'] {
+  min-height: 52px;
+  font-size: 19px;
+}
+
+/* undo אחרי מחיקה: שורה שקטה, כפתור בקצה */
+.undo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 14px;
+}
+
 /* ---------- קלט קובץ ---------- */
 
 input[type='file'] {
@@ -957,4 +1109,146 @@ input[type='file']::file-selector-button {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------- "התפריט שלי": קבוצות מתקפלות של כפתורי רישום בלחיצה אחת ---------- */
+
+/* בלוקים: תמיד גלויים מעל האקורדיונים. שתי רמות — שני הבלוקים היומיים
+   רחבים, ארבעת הנותרים קטנים. */
+.menu__blocks {
+  margin-bottom: var(--sp-2);
+}
+
+.menu__blocks-primary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-2);
+}
+
+.menu__blocks-secondary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.block-btn {
+  appearance: none;
+  min-height: var(--tap);
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.block-btn--primary {
+  min-height: var(--block-primary-height);
+  font-weight: 500;
+}
+
+.block-btn--secondary {
+  font-size: var(--text-block-secondary);
+  padding-inline: 2px;
+}
+
+.block-btn:active {
+  background: var(--paper-sunk);
+}
+
+/* נרשם היום: מושתק, לא מושבת — לפעמים רושמים פעמיים. נתון, לא חסימה. */
+.block-btn.is-logged {
+  color: var(--ink-3);
+  border-color: var(--rule);
+}
+
+.menu__group {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.menu__group + .menu__group {
+  margin-top: var(--sp-2);
+}
+
+.menu__head {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: start;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.menu__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.menu__btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: start;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  border-top: 1px solid var(--rule);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.menu__items > li:first-child .menu__btn {
+  border-top: 0;
+}
+
+.menu__btn:active {
+  background: var(--paper-sunk);
+}
+
+/* עריכת גרמים בשורת "מה אכלתי היום": שדה קצר במקום הטקסט, בלי לשבור את השורה */
+.list__grams {
+  width: 5.5em;
+  min-height: 36px;
+  padding: 4px var(--sp-2);
+  font-size: 15px;
+}
+
+/* שורת המרכיבים מתחת לשם המנה ברובריקה */
+.menu__ingredients {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+/* רישום ידני (הערכה): מסומן בבירור מול רישום מדוד */
+.list > li.is-adhoc {
+  border-inline-start: 3px dashed var(--rule-strong);
+  padding-inline-start: var(--sp-2);
+}
+
+.adhoc-note {
+  color: var(--ink-2);
+  font-style: italic;
 }

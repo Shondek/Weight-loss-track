@@ -9,7 +9,14 @@ const H = 96;
 const PAD_TOP = 12;
 const PAD_BOTTOM = 24;
 const PAD_X = 10;
+/** שוליים בצד שמאל לתוויות הערך (גבול עליון ותחתון של הציר). */
+const GUTTER = 40;
 const R = 3;
+/**
+ * רצפה לטווח ציר ה-Y, בק"ג. בלי רצפה, 0.3 ק"ג על פני שמונה שבועות נראים
+ * כמו מדרון; המסך הזה אמור להראות "משקל תקוע" כתקוע.
+ */
+const MIN_SPAN = 1;
 
 /**
  * ממוצעים שבועיים בלבד — לא שקילות יומיות.
@@ -27,15 +34,19 @@ export default function WeeklyChart({ weeks }: Props) {
     const values = points.map((p) => p.avg);
     const min = Math.min(...values);
     const max = Math.max(...values);
-    const span = max - min || 1;
-    const innerW = width - PAD_X * 2;
+    const span = Math.max(max - min, MIN_SPAN);
+    // כשהרצפה גוברת, הסדרה ממורכזת בתוך הטווח. lo/hi הם גבולות הציר,
+    // ושווים בדיוק ל-min/max כשהרצפה לא נדרשה.
+    const lo = min - (span - (max - min)) / 2;
+    const hi = lo + span;
+    const innerW = width - PAD_X - GUTTER;
     const innerH = H - PAD_TOP - PAD_BOTTOM;
 
     // x=0 הוא הימני ביותר (השבוע המוקדם) — כיוון הזמן ב-RTL.
     const xy = points.map((p, i) => {
       const t = points.length === 1 ? 0 : i / (points.length - 1);
       const x = width - PAD_X - t * innerW;
-      const y = PAD_TOP + (1 - (p.avg - min) / span) * innerH;
+      const y = PAD_TOP + (1 - (p.avg - lo) / span) * innerH;
       return { x, y, complete: p.complete, week: p.weekStart, avg: p.avg };
     });
 
@@ -79,8 +90,21 @@ export default function WeeklyChart({ weeks }: Props) {
         >
           {formatDM(points[0]!.weekStart)}
         </text>
-        <text x={PAD_X} y={H - 4} fontSize="11" fill="var(--ink-3)" textAnchor="start" direction="ltr">
+        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--ink-3)" textAnchor="start" direction="ltr">
           {formatDM(points[points.length - 1]!.weekStart)}
+        </text>
+        {/* גבולות הציר. בלי קווי רשת — רק שני מספרים שנותנים קנה מידה. */}
+        <text className="num chart__value" x={0} y={PAD_TOP + 4} textAnchor="start" direction="ltr">
+          {hi.toFixed(2)}
+        </text>
+        <text
+          className="num chart__value"
+          x={0}
+          y={PAD_TOP + innerH + 4}
+          textAnchor="start"
+          direction="ltr"
+        >
+          {lo.toFixed(2)}
         </text>
       </svg>
     );

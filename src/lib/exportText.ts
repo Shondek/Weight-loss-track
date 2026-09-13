@@ -181,6 +181,11 @@ export type BackupFile = {
   /** אירובי עצמאי. גיבוי מלפני המפתח הזה פשוט לא מכיל אותו, ונקלט כרגיל. */
   standaloneCardio: DB['standaloneCardio'];
   settings: DB['settings'];
+  /** תזונה. הגיבוי הזה הוא ההעתק היחיד — ארבעת המפתחות חייבים להיות כאן. */
+  customFoods: DB['customFoods'];
+  entries: DB['entries'];
+  targets: DB['targets'];
+  favorites: DB['favorites'];
 };
 
 /** גיבוי מלא. `exportedAt` מגיע מבחוץ כדי שהמודול יישאר טהור. */
@@ -195,6 +200,10 @@ export function buildBackup(db: DB, exportedAt: string): BackupFile {
     checkins: db.checkins,
     standaloneCardio: db.standaloneCardio,
     settings: db.settings,
+    customFoods: db.customFoods,
+    entries: db.entries,
+    targets: db.targets,
+    favorites: db.favorites,
   };
 }
 

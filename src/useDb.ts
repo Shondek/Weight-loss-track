@@ -51,6 +51,10 @@ const ALL_KEYS: DbKey[] = [
   'checkins',
   'standaloneCardio',
   'settings',
+  'customFoods',
+  'entries',
+  'targets',
+  'favorites',
 ];
 
 export function useDb(): DbApi {

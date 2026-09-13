@@ -1,0 +1,863 @@
+{
+  "v": 2,
+  "exported": "2026-09-05T00:00:00.000Z",
+  "source": "meal-library-v2.md · scripts/build_meal_library.ts",
+  "customFoods": [
+    {
+      "id": "c:lib2:roastbeef-hod-maadan",
+      "name": "רוסטביף הוד מעדן",
+      "cat": 2,
+      "kcal": 102,
+      "protein": 19,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "portions": [],
+      "barcode": null,
+      "note": "תווית: 102 קק\"ל · 19 חלבון · 800 מ\"ג נתרן ל-100 ג'. פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:pro40-yotvata",
+      "name": "יוטבתה PRO 40",
+      "cat": 1,
+      "kcal": 19500,
+      "protein": 4000,
+      "unitFood": true,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "portions": [
+        {
+          "u": "בקבוק",
+          "g": 1
+        }
+      ],
+      "barcode": null,
+      "note": "בקבוק = 1 ג' (הזן 1 לבקבוק). תווית: 193–196 קק\"ל · 40 חלבון ל-350 מ\"ל. פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:greek-yogurt-0",
+      "name": "יוגורט יווני 0%",
+      "cat": 1,
+      "kcal": 60,
+      "protein": 10,
+      "carbs": null,
+      "fat": 0,
+      "fiber": null,
+      "portions": [
+        {
+          "u": "גביע",
+          "g": 200
+        }
+      ],
+      "barcode": null,
+      "note": "מהמסמך: 60 קק\"ל · 10 חלבון ל-100 ג'. שומן 0 לפי השם; פחמימה לא ידועה"
+    },
+    {
+      "id": "c:lib2:bulgarit-5",
+      "name": "גבינה בולגרית 5%",
+      "cat": 1,
+      "kcal": 110,
+      "protein": 15,
+      "carbs": null,
+      "fat": 5,
+      "fiber": null,
+      "portions": [],
+      "barcode": null,
+      "note": "מהמסמך: 110 קק\"ל · 15 חלבון ל-100 ג'. שומן 5 לפי השם; פחמימה לא ידועה"
+    },
+    {
+      "id": "c:lib2:tuna-water-drained",
+      "name": "טונה במים, מסוננת",
+      "cat": 2,
+      "kcal": 103.57142857142857,
+      "protein": 25,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "portions": [
+        {
+          "u": "קופסה מסוננת",
+          "g": 112
+        }
+      ],
+      "barcode": null,
+      "note": "מהמסמך: 116 קק\"ל · 28 חלבון לקופסה 160 ג' (112 נטו). פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:pita-light",
+      "name": "פיתה קלה",
+      "cat": 5,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "kcal": 12000,
+      "protein": 400,
+      "unitFood": true,
+      "portions": [
+        {
+          "u": "יחידה",
+          "g": 1
+        }
+      ],
+      "barcode": null,
+      "note": "יחידה = 1 ג' (הזן 1 לפיתה). ערכי אריזה טרם אומתו: 120 קק\"ל · 4 חלבון ליחידה. פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:date-ball",
+      "name": "כדור תמר",
+      "cat": 9,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "kcal": 13000,
+      "protein": 0,
+      "unitFood": true,
+      "portions": [
+        {
+          "u": "יחידה",
+          "g": 1
+        }
+      ],
+      "barcode": null,
+      "note": "יחידה = 1 ג' (הזן 1 לכדור). ערכי אריזה טרם אומתו: ~130 קק\"ל ליחידה, חלבון לא במסמך (0). פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:corn-cake-slim-delis",
+      "name": "פריכית תירס סלים דליס",
+      "cat": 5,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "kcal": 3100,
+      "protein": 0,
+      "unitFood": true,
+      "portions": [
+        {
+          "u": "יחידה",
+          "g": 1
+        }
+      ],
+      "barcode": null,
+      "note": "ערכי אריזה חלקיים — קלוריות בלבד מהתווית. לעדכן. יחידה = 1 (הזן 1 לפריכית): 31 קק\"ל; חלבון לא בתווית (0), פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:corn-cake-australian",
+      "name": "פריכית תירס אוסטרלית",
+      "cat": 5,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "kcal": 2300,
+      "protein": 0,
+      "unitFood": true,
+      "portions": [
+        {
+          "u": "יחידה",
+          "g": 1
+        }
+      ],
+      "barcode": null,
+      "note": "ערכי אריזה חלקיים — קלוריות בלבד מהתווית. לעדכן. יחידה = 1 (הזן 1 לפריכית): 23 קק\"ל; חלבון לא בתווית (0), פחמימה ושומן לא ידועים"
+    },
+    {
+      "id": "c:lib2:nut-almonds",
+      "name": "שקדים",
+      "cat": 4,
+      "kcal": 579,
+      "protein": 21.1,
+      "carbs": 9.1,
+      "fat": 49.9,
+      "fiber": 12.5,
+      "portions": [
+        {
+          "u": "מנה",
+          "g": 25
+        },
+        {
+          "u": "יחידה",
+          "g": 1.5
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 42101000: שקדים לא קלויים, ללא מלח. אגוז אחד ביום, 25 ג'"
+    },
+    {
+      "id": "c:lib2:nut-walnuts",
+      "name": "אגוזי מלך",
+      "cat": 4,
+      "kcal": 654,
+      "protein": 15.2,
+      "carbs": 7,
+      "fat": 65.2,
+      "fiber": 6.7,
+      "portions": [
+        {
+          "u": "מנה",
+          "g": 25
+        },
+        {
+          "u": "כוס",
+          "g": 100
+        },
+        {
+          "u": "כוס קצוץ",
+          "g": 120
+        },
+        {
+          "u": "יחידה",
+          "g": 5.5
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 42116000: אגוזי מלך, בלי קליפה, לא קלויים, ללא מלח. אגוז אחד ביום, 25 ג'"
+    },
+    {
+      "id": "c:lib2:nut-hazelnuts",
+      "name": "אגוזי לוז",
+      "cat": 4,
+      "kcal": 628,
+      "protein": 14.9,
+      "carbs": 7,
+      "fat": 60.8,
+      "fiber": 9.7,
+      "portions": [
+        {
+          "u": "מנה",
+          "g": 25
+        },
+        {
+          "u": "כוס",
+          "g": 135
+        },
+        {
+          "u": "יחידה",
+          "g": 1.4
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 42107000: אגוזי לוז, בלי קליפה, לא קלויים, ללא מלח. אגוז אחד ביום, 25 ג'"
+    },
+    {
+      "id": "c:lib2:nut-pecans",
+      "name": "פקאן",
+      "cat": 4,
+      "kcal": 691,
+      "protein": 9.2,
+      "carbs": 4.3,
+      "fat": 72,
+      "fiber": 9.6,
+      "portions": [
+        {
+          "u": "מנה",
+          "g": 25
+        },
+        {
+          "u": "כוס",
+          "g": 109
+        },
+        {
+          "u": "יחידה",
+          "g": 3
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 42112000: אגוזי פקאן, בלי קליפה, ללא תוספת מלח. אגוז אחד ביום, 25 ג'"
+    },
+    {
+      "id": "c:lib2:nut-peanuts",
+      "name": "בוטנים",
+      "cat": 4,
+      "kcal": 567,
+      "protein": 25.8,
+      "carbs": 16.1,
+      "fat": 49.2,
+      "fiber": 8.5,
+      "portions": [
+        {
+          "u": "מנה",
+          "g": 25
+        },
+        {
+          "u": "כף",
+          "g": 15
+        },
+        {
+          "u": "כפית",
+          "g": 6
+        },
+        {
+          "u": "כוס",
+          "g": 140
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 42111020: בוטנים, טריים. אגוז אחד ביום, 25 ג'"
+    },
+    {
+      "id": "c:lib2:nut-pistachios",
+      "name": "פיסטוקים",
+      "cat": 4,
+      "kcal": 562,
+      "protein": 20.3,
+      "carbs": 27.5,
+      "fat": 45.4,
+      "fiber": 10.3,
+      "portions": [
+        {
+          "u": "מנה",
+          "g": 25
+        },
+        {
+          "u": "כוס",
+          "g": 123
+        },
+        {
+          "u": "יחידה",
+          "g": 0.7
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 42114000: אגוז, פיסטוק, בלי קליפה, ללא מלח, לא קלוי. אגוז אחד ביום, 25 ג'"
+    },
+    {
+      "id": "c:lib2:nut-cashews",
+      "name": "קשיו",
+      "cat": 4,
+      "kcal": 580,
+      "protein": 16.8,
+      "carbs": 26.6,
+      "fat": 47.8,
+      "fiber": 3.3,
+      "portions": [
+        {
+          "u": "מנה",
+          "g": 25
+        },
+        {
+          "u": "יחידה",
+          "g": 1.5
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 42104110: אגוזי קשיו, קלויים ללא תוספת מלח. אגוז אחד ביום, 25 ג'"
+    },
+    {
+      "id": "c:lib2:tahini-raw",
+      "name": "טחינה גולמית",
+      "cat": 4,
+      "kcal": 617,
+      "protein": 21.4,
+      "carbs": 3.6,
+      "fat": 55.1,
+      "fiber": 14.5,
+      "portions": [
+        {
+          "u": "כף מפולסת",
+          "g": 15
+        },
+        {
+          "u": "כף",
+          "g": 15
+        },
+        {
+          "u": "כפית",
+          "g": 5
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 43103119: טחינה גולמית, שומשום מלא, לא מדוללת. מנה 15 ג'"
+    },
+    {
+      "id": "c:lib2:block-cottage-5",
+      "name": "קוטג' 5%",
+      "cat": 1,
+      "kcal": 95,
+      "protein": 11,
+      "carbs": 1.5,
+      "fat": 5,
+      "fiber": 0,
+      "portions": [
+        {
+          "u": "בלוק",
+          "g": 100
+        },
+        {
+          "u": "כף",
+          "g": 40
+        },
+        {
+          "u": "כפית",
+          "g": 12
+        },
+        {
+          "u": "גביע",
+          "g": 250
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 14201019: גבינת קוטג' 5% שומן, תנובה. מנה 100 ג'"
+    },
+    {
+      "id": "c:lib2:block-egg-whites",
+      "name": "חלבוני ביצה",
+      "cat": 3,
+      "kcal": 52,
+      "protein": 10.9,
+      "carbs": 0.7,
+      "fat": 0.2,
+      "fiber": 0,
+      "portions": [
+        {
+          "u": "3 חלבונים",
+          "g": 100
+        },
+        {
+          "u": "כוס",
+          "g": 243
+        },
+        {
+          "u": "יחידה",
+          "g": 38
+        }
+      ],
+      "barcode": null,
+      "note": "מהמאגר הלאומי 31108010: ביצה חלבון לא מבושל. מנה 100 ג'"
+    },
+    {
+      "id": "c:lib2:lunch-1-chicken",
+      "name": "צ1 — חזה עוף מתובל",
+      "cat": 2,
+      "portions": [],
+      "barcode": null,
+      "note": "חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה",
+      "kcal": 88.5,
+      "protein": 15.450000000000001,
+      "carbs": 1.4500000000000002,
+      "fat": 2,
+      "fiber": 0.5,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "24122120",
+            "grams": 250,
+            "n": "חזה עוף"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "סלט"
+          }
+        ],
+        "finalGrams": 500
+      }
+    },
+    {
+      "id": "c:lib2:lunch-2-roastbeef",
+      "name": "צ2 — רוסטביף וסלט",
+      "cat": 2,
+      "portions": [],
+      "barcode": null,
+      "note": "300 ג' רוסטביף = ~2,400 מ\"ג נתרן. לא יותר מפעמיים-שלוש בשבוע, ולא בערב שלפני שבת. טחינה ושקדים נרשמים בנפרד",
+      "kcal": 63.36363636363637,
+      "protein": 10.727272727272728,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "c:lib2:roastbeef-hod-maadan",
+            "grams": 300,
+            "n": "רוסטביף"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "סלט"
+          }
+        ],
+        "finalGrams": 550
+      }
+    },
+    {
+      "id": "c:lib2:lunch-3-mixed",
+      "name": "צ3 — מעורב א', עוף מוביל",
+      "cat": 2,
+      "portions": [],
+      "barcode": null,
+      "note": "חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה",
+      "kcal": 79.18181818181819,
+      "protein": 13.754545454545456,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "24122120",
+            "grams": 150,
+            "n": "חזה עוף"
+          },
+          {
+            "foodId": "c:lib2:roastbeef-hod-maadan",
+            "grams": 150,
+            "n": "רוסטביף"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "סלט"
+          }
+        ],
+        "finalGrams": 550
+      }
+    },
+    {
+      "id": "c:lib2:lunch-3b-mixed-beef",
+      "name": "צ3ב — מעורב ב', רוסטביף מוביל",
+      "cat": 2,
+      "portions": [],
+      "barcode": null,
+      "note": "חזה עוף מתובל ממופה לחזה עוף צלוי ללא עור מהמאגר — תווית המוצר טרם אומתה",
+      "kcal": 76.25,
+      "protein": 13.266666666666666,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "c:lib2:roastbeef-hod-maadan",
+            "grams": 250,
+            "n": "רוסטביף"
+          },
+          {
+            "foodId": "24122120",
+            "grams": 100,
+            "n": "חזה עוף"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "סלט"
+          }
+        ],
+        "finalGrams": 600
+      }
+    },
+    {
+      "id": "c:lib2:lunch-4-pastrami",
+      "name": "צ4 — פסטרמת הודו",
+      "cat": 2,
+      "portions": [],
+      "barcode": null,
+      "kcal": 65.41666666666666,
+      "protein": 10.658333333333331,
+      "carbs": 2.841666666666666,
+      "fat": 1.25,
+      "fiber": 0.41666666666666663,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "90000027",
+            "grams": 350,
+            "n": "פסטרמה"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "סלט"
+          }
+        ],
+        "finalGrams": 600
+      }
+    },
+    {
+      "id": "c:lib2:lunch-5-tuna-eggs",
+      "name": "צ5 — טונה וביצים",
+      "cat": 2,
+      "portions": [],
+      "barcode": null,
+      "kcal": 74.65156794425087,
+      "protein": 12.282229965156795,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "c:lib2:tuna-water-drained",
+            "grams": 224,
+            "u": "2 קופסאות"
+          },
+          {
+            "foodId": "31103000",
+            "grams": 100,
+            "u": "2 ביצים"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "סלט"
+          }
+        ],
+        "finalGrams": 574
+      }
+    },
+    {
+      "id": "c:lib2:lunch-6-tuna-cottage",
+      "name": "צ6 — טונה וקוטג'",
+      "cat": 1,
+      "portions": [],
+      "barcode": null,
+      "note": "משמרת בוקר (שישי). חלבי-פרווה, בלי בשר. 3 פריכיות תירס נרשמות בנפרד (תוספות)",
+      "kcal": 99.05063291139241,
+      "protein": 17.616033755274263,
+      "carbs": null,
+      "fat": null,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "c:lib2:tuna-water-drained",
+            "grams": 224,
+            "u": "2 קופסאות"
+          },
+          {
+            "foodId": "14201019",
+            "grams": 250,
+            "n": "קוטג'"
+          }
+        ],
+        "finalGrams": 474
+      }
+    },
+    {
+      "id": "c:lib2:dinner-1-cottage-eggs",
+      "name": "ע1 — קוטג' וביצים",
+      "cat": 1,
+      "portions": [],
+      "barcode": null,
+      "note": "4 פריכיות תירס וטחינה כף מפולסת נרשמות בנפרד (תוספות)",
+      "kcal": 72.33333333333333,
+      "protein": 7,
+      "carbs": 2.0166666666666666,
+      "fat": 3.9333333333333336,
+      "fiber": 0.41666666666666663,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "31103000",
+            "grams": 100,
+            "u": "2 ביצים"
+          },
+          {
+            "foodId": "14201019",
+            "grams": 250,
+            "n": "קוטג'"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "ירקות"
+          }
+        ],
+        "finalGrams": 600
+      }
+    },
+    {
+      "id": "c:lib2:dinner-2-shakshuka",
+      "name": "ע2 — שקשוקה",
+      "cat": 3,
+      "portions": [],
+      "barcode": null,
+      "note": "עגבניות טריות, לא רסק. בלי הפיתה — נרשמת בנפרד כ-1",
+      "kcal": 79.49274255156607,
+      "protein": 8.51031321619557,
+      "carbs": null,
+      "fat": 3.689839572192513,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "31101010",
+            "grams": 150,
+            "u": "3 ביצים"
+          },
+          {
+            "foodId": "74101000",
+            "grams": 200,
+            "n": "עגבניות"
+          },
+          {
+            "foodId": "c:lib2:bulgarit-5",
+            "grams": 100,
+            "n": "בולגרית"
+          },
+          {
+            "foodId": "82104000",
+            "grams": 4.5,
+            "u": "כפית",
+            "n": "שמן"
+          },
+          {
+            "foodId": "c:lib2:greek-yogurt-0",
+            "grams": 200,
+            "n": "יוגורט"
+          }
+        ],
+        "finalGrams": 654.5
+      }
+    },
+    {
+      "id": "c:lib2:dinner-3-eggs-cheese",
+      "name": "ע3 — ביצים בשמן זית וגבינה",
+      "cat": 3,
+      "portions": [],
+      "barcode": null,
+      "note": "בלי הפיתה — נרשמת בנפרד כ-1",
+      "kcal": 84.49728752260397,
+      "protein": 7.851115129596142,
+      "carbs": null,
+      "fat": 4.686558167570825,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "31101010",
+            "grams": 100,
+            "u": "2 ביצים"
+          },
+          {
+            "foodId": "82104000",
+            "grams": 13.6,
+            "u": "כף",
+            "n": "שמן זית"
+          },
+          {
+            "foodId": "c:lib2:bulgarit-5",
+            "grams": 150,
+            "n": "בולגרית"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "ירקות"
+          },
+          {
+            "foodId": "c:lib2:greek-yogurt-0",
+            "grams": 150,
+            "n": "יוגורט"
+          }
+        ],
+        "finalGrams": 663.6
+      }
+    },
+    {
+      "id": "c:lib2:dinner-4-broccoli-pie",
+      "name": "ע4 — פשטידת ברוקולי (תבנית שלמה)",
+      "cat": 3,
+      "portions": [],
+      "barcode": null,
+      "note": "נאפית 35 דק' ומאבדת מים — משקל התבנית אחרי אפייה טרם אומת. שקול את התבנית ועדכן את המשקל הסופי",
+      "kcal": 86.14366303121476,
+      "protein": 8.104550582925913,
+      "carbs": null,
+      "fat": 4.804437758555848,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "31101010",
+            "grams": 200,
+            "u": "4 ביצים"
+          },
+          {
+            "foodId": "72201219",
+            "grams": 500,
+            "n": "ברוקולי"
+          },
+          {
+            "foodId": "c:lib2:bulgarit-5",
+            "grams": 150,
+            "n": "בולגרית"
+          },
+          {
+            "foodId": "14201019",
+            "grams": 200,
+            "n": "קוטג'"
+          },
+          {
+            "foodId": "82104000",
+            "grams": 13.6,
+            "u": "כף",
+            "n": "שמן זית"
+          }
+        ],
+        "finalGrams": 1063.6
+      }
+    },
+    {
+      "id": "c:lib2:dinner-5-no-cook",
+      "name": "ע5 — בלי בישול",
+      "cat": 1,
+      "portions": [],
+      "barcode": null,
+      "note": "5 פריכיות תירס נרשמות בנפרד (תוספות)",
+      "kcal": 57.5,
+      "protein": 7.4375,
+      "carbs": null,
+      "fat": 1.625,
+      "fiber": null,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "14201019",
+            "grams": 250,
+            "n": "קוטג'"
+          },
+          {
+            "foodId": "c:lib2:greek-yogurt-0",
+            "grams": 300,
+            "n": "יוגורט"
+          },
+          {
+            "foodId": "75145058",
+            "grams": 250,
+            "n": "ירקות"
+          }
+        ],
+        "finalGrams": 800
+      }
+    },
+    {
+      "id": "c:lib2:coffee-milk",
+      "name": "קפה קר עם חלב",
+      "cat": 9,
+      "portions": [],
+      "barcode": null,
+      "note": "חלב 100 מ\"ל וקפה 150 מ\"ל נגזרו מהמסמך (190 − 130 כדור תמר = 60 קק\"ל). כדור התמר נרשם בנפרד כ-1",
+      "kcal": 25.8,
+      "protein": 1.38,
+      "carbs": 2.2,
+      "fat": 1.2000000000000002,
+      "fiber": 0,
+      "recipe": {
+        "items": [
+          {
+            "foodId": "92103000",
+            "grams": 150,
+            "n": "קפה"
+          },
+          {
+            "foodId": "11111009",
+            "grams": 100,
+            "n": "חלב"
+          }
+        ],
+        "finalGrams": 250
+      }
+    }
+  ]
+}

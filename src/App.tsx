@@ -12,11 +12,13 @@ import WeightScreen from './screens/WeightScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
 import CheckinScreen from './screens/CheckinScreen';
 import DataScreen from './screens/DataScreen';
+import NutritionScreen from './screens/NutritionScreen';
 
-type TabId = 'weight' | 'workout' | 'checkin' | 'data';
+type TabId = 'weight' | 'nutrition' | 'workout' | 'checkin' | 'data';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'weight', label: 'משקל' },
+  { id: 'nutrition', label: 'תזונה' },
   { id: 'workout', label: 'אימונים' },
   { id: 'checkin', label: "צ'ק-אין" },
   { id: 'data', label: 'נתונים' },
@@ -62,13 +64,8 @@ export default function App() {
     [store.db, today],
   );
 
-  // צ'ק-אין נפתח מעצמו רק בשבת, או אם השבוע הקודם נסגר בלי צ'ק-אין.
-  const [autoOpened, setAutoOpened] = useState(false);
-  useEffect(() => {
-    if (store.loading || autoOpened) return;
-    setAutoOpened(true);
-    if (checkinDue) setTab('checkin');
-  }, [store.loading, autoOpened, checkinDue]);
+  // צ'ק-אין ממתין מסומן בנקודה על הטאב בלבד. האפליקציה לא מחליפה מסך
+  // מעצמה: שבת בבוקר היא קודם כול יום שקילה ומדידת מותניים.
 
   if (store.loading) {
     return (
@@ -154,6 +151,7 @@ export default function App() {
         )}
 
           {tab === 'weight' && <WeightScreen store={store} today={today} />}
+          {tab === 'nutrition' && <NutritionScreen store={store} today={today} />}
           {tab === 'workout' && (
             <WorkoutScreen store={store} today={today} timer={timer} />
           )}

@@ -347,6 +347,10 @@ describe('backupJson', () => {
       'checkins',
       'standaloneCardio',
       'settings',
+      'customFoods',
+      'entries',
+      'targets',
+      'favorites',
     ]);
   });
 

@@ -6,12 +6,20 @@
 import {
   type CardioLog,
   type CardioMode,
+  type CustomFood,
   type DB,
   type ExerciseType,
+  type Favorite,
+  type FoodEntry,
+  type FoodPortion,
+  type FoodRef,
   type ISODate,
   type LegacyWorkout,
   type LoggedExercise,
   type LoggedSet,
+  type MealType,
+  type NutritionTarget,
+  type Recipe,
   type Settings,
   type StandaloneCardio,
   type WaistEntry,
@@ -20,14 +28,21 @@ import {
   type WorkoutEntry,
   type WorkoutType,
   DEFAULT_SETTINGS,
+  ENTRY_NOTE_MAX,
+  FOOD_NOTE_MAX,
+  RECIPE_UNIT_MAX,
+  ADHOC_MAX_KCAL,
+  ADHOC_MAX_MACRO,
   NOTE_MAX,
+  UNIT_FOOD_SCALE,
   WORKOUT_SCHEMA_VERSION,
 } from '../types';
 import { canonicalExerciseId, exerciseById, resolveExerciseId } from '../data/program';
-import { compareISO, isValidISO, weekStart } from './date';
+import { compareISO, isValidISO, toLocalISO, weekStart } from './date';
 import { isCardioId } from './workouts';
 import { sortStandalone } from './cardio';
 import { CARDIO_INCLINE_MAX, CARDIO_SPEED_MAX } from '../data/config';
+import { isCustomFoodId, isMohFoodId } from './nutrition/foods';
 
 export type Rejection = { reason: string };
 
@@ -445,11 +460,307 @@ export function parseSettings(input: unknown): Settings {
   };
 }
 
+// ---------- תזונה ----------
+
+/**
+ * ערכים ל-100 גרם. קלוריות עד 900 (שמן טהור הוא 884), מאקרו עד 100 גרם.
+ * מזון עם `unitFood` (יחידה = 1 ג') מחזיק ערכי יחידה ×100, והתקרה שלו
+ * מוכפלת ב-`UNIT_FOOD_SCALE` — רק לו, במפורש.
+ */
+export const MAX_KCAL_PER_100G = 900;
+export const MAX_MACRO_PER_100G = 100;
+export const MIN_GRAMS = 0.1;
+export const MAX_GRAMS = 5000;
+export const MAX_PORTION_GRAMS = 5000;
+export const FOOD_NAME_MAX = 120;
+/** טווחי יעד. הרצפה של הקלוריות תופסת "0" שהוקלד בטעות. */
+export const MIN_TARGET_KCAL = 800;
+export const MAX_TARGET_KCAL = 6000;
+export const MAX_TARGET_PROTEIN = 400;
+export const MAX_TARGET_CARBS = 800;
+export const MAX_TARGET_FAT = 800;
+
+const MEALS: readonly MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+/** מספר בטווח סגור, או null. */
+function inRange(v: unknown, min: number, max: number): number | null {
+  const n = num(v);
+  return n !== null && n >= min && n <= max ? n : null;
+}
+
+/** ערך ל-100 גרם שיכול להיות חסר: null נשאר null; מספר מחוץ לטווח הוא שגיאה. */
+function optionalPer100(v: unknown, max: number): { ok: true; value: number | null } | { ok: false } {
+  if (v === null || v === undefined || v === '') return { ok: true, value: null };
+  const n = inRange(v, 0, max);
+  return n === null ? { ok: false } : { ok: true, value: n };
+}
+
+function cleanText(v: unknown, max: number): string {
+  return typeof v === 'string' ? v.split(/\s+/).filter((w) => w !== '').join(' ').slice(0, max) : '';
+}
+
+/** יחידות מידה: תיאור לא ריק ומשקל חיובי. יחידה שבורה נשמטת בשקט — היא נוחות, לא נתון. */
+function parsePortions(v: unknown): FoodPortion[] {
+  const out: FoodPortion[] = [];
+  for (const raw of asArray(v)) {
+    if (!isRecord(raw)) continue;
+    const u = cleanText(raw.u, 40);
+    const g = inRange(raw.g, 0, MAX_PORTION_GRAMS);
+    if (u === '' || g === null || g <= 0) continue;
+    out.push({ u, g });
+  }
+  return out;
+}
+
+/**
+ * ערכי מקור ל-100 גרם — משותף למזון custom ול-`ref` שברישום.
+ * מחזיר את סיבת הדחייה או את הערכים.
+ */
+function parsePer100(
+  raw: Record<string, unknown>,
+  caps: { kcal: number; macro: number } = { kcal: MAX_KCAL_PER_100G, macro: MAX_MACRO_PER_100G },
+): { error: string } | { ref: FoodRef } {
+  const name = cleanText(raw.name, FOOD_NAME_MAX);
+  if (name === '') return { error: 'מזון בלי שם' };
+  const unitFood = raw.unitFood === true;
+  const scale = unitFood ? UNIT_FOOD_SCALE : 1;
+  const maxKcal = caps.kcal * scale;
+  const maxMacro = caps.macro * scale;
+  const unitNote = unitFood ? ' (ערכי יחידה ×100)' : '';
+  const kcal = inRange(raw.kcal, 0, maxKcal);
+  if (kcal === null) return { error: `קלוריות מחוץ לטווח 0–${maxKcal} ל-100 ג'${unitNote}` };
+  const protein = inRange(raw.protein, 0, maxMacro);
+  if (protein === null) return { error: `מאקרו מחוץ לטווח 0–${maxMacro} ל-100 ג'${unitNote}` };
+  // פחמימה, שומן וסיבים יכולים להיות לא ידועים (תווית חלקית). null נשמר כ-null.
+  const carbs = optionalPer100(raw.carbs, maxMacro);
+  const fat = optionalPer100(raw.fat, maxMacro);
+  const fiber = optionalPer100(raw.fiber, maxMacro);
+  if (!carbs.ok || !fat.ok || !fiber.ok) return { error: `מאקרו מחוץ לטווח 0–${maxMacro} ל-100 ג'${unitNote}` };
+  return {
+    ref: {
+      name,
+      kcal,
+      protein,
+      carbs: carbs.value,
+      fat: fat.value,
+      fiber: fiber.value,
+      ...(unitFood ? { unitFood: true as const } : {}),
+    },
+  };
+}
+
+/**
+ * מתכון של מנה מורכבת. מרכיב שבור נשמט; בלי אף מרכיב תקין או בלי משקל
+ * סופי חיובי — אין מתכון, והמזון נשאר עם הערכים ששמורים בו.
+ */
+function parseRecipe(v: unknown): Recipe | null {
+  if (!isRecord(v)) return null;
+  const items: Recipe['items'] = [];
+  for (const raw of asArray(v.items)) {
+    if (!isRecord(raw)) continue;
+    const foodId = typeof raw.foodId === 'string' ? raw.foodId.trim() : '';
+    const grams = inRange(raw.grams, MIN_GRAMS, MAX_GRAMS);
+    if ((!isMohFoodId(foodId) && !isCustomFoodId(foodId)) || grams === null) continue;
+    // תווית כמות לתצוגה ("כף מפולסת"). ריקה = מוצג בגרמים.
+    const u = cleanText(raw.u, RECIPE_UNIT_MAX);
+    const n = cleanText(raw.n, RECIPE_UNIT_MAX);
+    items.push({ foodId, grams, ...(u === '' ? {} : { u }), ...(n === '' ? {} : { n }) });
+  }
+  const finalGrams = inRange(v.finalGrams, MIN_GRAMS, MAX_GRAMS * 10);
+  if (items.length === 0 || finalGrams === null) return null;
+  return { items, finalGrams };
+}
+
+export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
+  const rejected: Rejection[] = [];
+  const byId = new Map<string, CustomFood>();
+
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      continue;
+    }
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+    if (!isCustomFoodId(id)) {
+      rejected.push({ reason: 'מזהה מזון שאינו "c:" + מזהה' });
+      continue;
+    }
+    const per100 = parsePer100(raw);
+    if ('error' in per100) {
+      rejected.push({ reason: per100.error });
+      continue;
+    }
+    const cat = intInRange(raw.cat, 1, 9);
+    const barcode = cleanText(raw.barcode, 64);
+    const recipe = parseRecipe(raw.recipe);
+    const note = cleanText(raw.note, FOOD_NOTE_MAX);
+    const archived = raw.archived === true;
+    byId.set(id, {
+      id,
+      ...per100.ref,
+      cat,
+      portions: parsePortions(raw.portions),
+      barcode: barcode === '' ? null : barcode,
+      ...(recipe ? { recipe } : {}),
+      ...(note === '' ? {} : { note }),
+      ...(archived ? { archived: true as const } : {}),
+    });
+  }
+
+  // מנה בתוך מנה לא נתמכת. המתכון מוסר, הערכים השמורים נשארים — לא מאבדים מזון.
+  for (const f of byId.values()) {
+    if (!f.recipe) continue;
+    const nested = f.recipe.items.some((i) => byId.get(i.foodId)?.recipe !== undefined);
+    if (nested) {
+      rejected.push({ reason: `מנה בתוך מנה לא נתמכת — המתכון של "${f.name}" הוסר, הערכים נשמרו` });
+      delete f.recipe;
+    }
+  }
+
+  const ok = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  return { ok, rejected };
+}
+
+export function parseEntries(input: unknown): ParseResult<FoodEntry> {
+  const rejected: Rejection[] = [];
+  const byId = new Map<string, FoodEntry>();
+
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      continue;
+    }
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+    if (id === '') {
+      rejected.push({ reason: 'רישום בלי מזהה' });
+      continue;
+    }
+    const ts = num(raw.ts);
+    // `d` מוקפא בכתיבה וגובר; חסר או שבור — נגזר מ-`ts` לפי אזור הזמן של המכשיר.
+    const d: ISODate | null = isValidISO(raw.d)
+      ? raw.d
+      : ts !== null && ts > 0
+        ? toLocalISO(new Date(ts))
+        : null;
+    if (d === null || ts === null || ts <= 0) {
+      rejected.push({ reason: 'תאריך או שעה לא תקינים' });
+      continue;
+    }
+    const foodId = typeof raw.foodId === 'string' ? raw.foodId.trim() : '';
+    if (!isMohFoodId(foodId) && !isCustomFoodId(foodId)) {
+      rejected.push({ reason: 'מזהה מזון לא תקין' });
+      continue;
+    }
+    const grams = inRange(raw.grams, MIN_GRAMS, MAX_GRAMS);
+    if (grams === null) {
+      rejected.push({ reason: `כמות מחוץ לטווח ${MIN_GRAMS}–${MAX_GRAMS} ג'` });
+      continue;
+    }
+    if (!isRecord(raw.ref)) {
+      rejected.push({ reason: 'רישום בלי ערכי מזון' });
+      continue;
+    }
+    // רישום ידני: השם והדגל מוקפאים ברישום, כמו `n` באימון. הפרסר חייב להכיר אותם.
+    // התקרה שלו היא ארוחה שלמה (יחידה אחת), לא 900 קק"ל ל-100 ג'.
+    const n = cleanText(raw.n, FOOD_NAME_MAX);
+    const adhoc = raw.adhoc === true;
+    const per100 = parsePer100(raw.ref, adhoc ? { kcal: ADHOC_MAX_KCAL, macro: ADHOC_MAX_MACRO } : undefined);
+    if ('error' in per100) {
+      rejected.push({ reason: `ערכי מזון: ${per100.error}` });
+      continue;
+    }
+    const meal = MEALS.find((m) => m === raw.meal) ?? 'snack';
+    const note = cleanText(raw.note, ENTRY_NOTE_MAX);
+    byId.set(id, {
+      id,
+      d,
+      ts,
+      meal,
+      foodId,
+      grams,
+      ref: per100.ref,
+      ...(n === '' ? {} : { n }),
+      ...(adhoc ? { adhoc: true as const } : {}),
+      ...(note === '' ? {} : { note }),
+    });
+  }
+
+  const ok = [...byId.values()].sort(
+    (a, b) => a.ts - b.ts || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
+  return { ok, rejected };
+}
+
+export function parseTargets(input: unknown): ParseResult<NutritionTarget> {
+  const rejected: Rejection[] = [];
+  const byFrom = new Map<ISODate, NutritionTarget>();
+
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      continue;
+    }
+    if (!isValidISO(raw.from)) {
+      rejected.push({ reason: 'תאריך תחילת תוקף לא תקין' });
+      continue;
+    }
+    const kcal = inRange(raw.kcal, MIN_TARGET_KCAL, MAX_TARGET_KCAL);
+    if (kcal === null) {
+      rejected.push({ reason: `יעד קלוריות מחוץ לטווח ${MIN_TARGET_KCAL}–${MAX_TARGET_KCAL}` });
+      continue;
+    }
+    const protein = inRange(raw.protein, 0, MAX_TARGET_PROTEIN);
+    const carbs = inRange(raw.carbs, 0, MAX_TARGET_CARBS);
+    const fat = inRange(raw.fat, 0, MAX_TARGET_FAT);
+    if (protein === null || carbs === null || fat === null) {
+      rejected.push({ reason: 'יעד מאקרו מחוץ לטווח' });
+      continue;
+    }
+    byFrom.set(raw.from, { from: raw.from, kcal, protein, carbs, fat });
+  }
+
+  const ok = [...byFrom.values()].sort((a, b) => compareISO(a.from, b.from));
+  return { ok, rejected };
+}
+
+export function parseFavorites(input: unknown): ParseResult<Favorite> {
+  const rejected: Rejection[] = [];
+  const byFood = new Map<string, Favorite>();
+
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      continue;
+    }
+    const foodId = typeof raw.foodId === 'string' ? raw.foodId.trim() : '';
+    if (!isMohFoodId(foodId) && !isCustomFoodId(foodId)) {
+      rejected.push({ reason: 'מזהה מזון לא תקין' });
+      continue;
+    }
+    const grams = raw.grams === null || raw.grams === undefined ? null : inRange(raw.grams, MIN_GRAMS, MAX_GRAMS);
+    // סדר ההוספה נשמר: מועדף שחוזר על עצמו מעדכן את הכמות במקומו.
+    byFood.set(foodId, { foodId, grams });
+  }
+
+  return { ok: [...byFood.values()], rejected };
+}
+
 // ---------- בסיס נתונים שלם ----------
 
 export type DbParseResult = {
   db: DB;
-  counts: Record<'weights' | 'workouts' | 'waist' | 'checkins' | 'standaloneCardio', number>;
+  counts: Record<
+    | 'weights'
+    | 'workouts'
+    | 'waist'
+    | 'checkins'
+    | 'standaloneCardio'
+    | 'customFoods'
+    | 'entries'
+    | 'targets'
+    | 'favorites',
+    number
+  >;
   rejected: { section: string; reason: string; count: number }[];
 };
 
@@ -471,6 +782,10 @@ export function parseDb(input: unknown): DbParseResult {
   const checkins = parseCheckins(src.checkins);
   // גיבוי מלפני המפתח הזה פשוט לא מכיל אותו — ריק, בלי דחייה.
   const standaloneCardio = parseStandaloneCardio(src.standaloneCardio);
+  const customFoods = parseCustomFoods(src.customFoods);
+  const entries = parseEntries(src.entries);
+  const targets = parseTargets(src.targets);
+  const favorites = parseFavorites(src.favorites);
 
   return {
     db: {
@@ -482,6 +797,10 @@ export function parseDb(input: unknown): DbParseResult {
       checkins: checkins.ok,
       standaloneCardio: standaloneCardio.ok,
       settings: parseSettings(src.settings),
+      customFoods: customFoods.ok,
+      entries: entries.ok,
+      targets: targets.ok,
+      favorites: favorites.ok,
     },
     counts: {
       weights: weights.ok.length,
@@ -489,6 +808,10 @@ export function parseDb(input: unknown): DbParseResult {
       waist: waist.ok.length,
       checkins: checkins.ok.length,
       standaloneCardio: standaloneCardio.ok.length,
+      customFoods: customFoods.ok.length,
+      entries: entries.ok.length,
+      targets: targets.ok.length,
+      favorites: favorites.ok.length,
     },
     rejected: [
       ...tally('משקל', weights.rejected),
@@ -499,6 +822,10 @@ export function parseDb(input: unknown): DbParseResult {
       ...tally('מותניים', waist.rejected),
       ...tally("צ'ק-אין", checkins.rejected),
       ...tally('אירובי עצמאי', standaloneCardio.rejected),
+      ...tally('מזונות שלי', customFoods.rejected),
+      ...tally('רישומי אכילה', entries.rejected),
+      ...tally('יעדי תזונה', targets.rejected),
+      ...tally('מועדפים', favorites.rejected),
     ],
   };
 }

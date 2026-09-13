@@ -136,6 +136,167 @@ export type WeeklyCheckin = {
 
 export const NOTE_MAX = 280;
 
+// ---------- תזונה ----------
+
+/**
+ * מזהה מזון. 8 ספרות = קוד מזון של משרד הבריאות (`smlmitzrach`).
+ * `"c:"` + uuid = מזון שהוזן ידנית. הקידומת מונעת התנגשות עם קוד עתידי במאגר.
+ */
+export type FoodId = string;
+
+export const CUSTOM_FOOD_PREFIX = 'c:';
+
+/** יחידת מידה נוחה: "כף" = 10 גרם. */
+export type FoodPortion = { u: string; g: number };
+
+/**
+ * מנה מורכבת: נבנית פעם אחת ממרכיבים, והערכים ל-100 גרם של התערובת נשמרים
+ * בשדות הרגילים של `CustomFood` — כך שכל שכבת החישוב עובדת בלי לדעת שזו מנה.
+ *
+ * `finalGrams` הוא משקל המנה המוגמרת. בבישול מתאדים מים והמשקל קטן מסכום
+ * המרכיבים, ולכן הערכים ל-100 גרם מתרכזים. בסלט קר אין איבוד. ברירת המחדל
+ * היא סכום המרכיבים, והשדה תמיד ניתן לעריכה.
+ *
+ * מרכיב הוא מזון מהמאגר או מזון שלי רגיל. מנה בתוך מנה לא נתמכת.
+ */
+export type Recipe = {
+  items: {
+    foodId: FoodId;
+    grams: number;
+    /**
+     * תצוגה בלבד: הכמות כפי שמודדים אותה במטבח — "כף מפולסת", "2 ביצים",
+     * "4 פריכיות". מה ששוקלים נשאר בלי שדה זה ומוצג בגרמים. החישוב תמיד
+     * לפי `grams`. עד `RECIPE_UNIT_MAX` תווים.
+     */
+    u?: string;
+    /**
+     * תצוגה בלבד: שם קצר לשורת המרכיבים ברובריקה ("חזה עוף", "ירקות")
+     * במקום השם המלא במאגר. עד `RECIPE_UNIT_MAX` תווים.
+     */
+    n?: string;
+  }[];
+  finalGrams: number;
+};
+
+export const RECIPE_UNIT_MAX = 40;
+
+/**
+ * מזון שהוזן ידנית, עם המספרים מהתווית. הערכים ל-100 גרם.
+ * `null` = לא ידוע (לא אפס). `cat` לפי `FoodCategory` שב-lib/nutrition/foodDb.ts.
+ * עם `recipe` — מנה מורכבת; הערכים חושבו מהמרכיבים (ראה lib/nutrition/recipe.ts).
+ */
+export type CustomFood = {
+  id: FoodId;
+  name: string;
+  cat: number | null;
+  kcal: number;
+  protein: number;
+  carbs: number | null;
+  /** `null` = לא ידוע (למשל תווית חלקית). נספר כאפס בסיכום, ומסומן "לפחות". */
+  fat: number | null;
+  fiber: number | null;
+  portions: FoodPortion[];
+  /** לשימוש עתידי. */
+  barcode: string | null;
+  recipe?: Recipe;
+  /** טקסט חופשי עד `FOOD_NOTE_MAX` — מקור הערכים, מה טרם אומת. */
+  note?: string;
+  /**
+   * "היחידה היא 1 גרם": הערכים ל-100 ג' הם ערכי היחידה ×100, והזנת 1
+   * ברישום = יחידה אחת. לפריט בלי משקל אריזה ידוע. פוטר מתקרות הסבירות
+   * ל-100 ג' (ראה `UNIT_FOOD_SCALE`), ולכן ניתן רק במפורש.
+   */
+  unitFood?: true;
+  /**
+   * בארכיון: לא מוצע ברובריקה ובחיפוש, אבל לא נמחק — רישומים ישנים ממשיכים
+   * להצביע עליו ולהציג את שמו. ארכוב במקום מחיקה.
+   */
+  archived?: true;
+};
+
+export const FOOD_NOTE_MAX = 200;
+/** ערכי יחידה נשמרים ×100 (ל-100 ג' = 100 יחידות של 1 ג'). */
+export const UNIT_FOOD_SCALE = 100;
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+/**
+ * ערכי המקור של מזון ל-100 גרם, כפי שהיו בזמן הרישום. מוקפאים ברישום כדי
+ * שהוא ישרוד אם המזון נמחק או נעלם מגרסה חדשה של המאגר — אותו דפוס כמו
+ * `LoggedExercise.n`. בקריאה, המזון החי גובר; `ref` הוא הגיבוי.
+ *
+ * זה נתון מקור, לא תוצאה: שום קלוריה לא נשמרת ברישום. הסיכום תמיד מחושב
+ * מ-`grams × ref / 100`.
+ */
+export type FoodRef = {
+  name: string;
+  kcal: number;
+  protein: number;
+  carbs: number | null;
+  fat: number | null;
+  fiber: number | null;
+  /** מוקפא יחד עם הערכים — הפרסר צריך לדעת שהם ערכי יחידה ×100. */
+  unitFood?: true;
+};
+
+/**
+ * מזהה המזון של רישום ידני: לא מזון אמיתי, לא בחיפוש ולא ברובריקה. הערכים
+ * חיים רק ב-`ref` של הרישום (ראה `newAdhocEntry` ב-lib/nutrition/entries.ts).
+ */
+export const ADHOC_FOOD_ID = 'c:adhoc';
+/** תקרות להזנה ידנית — ארוחה אחת, לא יום. הפרסר מרים את תקרת ה-100 ג' רק לרישום עם `adhoc`. */
+export const ADHOC_MAX_KCAL = 5000;
+export const ADHOC_MAX_MACRO = 500;
+
+export type FoodEntry = {
+  /** מתחיל ב-`sortableStamp(ts)` כדי שמיון מחרוזות = מיון זמן. */
+  id: string;
+  /** נגזר מ-`ts` ב-`toLocalISO` בזמן הכתיבה, ומוקפא. הסיכום היומי מקבץ לפיו. */
+  d: ISODate;
+  /** epoch ms */
+  ts: number;
+  meal: MealType;
+  foodId: FoodId;
+  grams: number;
+  /**
+   * ערכי המקור ל-100 ג' כפי שהיו ברגע הרישום. **זה מה שקובע** — המזון החי
+   * משמש רק לשם ולסימון שההגדרה השתנתה מאז (ראה lib/nutrition/calc.ts).
+   */
+  ref: FoodRef;
+  /**
+   * השם בזמן הרישום, לרישום ידני — אותו דפוס כמו `LoggedExercise.n`.
+   * ברישום רגיל השם נלקח מהמזון החי ואם נעלם — מ-`ref.name`.
+   */
+  n?: string;
+  /**
+   * רישום ידני: קלוריות ומאקרו שהוזנו ביד (אוכל בחוץ, הערכה). מסומן
+   * בהיסטוריה ונספר בנפרד בסיכום היום — הערכה, לא מדידה.
+   */
+  adhoc?: true;
+  /** טקסט חופשי, עד `ENTRY_NOTE_MAX` — לסימון אומדנים ואכילה בחוץ. */
+  note?: string;
+};
+
+export const ENTRY_NOTE_MAX = 200;
+
+/**
+ * יעד יומי. `from` = תאריך תחילת תוקף; ההיסטוריה נשמרת ולא נדרסת, כדי
+ * שסיכומים ישנים יישארו נכונים. המאקרו בגרמים.
+ */
+export type NutritionTarget = {
+  from: ISODate;
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+/** מזון לגישה מהירה. `grams` = כמות ברירת מחדל, מה שמאפשר רישום בנגיעה אחת. */
+export type Favorite = {
+  foodId: FoodId;
+  grams: number | null;
+};
+
 export type Settings = {
   /**
    * ראשון של שבוע 1 בתוכנית. null = נגזר אוטומטית מהשקילה הראשונה.
@@ -171,6 +332,11 @@ export type DB = {
   /** אירובי עצמאי. נפרד מ-`workouts` בכוונה — ראה `StandaloneCardio`. */
   standaloneCardio: StandaloneCardio[];
   settings: Settings;
+  /** מזונות שהוזנו ידנית. מאגר משרד הבריאות אינו כאן — הוא asset, לא נתון משתמש. */
+  customFoods: CustomFood[];
+  entries: FoodEntry[];
+  targets: NutritionTarget[];
+  favorites: Favorite[];
 };
 
 /**
@@ -186,5 +352,9 @@ export function emptyDb(): DB {
     checkins: [],
     standaloneCardio: [],
     settings: { ...DEFAULT_SETTINGS },
+    customFoods: [],
+    entries: [],
+    targets: [],
+    favorites: [],
   };
 }

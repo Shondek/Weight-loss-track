@@ -18,8 +18,12 @@ const H = 132;
 const PAD_TOP = 22;
 const PAD_BOTTOM = 22;
 const PAD_X = 14;
+/** שוליים בצד שמאל לתוויות הערך (גבול עליון ותחתון של הציר). */
+const GUTTER = 40;
 const R = 3;
 const HIT = 16;
+/** רצפה לטווח ציר ה-Y, ביחידת המדידה. שינוי של 0.5 ק"ג לא נראה כמו קפיצה. */
+const MIN_SPAN = 1;
 
 /**
  * התקדמות של תרגיל אחד לאורך זמן: ערך (משקל / שניות / חזרות) מול תאריך.
@@ -37,16 +41,20 @@ export default function ExerciseChart({ points, unit, label }: Props) {
     const values = points.map((p) => p.value);
     const min = Math.min(...values);
     const max = Math.max(...values);
-    const span = max - min || 1;
+    const span = Math.max(max - min, MIN_SPAN);
+    // כשהרצפה גוברת, הסדרה ממורכזת בטווח. lo/hi הם גבולות הציר,
+    // ושווים ל-min/max כשהרצפה לא נדרשה.
+    const lo = min - (span - (max - min)) / 2;
+    const hi = lo + span;
     const first = points[0]!;
     const totalDays = diffDays(first.d, points[points.length - 1]!.d) || 1;
-    const innerW = width - PAD_X * 2;
+    const innerW = width - PAD_X - GUTTER;
     const innerH = H - PAD_TOP - PAD_BOTTOM;
 
     const xy = points.map((p) => {
       const t = diffDays(first.d, p.d) / totalDays;
       const x = width - PAD_X - t * innerW;
-      const y = PAD_TOP + (1 - (p.value - min) / span) * innerH;
+      const y = PAD_TOP + (1 - (p.value - lo) / span) * innerH;
       return { x, y, ...p };
     });
     const sel = xy[picked ?? xy.length - 1] ?? xy[xy.length - 1]!;
@@ -111,8 +119,20 @@ export default function ExerciseChart({ points, unit, label }: Props) {
         >
           {formatDM(first.d)}
         </text>
-        <text x={PAD_X} y={H - 4} fontSize="11" fill="var(--ink-3)" textAnchor="start" direction="ltr">
+        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--ink-3)" textAnchor="start" direction="ltr">
           {formatDM(points[points.length - 1]!.d)}
+        </text>
+        <text className="num chart__value" x={0} y={PAD_TOP + 4} textAnchor="start" direction="ltr">
+          {clean(hi)}
+        </text>
+        <text
+          className="num chart__value"
+          x={0}
+          y={PAD_TOP + innerH + 4}
+          textAnchor="start"
+          direction="ltr"
+        >
+          {clean(lo)}
         </text>
       </svg>
     );
