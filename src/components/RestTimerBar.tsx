@@ -24,7 +24,14 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Pro
   return (
     <div className="resttimer" role="status" aria-live="polite">
       <div className="resttimer__inner">
-        {timer.running ? (
+        {timer.running && timer.kind === 'cardio' ? (
+          // ריצת אירובי: תצוגה בלבד. אין השהיה (חותמות זמן לא משהות), ו"סיים"
+          // נמצא בשורת האירובי במסך האימון, כי שם נפתח הסיכום.
+          <>
+            <span className="resttimer__count num">{mmss(timer.remainingSec)}</span>
+            <span className="grow tiny muted">{timer.label}</span>
+          </>
+        ) : timer.running ? (
           <>
             <span className="resttimer__count num">{mmss(timer.remainingSec)}</span>
             <span className="grow tiny muted">{timer.label}</span>

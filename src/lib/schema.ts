@@ -6,6 +6,7 @@
 import {
   type CardioLog,
   type CardioMode,
+  type CardioSegment,
   type CustomFood,
   type DB,
   type ExerciseType,
@@ -41,6 +42,7 @@ import { canonicalExerciseId, exerciseById, resolveExerciseId } from '../data/pr
 import { compareISO, isValidISO, toLocalISO, weekStart } from './date';
 import { isCardioId } from './workouts';
 import { sortStandalone } from './cardio';
+import { dominantSegment, totalMinutes } from './cardioSession';
 import { CARDIO_INCLINE_MAX, CARDIO_SPEED_MAX } from '../data/config';
 import { isCustomFoodId, isMohFoodId } from './nutrition/foods';
 
@@ -226,6 +228,47 @@ function gauge(v: unknown, max: number): number | null {
   return n !== null && n >= 0 && n <= max ? n : null;
 }
 
+const MAX_SEGMENTS = 50;
+const MAX_STEPS = 100_000;
+
+/**
+ * מקטעי אירובי. מקטע בלי דקות חיוביות נשמט; אם לא נשאר כלום — כאילו
+ * אין `segments`, והרשומה נקראת מ-minutes/incline/speed.
+ */
+function parseSegments(v: unknown): CardioSegment[] {
+  const out: CardioSegment[] = [];
+  for (const raw of asArray(v).slice(0, MAX_SEGMENTS)) {
+    if (!isRecord(raw)) continue;
+    const minutes = count(raw.minutes);
+    if (minutes === null || minutes <= 0) continue;
+    out.push({
+      minutes: Math.min(minutes, MAX_CARDIO_MINUTES),
+      incline: gauge(raw.incline, CARDIO_INCLINE_MAX),
+      speed: gauge(raw.speed, CARDIO_SPEED_MAX),
+    });
+  }
+  return out;
+}
+
+/** צעדי הליכון: מספר שלם 0–100,000, או null. */
+function parseSteps(v: unknown): number | null {
+  const n = num(v);
+  return n !== null && n >= 0 && n <= MAX_STEPS ? Math.round(n) : null;
+}
+
+/**
+ * מה שנגזר מהמקטעים כשיש: `minutes` = הסכום, שיפוע/מהירות = של המקטע
+ * הארוך ביותר. זה האינווריאנט שכל הקוראים מסתמכים עליו.
+ */
+function fromSegments(segments: CardioSegment[]): {
+  minutes: number;
+  incline: number | null;
+  speed: number | null;
+} {
+  const dom = dominantSegment(segments)!;
+  return { minutes: totalMinutes(segments), incline: dom.incline, speed: dom.speed };
+}
+
 /**
  * חימום / אירובי: מצב ודקות. רשומה שנקלטה בלי `cardio` (או עם ערכים
  * שבורים) מקבלת "אופניים" והדקות נגזרות ממה שבוצע — לא נדחית.
@@ -237,13 +280,23 @@ function parseCardio(v: unknown, sets: LoggedSet[]): CardioLog {
   const doneSeconds = sets[0]?.seconds ?? null;
   const minutes =
     count(rec.minutes) ?? (doneSeconds === null ? 0 : Math.round(doneSeconds / 60));
-  const incline = gauge(rec.incline, CARDIO_INCLINE_MAX);
-  const speed = gauge(rec.speed, CARDIO_SPEED_MAX);
+  const segments = parseSegments(rec.segments);
+  const steps = parseSteps(rec.steps);
+  const derived =
+    segments.length > 0
+      ? fromSegments(segments)
+      : {
+          minutes: Math.min(minutes, MAX_CARDIO_MINUTES),
+          incline: gauge(rec.incline, CARDIO_INCLINE_MAX),
+          speed: gauge(rec.speed, CARDIO_SPEED_MAX),
+        };
   return {
     mode,
-    minutes: Math.min(minutes, MAX_CARDIO_MINUTES),
-    ...(incline !== null ? { incline } : {}),
-    ...(speed !== null ? { speed } : {}),
+    minutes: derived.minutes,
+    ...(derived.incline !== null ? { incline: derived.incline } : {}),
+    ...(derived.speed !== null ? { speed: derived.speed } : {}),
+    ...(segments.length > 0 ? { segments } : {}),
+    ...(steps !== null ? { steps } : {}),
   };
 }
 
@@ -431,14 +484,24 @@ export function parseStandaloneCardio(input: unknown): ParseResult<StandaloneCar
       typeof raw.id === 'string' && raw.id.trim() !== ''
         ? raw.id
         : `${raw.d}-imported-${generated++}-cardio`;
+    const segments = parseSegments(raw.segments);
+    const steps = parseSteps(raw.steps);
+    const derived =
+      segments.length > 0
+        ? fromSegments(segments)
+        : {
+            minutes: Math.min(minutes, MAX_CARDIO_MINUTES),
+            incline: gauge(raw.incline, CARDIO_INCLINE_MAX),
+            speed: gauge(raw.speed, CARDIO_SPEED_MAX),
+          };
     byId.set(id, {
       id,
       d: raw.d,
       mode: CARDIO_MODES.find((m) => m === raw.mode) ?? 'treadmill',
-      minutes: Math.min(minutes, MAX_CARDIO_MINUTES),
-      incline: gauge(raw.incline, CARDIO_INCLINE_MAX),
-      speed: gauge(raw.speed, CARDIO_SPEED_MAX),
+      ...derived,
       note: typeof raw.note === 'string' ? raw.note.slice(0, NOTE_MAX) : '',
+      ...(segments.length > 0 ? { segments } : {}),
+      ...(steps !== null ? { steps } : {}),
     });
   }
 

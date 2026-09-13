@@ -25,17 +25,36 @@ export type ExerciseType = 'compound' | 'isolation' | 'core' | 'cardio';
 export type CardioMode = 'bike' | 'treadmill';
 
 /**
+ * מקטע אירובי: כמה דקות באיזה שיפוע ומהירות. נגזר מחותמות זמן של שינויי
+ * ה-Stepper תוך כדי ריצה (lib/cardioSession.ts), וניתן לעריכה בסיכום.
+ * `null` = לא הוזן.
+ */
+export type CardioSegment = {
+  minutes: number;
+  /** אחוז */
+  incline: number | null;
+  /** קמ"ש */
+  speed: number | null;
+};
+
+/**
  * חימום או אירובי סיום. `minutes` הוא מה שהוזן בשדה; הביצוע עצמו נרשם
  * ב-`sets[0].seconds` ברגע שלוחצים "התחל" — עד אז השורה ריקה ולא נחשבת נתון.
  *
  * `incline` (אחוז) ו-`speed` (קמ"ש) אופציונליים: נוספו אחרי שרשומות כבר
  * נשמרו בלעדיהם, ורשומה ישנה נטענת כמו שהיא. רלוונטיים לאירובי סיום.
+ *
+ * `segments` — פירוט לפי מקטעים. כשקיים: `minutes` = סכום המקטעים,
+ * ו-`incline`/`speed` = של המקטע הארוך ביותר (הראשון בשוויון). רשומה בלי
+ * `segments` נקראת כמקטע יחיד. `steps` — צעדי הליכון, לא מד צעדים יומי.
  */
 export type CardioLog = {
   mode: CardioMode;
   minutes: number;
   incline?: number;
   speed?: number;
+  segments?: CardioSegment[];
+  steps?: number;
 };
 
 /**
@@ -53,6 +72,9 @@ export type StandaloneCardio = {
   /** קמ"ש */
   speed: number | null;
   note: string;
+  /** אותם כללים כמו ב-`CardioLog`: סכום = `minutes`, העליון = הארוך ביותר. */
+  segments?: CardioSegment[];
+  steps?: number;
 };
 
 /** סט בודד. `seconds` לתרגילי זמן, `reps` לכל השאר. */

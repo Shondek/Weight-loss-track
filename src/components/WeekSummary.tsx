@@ -76,6 +76,7 @@ export default function WeekSummary({ report, today }: Props) {
           </span>
           <span className="stat__note num">
             סיום {cardio.finisher} · עצמאי {cardio.standalone}
+            {cardio.steps !== null ? ` · ${cardio.steps.toLocaleString('en-US')} צעדים` : ''}
           </span>
         </div>
       </div>
@@ -144,6 +145,11 @@ export default function WeekSummary({ report, today }: Props) {
                   <span className="num">{formatDM(e.d)}</span>{' '}
                   <span className="muted tiny">{dayLetter(e.d)}</span> — {e.text}
                 </div>
+                {e.detail && (
+                  <p className="tiny muted" style={{ margin: 0 }}>
+                    {e.detail}
+                  </p>
+                )}
                 {e.note.trim() !== '' && (
                   <p className="tiny muted" style={{ margin: 0 }}>
                     {e.note}

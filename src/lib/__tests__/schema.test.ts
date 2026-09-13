@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDb, parseWeights, parseWorkouts, parseCheckins, parseSettings } from '../schema';
+import { parseDb, parseWeights, parseWorkouts, parseCheckins, parseSettings, parseStandaloneCardio } from '../schema';
 
 describe('parseWeights', () => {
   it('מקבל רשומות תקינות וממיין', () => {
@@ -299,6 +299,45 @@ describe('parseWorkouts — חימום ואירובי', () => {
       { d: '2026-09-05', t: 'A', ex: [{ exerciseId: 'finisher-cardio', sets: [], cardio: { mode: 'bike', minutes: 10, incline: 99, speed: 'x' } }] },
     ]);
     expect(bad.ok[0]?.ex[0]?.cardio).toEqual({ mode: 'bike', minutes: 10 });
+  });
+
+  it('מקטעים: minutes = הסכום, העליון = הארוך ביותר; מקטעים שבורים נשמטים; ישן בלי segments כרגיל', () => {
+    const segs = [
+      { minutes: 5, incline: 0, speed: 3.5 },
+      { minutes: 13, incline: 10, speed: 3.5 },
+      { minutes: 12, incline: 5, speed: 5 },
+    ];
+    const r = parseWorkouts([
+      {
+        schemaVersion: 2, id: 'w', d: '2026-09-05', t: 'A', knee: null, shoulder: null,
+        ex: [{
+          exerciseId: 'finisher-cardio', n: 'אירובי',
+          sets: [{ weight: null, reps: null, seconds: 1800 }],
+          // minutes/incline/speed סותרים בכוונה — המקטעים גוברים
+          cardio: { mode: 'treadmill', minutes: 99, incline: 0, speed: 1, segments: segs, steps: '3200' },
+        }],
+      },
+    ]);
+    expect(r.ok[0]?.ex[0]?.cardio).toEqual({ mode: 'treadmill', minutes: 30, incline: 10, speed: 3.5, segments: segs, steps: 3200 });
+
+    // מקטעים שבורים: דקות 0 / חסר → נשמטים; שיפוע מחוץ לטווח → null; צעדים שליליים → נשמט
+    const bad = parseWorkouts([
+      { d: '2026-09-05', t: 'A', ex: [{ exerciseId: 'finisher-cardio', sets: [], cardio: {
+        mode: 'bike', minutes: 10, segments: [{ minutes: 0 }, 'x', { minutes: 4, incline: 99, speed: 2 }], steps: -5 } }] },
+    ]);
+    expect(bad.ok[0]?.ex[0]?.cardio).toEqual({ mode: 'bike', minutes: 4, speed: 2, segments: [{ minutes: 4, incline: null, speed: 2 }] });
+    // כל המקטעים שבורים → כאילו אין segments
+    const none = parseWorkouts([
+      { d: '2026-09-05', t: 'A', ex: [{ exerciseId: 'finisher-cardio', sets: [], cardio: { mode: 'bike', minutes: 10, incline: 2, segments: [{ minutes: 0 }] } }] },
+    ]);
+    expect(none.ok[0]?.ex[0]?.cardio).toEqual({ mode: 'bike', minutes: 10, incline: 2 });
+
+    const st = parseStandaloneCardio([
+      { id: 'a', d: '2026-09-01', mode: 'treadmill', minutes: 1, segments: segs, steps: 3200.4, note: '' },
+      { id: 'b', d: '2026-09-02', mode: 'treadmill', minutes: 45, incline: 2, speed: 5 },
+    ]);
+    expect(st.ok[0]).toEqual({ id: 'a', d: '2026-09-01', mode: 'treadmill', minutes: 30, incline: 10, speed: 3.5, note: '', segments: segs, steps: 3200 });
+    expect(st.ok[1]).toEqual({ id: 'b', d: '2026-09-02', mode: 'treadmill', minutes: 45, incline: 2, speed: 5, note: '' });
   });
 
   it('חימום בלי cardio או עם מצב לא מוכר — אופניים, דקות מהביצוע', () => {

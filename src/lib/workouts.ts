@@ -3,6 +3,7 @@
 import type {
   CardioLog,
   CardioMode,
+  CardioSegment,
   ISODate,
   LoggedExercise,
   LoggedSet,
@@ -17,6 +18,7 @@ import {
 } from '../data/program';
 import { CARDIO_MODES, FINISHER_CARDIO, WARMUP } from '../data/config';
 import { compareISO, weekDays } from './date';
+import { dominantSegment, segmentsOf, segmentsText, stepsText, totalMinutes } from './cardioSession';
 
 export function sortWorkouts(list: readonly WorkoutEntry[]): WorkoutEntry[] {
   return [...list].sort(
@@ -239,7 +241,8 @@ export function cardioGaugeText(incline: number | null | undefined, speed: numbe
 
 /**
  * "חימום · אופניים · 10 דק׳" — השורה בהיסטוריה. null כשלא בוצע.
- * אירובי עם שיפוע/מהירות: "אירובי · הליכון · 30 דק׳ · שיפוע 2.5% · 5 קמ״ש".
+ * אירובי עם שיפוע/מהירות: "אירובי · הליכון · 30 דק׳ · שיפוע 2.5% · 5 קמ״ש"
+ * (של המקטע הארוך ביותר). הפירוט לפי מקטעים ב-`cardioDetailLine`.
  */
 export function cardioLine(ex: LoggedExercise): string | null {
   const minutes = cardioMinutesDone(ex);
@@ -247,6 +250,46 @@ export function cardioLine(ex: LoggedExercise): string | null {
   const c = cardioOf(ex);
   const gauges = cardioGaugeText(c.incline, c.speed);
   return `${ex.n} · ${cardioModeLabel(c.mode)} · ${minutes} דק׳${gauges ? ` · ${gauges}` : ''}`;
+}
+
+/** המקטעים של שורת אירובי (רשומה ישנה = מקטע יחיד). */
+export function cardioSegmentsOf(ex: LoggedExercise): CardioSegment[] {
+  return segmentsOf(cardioOf(ex));
+}
+
+/**
+ * השורה השנייה בהיסטוריה: פירוט המקטעים כשיש יותר מאחד, וצעדים כשנרשמו.
+ * null כשאין מה להוסיף מעבר ל-`cardioLine`.
+ */
+export function cardioDetailLine(ex: LoggedExercise): string | null {
+  if (cardioMinutesDone(ex) === null) return null;
+  const c = cardioOf(ex);
+  const parts: string[] = [];
+  const segs = segmentsOf(c);
+  if (segs.length > 1) parts.push(segmentsText(segs));
+  if (c.steps !== undefined) parts.push(stepsText(c.steps));
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/**
+ * סיום ריצה: המקטעים והצעדים נכנסים לרשומה, `minutes` = הסכום,
+ * שיפוע/מהירות העליונים = של המקטע הארוך ביותר, והביצוע נרשם
+ * ב-sets[0].seconds. זה הנתיב היחיד שכותב אירובי סיום עם מקטעים.
+ */
+export function finishCardio(
+  ex: LoggedExercise,
+  mode: CardioMode,
+  segments: readonly CardioSegment[],
+  steps: number | null,
+): LoggedExercise {
+  const total = totalMinutes(segments);
+  const dom = dominantSegment(segments);
+  const cardio: CardioLog = { mode, minutes: total };
+  if (dom?.incline !== null && dom?.incline !== undefined) cardio.incline = dom.incline;
+  if (dom?.speed !== null && dom?.speed !== undefined) cardio.speed = dom.speed;
+  if (segments.length > 0) cardio.segments = segments.map((x) => ({ ...x }));
+  if (steps !== null) cardio.steps = steps;
+  return { ...ex, cardio, sets: [{ weight: null, reps: null, seconds: total * 60 }] };
 }
 
 /**
@@ -279,9 +322,10 @@ export function cardioOf(ex: LoggedExercise): CardioLog {
 }
 
 /**
- * האירובי סיום האחרון שבוצע, כפי שנרשם (מצב, דקות, שיפוע, מהירות) —
- * מה שממלא מראש את שורת האירובי באימון חדש. `mode` מצמצם לאותו מכשיר;
- * `excludeId` מתעלם מהאימון שנערך כרגע. null כשאין.
+ * האירובי סיום האחרון שבוצע — מה שממלא מראש את שורת האירובי באימון חדש:
+ * מצב, סך הדקות, ושיפוע/מהירות של המקטע הארוך ביותר (לא הראשון — הראשון
+ * הוא בדרך כלל חימום). בלי מקטעים ובלי צעדים: ריצה חדשה מתחילה נקייה.
+ * `mode` מצמצם לאותו מכשיר; `excludeId` מתעלם מהאימון שנערך כרגע.
  */
 export function lastFinisherCardio(
   list: readonly WorkoutEntry[],
@@ -300,7 +344,14 @@ export function lastFinisherCardio(
       }
     }
   }
-  return best ? { ...best.cardio } : null;
+  if (!best) return null;
+  const c = best.cardio;
+  return {
+    mode: c.mode,
+    minutes: c.minutes,
+    ...(c.incline !== undefined ? { incline: c.incline } : {}),
+    ...(c.speed !== undefined ? { speed: c.speed } : {}),
+  };
 }
 
 /**

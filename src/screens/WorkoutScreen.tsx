@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
 import {
   WORKOUT_SCHEMA_VERSION,
+  type CardioMode,
+  type CardioSegment,
   type LoggedExercise,
   type StandaloneCardio,
   type WorkoutEntry,
@@ -20,8 +22,12 @@ import {
 } from '../data/program';
 import { HISTORY_ROWS } from '../data/config';
 import {
+  cardioDetailLine,
   cardioLine,
+  cardioOf,
+  cardioSegmentsOf,
   exerciseHistory,
+  finishCardio,
   exercisesFor,
   hasData,
   isCardio,
@@ -48,13 +54,25 @@ import {
 import {
   blankStandalone,
   cardioWeek,
+  finishStandalone,
   lastStandalone,
   makeStandaloneId,
   removeStandalone,
+  standaloneDetailLine,
   standaloneInWeek,
   standaloneLine,
   upsertStandalone,
 } from '../lib/cardio';
+import {
+  deriveSegments,
+  endOf,
+  isExpired,
+  recordChange,
+  segmentsOf,
+  startSession,
+  type CardioSession,
+  type CardioSessionTarget,
+} from '../lib/cardioSession';
 import { compareISO, dayLetter, formatDM, formatDMY, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import { clean, DASH } from '../lib/format';
@@ -65,12 +83,37 @@ import ConfirmButton from '../components/ConfirmButton';
 import ExerciseFocus from '../components/ExerciseFocus';
 import CardioFocus from '../components/CardioFocus';
 import StandaloneCardioEditor from '../components/StandaloneCardioEditor';
+import CardioSummary from '../components/CardioSummary';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
-import { readEditor, readPrefs, writeEditor, writePrefs } from '../platform/uiState';
+import {
+  readCardioSession,
+  readEditor,
+  readPrefs,
+  writeCardioSession,
+  writeEditor,
+  writePrefs,
+} from '../platform/uiState';
 
 const HISTORY_COUNT = 12;
 const PAIN_SCALE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+/** כל כמה זמן בודקים אם ריצה פעילה עברה את הדדליין (חיתוך אוטומטי). */
+const SESSION_CHECK_MS = 5000;
+
+/**
+ * הסיכום הפתוח: מה שנגזר מריצה (session), רישום ידני, או עריכה של רשומה
+ * קיימת. השמירה ממנו היא הנתיב היחיד שכותב אירובי עם מקטעים.
+ */
+type SummaryState = {
+  target: CardioSessionTarget;
+  mode: CardioMode;
+  segments: CardioSegment[];
+  steps: number | null;
+  /** הרשומה כבר באחסון — "מחק" זמין, ביטול לא מוחק כלום. */
+  existing: boolean;
+  /** נגזר מריצה שנחתכה בדדליין בלי "סיים". */
+  cut: boolean;
+};
 
 /** חותמת זמן ממוינת + אקראיות, כדי שסדר המזהים ישקף סדר יצירה. */
 function newId(): string {
@@ -149,6 +192,11 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
             {w.ex.filter(hasData).map((e) => (
               <li key={e.exerciseId}>
                 <div>{exerciseLine(e)}</div>
+                {isCardio(e) && cardioDetailLine(e) && (
+                  <p className="tiny muted" style={{ margin: 0 }}>
+                    {cardioDetailLine(e)}
+                  </p>
+                )}
                 {!isCardio(e) && (
                   <Sparkline
                     label={`מגמת ${e.n}`}
@@ -201,6 +249,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const [cardioOpen, setCardioOpen] = useState<StandaloneCardio | null>(null);
   /** "ביצועים קודמים" פתוח/סגור — בחירה אחת לכל התרגילים, נשמרת בין פתיחות. */
   const [historyOpen, setHistoryOpen] = useState(() => readPrefs().historyOpen);
+  /**
+   * ריצת אירובי פעילה — חותמות זמן בלבד, ב-uiState. שורדת רענון וסגירה.
+   * אחת בכל רגע. הרשומה נכתבת רק מהסיכום.
+   */
+  const [session, setSession] = useState<CardioSession | null>(() => readCardioSession());
+  const [summary, setSummary] = useState<SummaryState | null>(null);
 
   const start = useMemo(() => programStartWeek(db), [db]);
   // כוח בלבד. אירובי עצמאי חי ב-db.standaloneCardio ולא נכנס לכאן.
@@ -210,8 +264,6 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     [db.standaloneCardio, week],
   );
   const cardioSum = useMemo(() => cardioWeek(db, week), [db, week]);
-  const cardioExisting =
-    cardioOpen !== null && db.standaloneCardio.some((e) => e.id === cardioOpen.id);
   const upNext = useMemo(() => nextType(db.workouts), [db.workouts]);
   const history = useMemo(
     () => sortWorkouts(db.workouts).slice(-HISTORY_COUNT).reverse(),
@@ -245,6 +297,88 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   useEffect(() => {
     writePrefs({ historyOpen });
   }, [historyOpen]);
+
+  useEffect(() => {
+    writeCardioSession(session);
+  }, [session]);
+
+  /**
+   * ריצה שנמצאה באחסון אחרי רענון: פותחים את המקום שלה במסך — האימון עם
+   * שורת האירובי במוקד, או עורך העצמאי במצב ריצה. טיוטת אימון שאבדה
+   * ברענון נבנית מחדש מהיעד (סוג ותאריך), באותו מזהה.
+   */
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !session) return;
+    restored.current = true;
+    const t = session.target;
+    if (t.kind === 'finisher') {
+      setCardioOpen(null);
+      if (db.workouts.some((w) => w.id === t.workoutId)) {
+        setDraft(null);
+        setOpenId(t.workoutId);
+      } else {
+        setOpenId(null);
+        setDraft({
+          schemaVersion: WORKOUT_SCHEMA_VERSION,
+          id: t.workoutId,
+          d: t.d,
+          t: t.t,
+          ex: prefilledExercises(db.workouts, t.t),
+          knee: null,
+          shoulder: null,
+        });
+      }
+      setFocus(Number.MAX_SAFE_INTEGER);
+    } else {
+      setDraft(null);
+      setOpenId(null);
+      setCardioOpen({
+        id: t.id,
+        d: t.d,
+        mode: session.mode,
+        minutes: session.plannedMinutes,
+        incline: session.events[0]?.incline ?? null,
+        speed: session.events[0]?.speed ?? null,
+        note: t.note,
+      });
+    }
+  }, [session, db.workouts]);
+
+  /** ריצה שעברה את הדדליין בלי "סיים": הסיכום נפתח לבד, חתוך. */
+  const openSummaryFromSession = useCallback(
+    (s: CardioSession) => {
+      const now = Date.now();
+      const cut = isExpired(s, now);
+      setSummary({
+        target: s.target,
+        mode: s.mode,
+        segments: deriveSegments(s, endOf(s, now)),
+        steps: null,
+        existing: false,
+        cut,
+      });
+      if (timer.kind === 'cardio') timer.skip();
+    },
+    [timer],
+  );
+
+  useEffect(() => {
+    if (!session || summary) return;
+    const check = () => {
+      if (isExpired(session, Date.now())) openSummaryFromSession(session);
+    };
+    check();
+    const id = window.setInterval(check, SESSION_CHECK_MS);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [session, summary, openSummaryFromSession]);
 
   const defaultDate = compareISO(week, weekStart(today)) === 0 ? today : weekEnd(week);
 
@@ -293,25 +427,123 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     });
   };
 
-  /** הכרטיס הרביעי. פותח טופס ממולא — לא כותב עד "שמור". */
+  /** טיימר מנוחה/חימום נעצר עם העורך; ריצת אירובי חיה מחוץ לעורך ולא. */
+  const skipRestTimer = () => {
+    if (timer.kind !== 'cardio') timer.skip();
+  };
+
+  /** הכרטיס הרביעי. פותח טופס ממולא — לא כותב עד השמירה מהסיכום. */
   const startStandalone = () => {
     const d = defaultDate;
     setDraft(null);
     setOpenId(null);
-    timer.skip();
+    skipRestTimer();
     setCardioOpen(blankStandalone(db.standaloneCardio, d, makeStandaloneId(d, newId())));
-  };
-
-  const saveStandalone = () => {
-    if (!cardioOpen || cardioOpen.minutes <= 0) return;
-    void store.update('standaloneCardio', upsertStandalone(db.standaloneCardio, cardioOpen));
-    setCardioOpen(null);
   };
 
   const deleteStandalone = (id: string) => {
     void store.update('standaloneCardio', removeStandalone(db.standaloneCardio, id));
     if (cardioOpen?.id === id) setCardioOpen(null);
   };
+
+  // ---------- ריצת אירובי: התחלה, שינוי, סיום, סיכום ----------
+
+  const sessionFor = (target: CardioSessionTarget): CardioSession | null => {
+    if (!session) return null;
+    const t = session.target;
+    if (t.kind === 'finisher' && target.kind === 'finisher') {
+      return t.workoutId === target.workoutId ? session : null;
+    }
+    if (t.kind === 'standalone' && target.kind === 'standalone') {
+      return t.id === target.id ? session : null;
+    }
+    return null;
+  };
+
+  const beginSession = (
+    target: CardioSessionTarget,
+    mode: CardioMode,
+    minutes: number,
+    incline: number | null,
+    speed: number | null,
+    label: string,
+  ) => {
+    if (session || minutes <= 0) return;
+    const next = startSession(target, mode, minutes, incline, speed, Date.now());
+    setSession(next);
+    timer.start(next.plannedMinutes * 60, label, 'cardio');
+  };
+
+  const changeSession = (patchValues: { incline?: number | null; speed?: number | null }) => {
+    setSession((s) => (s ? recordChange(s, patchValues, Date.now()) : s));
+  };
+
+  const finishSession = () => {
+    if (session) openSummaryFromSession(session);
+  };
+
+  /** רישום ידני / עריכת רשומה קיימת — סיכום בלי ריצה. */
+  const openSummary = (
+    target: CardioSessionTarget,
+    mode: CardioMode,
+    segments: CardioSegment[],
+    steps: number | null,
+    existing: boolean,
+  ) => setSummary({ target, mode, segments, steps, existing, cut: false });
+
+  const saveSummary = (segments: CardioSegment[], steps: number | null) => {
+    if (!summary) return;
+    const { target, mode } = summary;
+    if (target.kind === 'standalone') {
+      const entry = finishStandalone(
+        { id: target.id, d: target.d, mode, note: target.note },
+        segments,
+        steps,
+      );
+      void store.update('standaloneCardio', upsertStandalone(db.standaloneCardio, entry));
+      setCardioOpen(null);
+    } else {
+      const existingEntry =
+        db.workouts.find((w) => w.id === target.workoutId) ??
+        (draft?.id === target.workoutId ? draft : null) ??
+        ({
+          schemaVersion: WORKOUT_SCHEMA_VERSION,
+          id: target.workoutId,
+          d: target.d,
+          t: target.t,
+          ex: prefilledExercises(db.workouts, target.t),
+          knee: null,
+          shoulder: null,
+        } satisfies WorkoutEntry);
+      const entryRows = exercisesFor(existingEntry, db.workouts);
+      patch({
+        ...existingEntry,
+        ex: entryRows.map((e) =>
+          e.exerciseId === FINISHER_ID ? finishCardio(e, mode, segments, steps) : e,
+        ),
+      });
+    }
+    if (session && sessionFor(target)) setSession(null);
+    if (timer.kind === 'cardio') timer.skip();
+    setSummary(null);
+  };
+
+  /** ביטול: ריצה שנגזרה נזרקת; עריכה של רשומה קיימת פשוט נסגרת. */
+  const cancelSummary = () => {
+    if (!summary) return;
+    if (!summary.existing && session && sessionFor(summary.target)) {
+      setSession(null);
+      if (timer.kind === 'cardio') timer.skip();
+    }
+    // ריצה/רישום ידני של עצמאי שבוטלו — גם הטופס נסגר, לא נשאר תלוי באוויר.
+    if (!summary.existing && summary.target.kind === 'standalone') setCardioOpen(null);
+    setSummary(null);
+  };
+
+  const summaryTitle = (t: CardioSessionTarget): string =>
+    t.kind === 'standalone'
+      ? `אירובי — עצמאי · ${formatDM(t.d)}`
+      : `אירובי סיום · אימון ${t.t} · ${formatDM(t.d)}`;
 
   /**
    * כל שינוי נשמר מיד — אין כפתור שמירה שאפשר לשכוח באמצע אימון.
@@ -334,7 +566,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const closeEditor = () => {
     setDraft(null);
     setOpenId(null);
-    timer.skip();
+    skipRestTimer();
   };
 
   /** פותח אימון קיים לעריכה ומעביר את התצוגה לשבוע שלו. */
@@ -428,6 +660,11 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                     <span className="num">{formatDM(e.d)}</span>{' '}
                     <span className="muted tiny">{dayLetter(e.d)}</span>{' '}
                     <span className="muted">אירובי</span> — {standaloneLine(e)}
+                    {standaloneDetailLine(e) && (
+                      <span className="tiny muted" style={{ display: 'block' }}>
+                        {standaloneDetailLine(e)}
+                      </span>
+                    )}
                   </span>
                   <button
                     type="button"
@@ -435,7 +672,14 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                     onClick={() => {
                       setDraft(null);
                       setOpenId(null);
-                      setCardioOpen(e);
+                      setCardioOpen(null);
+                      openSummary(
+                        { kind: 'standalone', id: e.id, d: e.d, note: e.note },
+                        e.mode,
+                        segmentsOf(e),
+                        e.steps ?? null,
+                        true,
+                      );
                     }}
                   >
                     ערוך
@@ -447,7 +691,32 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         )}
       </section>
 
-      {!open && !cardioOpen && (
+      {summary && (
+        <CardioSummary
+          key={`${summary.target.kind}:${summary.target.kind === 'standalone' ? summary.target.id : summary.target.workoutId}`}
+          title={summaryTitle(summary.target)}
+          mode={summary.mode}
+          initialSegments={summary.segments}
+          initialSteps={summary.steps}
+          notice={
+            summary.cut
+              ? 'הריצה נחתכה בזמן שתוכנן — לא נלחץ "סיים". אפשר לתקן את המקטעים לפני השמירה.'
+              : undefined
+          }
+          onSave={saveSummary}
+          onCancel={cancelSummary}
+          onDelete={
+            summary.existing && summary.target.kind === 'standalone'
+              ? () => {
+                  deleteStandalone(summary.target.kind === 'standalone' ? summary.target.id : '');
+                  setSummary(null);
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {!open && !cardioOpen && !summary && (
         <section className="section">
           <h2 style={{ marginBottom: 'var(--sp-3)' }}>אימון חדש</h2>
           <div className="choice choice--big">
@@ -477,16 +746,36 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         </section>
       )}
 
-      {cardioOpen && (
+      {cardioOpen && !summary && (
         <StandaloneCardioEditor
           value={cardioOpen}
-          existing={cardioExisting}
           today={today}
           onChange={setCardioOpen}
-          onSave={saveStandalone}
           onClose={() => setCardioOpen(null)}
-          onDelete={() => deleteStandalone(cardioOpen.id)}
           defaultsFor={(mode) => lastStandalone(db.standaloneCardio, mode)}
+          session={sessionFor({ kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note })}
+          sessionBusy={session !== null}
+          onStart={() =>
+            beginSession(
+              { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
+              cardioOpen.mode,
+              cardioOpen.minutes,
+              cardioOpen.incline,
+              cardioOpen.speed,
+              'אירובי — עצמאי',
+            )
+          }
+          onSessionChange={changeSession}
+          onFinish={finishSession}
+          onManual={() =>
+            openSummary(
+              { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
+              cardioOpen.mode,
+              [{ minutes: cardioOpen.minutes, incline: cardioOpen.incline, speed: cardioOpen.speed }],
+              null,
+              false,
+            )
+          }
         />
       )}
 
@@ -555,6 +844,34 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                 current.exerciseId === FINISHER_ID
                   ? (mode) => lastFinisherCardio(db.workouts, mode, open.id)
                   : undefined
+              }
+              session={
+                current.exerciseId === FINISHER_ID
+                  ? sessionFor({ kind: 'finisher', workoutId: open.id, t: open.t, d: open.d })
+                  : null
+              }
+              sessionBusy={session !== null}
+              onStartSession={() => {
+                const c = cardioOf(current);
+                beginSession(
+                  { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
+                  c.mode,
+                  c.minutes,
+                  c.incline ?? null,
+                  c.speed ?? null,
+                  'אירובי',
+                );
+              }}
+              onSessionChange={changeSession}
+              onFinishSession={finishSession}
+              onEditSummary={() =>
+                openSummary(
+                  { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
+                  cardioOf(current).mode,
+                  cardioSegmentsOf(current),
+                  cardioOf(current).steps ?? null,
+                  true,
+                )
               }
             />
           )}

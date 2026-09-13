@@ -1,3 +1,5 @@
+import type { CardioSession } from '../lib/cardioSession';
+
 /**
  * מצב ממשק ארעי ששורד רענון ומעבר בין טאבים.
  *
@@ -13,11 +15,17 @@
 const TIMER_KEY = 'fatloss:ui:timer';
 const EDITOR_KEY = 'fatloss:ui:editor';
 const PREFS_KEY = 'fatloss:ui:prefs';
+const CARDIO_SESSION_KEY = 'fatloss:ui:cardio-session';
 
 /** אימון פתוח שנשכח נחשב נטוש אחרי שש שעות. */
 const EDITOR_TTL_MS = 6 * 60 * 60 * 1000;
 
-export type TimerKind = 'rest' | 'countdown';
+/**
+ * `rest` — מנוחה (±15, דלג). `countdown` — חימום (השהה, אפס, דלג).
+ * `cardio` — ריצת אירובי: תצוגה וצליל בלבד; אין השהיה, כי הרישום נגזר
+ * מחותמות זמן (lib/cardioSession.ts) ו"סיים" נמצא במסך האימון.
+ */
+export type TimerKind = 'rest' | 'countdown' | 'cardio';
 
 /**
  * `pausedMs` — כמה נשאר כשהטיימר מושהה; אז `deadline` לא רלוונטי.
@@ -66,7 +74,7 @@ export function readTimer(): TimerState | null {
     deadline: v.deadline,
     totalSec: typeof v.totalSec === 'number' ? v.totalSec : 0,
     label: typeof v.label === 'string' ? v.label : '',
-    kind: v.kind === 'countdown' ? 'countdown' : 'rest',
+    kind: v.kind === 'countdown' || v.kind === 'cardio' ? v.kind : 'rest',
     pausedMs: typeof v.pausedMs === 'number' ? v.pausedMs : null,
   };
   if (state.pausedMs !== null) return state;
@@ -99,4 +107,48 @@ export function readPrefs(): Prefs {
 
 export function writePrefs(v: Prefs): void {
   write(PREFS_KEY, v);
+}
+
+/**
+ * ריצת אירובי שהתחילה ועוד לא נשמרה או בוטלה. חותמות זמן וערכים בלבד —
+ * הרשומה עצמה נכתבת ל-IndexedDB רק בשמירה מהסיכום. לא נתון משתמש: לא
+ * בגיבוי. מחיקת האפליקציה באמצע ריצה מאבדת אותה, במכוון.
+ */
+export function readCardioSession(): CardioSession | null {
+  const v = read<Partial<CardioSession>>(CARDIO_SESSION_KEY);
+  if (!v || typeof v.startedAt !== 'number' || !Array.isArray(v.events)) return null;
+  if (typeof v.plannedMinutes !== 'number' || v.plannedMinutes <= 0) return null;
+  if (v.mode !== 'bike' && v.mode !== 'treadmill') return null;
+  const t = v.target;
+  if (!t || typeof t !== 'object') return null;
+  if (t.kind === 'finisher') {
+    if (typeof t.workoutId !== 'string' || typeof t.d !== 'string') return null;
+    if (t.t !== 'A' && t.t !== 'B' && t.t !== 'C') return null;
+  } else if (t.kind === 'standalone') {
+    if (typeof t.id !== 'string' || typeof t.d !== 'string') return null;
+  } else return null;
+  const events = v.events
+    .filter(
+      (e): e is CardioSession['events'][number] =>
+        typeof e === 'object' && e !== null && typeof (e as { at?: unknown }).at === 'number',
+    )
+    .map((e) => ({
+      at: e.at,
+      incline: typeof e.incline === 'number' ? e.incline : null,
+      speed: typeof e.speed === 'number' ? e.speed : null,
+    }));
+  if (events.length === 0) return null;
+  return {
+    target: t.kind === 'finisher'
+      ? { kind: 'finisher', workoutId: t.workoutId, t: t.t, d: t.d }
+      : { kind: 'standalone', id: t.id, d: t.d, note: typeof t.note === 'string' ? t.note : '' },
+    mode: v.mode,
+    plannedMinutes: v.plannedMinutes,
+    startedAt: v.startedAt,
+    events,
+  };
+}
+
+export function writeCardioSession(v: CardioSession | null): void {
+  write(CARDIO_SESSION_KEY, v);
 }
