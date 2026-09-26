@@ -54,19 +54,25 @@ function isHalfMultiple(grams: number, g: number): boolean {
 
 /**
  * היחידה והכמות להצגה של רשומה קיימת, לפי הגרמים השמורים. סדר הכללים:
- * מנה (finalGrams) → יחידות המידה לפי סדרן (הראשונה שמתאימה) → מזון-יחידה
+ * מנה (finalGrams) → היחידה הראשית בלבד, portions[0] (החלטת שלב 3.1: לא
+ * סורקים יחידות משניות, אחרת 20 ג׳ טחינה היה "כפית ×4") → מזון-יחידה
  * (×N שלם) → null = מציגים גרמים.
  */
 export function deriveUnit(food: PortionSource, grams: number): { label: string | null; qty: number } | null {
   if (food.recipe && food.recipe.finalGrams > 0 && isHalfMultiple(grams, food.recipe.finalGrams)) {
     return { label: SERVING_LABEL, qty: grams / food.recipe.finalGrams };
   }
-  for (const p of food.portions) {
-    if (isHalfMultiple(grams, p.g)) return { label: p.u, qty: grams / p.g };
-  }
+  const primary = food.portions[0];
+  if (primary && isHalfMultiple(grams, primary.g)) return { label: primary.u, qty: grams / primary.g };
   if (food.unitFood && grams > 0 && Math.abs(grams - Math.round(grams)) < EPS) {
     return { label: null, qty: Math.round(grams) };
   }
+  return null;
+}
+
+/** היחידה שהייתה בשימוש לפי הגרמים האחרונים — לסטפר בלבד: כל יחידות המידה לפי סדרן. */
+function lastUsedPortion(food: PortionSource, grams: number): FoodPortion | null {
+  for (const p of food.portions) if (isHalfMultiple(grams, p.g)) return p;
   return null;
 }
 
@@ -79,8 +85,7 @@ export function unitFor(food: PortionSource, lastGrams: number | null = null): U
   if (food.portions.length > 0) {
     const first = food.portions[0]!;
     if (lastGrams !== null) {
-      const derived = deriveUnit(food, lastGrams);
-      const match = derived?.label ? food.portions.find((p) => p.u === derived.label) : undefined;
+      const match = lastUsedPortion(food, lastGrams);
       if (match) return portionUnit(match);
     }
     return portionUnit(first);

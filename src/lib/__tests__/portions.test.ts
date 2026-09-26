@@ -70,10 +70,9 @@ describe('2. גזירת יחידה מגרמים שמורים', () => {
     expect(quantityLabel(TAHINI, 30)).toBe('כף מפולסת ×2');
   });
 
-  it('20 ג׳ טחינה: לא כף (15) → כפית (5) ×4 לפי הכלל; 22 ג׳ → גרמים', () => {
-    // הכלל כלשונו: היחידה הראשונה לפי סדרה שהגרמים כפולה של חצי ממנה. הדוגמה
-    // במפרט ("20 ג׳") הניחה שלטחינה יחידה אחת בלבד; בספרייה יש גם כפית 5 ג׳.
-    expect(deriveUnit(TAHINI, 20)).toEqual({ label: 'כפית', qty: 4 });
+  it('20 ג׳ טחינה → "20 ג׳": רק היחידה הראשית (כף מפולסת) נגזרת, לא כפית 5 ג׳', () => {
+    expect(deriveUnit(TAHINI, 20)).toBeNull();
+    expect(quantityLabel(TAHINI, 20)).toBe('20 ג׳');
     expect(quantityLabel(TAHINI, 22)).toBe('22 ג׳');
     expect(deriveUnit(TAHINI, 22)).toBeNull();
   });
@@ -129,7 +128,9 @@ describe('3. סטפר → גרמים', () => {
 });
 
 describe('4. היחידה האחרונה בשימוש', () => {
-  it('הגרמים האחרונים קובעים את היחידה: כפית ×2 → "כפית"; בלי התאמה → portions[0]', () => {
+  it('הגרמים האחרונים קובעים את היחידה של הסטפר (כל היחידות): כפית ×2 → "כפית"; בלי התאמה → portions[0]', () => {
+    // התצוגה גוזרת רק מ-portions[0] (10 ג׳ → "10 ג׳"), אבל כלל היחידה האחרונה של הסטפר לא השתנה.
+    expect(quantityLabel(TAHINI, 10)).toBe('10 ג׳');
     expect(unitFor(TAHINI, 10)).toMatchObject({ kind: 'portion', label: 'כפית', g: 5 });
     expect(qtyFor(unitFor(TAHINI, 10), 10)).toBe(2);
     expect(unitFor(TAHINI, 30)).toMatchObject({ label: 'כף מפולסת' });
