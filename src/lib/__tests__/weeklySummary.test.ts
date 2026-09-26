@@ -17,6 +17,9 @@ import { le, wk } from './helpers';
 
 const WEEK1 = '2026-08-30';
 const WEEK2 = '2026-09-06';
+const WEEK3 = '2026-09-13';
+const WEEK4 = '2026-09-20';
+const WEEK5 = '2026-09-27';
 
 let seq = 0;
 function entry(d: ISODate, kcal: number, protein: number, meal: MealType = 'lunch', adhoc = false, name = 'מזון'): FoodEntry {
@@ -36,16 +39,21 @@ function entry(d: ISODate, kcal: number, protein: number, meal: MealType = 'lunc
 
 const closed = (d: ISODate, extra: Partial<DayMeta> = {}): DayMeta => ({ d, closed: true, closedAt: `${d}T22:00:00.000Z`, ...extra });
 
-/** שבועות 1–2 של התוכנית: ממוצע 79.23 → 78.87 (7/7 בשניהם). */
+/**
+ * שבועות 1–5 של התוכנית: 1–2 תקפים (79.23 → 78.87), 3 עם 5/7, 4 עם 4/7,
+ * 5 תקף (78.40) — ולכן שבוע 5 מושווה לשבוע 2.
+ */
 function fixture(): DB {
   const db = emptyDb();
   db.settings = { ...db.settings, programStart: '2026-08-30' };
   const w1 = [79.6, 79.4, 79.3, 79.2, 79.1, 79.0, 79.0];
   const w2 = [79.0, 78.9, 78.9, 78.9, 78.8, 78.8, 78.8];
-  db.weights = [
-    ...w1.map((w, i) => ({ d: addDays(WEEK1, i), w })),
-    ...w2.map((w, i) => ({ d: addDays(WEEK2, i), w })),
-  ];
+  const w3 = [78.8, 78.7, null, 78.7, null, 78.6, 78.6];
+  const w4 = [78.6, null, 78.5, null, null, 78.5, 78.4];
+  const w5 = [78.5, 78.5, 78.4, 78.4, 78.4, 78.3, 78.3];
+  const week = (ws: ISODate, vals: (number | null)[]) =>
+    vals.flatMap((w, i) => (w === null ? [] : [{ d: addDays(ws, i), w }]));
+  db.weights = [...week(WEEK1, w1), ...week(WEEK2, w2), ...week(WEEK3, w3), ...week(WEEK4, w4), ...week(WEEK5, w5)];
   db.waist = [
     { d: '2026-08-19', cm: 97 },
     { d: '2026-08-26', cm: 96.5 },
@@ -93,47 +101,71 @@ function fixture(): DB {
   return db;
 }
 
-describe('1. משקל — שבועות 1–2 האמיתיים', () => {
-  it('שבוע 1: 79.23 (7/7); שבוע 2: 78.87 (7/7); שינוי −0.36; בר-השוואה כן', () => {
-    const d1 = buildWeeklySummaryData(fixture(), WEEK1);
-    expect(d1.weekNo).toBe(1);
-    expect(d1.weight.current).toMatchObject({ avg: 79.23, count: 7, complete: true });
-    expect(d1.weight.comparable).toBe(false); // אין שבוע 0
-    expect(d1.weight.delta).toBeNull();
-
+describe('1. משקל — תקף מול השוואה, שבועות 1–5', () => {
+  it('שבוע 2 תקף → השוואה לשבוע 1: −0.36, שבוע אחד', () => {
     const d2 = buildWeeklySummaryData(fixture(), WEEK2);
     expect(d2.weekNo).toBe(2);
     expect(d2.weight.current).toMatchObject({ avg: 78.87, count: 7, complete: true });
-    expect(d2.weight.previous).toMatchObject({ avg: 79.23, count: 7 });
-    expect(d2.weight.delta).toBe(-0.36);
-    expect(d2.weight.comparable).toBe(true);
+    expect(d2.weight.valid).toBe(true);
+    expect(d2.weight.comparison).toEqual({ week: WEEK1, weekNo: 1, avg: 79.23, delta: -0.36, weeks: 1, rate: -0.36 });
     const text = weeklySummaryText(d2);
     expect(text).toContain('שבוע 2 · 06/09–12/09');
-    expect(text).toContain('שקילות 7/7 · ממוצע 78.87 · שבוע קודם 79.23 (7/7) · שינוי −0.36 · בר-השוואה: כן');
-    expect(text).not.toContain('שבוע לא בר-השוואה');
+    expect(text).toContain('שקילות 7/7 · ממוצע 78.87 · תקף: כן\nהשוואה לשבוע 1 (ממוצע 79.23) · שינוי −0.36 · 1 שבועות · קצב −0.36 לשבוע');
+    expect(text).not.toContain('בר-השוואה');
+    expect(d2.flags.some((f) => f.includes('לא תקף'))).toBe(false);
+  });
+
+  it('שבוע 5 תקף (78.40) מושווה לשבוע 2 — השבוע התקף האחרון — ולא לשבוע 4: −0.47 על 3 שבועות, קצב −0.16', () => {
+    const d5 = buildWeeklySummaryData(fixture(), WEEK5);
+    expect(d5.weekNo).toBe(5);
+    expect(d5.weight.current).toMatchObject({ avg: 78.4, count: 7 });
+    expect(d5.weight.comparison).toEqual({ week: WEEK2, weekNo: 2, avg: 78.87, delta: -0.47, weeks: 3, rate: -0.16 });
+    const text = weeklySummaryText(d5);
+    expect(text).toContain('שקילות 7/7 · ממוצע 78.40 · תקף: כן\nהשוואה לשבוע 2 (ממוצע 78.87) · שינוי −0.47 · 3 שבועות · קצב −0.16 לשבוע');
+  });
+
+  it('שבוע 4 (4/7) → "תקף: לא", בלי שורת השוואה, ודגל', () => {
+    const d4 = buildWeeklySummaryData(fixture(), WEEK4);
+    expect(d4.weight.current).toMatchObject({ count: 4, complete: false });
+    expect(d4.weight.valid).toBe(false);
+    expect(d4.weight.comparison).toBeNull();
+    expect(d4.flags).toContain('שבוע לא תקף (4/7)');
+    const text = weeklySummaryText(d4);
+    expect(text).toContain('שקילות 4/7 · ממוצע 78.50 · תקף: לא\n\nמותניים');
+    expect(text).not.toContain('השוואה');
   });
 });
 
-describe('2. שבוע חלקי', () => {
-  it('5/7 → בר-השוואה לא, בלי שינוי, ודגל', () => {
+describe('2. שבוע ראשון ושבוע חלקי', () => {
+  it('שבוע 1 — תקף, בלי שבוע תקף קודם → "אין שבוע תקף קודם להשוואה", בלי דגל "לא תקף"', () => {
+    const d1 = buildWeeklySummaryData(fixture(), WEEK1);
+    expect(d1.weekNo).toBe(1);
+    expect(d1.weight.current).toMatchObject({ avg: 79.23, count: 7, complete: true });
+    expect(d1.weight.valid).toBe(true);
+    expect(d1.weight.comparison).toBeNull();
+    const text = weeklySummaryText(d1);
+    expect(text).toContain('שקילות 7/7 · ממוצע 79.23 · תקף: כן\nאין שבוע תקף קודם להשוואה');
+    expect(d1.flags.some((f) => f.includes('לא תקף'))).toBe(false);
+  });
+
+  it('5/7 → תקף: לא, בלי השוואה, ודגל; השבוע הקודם חלקי לא פוסל את השבוע הזה', () => {
     const db = fixture();
     db.weights = db.weights.filter((e) => e.d !== '2026-09-10' && e.d !== '2026-09-11');
     const d = buildWeeklySummaryData(db, WEEK2);
     expect(d.weight.current).toMatchObject({ count: 5, complete: false });
-    expect(d.weight.comparable).toBe(false);
-    expect(d.weight.delta).toBeNull();
-    expect(d.flags).toContain('שבוע לא בר-השוואה (שקילות 5/7)');
+    expect(d.weight.valid).toBe(false);
+    expect(d.flags).toContain('שבוע לא תקף (5/7)');
     const text = weeklySummaryText(d);
     expect(text).toContain('ה — · ו —');
-    expect(text).toContain('שקילות 5/7 · ממוצע 78.90 · שבוע קודם 79.23 (7/7) · שינוי — · בר-השוואה: לא');
-  });
+    expect(text).toContain('שקילות 5/7 · ממוצע 78.90 · תקף: לא');
+    expect(text).not.toContain('השוואה');
 
-  it('השבוע הקודם חלקי → גם לא בר-השוואה, והדגל אומר זאת', () => {
-    const db = fixture();
-    db.weights = db.weights.filter((e) => e.d !== '2026-09-03');
-    const d = buildWeeklySummaryData(db, WEEK2);
-    expect(d.weight.comparable).toBe(false);
-    expect(d.flags).toContain('שבוע לא בר-השוואה (שבוע קודם 6/7)');
+    const db2 = fixture();
+    db2.weights = db2.weights.filter((e) => e.d !== '2026-09-03'); // שבוע 1 → 6/7
+    const d2 = buildWeeklySummaryData(db2, WEEK2);
+    expect(d2.weight.valid).toBe(true);
+    expect(d2.weight.comparison).toBeNull();
+    expect(weeklySummaryText(d2)).toContain('אין שבוע תקף קודם להשוואה');
   });
 });
 
@@ -253,9 +285,8 @@ describe('6. מספר השבוע וגבולות ראשון–שבת', () => {
     expect(buildWeeklySummaryData(db, '2026-09-13').weekNo).toBe(3);
     expect(buildWeeklySummaryData(db, '2026-09-05').weekNo).toBe(1);
     // שקילת שבת 05/09 נספרת בשבוע 1 ולא בשבוע 2
-    const d2 = buildWeeklySummaryData(db, WEEK2);
-    expect(d2.weight.current.days[0]).toBe(79.0);
-    expect(d2.weight.previous.days[6]).toBe(79.0);
+    expect(buildWeeklySummaryData(db, WEEK2).weight.current.days[0]).toBe(79.0);
+    expect(buildWeeklySummaryData(db, WEEK1).weight.current.days[6]).toBe(79.0);
     // בלי programStart — נגזר מהנתון הראשון: מדידת המותניים של 19/08 → שבוע 4. לכן ההגדרה נשמרת.
     db.settings = { ...db.settings, programStart: null };
     expect(buildWeeklySummaryData(db, WEEK2).weekNo).toBe(4);

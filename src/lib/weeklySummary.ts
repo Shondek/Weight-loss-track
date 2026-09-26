@@ -5,7 +5,8 @@
  * ממספרים מחושבים ולא משחזור ידני. נתונים בלבד: בלי החלטות ובלי עצות.
  *
  * הכללים שהטקסט צריך לשרת (וגם מסמן כשלא מתקיימים):
- *  - שבוע בר-השוואה רק עם 7/7 שקילות (בשני השבועות).
+ *  - שבוע תקף = 7/7 שקילות. שבוע תקף מושווה לשבוע התקף האחרון שלפניו —
+ *    לא בהכרח השבוע הקודם.
  *  - מותניים נמדדים ברביעי.
  *  - החלטות קלוריות רק מימים סגורים; רצפה 1,850; יעד חלבון 190.
  *
@@ -14,7 +15,7 @@
 
 import type { DB, FridayTier, ISODate, LoggedExercise, WorkoutEntry, WorkoutType } from '../types';
 import { exerciseById, exerciseIn, shortName, WORKOUTS_PER_WEEK } from '../data/program';
-import { addDays, compareISO, dayLetter, dayOfWeek, formatDM, isSaturday, weekDays, weekEnd, weekNumber, weekStart } from './date';
+import { addDays, compareISO, dayLetter, dayOfWeek, diffWeeks, formatDM, isSaturday, weekDays, weekEnd, weekNumber, weekStart } from './date';
 import { programStartWeek } from './db';
 import { clean, DASH, round2 } from './format';
 import { getCheckin, isFilled } from './checkins';
@@ -25,7 +26,7 @@ import { FRIDAY_TIERS } from './nutrition/friday';
 import { KCAL_FLOOR } from './nutrition/targets';
 import { suggestionLabel, suggestNext, type ProgressionSpec, type Suggestion } from './progression';
 import { cardioLineText } from './weekSummary';
-import { summarizeWeek, WAIST_DAY, WEEK_LENGTH, type WeekSummary } from './weights';
+import { summarizeWeek, WAIST_DAY, WEEK_LENGTH, weeklyAverages, type WeekSummary } from './weights';
 import {
   exerciseHistory,
   hasData,
@@ -66,10 +67,14 @@ export type WeeklySummaryData = {
   weekNo: number | null;
   weight: {
     current: WeekSummary;
-    previous: WeekSummary;
-    /** ממוצע השבוע פחות ממוצע השבוע הקודם (שלילי = ירידה). רק כששני השבועות מלאים. */
-    delta: number | null;
-    comparable: boolean;
+    /** 7/7 שקילות. */
+    valid: boolean;
+    /**
+     * ההשוואה לשבוע התקף האחרון שלפני השבוע הזה. null כשהשבוע הזה לא תקף
+     * או כשאין שבוע תקף קודם. `delta` = ממוצע השבוע פחות ממוצע W (שלילי =
+     * ירידה); `weeks` = המרחק בשבועות; `rate` = delta / weeks.
+     */
+    comparison: { week: ISODate; weekNo: number | null; avg: number; delta: number; weeks: number; rate: number } | null;
   };
   waist: {
     /** מדידת רביעי של השבוע, או null. */
@@ -185,9 +190,24 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
 
   // ---- משקל ----
   const current = summarizeWeek(db.weights, ws);
-  const previous = summarizeWeek(db.weights, addDays(ws, -7));
-  const comparable = current.complete && previous.complete;
-  const delta = comparable && current.avg !== null && previous.avg !== null ? round2(current.avg - previous.avg) : null;
+  const valid = current.complete;
+  let comparison: WeeklySummaryData['weight']['comparison'] = null;
+  if (valid && current.avg !== null) {
+    const earlier = weeklyAverages(db.weights).filter((x) => compareISO(x.weekStart, ws) < 0 && x.complete && x.avg !== null);
+    const prev = earlier[earlier.length - 1];
+    if (prev && prev.avg !== null) {
+      const weeks = diffWeeks(prev.weekStart, ws);
+      const delta = round2(current.avg - prev.avg);
+      comparison = {
+        week: prev.weekStart,
+        weekNo: start ? weekNumber(start, prev.weekStart) : null,
+        avg: prev.avg,
+        delta,
+        weeks,
+        rate: round2(delta / weeks),
+      };
+    }
+  }
 
   // ---- מותניים: רביעי בלבד ----
   const wednesday = days[WAIST_DAY]!;
@@ -235,13 +255,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
 
   // ---- דגלים ----
   const flags: string[] = [];
-  if (!comparable) {
-    flags.push(
-      !current.complete
-        ? `שבוע לא בר-השוואה (שקילות ${current.count}/${WEEK_LENGTH})`
-        : `שבוע לא בר-השוואה (שבוע קודם ${previous.count}/${WEEK_LENGTH})`,
-    );
-  }
+  if (!valid) flags.push(`שבוע לא תקף (${current.count}/${WEEK_LENGTH})`);
   if (!wedEntry) flags.push('מותניים לא נמדדו ברביעי');
   if (cardio.over) flags.push(`אירובי מעל התקציב (${cardio.total}/${cardio.budget} דק׳)`);
   if (nutrition.lowKcalDays >= LOW_KCAL_FLAG_DAYS) flags.push(`${nutrition.lowKcalDays} ימים סגורים מתחת ל-${KCAL_FLOOR}`);
@@ -253,7 +267,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     week: ws,
     saturday,
     weekNo: start ? weekNumber(start, ws) : null,
-    weight: { current, previous, delta, comparable },
+    weight: { current, valid, comparison },
     waist: { wednesday: wedEntry ? { d: wedEntry.d, cm: wedEntry.cm } : null, previous: previousWednesdays },
     workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, knee: peakPain(all, 'knee'), shoulder: peakPain(all, 'shoulder'), drops },
     cardio,
@@ -287,11 +301,15 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
   // 2. משקל
   L.push('משקל');
   L.push(weekDays(data.week).map((d, i) => `${dayLetter(d)} ${num(w.current.days[i] ?? null, 1)}`).join(' · '));
-  L.push(
-    `שקילות ${weekTag(w.current)} · ממוצע ${num(w.current.avg, 2)} · שבוע קודם ${num(w.previous.avg, 2)} (${weekTag(w.previous)}) · שינוי ${
-      w.delta === null ? DASH : signed(w.delta)
-    } · בר-השוואה: ${w.comparable ? 'כן' : 'לא'}`,
-  );
+  L.push(`שקילות ${weekTag(w.current)} · ממוצע ${num(w.current.avg, 2)} · תקף: ${w.valid ? 'כן' : 'לא'}`);
+  if (w.valid) {
+    const c = w.comparison;
+    if (!c) L.push('אין שבוע תקף קודם להשוואה');
+    else {
+      const which = c.weekNo !== null ? String(c.weekNo) : `${formatDM(c.week)}–${formatDM(addDays(c.week, 6))}`;
+      L.push(`השוואה לשבוע ${which} (ממוצע ${num(c.avg, 2)}) · שינוי ${signed(c.delta)} · ${c.weeks} שבועות · קצב ${signed(c.rate)} לשבוע`);
+    }
+  }
   L.push('');
 
   // 3. מותניים
