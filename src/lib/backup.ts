@@ -10,8 +10,8 @@ import type { DB, ISODate, Settings } from '../types';
 import { diffDays } from './date';
 import { recordCount } from './db';
 
-/** אחרי כמה ימים בלי גיבוי מופיעה התזכורת. שבועיים = שני צ'ק-אינים. */
-export const BACKUP_REMINDER_DAYS = 14;
+/** אחרי כמה ימים בלי גיבוי מופיעה התזכורת. שבוע = צ'ק-אין אחד (שלב 2, סיכון #5). */
+export const BACKUP_REMINDER_DAYS = 7;
 
 /** מספר הימים מאז הגיבוי האחרון, או null אם מעולם לא יוצא. */
 export function daysSinceBackup(settings: Settings, today: ISODate): number | null {

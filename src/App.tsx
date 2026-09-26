@@ -6,6 +6,7 @@ import { needsCheckin } from './lib/checkins';
 import { firstDataDate } from './lib/db';
 import { KEY_LABELS } from './lib/store';
 import { onAppUpdate } from './platform/appUpdate';
+import { requestPersistentStorage } from './platform/storagePersist';
 import { useRestTimer } from './hooks/useRestTimer';
 import RestTimerBar from './components/RestTimerBar';
 import WeightScreen from './screens/WeightScreen';
@@ -30,6 +31,10 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('weight');
   const [updateReady, setUpdateReady] = useState(false);
   useEffect(() => onAppUpdate(() => setUpdateReady(true)), []);
+  // בקשה לאחסון קבוע בכל טעינה (סיכון #5). התוצאה מוצגת במסך "נתונים".
+  useEffect(() => {
+    void requestPersistentStorage();
+  }, []);
 
   /**
    * הטיימר חי כאן ולא בתוך מסך האימון. המסכים מוחלפים בהחלפת טאב,
