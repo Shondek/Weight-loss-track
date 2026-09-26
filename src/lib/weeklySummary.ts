@@ -21,6 +21,7 @@ import { programStartWeek } from './db';
 import { clean, DASH, round2 } from './format';
 import { getCheckin, isFilled } from './checkins';
 import { cardioWeek, type CardioWeek } from './cardio';
+import { stepsWeek, type StepsWeek } from './steps';
 import { daySummary } from './nutrition/calc';
 import { isDayClosed } from './nutrition/days';
 import { FRIDAY_TIERS } from './nutrition/friday';
@@ -45,6 +46,11 @@ export const MAX_SUMMARY_CHARS = 6000;
 export const PREVIOUS_WAIST = 3;
 /** מספר ימים סגורים מתחת לרצפה שמדליק דגל. */
 export const LOW_KCAL_FLAG_DAYS = 3;
+/** פחות מכך ימי צעדים שהוזנו בשבוע עם יעד → דגל. */
+export const STEPS_MIN_DAYS = 5;
+
+/** "9,812" — צעדים עם מפריד אלפים. */
+const thousands = (n: number) => n.toLocaleString('en-US');
 
 export type ExerciseLine = {
   exerciseId: string;
@@ -93,6 +99,8 @@ export type WeeklySummaryData = {
     drops: string[];
   };
   cardio: CardioWeek;
+  /** צעדים יומיים (שלב 6) — הזנה ידנית; צעדי הליכון מהאירובי לא נספרים. */
+  steps: StepsWeek;
   nutrition: {
     closedDays: ISODate[];
     /** היעד שבתוקף בשבת של השבוע. null = אין יעד שמור. */
@@ -259,12 +267,17 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     : null;
 
   const cardio = cardioWeek(db, ws);
+  const steps = stepsWeek(db.days, ws);
 
   // ---- דגלים ----
   const flags: string[] = [];
   if (!valid) flags.push(`שבוע לא תקף (${current.count}/${WEEK_LENGTH})`);
   if (!wedEntry) flags.push('מותניים לא נמדדו ברביעי');
   if (cardio.over) flags.push(`אירובי מעל התקציב (${cardio.total}/${cardio.budget} דק׳)`);
+  if (steps.goal !== null) {
+    if (steps.avg !== null && steps.avg < steps.goal) flags.push(`ממוצע צעדים מתחת ליעד (${thousands(steps.avg)}/${thousands(steps.goal)})`);
+    if (steps.entered < STEPS_MIN_DAYS) flags.push(`צעדים הוזנו בפחות מ-${STEPS_MIN_DAYS}/${WEEK_LENGTH} ימים (${steps.entered}/${WEEK_LENGTH})`);
+  }
   if (nutrition.lowKcalDays >= LOW_KCAL_FLAG_DAYS) flags.push(`${nutrition.lowKcalDays} ימים סגורים מתחת ל-${KCAL_FLOOR}`);
   if (all.length < WORKOUTS_PER_WEEK) flags.push(`פחות מ-${WORKOUTS_PER_WEEK} אימונים (${all.length}/${WORKOUTS_PER_WEEK})`);
   if (!checkin) flags.push('צ׳ק-אין לא מולא');
@@ -278,6 +291,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     waist: { wednesday: wedEntry ? { d: wedEntry.d, cm: wedEntry.cm } : null, previous: previousWaist },
     workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, knee: peakPain(all, 'knee'), shoulder: peakPain(all, 'shoulder'), drops },
     cardio,
+    steps,
     nutrition,
     checkin,
     flags,
@@ -351,6 +365,16 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
 
   // 5. אירובי
   L.push(`${cardioLineText(data.cardio)}${data.cardio.over ? ' · מעל התקציב' : ''}`);
+  L.push('');
+
+  // 5ב. צעדים — ערכי היום, ואז הוזנו/ממוצע (ויעד כשיש)
+  const st = data.steps;
+  L.push(`צעדים: ${weekDays(data.week).map((d, i) => `${dayLetter(d)} ${st.days[i] === null || st.days[i] === undefined ? DASH : thousands(st.days[i]!)}`).join(' · ')}`);
+  L.push(
+    `הוזנו ${st.entered}/${WEEK_LENGTH} · ממוצע ${st.avg === null ? DASH : thousands(st.avg)} (על ימים שהוזנו)${
+      st.goal !== null ? ` · ימים ≥ ${thousands(st.goal)}: ${st.atGoal}/${st.entered}` : ''
+    }`,
+  );
   L.push('');
 
   // 6. תזונה

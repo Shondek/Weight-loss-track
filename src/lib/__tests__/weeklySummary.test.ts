@@ -338,6 +338,50 @@ describe('6. מספר השבוע וגבולות ראשון–שבת', () => {
   });
 });
 
+describe('6ב. צעדים (שלב 6)', () => {
+  const stepsDays = (ws: string, vals: (number | null)[]): DayMeta[] =>
+    vals.flatMap((v, i) => (v === null ? [] : [{ d: addDays(ws, i), closed: false, steps: v }]));
+  const VALS = [9812, null, 8100, 7000, null, 6500, 10200];
+
+  it('שבוע לפני 1/11: ערכים וממוצע על שהוזנו, בלי שורת יעד ובלי דגלים', () => {
+    const db = fixture();
+    const WS = '2026-10-18';
+    db.days = [...db.days, ...stepsDays(WS, VALS)];
+    const d = buildWeeklySummaryData(db, WS);
+    expect(d.steps).toEqual({ days: VALS, entered: 5, avg: 8322, goal: null, atGoal: null });
+    const text = weeklySummaryText(d);
+    expect(text).toContain('אירובי: 0/60 דק׳ · סיום 0 · עצמאי 0\n\nצעדים: א 9,812 · ב — · ג 8,100 · ד 7,000 · ה — · ו 6,500 · ש 10,200\nהוזנו 5/7 · ממוצע 8,322 (על ימים שהוזנו)\n\nתזונה');
+    expect(text).not.toContain('ימים ≥');
+    expect(d.flags.some((f) => f.includes('צעדים'))).toBe(false);
+  });
+
+  it('שבוע מ-1/11: "ימים ≥ 8,000", ושני הדגלים כשמתקיימים', () => {
+    const db = fixture();
+    const WS = '2026-11-01';
+    db.days = [...db.days, ...stepsDays(WS, [7000, 6500, null, null, 7900, null, null])];
+    const d = buildWeeklySummaryData(db, WS);
+    expect(d.steps).toMatchObject({ entered: 3, avg: 7133, goal: 8000, atGoal: 0 });
+    const text = weeklySummaryText(d);
+    expect(text).toContain('הוזנו 3/7 · ממוצע 7,133 (על ימים שהוזנו) · ימים ≥ 8,000: 0/3');
+    expect(d.flags).toContain('ממוצע צעדים מתחת ליעד (7,133/8,000)');
+    expect(d.flags).toContain('צעדים הוזנו בפחות מ-5/7 ימים (3/7)');
+
+    // מעל היעד ו-7/7 → בלי דגלי צעדים
+    const ok = fixture();
+    ok.days = [...ok.days, ...stepsDays(WS, [9000, 8000, 8500, 12000, 8100, 9900, 8000])];
+    const dOk = buildWeeklySummaryData(ok, WS);
+    expect(dOk.steps).toMatchObject({ entered: 7, avg: 9071, atGoal: 7 });
+    expect(weeklySummaryText(dOk)).toContain('הוזנו 7/7 · ממוצע 9,071 (על ימים שהוזנו) · ימים ≥ 8,000: 7/7');
+    expect(dOk.flags.some((f) => f.includes('צעדים'))).toBe(false);
+
+    // בלי הזנות בכלל בשבוע עם יעד: רק דגל "פחות מ-5/7"
+    const none = buildWeeklySummaryData(fixture(), WS);
+    expect(weeklySummaryText(none)).toContain('הוזנו 0/7 · ממוצע — (על ימים שהוזנו) · ימים ≥ 8,000: 0/0');
+    expect(none.flags).toContain('צעדים הוזנו בפחות מ-5/7 ימים (0/7)');
+    expect(none.flags.some((f) => f.includes('ממוצע צעדים'))).toBe(false);
+  });
+});
+
 describe('7. אורך', () => {
   it('שבוע מלא (3 אימונים עם כל התרגילים, תזונה, צ׳ק-אין) נשאר מתחת לתקרה', () => {
     const db = fixture();
