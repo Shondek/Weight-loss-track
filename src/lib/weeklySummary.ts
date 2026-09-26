@@ -15,7 +15,7 @@
 
 import type { DB, FridayTier, ISODate, LoggedExercise, WorkoutEntry, WorkoutType } from '../types';
 import { exerciseById, exerciseIn, shortName, WORKOUTS_PER_WEEK } from '../data/program';
-import { addDays, compareISO, dayLetter, dayOfWeek, diffWeeks, formatDM, isSaturday, weekDays, weekEnd, weekNumber, weekStart } from './date';
+import { addDays, compareISO, dayLetter, diffWeeks, formatDM, isSaturday, weekDays, weekEnd, weekNumber, weekStart } from './date';
 import { programStartWeek } from './db';
 import { clean, DASH, round2 } from './format';
 import { getCheckin, isFilled } from './checkins';
@@ -42,8 +42,8 @@ import {
 export const MAX_SUMMARY_CHARS = 6000;
 /** יעד חלבון יומי (ג׳) — הכלל של התוכנית, לא היעד שנשמר במסך. */
 export const PROTEIN_TARGET_G = 190;
-/** כמה מדידות רביעי קודמות מוצגות ליד מדידת השבוע. */
-export const PREVIOUS_WEDNESDAYS = 3;
+/** כמה מדידות מותניים קודמות (כל יום בשבוע) מוצגות ליד מדידת הרביעי. */
+export const PREVIOUS_WAIST = 3;
 /** מספר ימים סגורים מתחת לרצפה שמדליק דגל. */
 export const LOW_KCAL_FLAG_DAYS = 3;
 
@@ -79,7 +79,7 @@ export type WeeklySummaryData = {
   waist: {
     /** מדידת רביעי של השבוע, או null. */
     wednesday: { d: ISODate; cm: number } | null;
-    /** מדידות רביעי קודמות, מהחדשה לישנה. */
+    /** המדידות האחרונות שלפני רביעי של השבוע, בכל יום בשבוע, מהחדשה לישנה. */
     previous: { d: ISODate; cm: number }[];
   };
   workouts: {
@@ -209,13 +209,13 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     }
   }
 
-  // ---- מותניים: רביעי בלבד ----
+  // ---- מותניים: הערך של רביעי, וההיסטוריה שלפניו (כל יום) ----
   const wednesday = days[WAIST_DAY]!;
   const wedEntry = db.waist.find((e) => e.d === wednesday) ?? null;
-  const previousWednesdays = db.waist
-    .filter((e) => dayOfWeek(e.d) === WAIST_DAY && compareISO(e.d, wednesday) < 0)
+  const previousWaist = db.waist
+    .filter((e) => compareISO(e.d, wednesday) < 0)
     .sort((a, b) => compareISO(b.d, a.d))
-    .slice(0, PREVIOUS_WEDNESDAYS)
+    .slice(0, PREVIOUS_WAIST)
     .map((e) => ({ d: e.d, cm: e.cm }));
 
   // ---- אימונים ----
@@ -268,7 +268,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     saturday,
     weekNo: start ? weekNumber(start, ws) : null,
     weight: { current, valid, comparison },
-    waist: { wednesday: wedEntry ? { d: wedEntry.d, cm: wedEntry.cm } : null, previous: previousWednesdays },
+    waist: { wednesday: wedEntry ? { d: wedEntry.d, cm: wedEntry.cm } : null, previous: previousWaist },
     workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, knee: peakPain(all, 'knee'), shoulder: peakPain(all, 'shoulder'), drops },
     cardio,
     nutrition,
@@ -314,9 +314,9 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
 
   // 3. מותניים
   L.push('מותניים');
-  L.push(data.waist.wednesday ? `רביעי ${formatDM(data.waist.wednesday.d)}: ${num(data.waist.wednesday.cm, 1)} ס״מ` : 'רביעי: לא נמדד');
+  L.push(data.waist.wednesday ? `רביעי ${formatDM(data.waist.wednesday.d)}: ${num(data.waist.wednesday.cm, 1)} ס״מ` : 'לא נמדד ברביעי');
   L.push(
-    `רביעי קודמים: ${data.waist.previous.length ? data.waist.previous.map((e) => `${formatDM(e.d)} ${num(e.cm, 1)}`).join(' · ') : DASH}`,
+    `אחרונות לפני: ${data.waist.previous.length ? data.waist.previous.map((e) => `${formatDM(e.d)} ${num(e.cm, 1)}`).join(' · ') : DASH}`,
   );
   L.push('');
 

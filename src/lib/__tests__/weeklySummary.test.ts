@@ -55,11 +55,12 @@ function fixture(): DB {
     vals.flatMap((w, i) => (w === null ? [] : [{ d: addDays(ws, i), w }]));
   db.weights = [...week(WEEK1, w1), ...week(WEEK2, w2), ...week(WEEK3, w3), ...week(WEEK4, w4), ...week(WEEK5, w5)];
   db.waist = [
-    { d: '2026-08-19', cm: 97 },
-    { d: '2026-08-26', cm: 96.5 },
-    { d: '2026-09-02', cm: 96 },
-    { d: '2026-09-09', cm: 95.5 },
-    { d: '2026-09-10', cm: 95 }, // חמישי — לא רביעי
+    { d: '2026-08-19', cm: 97 }, // רביעי
+    { d: '2026-08-26', cm: 96.5 }, // רביעי
+    { d: '2026-08-30', cm: 96 }, // שבת
+    { d: '2026-09-05', cm: 93.5 }, // שבת
+    { d: '2026-09-09', cm: 95.5 }, // רביעי
+    { d: '2026-09-13', cm: 93 }, // ראשון
   ];
   const bench = exerciseIn('A', 'db-bench-press')!;
   const machineSwap = {
@@ -169,30 +170,36 @@ describe('2. שבוע ראשון ושבוע חלקי', () => {
   });
 });
 
-describe('3. מותניים — רביעי בלבד', () => {
-  it('הערך של רביעי השבוע, ושלושת הרביעי הקודמים; חמישי לא נספר', () => {
+describe('3. מותניים — רביעי של השבוע, ושלוש המדידות שלפניו בכל יום', () => {
+  it('הערך של רביעי השבוע, ואחריו שלוש המדידות האחרונות לפניו (שבת/רביעי) עם תאריכים', () => {
     const d = buildWeeklySummaryData(fixture(), WEEK2);
     expect(d.waist.wednesday).toEqual({ d: '2026-09-09', cm: 95.5 });
     expect(d.waist.previous).toEqual([
-      { d: '2026-09-02', cm: 96 },
+      { d: '2026-09-05', cm: 93.5 },
+      { d: '2026-08-30', cm: 96 },
       { d: '2026-08-26', cm: 96.5 },
-      { d: '2026-08-19', cm: 97 },
     ]);
     expect(d.flags).not.toContain('מותניים לא נמדדו ברביעי');
     const text = weeklySummaryText(d);
-    expect(text).toContain('רביעי 09/09: 95.5 ס״מ');
-    expect(text).toContain('רביעי קודמים: 02/09 96.0 · 26/08 96.5 · 19/08 97.0');
+    expect(text).toContain('רביעי 09/09: 95.5 ס״מ\nאחרונות לפני: 05/09 93.5 · 30/08 96.0 · 26/08 96.5');
   });
 
-  it('רק חמישי בשבוע → "לא נמדד" ודגל; החמישי לא נכנס לרשימת הקודמים', () => {
+  it('שבוע 3 בלי רביעי → "לא נמדד ברביעי" + דגל; ההיסטוריה: 13/9 (ראשון) 93, 5/9 (שבת) 93.5, 30/8 (שבת) 96', () => {
     const db = fixture();
-    db.waist = db.waist.filter((e) => e.d !== '2026-09-09');
-    const d = buildWeeklySummaryData(db, WEEK2);
+    db.waist = db.waist.filter((e) => ['2026-08-30', '2026-09-05', '2026-09-13'].includes(e.d));
+    const d = buildWeeklySummaryData(db, WEEK3);
     expect(d.waist.wednesday).toBeNull();
     expect(d.flags).toContain('מותניים לא נמדדו ברביעי');
-    expect(weeklySummaryText(d)).toContain('רביעי: לא נמדד');
-    const next = buildWeeklySummaryData(db, '2026-09-13');
-    expect(next.waist.previous.map((e) => e.d)).toEqual(['2026-09-02', '2026-08-26', '2026-08-19']);
+    expect(d.waist.previous).toEqual([
+      { d: '2026-09-13', cm: 93 },
+      { d: '2026-09-05', cm: 93.5 },
+      { d: '2026-08-30', cm: 96 },
+    ]);
+    const text = weeklySummaryText(d);
+    expect(text).toContain('מותניים\nלא נמדד ברביעי\nאחרונות לפני: 13/09 93.0 · 05/09 93.5 · 30/08 96.0');
+    // בלי אף מדידה — קו
+    const empty = buildWeeklySummaryData(emptyDb(), WEEK3);
+    expect(weeklySummaryText(empty)).toContain('אחרונות לפני: —');
   });
 });
 
