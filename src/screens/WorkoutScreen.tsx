@@ -408,6 +408,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       assisted: log.assisted,
       note: null,
       videoUrl: null,
+      step: null,
     };
 
   /** פותח אימון חדש כטיוטה. לחיצה בטעות לא יוצרת אימון ריק בהיסטוריה. */
