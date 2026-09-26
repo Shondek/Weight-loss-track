@@ -1,7 +1,11 @@
 /* ============================================================
-   מערכת עיצוב
-   נקי, שקט, מדויק. בלי גרדיאנטים, בלי צללים, בלי כרטיסים צבעוניים.
-   היררכיה נוצרת מגודל ומשקל פונט בלבד. צבע אחד בלבד — לשגיאות.
+   מערכת עיצוב — "מינימליזם רך" (שלב 7: בכל הטאבים)
+   רקע נייר, כרטיסים לבנים עם מסגרת רכה וצל עדין, מרווחים נדיבים.
+   מצבים: מרווה = טוב, ענבר = בינוני / נתון לתשומת לב, צפחה = נמוך.
+   פעולה ראשית אחת (כפתור כהה) לכל כרטיס; פעולה הרסנית בטרקוטה עמומה.
+   כל המספרים ברוחב אחיד. אזור מגע 44px לפחות; 48px+ בהזנת סטים.
+   האסימונים חיים ב-:root ומשותפים לכל המסכים; קידומת nut- נשמרת כשם
+   נרדף כדי שמסך התזונה (שלב 3) יישאר זהה.
    ============================================================ */
 
 @font-face {
@@ -34,6 +38,21 @@
   --rule: #e2dfd8;
   --rule-strong: #8e8a81;
   --error: #a32a22;
+
+  /* אסימוני "מינימליזם רך" (שלב 3 → כל האפליקציה בשלב 7) */
+  --card: #ffffff;
+  --cream: #fffdf7;
+  --border: #e8e5de;
+  --divider: #f0ede6;
+  --sage: #8fae7e;
+  --amber: #d4a854;
+  --slate: #8b8b8b;
+  --track: #f0ede6;
+  --radius-card: 10px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* פעולה הרסנית: טרקוטה עמומה, לא אדום. 5.0:1 על לבן, 4.8:1 על נייר. */
+  --terracotta: #a85a3a;
+  --terracotta-soft: #f6ebe5;
 
   /* ביטחון בנתון — מלאות השבוע בלבד (7/7, 4–6, פחות מ-4). נבדק מול AA
      על --paper: 4.70, 4.83, 5.28. לעולם לא על כיוון שינוי או על משקל. */
@@ -264,16 +283,27 @@ h3 {
 
 /* ---------- מבנים ---------- */
 
+/* כרטיס: כל סעיף במסך הוא כרטיס לבן עם מסגרת רכה וצל עדין (כמו .nut-card). */
 .section {
-  border-top: 1px solid var(--rule);
-  padding-top: var(--sp-4);
-  margin-top: var(--sp-5);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  padding: var(--sp-4);
 }
 
 .section--first {
-  border-top: 0;
   margin-top: 0;
-  padding-top: 0;
+}
+
+/* סעיף בתוך כרטיס: קו הפרדה בלבד, בלי כרטיס בתוך כרטיס. */
+.section .section {
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--divider);
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--sp-4) 0 0;
 }
 
 .section__head {
@@ -426,12 +456,18 @@ button {
 
 /* כפתור שקט עם גבול דק: פעולה משנית שצריכה להיבדל משורה שנפתחת. */
 .btn--outlined {
-  border-color: var(--rule);
+  border-color: var(--border);
 }
 
+/* פעולה הרסנית: טרקוטה עמומה. לעולם לא אדום בוהק, ולעולם לא מלא. */
 .btn--danger {
-  color: var(--error);
-  border-color: var(--error);
+  color: var(--terracotta);
+  border-color: var(--terracotta);
+  background: var(--card);
+}
+
+.btn--danger.err {
+  color: var(--terracotta);
 }
 
 .btn--block {
@@ -547,8 +583,7 @@ button {
 /* סקשן של דבר שאינו אימון — אותו סימון מקווקו כמו הכרטיס. */
 .section--aside {
   border: 1px dashed var(--rule-strong);
-  border-radius: var(--radius);
-  padding: var(--sp-3);
+  box-shadow: none;
 }
 
 /* ---------- באנרים ---------- */
@@ -1293,16 +1328,17 @@ input[type='file']::file-selector-button {
    ============================================================ */
 
 :root {
-  --nut-cream: #fffdf7;
-  --nut-card: #ffffff;
-  --nut-border: #e8e5de;
-  --nut-divider: #f0ede6;
-  --nut-sage: #8fae7e;
-  --nut-amber: #d4a854;
-  --nut-slate: #8b8b8b;
-  --nut-track: #f0ede6;
-  --nut-radius: 10px;
-  --nut-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* שמות נרדפים לאסימוני השורש — אותם ערכים בדיוק, מסך התזונה לא משתנה. */
+  --nut-cream: var(--cream);
+  --nut-card: var(--card);
+  --nut-border: var(--border);
+  --nut-divider: var(--divider);
+  --nut-sage: var(--sage);
+  --nut-amber: var(--amber);
+  --nut-slate: var(--slate);
+  --nut-track: var(--track);
+  --nut-radius: var(--radius-card);
+  --nut-shadow: var(--shadow);
 }
 
 .nut {
