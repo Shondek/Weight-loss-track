@@ -55,11 +55,11 @@ import { KCAL_FLOOR, targetFor } from '../lib/nutrition/targets';
 import { daySummary, entryNutrition } from '../lib/nutrition/calc';
 import { kcalText } from '../lib/nutrition/display';
 import { compositionLine } from '../lib/nutrition/composition';
+import { gramsFor, qtyFor, qtyText as unitQtyText, quantityLabel, unitFor, type PortionSource, type UnitSpec } from '../lib/nutrition/portions';
 
 const SEARCH_LIMIT = 12;
 const RECENT_LIMIT = 6;
 const UNDO_MS = 6000;
-const UNIT_MAX = 10;
 
 /** חותמת זמן ממוינת + אקראיות — אותו מתכון כמו במסך האימון. */
 function unique(): string {
@@ -100,60 +100,106 @@ function scaled(ref: Pick<FoodRef, 'kcal' | 'protein'>, grams: number): { kcal: 
   return { kcal: (ref.kcal * grams) / 100, protein: (ref.protein * grams) / 100 };
 }
 
-/** "×3" למזון-יחידה, "150 ג׳" לשאר, "הערכה" לידני. */
-function qtyText(e: FoodEntry): string {
+/** "כף מפולסת ×2" / "מנה ×½" / "×3" / "150 ג׳", ו"הערכה" לידני. */
+function entryQtyText(e: FoodEntry, source: PortionSource | null): string {
   if (e.adhoc) return 'הערכה';
-  if (e.ref.unitFood) return `×${int(e.grams)}`;
-  return `${int(e.grams)} ג׳`;
+  return quantityLabel(source ?? { portions: [], unitFood: e.ref.unitFood === true }, e.grams);
+}
+
+/** האם הגרמים נופלים בדיוק על קפיצה של היחידה (אחרת מתחילים במצב גרמים). */
+function onUnitGrid(unit: UnitSpec, grams: number): boolean {
+  if (unit.kind === 'grams') return false;
+  return Math.abs(gramsFor(unit, qtyFor(unit, grams)) - grams) < 0.05;
 }
 
 // ---------- בקרת כמות ----------
 
 type QtyProps = {
-  unitFood: boolean;
-  value: number;
+  unit: UnitSpec;
+  grams: number;
   onChange: (grams: number) => void;
   label: string;
 };
 
-/** מזון-יחידה: ×1…×10 ברשומה אחת. מזון בגרמים: שדה גרמים. */
-function QtyControl({ unitFood, value, onChange, label }: QtyProps) {
-  const [text, setText] = useState(String(value));
-  useEffect(() => setText(String(value)), [value]);
-  if (unitFood) {
-    const n = Math.max(1, Math.min(UNIT_MAX, Math.round(value)));
+/**
+ * בקרת כמות לפי יחידת המזון (lib/nutrition/portions.ts): מנה ×0.5…×3,
+ * יחידת מידה ×0.5…×10 (עם מעבר לגרמים), מזון-יחידה ×1…×10, או גרמים.
+ * הערך שיוצא תמיד בגרמים — זה מה שנשמר.
+ */
+function QtyControl({ unit, grams, onChange, label }: QtyProps) {
+  const [gramsMode, setGramsMode] = useState(() => unit.kind === 'grams' || (unit.kind !== 'unit' && !onUnitGrid(unit, grams)));
+  const [text, setText] = useState(String(grams));
+  useEffect(() => setText(String(grams)), [grams]);
+
+  if (unit.kind === 'unit') {
+    const n = Math.max(unit.min, Math.min(unit.max, Math.round(grams)));
     return (
       <div className="nut-qty" role="group" aria-label={`כמות — ${label}`}>
-        <button type="button" className="btn btn--step" aria-label="פחות" disabled={n <= 1} onClick={() => onChange(n - 1)}>
+        <button type="button" className="btn btn--step" aria-label="פחות" disabled={n <= unit.min} onClick={() => onChange(n - 1)}>
           −
         </button>
         <span className="nut-qty__value num" aria-live="polite">
           ×{n}
         </span>
-        <button type="button" className="btn btn--step" aria-label="יותר" disabled={n >= UNIT_MAX} onClick={() => onChange(n + 1)}>
+        <button type="button" className="btn btn--step" aria-label="יותר" disabled={n >= unit.max} onClick={() => onChange(n + 1)}>
           +
         </button>
       </div>
     );
   }
+
+  if (unit.kind === 'grams' || gramsMode) {
+    return (
+      <div className="nut-qty nut-qty--grams">
+        <input
+          className="nut-qty__input num"
+          type="number"
+          inputMode="decimal"
+          min={MIN_GRAMS}
+          max={MAX_GRAMS}
+          step={1}
+          aria-label={`גרמים — ${label}`}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            const g = parseGrams(e.target.value);
+            if (g !== null) onChange(g);
+          }}
+        />
+        <span className="tiny muted">ג׳</span>
+        {unit.kind !== 'grams' && (
+          <button
+            type="button"
+            className="nut-qty__toggle"
+            aria-label={`חזרה ליחידה ${unit.label}`}
+            onClick={() => {
+              setGramsMode(false);
+              onChange(gramsFor(unit, Math.max(unit.min, qtyFor(unit, grams))));
+            }}
+          >
+            {unit.label}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const q = Math.max(unit.min, Math.min(unit.max, qtyFor(unit, grams)));
   return (
-    <div className="nut-qty nut-qty--grams">
-      <input
-        className="nut-qty__input num"
-        type="number"
-        inputMode="decimal"
-        min={MIN_GRAMS}
-        max={MAX_GRAMS}
-        step={1}
-        aria-label={`גרמים — ${label}`}
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          const g = parseGrams(e.target.value);
-          if (g !== null) onChange(g);
-        }}
-      />
-      <span className="tiny muted">ג׳</span>
+    <div className="nut-qty" role="group" aria-label={`כמות — ${label}`}>
+      <button type="button" className="btn btn--step" aria-label="פחות" disabled={q <= unit.min} onClick={() => onChange(gramsFor(unit, q - unit.step))}>
+        −
+      </button>
+      <span className="nut-qty__value nut-qty__value--unit" aria-live="polite">
+        <span className="num">×{unitQtyText(q)}</span>
+        <span className="nut-qty__unit">{unit.label}</span>
+      </span>
+      <button type="button" className="btn btn--step" aria-label="יותר" disabled={q >= unit.max} onClick={() => onChange(gramsFor(unit, q + unit.step))}>
+        +
+      </button>
+      <button type="button" className="nut-qty__toggle" aria-label="מעבר לגרמים" onClick={() => setGramsMode(true)}>
+        ג׳
+      </button>
     </div>
   );
 }
@@ -168,6 +214,12 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   const customOf = (id: string) => db.customFoods.find((f) => f.id === id) ?? null;
   /** שורת התכולה של מנה מורכבת, או null. */
   const compositionOf = (id: string) => compositionLine(customOf(id)?.recipe, (i) => resolve(i)?.name ?? null);
+  /** יחידות המידה, המתכון ודגל היחידה של מזון — לתרגום גרמים ליחידה. null כשהמזון נעלם. */
+  const sourceOf = (id: string): PortionSource | null => {
+    const live = resolve(id);
+    if (!live) return null;
+    return { portions: live.portions, unitFood: live.unitFood, recipe: customOf(id)?.recipe ?? null };
+  };
 
   // ---------- היום המוצג ----------
   const [day, setDay] = useState(today);
@@ -246,7 +298,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     const entry = live
       ? newEntry(live, grams, meal, ts, unique())
       : newEntryFromRef(item.foodId, item.ref, grams, meal, ts, unique());
-    commit(entry, `${item.name} ${item.unitFood ? `×${int(grams)}` : `${int(grams)} ג׳`}`);
+    commit(entry, `${item.name} ${quantityLabel(sourceOf(item.foodId) ?? { portions: [], unitFood: item.unitFood }, grams)}`);
   };
 
   // ---------- חיפוש ----------
@@ -266,8 +318,13 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     () => (query.trim() === '' ? recent : searchFoods(foodIndex.index, query, SEARCH_LIMIT)),
     [foodIndex.index, query, recent],
   );
-  /** הכמות שמוצגת לתוצאה: האחרונה שנרשמה, ואם אין — יחידה אחת / 100 ג'. */
-  const portionOf = (f: Food): number => lastGramsOf(db.entries, f.id) ?? (f.unitFood ? 1 : 100);
+  /** הכמות שמוצגת לתוצאה: האחרונה שנרשמה; אחרת יחידה אחת של המזון (מנה / יחידת מידה / יחידה), או 100 ג׳. */
+  const portionOf = (f: Food): number => {
+    const last = lastGramsOf(db.entries, f.id);
+    if (last !== null) return last;
+    const unit = unitFor(sourceOf(f.id) ?? { portions: f.portions, unitFood: f.unitFood });
+    return unit.kind === 'grams' ? 100 : gramsFor(unit, 1);
+  };
 
   const pick = (f: Food) => {
     setSelected(f);
@@ -275,7 +332,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   };
   const addSelected = () => {
     if (!selected) return;
-    commit(newEntry(selected, selGrams, mealNow(), nowTs(), unique()), `${selected.name} ${selected.unitFood ? `×${int(selGrams)}` : `${int(selGrams)} ג׳`}`);
+    commit(newEntry(selected, selGrams, mealNow(), nowTs(), unique()), `${selected.name} ${quantityLabel(sourceOf(selected.id), selGrams)}`);
     setSelected(null);
     setQuery('');
   };
@@ -517,8 +574,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                   </button>
                   {item.kind === 'food' && (
                     <QtyControl
-                      unitFood={item.unitFood}
-                      value={grams}
+                      unit={unitFor(sourceOf(item.foodId) ?? { portions: [], unitFood: item.unitFood }, item.lastGrams)}
+                      grams={grams}
                       label={item.name}
                       onChange={(g) => setQty({ ...qty, [item.key]: g })}
                     />
@@ -568,7 +625,13 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             </div>
             {compositionOf(selected.id) && <span className="nut-comp nut-comp--full">{compositionOf(selected.id)}</span>}
             <div className="nut-selected__row">
-              <QtyControl unitFood={selected.unitFood} value={selGrams} label={selected.name} onChange={setSelGrams} />
+              <QtyControl
+                key={selected.id}
+                unit={unitFor(sourceOf(selected.id) ?? { portions: selected.portions, unitFood: selected.unitFood }, lastGramsOf(db.entries, selected.id))}
+                grams={selGrams}
+                label={selected.name}
+                onChange={setSelGrams}
+              />
               <span className="tiny muted grow">
                 <span className="num">{int(scaled(selected, selGrams).kcal)}</span> קק"ל ·{' '}
                 <span className="num">{int(scaled(selected, selGrams).protein)}</span> חלבון
@@ -596,7 +659,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                           {compositionOf(f.id) && <span className="nut-comp">{compositionOf(f.id)}</span>}
                         </span>
                         <span className="tiny muted num">
-                          {f.unitFood ? `×${int(p)}` : `${int(p)} ג׳`} · {int(v.kcal)} קק"ל · {int(v.protein)} ח
+                          {quantityLabel(sourceOf(f.id) ?? { portions: f.portions, unitFood: f.unitFood }, p)} · {int(v.kcal)} קק"ל · {int(v.protein)} ח
                         </span>
                       </button>
                     </li>
@@ -746,7 +809,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                           {entryName(e, live?.name ?? null)}
                           <span className="tiny muted">
                             {' '}
-                            · <span className="num">{qtyText(e)}</span> · <span className="num">{timeText(e.ts)}</span>
+                            · <span className="num">{entryQtyText(e, sourceOf(e.foodId))}</span> · <span className="num">{timeText(e.ts)}</span>
                             {n.live === 'differs' && ' · ההגדרה השתנתה'}
                             {n.live === 'missing' && !n.adhoc && ' · המזון נמחק'}
                           </span>
@@ -766,8 +829,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                           )}
                           {!n.adhoc && (
                             <QtyControl
-                              unitFood={e.ref.unitFood === true}
-                              value={e.grams}
+                              unit={unitFor(sourceOf(e.foodId) ?? { portions: [], unitFood: e.ref.unitFood === true }, e.grams)}
+                              grams={e.grams}
                               label={entryName(e, live?.name ?? null)}
                               onChange={(g) => void store.update('entries', setEntryGrams(db.entries, e.id, g))}
                             />
