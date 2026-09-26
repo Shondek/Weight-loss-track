@@ -114,9 +114,9 @@
           "repRangeMin": 30,
           "repRangeMax": 45,
           "isTimed": true,
-          "bodyweightOnly": true,
+          "bodyweightOnly": false,
           "effort": "—",
-          "note": "45 שנ' × 3 עם פלטה 5 ק\"ג על הגב",
+          "note": "45 שנ' × 3 עם פלטה 5 ק\"ג על הגב. משקל = הפלטה; ריק = משקל גוף",
           "videoUrl": "https://drive.google.com/file/d/1gmiYVdPzQuDcGLAiweQxJiQv5cnFzTWy/view?usp=share_link"
         }
       ]

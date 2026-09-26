@@ -56,7 +56,9 @@ function historyText(h: ExerciseHistory, timed: boolean, usesWeight: boolean): s
   if (usesWeight) {
     const weights = performed.map((s) => (s.weight === null ? DASH : clean(s.weight)));
     const distinct = new Set(weights);
-    parts.push(`${distinct.size === 1 ? (weights[0] ?? DASH) : weights.join(',')} ק״ג`);
+    // תרגיל זמן שנרשם בלי משקל (פלאנק ישן) = משקל גוף, לא "—".
+    if (timed && performed.length > 0 && performed.every((s) => s.weight === null)) parts.push('משקל גוף');
+    else parts.push(`${distinct.size === 1 ? (weights[0] ?? DASH) : weights.join(',')} ק״ג`);
   }
   parts.push(timed ? `${values} שנ׳` : values);
   return parts.join(' · ');
@@ -73,7 +75,8 @@ export default function ExerciseFocus({
   onToggleHistory,
 }: Props) {
   const timed = spec.isTimed;
-  const usesWeight = !timed && !spec.bodyweightOnly;
+  // תרגיל זמן עם משקל (פלאנק + פלטה): שדה משקל אופציונלי; ריק = משקל גוף.
+  const usesWeight = !spec.bodyweightOnly;
   const side = sideLabel(spec);
   const weight = lastWeightOf(log);
   const [showAll, setShowAll] = useState(false);
@@ -219,7 +222,7 @@ export default function ExerciseFocus({
             max={MAX_WEIGHT}
             decimals={1}
             unit='ק"ג'
-            placeholder='ק"ג'
+            placeholder={timed ? 'משקל גוף' : 'ק"ג'}
           />
         </div>
       )}

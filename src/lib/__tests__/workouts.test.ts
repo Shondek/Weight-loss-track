@@ -351,10 +351,11 @@ describe('בניית אימון', () => {
     ).toBe(true);
   });
 
-  it('תרגיל זמן ומשקל-גוף לעולם בלי משקל', () => {
-    // פלאנק (A7) הוא תרגיל הזמן היחיד בתוכנית; משקל גוף נבדק גם על מפרט פרוש.
-    const plank = blankLoggedExercise(exerciseById('plank')!, 20);
-    expect(plank.sets.every((s) => s.weight === null)).toBe(true);
+  it('משקל-גוף-בלבד לעולם בלי משקל; פלאנק (זמן) יכול לשאת פלטה', () => {
+    // פלאנק (A7) הוא תרגיל הזמן היחיד בתוכנית; משלב 4 הוא נושא משקל (פלטה).
+    const plank = blankLoggedExercise(exerciseById('plank')!, 5);
+    expect(plank.sets.every((s) => s.weight === 5 && s.seconds === null)).toBe(true);
+    expect(blankLoggedExercise(exerciseById('plank')!).sets.every((s) => s.weight === null)).toBe(true);
     const pushUp = blankLoggedExercise(exerciseById('incline-push-up')!, 20);
     expect(pushUp.sets.every((s) => s.weight === null)).toBe(true);
     // וכל שאר תרגילי התוכנית הם משקל + טווח חזרות מספרי

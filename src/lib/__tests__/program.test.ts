@@ -130,6 +130,10 @@ describe('program-abc.json — תוכן כל תרגיל', () => {
     }
     expect(exerciseById('assisted-pull-up')?.assisted).toBe(true);
     expect(exerciseById('assisted-pull-up')?.bodyweightOnly).toBe(false);
+    // שלב 4: פלאנק הוא תרגיל זמן שנושא משקל (פלטה) — לא משקל-גוף-בלבד.
+    expect(exerciseById('plank')?.isTimed).toBe(true);
+    expect(exerciseById('plank')?.bodyweightOnly).toBe(false);
+    expect(exerciseById('plank')?.machine).toBeNull();
   });
 });
 
