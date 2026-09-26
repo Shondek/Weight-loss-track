@@ -260,7 +260,18 @@ describe('5. אימונים — החלפה, RIR, הצעה וכלל לכל תרג
     expect(text).toContain('  לג-פרס 60×12,12,12 · RIR 2 · הבא: 65 ק״ג · 10 חזרות (R1)');
     expect(text).toContain("  בנץ' מכונה 40×10,10,10 · (הוחלף מ-בנץ' פרס) · RIR 2 · הבא: 40 ק״ג · 11 חזרות (R6)");
     expect(text).toContain('  כפיפת מרפקים 12.5×8,3 · RIR 1 · הבא: 10 ק״ג · 10 חזרות (R3)');
-    expect(text).toContain('  לג-פרס 60×12,12,12 · RIR — · הבא: 65 ק״ג · 10 חזרות (R1)');
+    // R1 בלי RIR → הסימון; R1 עם RIR 2 (06/09 A) → בלי
+    expect(text).toContain('  לג-פרס 60×12,12,12 · RIR — · הבא: 65 ק״ג · 10 חזרות (R1) · RIR לא נרשם — אשר בעצמך');
+    expect(text).toContain('  לג-פרס 60×12,12,12 · RIR 2 · הבא: 65 ק״ג · 10 חזרות (R1)\n');
+    expect(a.lines[0]?.rirUnknown).toBe(false);
+    expect(d.workouts.items[2]?.lines[0]?.rirUnknown).toBe(true);
+    // R3 בלי RIR — לא R1, ולכן בלי הסימון
+    const noRir = fixture();
+    noRir.workouts = noRir.workouts.map((w) => ({ ...w, ex: w.ex.map(({ rir: _r, ...e }) => e) }));
+    const dn = buildWeeklySummaryData(noRir, WEEK2);
+    expect(dn.workouts.items[1]?.lines[0]).toMatchObject({ rirUnknown: false, rir: null });
+    expect(dn.workouts.items[1]?.lines[0]?.suggestion?.rule).toBe('R3');
+    expect(weeklySummaryText(dn).match(/אשר בעצמך/g)?.length).toBe(3); // לג-פרס A, RDL, לג-פרס C
     expect(text).toContain('כאב: ברך 2 · כתף 3');
     // אירובי: 20 סיום + 50 עצמאי = 70/60
     expect(d.cardio).toMatchObject({ total: 70, budget: 60, over: true });

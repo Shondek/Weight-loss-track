@@ -59,6 +59,8 @@ export type ExerciseLine = {
   suggestion: Suggestion | null;
   /** "17.5 ק״ג · 8 חזרות" או null כשאין הצעה. */
   next: string | null;
+  /** R1 שהוצע בלי RIR בסט האחרון — "אשר בעצמך". */
+  rirUnknown: boolean;
 };
 
 export type WeeklySummaryData = {
@@ -179,6 +181,7 @@ function exerciseLine(db: DB, w: WorkoutEntry, row: LoggedExercise): ExerciseLin
     swappedFrom: row.swappedFrom === undefined ? null : `הוחלף מ-${shortName(row.swappedFrom, exerciseById(row.swappedFrom)?.name ?? row.swappedFrom)}`,
     suggestion,
     next: label ? `${label.weight} · ${label.reps}` : null,
+    rirUnknown: suggestion?.rirUnknown ?? false,
   };
 }
 
@@ -290,6 +293,9 @@ function signed(v: number): string {
 
 const weekTag = (s: WeekSummary) => `${s.count}/${WEEK_LENGTH}`;
 
+/** מסומן על R1 שהוצע בלי RIR — ההצעה עומדת, אבל הנתון שמאשר אותה חסר. */
+export const RIR_UNKNOWN_NOTE = 'RIR לא נרשם — אשר בעצמך';
+
 export function weeklySummaryText(data: WeeklySummaryData): string {
   const L: string[] = [];
   const w = data.weight;
@@ -331,6 +337,7 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
       if (line.swappedFrom) parts.push(`(${line.swappedFrom})`);
       parts.push(`RIR ${line.rir === null ? DASH : line.rir}`);
       parts.push(line.suggestion && line.next ? `הבא: ${line.next} (${line.suggestion.rule})` : `הבא: ${DASH}`);
+      if (line.rirUnknown) parts.push(RIR_UNKNOWN_NOTE);
       L.push(`  ${parts.join(' · ')}`);
     }
     if (it.skipped.length) L.push(`  דולגו: ${it.skipped.join(', ')}`);
