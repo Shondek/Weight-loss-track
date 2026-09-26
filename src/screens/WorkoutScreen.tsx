@@ -411,6 +411,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       note: null,
       videoUrl: null,
       step: null,
+      alternates: [],
     };
 
   /** פותח אימון חדש כטיוטה. לחיצה בטעות לא יוצרת אימון ריק בהיסטוריה. */
