@@ -29,6 +29,8 @@ type Props = {
   onToggleHistory: () => void;
   /** הצעה לאימון הזה מכללי ההתקדמות (lib/progression.ts). null = אין היסטוריה. */
   suggestion?: Suggestion | null | undefined;
+  /** "דלג ואחזור" (שלב 4.1): מזיז את התרגיל לסוף האימון. חסר = לא מוצג. */
+  onSkip?: (() => void) | undefined;
 };
 
 const MAX_WEIGHT = 500;
@@ -77,6 +79,7 @@ export default function ExerciseFocus({
   historyOpen,
   onToggleHistory,
   suggestion = null,
+  onSkip,
 }: Props) {
   const timed = spec.isTimed;
   // תרגיל זמן עם משקל (פלאנק + פלטה): שדה משקל אופציונלי; ריק = משקל גוף.
@@ -153,6 +156,14 @@ export default function ExerciseFocus({
       <p className="tiny muted focus__muscles">{spec.muscles.join(' · ')}</p>
 
       {spec.note && <p className="focus__note small">{spec.note}</p>}
+
+      {onSkip && (
+        <div className="wk-actions">
+          <button type="button" className="btn btn--quiet btn--outlined" onClick={onSkip}>
+            דלג ואחזור
+          </button>
+        </div>
+      )}
 
       {/*
         היסטוריה לקריאה בלבד, מקופלת: הכותרת תמיד גלויה ואומרת כמה יש

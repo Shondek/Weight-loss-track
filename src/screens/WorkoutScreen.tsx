@@ -22,6 +22,7 @@ import {
 } from '../data/program';
 import { HISTORY_ROWS } from '../data/config';
 import { suggestNext } from '../lib/progression';
+import { moveToEnd, orderOf, reorderLike } from '../lib/workouts';
 import {
   cardioDetailLine,
   cardioLine,
@@ -257,6 +258,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
    */
   const [session, setSession] = useState<CardioSession | null>(() => readCardioSession());
   const [summary, setSummary] = useState<SummaryState | null>(null);
+  /** "דלג ואחזור": הסדר שלפני הדילוג, לביטול. נעלם במעבר אימון. */
+  const [skipUndo, setSkipUndo] = useState<{ ids: string[]; name: string } | null>(null);
 
   const start = useMemo(() => programStartWeek(db), [db]);
   // כוח בלבד. אירובי עצמאי חי ב-db.standaloneCardio ולא נכנס לכאן.
@@ -570,7 +573,24 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const closeEditor = () => {
     setDraft(null);
     setOpenId(null);
+    setSkipUndo(null);
     skipRestTimer();
+  };
+
+  /**
+   * "דלג ואחזור" (שלב 4.1): התרגיל שבמוקד עובר לסוף סדר הכוח. הסדר שנשמר
+   * הוא הסדר שיבוצע; המוקד נשאר באותו אינדקס — כלומר עובר לתרגיל הבא.
+   */
+  const skipExercise = (ex: LoggedExercise) => {
+    if (!open) return;
+    setSkipUndo({ ids: orderOf(rows), name: ex.n });
+    patch({ ...open, ex: moveToEnd(rows, ex.exerciseId) });
+  };
+
+  const undoSkip = () => {
+    if (!open || !skipUndo) return;
+    patch({ ...open, ex: reorderLike(rows, skipUndo.ids) });
+    setSkipUndo(null);
   };
 
   /** פותח אימון קיים לעריכה ומעביר את התצוגה לשבוע שלו. */
@@ -883,6 +903,15 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
             />
           )}
 
+          {skipUndo && (
+            <div className="nut-toast" role="status" style={{ marginTop: 'var(--sp-2)' }}>
+              <span className="grow">{skipUndo.name} — הועבר לסוף האימון</span>
+              <button type="button" className="btn btn--quiet" onClick={undoSkip}>
+                בטל
+              </button>
+            </div>
+          )}
+
           {current && !isCardio(current) && (
             <ExerciseFocus
               key={current.exerciseId}
@@ -907,6 +936,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               onSetLogged={(i) => onSetLogged(current, i)}
               historyOpen={historyOpen}
               onToggleHistory={() => setHistoryOpen((v) => !v)}
+              onSkip={rows.filter((r) => !isCardio(r)).length > 1 ? () => skipExercise(current) : undefined}
             />
           )}
 

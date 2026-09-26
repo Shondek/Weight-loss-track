@@ -469,25 +469,59 @@ export function exercisesFor(
   all: readonly WorkoutEntry[],
 ): LoggedExercise[] {
   const byId = new Map(entry.ex.map((e) => [e.exerciseId, e]));
-  const rows: LoggedExercise[] = [byId.get(WARMUP_ID) ?? blankCardio(WARMUP_ID)];
-  for (const spec of PROGRAM[entry.t]) {
-    const existing = byId.get(spec.id);
-    rows.push(
-      existing
-        ? withSetCount(existing, spec.sets)
-        : blankLoggedExercise(spec, openingWeight(all, spec.id, entry.id)),
-    );
+  const warmup = byId.get(WARMUP_ID) ?? blankCardio(WARMUP_ID);
+  // תרגילי הכוח לפי הסדר שנשמר ברשומה — "דלג ואחזור" (שלב 4.1) מזיז שורה
+  // לסוף, והסדר שבוצע הוא הסדר שנשמר. תא בתוכנית שאין לו שורה ברשומה
+  // (רשומה ישנה) מקבל שורה ריקה במקומו לפי סדר התוכנית.
+  const inProgram = new Set(PROGRAM[entry.t].map((spec) => spec.id));
+  // שורה שאינה בתוכנית ואין בה נתון (תרגיל שירד ולא בוצע) לא מוצגת — כמו קודם.
+  const strength: LoggedExercise[] = entry.ex.filter((e) => !isCardio(e) && (inProgram.has(e.exerciseId) || hasData(e)));
+  const placed = new Set(strength.map((r) => r.exerciseId));
+  const missing = PROGRAM[entry.t].filter((spec) => !placed.has(spec.id));
+  const rows: LoggedExercise[] = [warmup];
+  // סדר: מה שנשמר (עם השלמת סטים למפרט), ואחריו תאים חסרים לפי התוכנית.
+  for (const e of strength) {
+    const spec = PROGRAM[entry.t].find((x) => x.id === e.exerciseId);
+    rows.push(spec ? withSetCount(e, spec.sets) : e);
   }
-  const placed = new Set(rows.map((r) => r.exerciseId));
-  for (const e of entry.ex) {
-    if (!placed.has(e.exerciseId) && e.exerciseId !== FINISHER_ID && hasData(e)) {
-      rows.push(e);
-    }
+  for (const spec of missing) {
+    rows.push(blankLoggedExercise(spec, openingWeight(all, spec.id, entry.id)));
   }
   rows.push(
     byId.get(FINISHER_ID) ?? blankCardio(FINISHER_ID, lastFinisherCardio(all, undefined, entry.id)),
   );
   return rows;
+}
+
+/**
+ * "דלג ואחזור" (שלב 4.1): מזיז תרגיל כוח לסוף סדר הכוח של האימון. חימום
+ * נשאר ראשון ואירובי סיום אחרון. הסדר שנשמר = הסדר שיבוצע. לא נוגע בנתונים.
+ */
+export function moveToEnd(ex: readonly LoggedExercise[], exerciseId: string): LoggedExercise[] {
+  const target = ex.find((e) => e.exerciseId === exerciseId && !isCardio(e));
+  if (!target) return [...ex];
+  const rest = ex.filter((e) => e !== target);
+  const finisherAt = rest.findIndex((e) => e.exerciseId === FINISHER_ID);
+  if (finisherAt === -1) return [...rest, target];
+  return [...rest.slice(0, finisherAt), target, ...rest.slice(finisherAt)];
+}
+
+/** סדר התרגילים כרשימת מזהים — לביטול של "דלג ואחזור". */
+export function orderOf(ex: readonly LoggedExercise[]): string[] {
+  return ex.map((e) => e.exerciseId);
+}
+
+/**
+ * מסדר מחדש לפי רשימת מזהים (ביטול דילוג). הנתונים של כל שורה הם
+ * הנוכחיים; מזהה שאינו ברשימה נשאר בסוף, לפני אירובי הסיום.
+ */
+export function reorderLike(ex: readonly LoggedExercise[], ids: readonly string[]): LoggedExercise[] {
+  const rank = new Map(ids.map((id, i) => [id, i]));
+  const finisher = ex.filter((e) => e.exerciseId === FINISHER_ID);
+  const others = ex.filter((e) => e.exerciseId !== FINISHER_ID);
+  const known = others.filter((e) => rank.has(e.exerciseId)).sort((a, b) => rank.get(a.exerciseId)! - rank.get(b.exerciseId)!);
+  const unknown = others.filter((e) => !rank.has(e.exerciseId));
+  return [...known, ...unknown, ...finisher];
 }
 
 /**
