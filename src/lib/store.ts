@@ -48,7 +48,35 @@ export const BACKUP_KEYS = {
   workoutsV1: 'fatloss:workouts:v1',
 } as const;
 
+/**
+ * מטא-נתונים של האחסון. לא נתון משתמש: לא ב-DbKey, לא בגיבוי.
+ * `lsMigrated` — ראה `Marker`.
+ */
+export const META_KEYS = {
+  lsMigrated: 'fatloss:meta:ls-migrated',
+} as const;
+
 export type DbKey = keyof typeof STORAGE_KEYS;
+
+/**
+ * סמן "המיגרציה מ-localStorage הושלמה" (סיכון #4). נכתב גם ל-IndexedDB
+ * וגם ל-localStorage אחרי שהמיגרציה הישנה (M1) רצה בהצלחה פעם אחת.
+ *
+ * כשהוא קיים באחד משני המקומות, מפתחות הנתונים לעולם לא נקראים יותר
+ * מ-localStorage: ערך ישן שם לא יכול להחליף בשקט את הנוכחי אם IndexedDB
+ * פונה. `keys` — המפתחות שהיה להם ערך ב-IndexedDB כשהסמן נכתב (ומתעדכן
+ * בכל שמירה ראשונה של מפתח): מפתח שברשימה ונעלם = נתונים חסרים; מפתח
+ * שלא ברשימה (למשל תזונה אצל מי שלא רשם אכילה) פשוט ריק, בלי אזעקה.
+ * ערכי localStorage הישנים לא נמחקים לעולם.
+ */
+export type Marker = { at: string; keys: string[] };
+
+let marker: Marker | null = null;
+
+/** לבדיקות: הסמן שנטען או נכתב בסשן הזה. */
+export function currentMarker(): Marker | null {
+  return marker;
+}
 
 /**
  * רשומות האימון שלא הומרו, גולמיות. `persist('workouts')` כותב אותן חזרה
@@ -128,12 +156,15 @@ async function idbAvailable(): Promise<boolean> {
   }
 }
 
+/**
+ * קריאה גולמית. ב-IndexedDB אין נפילה ל-localStorage: הנפילה הזו הייתה
+ * מה שאפשר לנתון ישן לחזור (סיכון #4). המיגרציה החד-פעמית מ-localStorage
+ * קוראת אותו במפורש ב-`loadDB`, ורק כשאין סמן.
+ */
 async function rawGet(storageKey: string): Promise<unknown> {
   switch (backend) {
-    case 'indexeddb': {
-      const v = await idbGet(storageKey);
-      return v ?? readLocalStorage(storageKey);
-    }
+    case 'indexeddb':
+      return idbGet(storageKey);
     case 'localstorage':
       return readLocalStorage(storageKey);
     default:
@@ -162,6 +193,41 @@ function readLocalStorage(storageKey: string): unknown {
   }
 }
 
+function parseMarker(v: unknown): Marker | null {
+  if (typeof v === 'string' && v !== '') return { at: v, keys: [] };
+  if (typeof v !== 'object' || v === null) return null;
+  const at = (v as { at?: unknown }).at;
+  const keys = (v as { keys?: unknown }).keys;
+  if (typeof at !== 'string') return null;
+  return { at, keys: Array.isArray(keys) ? keys.filter((k): k is string => typeof k === 'string') : [] };
+}
+
+/** הסמן מ-IndexedDB, ואם אין — מ-localStorage. קיים באחד מהם = קיים. */
+async function readMarker(): Promise<Marker | null> {
+  let fromIdb: unknown;
+  try {
+    fromIdb = await idbGet(META_KEYS.lsMigrated);
+  } catch {
+    fromIdb = undefined;
+  }
+  return parseMarker(fromIdb) ?? parseMarker(readLocalStorage(META_KEYS.lsMigrated));
+}
+
+/** כותב את הסמן לשני המקומות. best-effort: כישלון באחד לא מבטל את השני. */
+async function writeMarker(m: Marker): Promise<void> {
+  marker = m;
+  try {
+    await idbSet(META_KEYS.lsMigrated, m);
+  } catch {
+    /* IndexedDB מלא — העותק ב-localStorage עדיין מגן */
+  }
+  try {
+    window.localStorage.setItem(META_KEYS.lsMigrated, JSON.stringify(m));
+  } catch {
+    /* localStorage חסום — העותק ב-IndexedDB עדיין מגן */
+  }
+}
+
 // ---------- API ציבורי ----------
 
 export type LoadResult = {
@@ -173,6 +239,11 @@ export type LoadResult = {
   readErrors: string[];
   /** כמה רשומות נכנסו להסגר בטעינה הזו (חדשות, אחרי איחוד). */
   quarantined: number;
+  /**
+   * מפתחות שהסמן אומר שהיו ב-IndexedDB ועכשיו אינם (סיכון #4). נטענו
+   * ריקים, חסומים לשמירה בסשן הזה, והממשק חייב להציג באנר חוסם.
+   */
+  missingKeys: DbKey[];
 };
 
 /**
@@ -200,11 +271,20 @@ export async function loadDB(): Promise<LoadResult> {
   let workoutsUpgraded = 0;
   /** דחיות לפי מפתח — הופכות להסגר אחרי הלולאה, לפני כל שמירה. */
   const rejectedBy = new Map<DbKey, Rejection[]>();
+  const missingKeys: DbKey[] = [];
   blocked.clear();
+
+  // הסמן רלוונטי רק כש-IndexedDB הוא האחסון: רק אז יש "מקור ישן" נפרד.
+  marker = backend === 'indexeddb' ? await readMarker() : null;
+  /** מפתחות שיש להם ערך ב-IndexedDB בסוף הטעינה — לסמן חדש. */
+  const present: string[] = [];
+  /** המיגרציה נחשבת מוצלחת רק אם כל קריאה וכל העתקה הצליחו. */
+  let migrationOk = true;
 
   for (const key of Object.keys(STORAGE_KEYS) as DbKey[]) {
     const storageKey = STORAGE_KEYS[key];
     let raw: unknown;
+    let readFailed = false;
     try {
       raw = await rawGet(storageKey);
     } catch (err) {
@@ -212,17 +292,28 @@ export async function loadDB(): Promise<LoadResult> {
         `קריאת ${KEY_LABELS[key]} נכשלה: ${err instanceof Error ? err.message : String(err)}`,
       );
       raw = undefined;
+      readFailed = true;
+      migrationOk = false;
     }
 
-    // מיגרציה מהגרסה הישנה: אותם מפתחות, אבל ב-localStorage.
     let fromLegacy = false;
-    if (raw === undefined && backend === 'indexeddb') {
-      const legacy = readLocalStorage(storageKey);
-      if (legacy !== undefined) {
-        raw = legacy;
-        fromLegacy = true;
+    if (raw === undefined && backend === 'indexeddb' && !readFailed) {
+      if (marker === null) {
+        // מיגרציה מהגרסה הישנה: אותם מפתחות, אבל ב-localStorage. רק פעם
+        // אחת בחיי המכשיר — עד שהסמן נכתב.
+        const legacy = readLocalStorage(storageKey);
+        if (legacy !== undefined) {
+          raw = legacy;
+          fromLegacy = true;
+        }
+      } else if (marker.keys.includes(key)) {
+        // היה כאן נתון, ועכשיו אין. לא קוראים מ-localStorage, לא שומרים
+        // כלום מעל החור — רק מדווחים. שחזור מגיבוי משחרר (persistAll).
+        missingKeys.push(key);
+        blocked.set(key, 'נתונים חסרים באחסון — שחזר מגיבוי לפני שממשיכים');
       }
     }
+    if (raw !== undefined && !fromLegacy) present.push(key);
 
     switch (key) {
       case 'weights': {
@@ -301,14 +392,22 @@ export async function loadDB(): Promise<LoadResult> {
       // תמשיך לעבוד אם צריך לחזור אליה.
       try {
         await rawSet(storageKey, raw);
+        present.push(key);
       } catch {
-        /* המיגרציה היא best-effort; הנתונים כבר בזיכרון */
+        /* המיגרציה היא best-effort; הנתונים כבר בזיכרון. הסמן לא ייכתב — הניסיון יחזור. */
+        migrationOk = false;
       }
     }
   }
 
   if (migrated.length) {
     notices.push(`יובאו מהגרסה הקודמת: ${migrated.join(' · ')}.`);
+  }
+
+  // המיגרציה רצה בהצלחה (או שלא היה מה להעביר) — מכאן localStorage הוא
+  // עבר. גם כשהמכשיר כבר מלא בנתונים ב-IndexedDB הסמן נכתב מיד.
+  if (backend === 'indexeddb' && marker === null && migrationOk) {
+    await writeMarker({ at: new Date().toISOString(), keys: present });
   }
 
   legacyWorkoutsRaw = db.legacyWorkouts.map((l) => l.raw);
@@ -322,7 +421,13 @@ export async function loadDB(): Promise<LoadResult> {
     if (notice) notices.push(`${workoutsUpgraded} ${notice}`);
   }
 
-  return { db, backend, notices, readErrors, quarantined };
+  if (missingKeys.length) {
+    readErrors.push(
+      `נתונים חסרים באחסון (${missingKeys.map((k) => KEY_LABELS[k]).join(' · ')}) — שחזר מגיבוי לפני שממשיכים.`,
+    );
+  }
+
+  return { db, backend, notices, readErrors, quarantined, missingKeys };
 }
 
 /**
@@ -419,6 +524,10 @@ export async function persist<K extends DbKey>(key: K, value: DB[K]): Promise<vo
   } catch (err) {
     throw new StoreWriteError(key, err);
   }
+  // מפתח שנכתב לראשונה נרשם בסמן: מעכשיו היעלמותו היא "נתונים חסרים".
+  if (backend === 'indexeddb' && marker !== null && !marker.keys.includes(key)) {
+    await writeMarker({ at: marker.at, keys: [...marker.keys, key] });
+  }
 }
 
 /**
@@ -452,4 +561,14 @@ export async function wipeAll(): Promise<void> {
     }
     memory.delete(storageKey);
   }
+  // הסמן נמחק איתם: אחרי מחיקה מפורשת אין "נתונים חסרים", והטעינה הבאה
+  // כותבת סמן חדש. ערכי localStorage הישנים כבר נמחקו למעלה — זה הנתיב
+  // המפורש היחיד שנוגע בהם.
+  try {
+    if (backend === 'indexeddb') await idbDel(META_KEYS.lsMigrated);
+    window.localStorage.removeItem(META_KEYS.lsMigrated);
+  } catch {
+    /* ignore */
+  }
+  marker = null;
 }

@@ -227,3 +227,108 @@ describe('ייבוא גיבוי מלפני שלב 2 (בלי quarantine)', () => 
     expect(r2.db.quarantine).toHaveLength(1);
   });
 });
+
+describe('סמן המיגרציה — localStorage ישן לא חוזר (סיכון #4)', () => {
+  const MARKER = 'fatloss:meta:ls-migrated';
+  const LEGACY = [{ d: '2026-01-01', w: 90 }];
+
+  it('סמן קיים + מפתח חסר ב-IndexedDB + ערך ישן ב-localStorage → לא נטען, לא נשמר, באנר', async () => {
+    h.idb.set(MARKER, { at: '2026-09-13T00:00:00.000Z', keys: ['weights', 'waist'] });
+    h.idb.set('fatloss:waist', [{ d: '2026-09-01', cm: 95 }]);
+    ls.setItem('fatloss:weights', JSON.stringify(LEGACY));
+    const s = await store();
+    const res = await s.loadDB();
+
+    expect(res.db.weights).toEqual([]);
+    expect(res.db.waist).toHaveLength(1);
+    expect(res.missingKeys).toEqual(['weights']);
+    expect(res.readErrors[0]).toContain('נתונים חסרים באחסון');
+    expect(res.notices.join('')).not.toContain('יובאו מהגרסה הקודמת');
+    expect(h.setCalls).not.toContain('fatloss:weights');
+    expect(h.idb.get('fatloss:weights')).toBeUndefined();
+
+    await expect(s.persist('weights', [W_OK])).rejects.toBeInstanceOf(s.StoreWriteError);
+    expect(h.idb.get('fatloss:weights')).toBeUndefined();
+    // מפתח שלא חסר נשמר כרגיל, והערך הישן ב-localStorage לא נמחק.
+    await s.persist('waist', res.db.waist);
+    expect(ls.getItem('fatloss:weights')).toBe(JSON.stringify(LEGACY));
+
+    // שחזור מפורש מגיבוי משחרר את החסימה.
+    await s.persistAll({ ...res.db, weights: [W_OK] });
+    expect(h.idb.get('fatloss:weights')).toEqual([W_OK]);
+    expect(s.blockedKeys()).toEqual([]);
+  });
+
+  it('בלי סמן + IndexedDB ריק + localStorage מלא → המיגרציה הישנה עובדת וכותבת סמן', async () => {
+    ls.setItem('fatloss:weights', JSON.stringify(LEGACY));
+    const s = await store();
+    const res = await s.loadDB();
+
+    expect(res.db.weights).toEqual(LEGACY);
+    expect(res.missingKeys).toEqual([]);
+    expect(res.notices.join('')).toContain('יובאו מהגרסה הקודמת: 1 שקילות');
+    expect(h.idb.get('fatloss:weights')).toEqual(LEGACY);
+    // המקור לא נמחק.
+    expect(ls.getItem('fatloss:weights')).toBe(JSON.stringify(LEGACY));
+
+    const m = h.idb.get(MARKER) as { at: string; keys: string[] };
+    expect(m.keys).toEqual(['weights']);
+    expect(Date.parse(m.at)).not.toBeNaN();
+    expect(JSON.parse(ls.getItem(MARKER)!)).toEqual(m);
+    expect(s.currentMarker()).toEqual(m);
+
+    // טעינה שנייה: הסמן קיים, הנתון ב-IndexedDB — בלי הודעת מיגרציה.
+    vi.resetModules();
+    const s2 = await store();
+    const again = await s2.loadDB();
+    expect(again.db.weights).toEqual(LEGACY);
+    expect(again.notices).toEqual([]);
+    expect(again.missingKeys).toEqual([]);
+  });
+
+  it('מכשיר שכבר מלא ב-IndexedDB בריצה הראשונה של הגרסה — הסמן נכתב מיד עם המפתחות הקיימים', async () => {
+    h.idb.set('fatloss:weights', [W_OK]);
+    h.idb.set('fatloss:entries', []);
+    ls.setItem('fatloss:waist', JSON.stringify([{ d: '2026-01-01', cm: 100 }]));
+    const s = await store();
+    const res = await s.loadDB();
+    // localStorage עדיין נקרא בפעם הראשונה (אין סמן) — זו המיגרציה הישנה.
+    expect(res.db.waist).toHaveLength(1);
+    const m = h.idb.get(MARKER) as { keys: string[] };
+    expect(m.keys.sort()).toEqual(['entries', 'waist', 'weights']);
+
+    // מכאן: ערך ישן ב-localStorage למפתח שלא ברשימה לא נטען ולא מפעיל אזעקה.
+    vi.resetModules();
+    ls.setItem('fatloss:checkins', JSON.stringify([{ weekStart: '2026-01-04', note: 'old' }]));
+    const again = await (await store()).loadDB();
+    expect(again.db.checkins).toEqual([]);
+    expect(again.missingKeys).toEqual([]);
+  });
+
+  it('הסמן מכובד גם כשהוא רק ב-localStorage, ו-persist ראשון של מפתח מוסיף אותו לסמן', async () => {
+    ls.setItem(MARKER, JSON.stringify({ at: '2026-09-13T00:00:00.000Z', keys: ['weights'] }));
+    ls.setItem('fatloss:weights', JSON.stringify(LEGACY));
+    const s = await store();
+    const res = await s.loadDB();
+    expect(res.db.weights).toEqual([]);
+    expect(res.missingKeys).toEqual(['weights']);
+
+    await s.persist('checkins', []);
+    expect((h.idb.get(MARKER) as { keys: string[] }).keys).toEqual(['weights', 'checkins']);
+  });
+
+  it('"מחק הכול" מוחק גם את הסמן, והטעינה הבאה לא מדווחת על נתונים חסרים', async () => {
+    h.idb.set('fatloss:weights', [W_OK]);
+    const s = await store();
+    await s.loadDB();
+    expect(h.idb.get(MARKER)).toBeDefined();
+    await s.wipeAll();
+    expect(h.idb.get(MARKER)).toBeUndefined();
+    expect(ls.getItem(MARKER)).toBeNull();
+
+    vi.resetModules();
+    const again = await (await store()).loadDB();
+    expect(again.missingKeys).toEqual([]);
+    expect(again.readErrors).toEqual([]);
+  });
+});

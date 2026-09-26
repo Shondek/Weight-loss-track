@@ -104,6 +104,20 @@ export default function App() {
           </div>
         )}
 
+        {store.missingKeys.length > 0 && (
+          // חוסם ולא ניתן לסגירה: המפתחות האלה היו באחסון ונעלמו. שום דבר לא
+          // נשמר מעליהם עד שחזור מגיבוי במסך "נתונים" (סיכון #4).
+          <div className="banner banner--error stack--tight" role="alert">
+            <p className="strong" style={{ margin: 0 }}>
+              נתונים חסרים באחסון — שחזר מגיבוי לפני שממשיכים
+            </p>
+            <p style={{ margin: 0 }}>
+              חסר: {store.missingKeys.map((k) => KEY_LABELS[k]).join(' · ')}. המפתחות האלה היו
+              במכשיר ואינם עוד. הם נטענו ריקים ולא יישמרו עד שתייבא גיבוי במסך "נתונים".
+            </p>
+          </div>
+        )}
+
         {store.dirtyKeys.length > 0 && (
           <div className="banner banner--error stack--tight" role="alert">
             <p className="strong" style={{ margin: 0 }}>

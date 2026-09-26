@@ -29,6 +29,11 @@ export type DbState = {
    * חייב להיות סימן קבוע שהוא עדיין לא שמור. סימן שאפשר לסגור לא מספיק.
    */
   dirtyKeys: DbKey[];
+  /**
+   * מפתחות שהיו באחסון ונעלמו (סיכון #4). נטענו ריקים וחסומים לשמירה עד
+   * שחזור מגיבוי. באנר חוסם, לא ניתן לסגירה.
+   */
+  missingKeys: DbKey[];
 };
 
 export type DbApi = DbState & {
@@ -66,6 +71,7 @@ export function useDb(): DbApi {
     notices: [],
     errors: [],
     dirtyKeys: [],
+    missingKeys: [],
   });
   const mounted = useRef(true);
   // retrySave צריך את המצב העדכני בלי להיבנות מחדש בכל רינדור
@@ -89,6 +95,7 @@ export function useDb(): DbApi {
           notices,
           errors: res.readErrors,
           dirtyKeys: [],
+          missingKeys: res.missingKeys,
         });
       } catch (err) {
         if (!mounted.current) return;
@@ -101,6 +108,7 @@ export function useDb(): DbApi {
             `טעינת הנתונים נכשלה: ${err instanceof Error ? err.message : String(err)}`,
           ],
           dirtyKeys: [],
+          missingKeys: [],
         });
       }
     })();
@@ -147,6 +155,8 @@ export function useDb(): DbApi {
       try {
         await persistAll(next);
         markSaved(ALL_KEYS);
+        // שחזור מפורש מגיבוי הוא מה שמשחרר "נתונים חסרים".
+        setState((s) => (s.missingKeys.length ? { ...s, missingKeys: [] } : s));
         return true;
       } catch (err) {
         markFailed(ALL_KEYS, err);
@@ -161,6 +171,7 @@ export function useDb(): DbApi {
     try {
       await wipeAll();
       markSaved(ALL_KEYS);
+      setState((s) => (s.missingKeys.length ? { ...s, missingKeys: [] } : s));
       return true;
     } catch (err) {
       markFailed(ALL_KEYS, err);
