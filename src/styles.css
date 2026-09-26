@@ -1756,6 +1756,66 @@ input[type='file']::file-selector-button {
   border-bottom: 1px solid var(--nut-divider);
 }
 
+/* ---------- יחידות מנה (שלב 3.1) ---------- */
+
+.nut-qty__value--unit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  min-width: 56px;
+}
+
+.nut-qty__unit {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* מעבר גרמים ⇄ יחידה: קטן, שקט, בגובה מגע */
+.nut-qty__toggle {
+  appearance: none;
+  font: inherit;
+  font-size: 12px;
+  min-height: 36px;
+  padding: 0 var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+/* ---------- תכולת מנה (שלב 3.1) ---------- */
+
+/* שורה אחת עם שלוש נקודות בכל מקום; הטקסט המלא בגיליון העריכה */
+.nut-comp {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.nut-comp--full {
+  white-space: normal;
+}
+
+.nut-result {
+  min-width: 0;
+}
+
+.nut-row__about {
+  width: 100%;
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+
 /* ---------- מסך נתונים: מזונות שלי ---------- */
 
 .nut-foods__details {
