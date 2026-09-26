@@ -24,6 +24,7 @@ import {
   type NutritionTarget,
   type QuarantineItem,
   type Recipe,
+  type Rir,
   type Settings,
   type StandaloneCardio,
   type WaistEntry,
@@ -321,7 +322,20 @@ const UNNAMED_EXERCISE = 'תרגיל ללא שם';
  * ישן  — יש `r` ו-`w`, ואין `sets`. מועלה כאן, ותוצאת ההעלאה נכתבת לדיסק
  *        פעם אחת ב-`loadDB` אחרי שהמקור גובה (ראה store.ts).
  */
-function parseExercise(e: Record<string, unknown>): LoggedExercise {
+const RIR_VALUES: readonly Rir[] = [0, 1, 2, 3, 4];
+
+/**
+ * RIR בסט האחרון. חסר/null = לא נרשם. ערך שאינו 0–4 אינו מאפס את
+ * הרשומה: התרגיל נטען בלי RIR, והערך השבור נשלח להסגר דרך `reject`.
+ */
+function parseRir(v: unknown): { rir: Rir | undefined; bad: boolean } {
+  if (v === undefined || v === null || v === '') return { rir: undefined, bad: false };
+  const n = num(v);
+  const rir = RIR_VALUES.find((x) => x === n);
+  return rir === undefined ? { rir: undefined, bad: true } : { rir, bad: false };
+}
+
+function parseExercise(e: Record<string, unknown>, reject?: (raw: unknown, reason: string) => void): LoggedExercise {
   const name = typeof e.n === 'string' ? e.n.trim() : '';
   const rawId = typeof e.exerciseId === 'string' ? e.exerciseId.trim() : '';
   // מזהה שאוחד למזהה אחר (אותה מכונה) מתורגם כאן, פעם אחת, בכניסה.
@@ -332,6 +346,8 @@ function parseExercise(e: Record<string, unknown>): LoggedExercise {
   const cardio = id !== null && isCardioId(id);
   const timed = cardio || (spec?.isTimed ?? false);
   const sets = isNewFormat ? parseLoggedSets(e.sets) : upcastLegacySets(e.r, e.w, timed);
+  const { rir, bad: rirBad } = parseRir(e.rir);
+  if (rirBad) reject?.(e, `RIR מחוץ לטווח 0–4 בתרגיל "${name !== '' ? name : id ?? UNNAMED_EXERCISE}" — נטען בלי RIR`);
 
   // שורת חימום/אירובי מזוהה לפי המזהה בלבד — הסוג שנשמר לא יכול לסתור אותה.
   const type = cardio
@@ -355,6 +371,7 @@ function parseExercise(e: Record<string, unknown>): LoggedExercise {
         : (spec?.bodyweightOnly ?? cardio),
     assisted: typeof e.assisted === 'boolean' ? e.assisted : (spec?.assisted ?? false),
     ...(cardio ? { cardio: parseCardio(e.cardio, sets) } : {}),
+    ...(rir !== undefined && !cardio ? { rir } : {}),
   };
 }
 
@@ -399,7 +416,10 @@ export function parseWorkouts(input: unknown): WorkoutsParseResult {
       continue;
     }
 
-    const ex = asArray(raw.ex).filter(isRecord).map(parseExercise);
+    // דחיית שדה (RIR שבור) נושאת raw ונכנסת להסגר; הרשומה עצמה נטענת.
+    const ex = asArray(raw.ex)
+      .filter(isRecord)
+      .map((x) => parseExercise(x, (r, reason) => rejected.push({ raw: r, reason })));
 
     const id =
       typeof raw.id === 'string' && raw.id.trim() !== ''
@@ -929,6 +949,7 @@ export function parseDb(input: unknown): DbParseResult {
   // בייבוא הזה עצמו: גם רשומה שבורה בקובץ לא נעלמת.
   const at = new Date().toISOString();
   const quarantine = mergeQuarantine(parseQuarantine(src.quarantine), [
+    ...quarantineFromRejections('workouts', workouts.rejected, at),
     ...quarantineFromRejections('weights', weights.rejected, at),
     ...quarantineFromRejections('waist', waist.rejected, at),
     ...quarantineFromRejections('checkins', checkins.rejected, at),
@@ -970,9 +991,12 @@ export function parseDb(input: unknown): DbParseResult {
     },
     rejected: [
       ...tally('משקל', weights.rejected),
+      // רשומה שלמה שלא הומרה → "נשמר כאימון ישן"; דחיית שדה (raw) → הסגר.
       ...tally(
         'אימונים',
-        workouts.rejected.map((r) => ({ reason: `${r.reason} — נשמר כאימון ישן` })),
+        workouts.rejected.map((r) =>
+          Object.prototype.hasOwnProperty.call(r, 'raw') ? { reason: r.reason } : { reason: `${r.reason} — נשמר כאימון ישן` },
+        ),
       ),
       ...tally('מותניים', waist.rejected),
       ...tally("צ'ק-אין", checkins.rejected),

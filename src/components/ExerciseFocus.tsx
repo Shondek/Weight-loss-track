@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import type { LoggedExercise, LoggedSet } from '../types';
+import type { LoggedExercise, LoggedSet, Rir } from '../types';
 import type { Exercise } from '../data/program';
 import { WEIGHT_STEP } from '../data/config';
 import type { ExerciseHistory } from '../lib/workouts';
@@ -30,6 +30,7 @@ type Props = {
 
 const MAX_WEIGHT = 500;
 const MAX_REPS = 999;
+const RIR_OPTIONS: readonly Rir[] = [0, 1, 2, 3, 4];
 
 /** "לרגל" לתרגילי רגליים, "ליד" לתרגילי ידיים, "לצד" לשאר. */
 function sideLabel(spec: Exercise): string {
@@ -87,6 +88,12 @@ export default function ExerciseFocus({
    */
   const setWeight = (w: number | null) => {
     onChange({ ...log, sets: log.sets.map((s) => ({ ...s, weight: w })) });
+  };
+
+  /** RIR בסט האחרון: לחיצה חוזרת מנקה. אופציונלי — לא חוסם שמירה. */
+  const setRir = (v: Rir) => {
+    const { rir: current, ...rest } = log;
+    onChange(current === v ? rest : { ...rest, rir: v });
   };
 
   const patchSet = (i: number, patch: Partial<LoggedSet>) => {
@@ -234,6 +241,18 @@ export default function ExerciseFocus({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* RIR בסט האחרון — הקלט שכללי ההתקדמות צריכים (R1/R5). */}
+      <div className="wk-rir" role="group" aria-label={`חזרות ברזרבה בסט האחרון — ${spec.name}`}>
+        <span className="tiny muted">חזרות ברזרבה בסט האחרון</span>
+        <div className="nut-chips">
+          {RIR_OPTIONS.map((v) => (
+            <button key={v} type="button" className="nut-chip" aria-pressed={log.rir === v} onClick={() => setRir(v)}>
+              {v === 4 ? '4+' : v}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

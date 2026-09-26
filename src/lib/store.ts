@@ -331,6 +331,8 @@ export async function loadDB(): Promise<LoadResult> {
         const r = parseWorkouts(raw);
         db.workouts = r.ok;
         db.legacyWorkouts = r.unparsed;
+        // רשומות שלמות שלא הומרו נשארות ב-legacyWorkouts; דחיות שדה (עם raw) → הסגר.
+        rejectedBy.set('workouts', r.rejected);
         workoutsRaw = raw;
         workoutsUpgraded = r.upgraded;
         if (fromLegacy && r.ok.length) migrated.push(`${r.ok.length} אימונים`);
