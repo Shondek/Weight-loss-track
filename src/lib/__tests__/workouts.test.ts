@@ -389,15 +389,19 @@ describe('בניית אימון', () => {
     });
     const entry = wk('1', '2026-09-01', 'A', [le('leg-press', 60, [12, 12, 12]), orphan]);
     const rows = exercisesFor(entry, [entry]);
-    // חימום + התוכנית + התרגיל שירד (+ אירובי כשהדגל דלוק)
+    // חימום + מה שנשמר בסדר שנשמר (שלב 4.1) + תאי תוכנית חסרים + אירובי
     const strength = rows.filter((r) => r.type !== 'cardio');
     expect(strength).toHaveLength(PROGRAM.A.length + 1);
-    expect(strength[strength.length - 1]?.n).toBe('RDL משקולות יד');
-    // תרגיל שירד מהתוכנית (הרמות אגן מכונה) שנרשם ברשומה ישנה נשאר גלוי אחרי תרגילי התוכנית
+    expect(strength.map((r) => r.exerciseId).slice(0, 2)).toEqual(['leg-press', 'legacy:RDL משקולות יד']);
+    expect(strength[1]?.n).toBe('RDL משקולות יד');
+    // תרגיל שירד מהתוכנית (הרמות אגן מכונה) שנרשם ברשומה ישנה נשאר גלוי במקומו
     const old = wk('2', '2026-08-01', 'A', [le('machine-hip-thrust', 40, [12, 12, 12])]);
     const oldRows = exercisesFor(old, [old]).filter((r) => r.type !== 'cardio');
     expect(oldRows).toHaveLength(PROGRAM.A.length + 1);
-    expect(oldRows[oldRows.length - 1]?.exerciseId).toBe('machine-hip-thrust');
+    expect(oldRows[0]?.exerciseId).toBe('machine-hip-thrust');
+    // שורה שאינה בתוכנית ובלי נתון לא מוצגת
+    const empty = wk('3', '2026-08-02', 'A', [le('machine-hip-thrust', 40, [])]);
+    expect(exercisesFor(empty, [empty]).filter((r) => r.type !== 'cardio')).toHaveLength(PROGRAM.A.length);
   });
 });
 

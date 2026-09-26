@@ -173,6 +173,18 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
   };
 }
 
+/** חלופה (שלב 4.1) בלי היסטוריה משלה — אין כלל להפעיל, רק הנחיה. */
+export const NO_HISTORY_HINT = 'אין היסטוריה — התחל קל, 2–3 חזרות ברזרבה';
+
+/**
+ * ההנחיה לשורה שהוחלפה: כשאין הצעה (אין היסטוריה לחלופה) — `NO_HISTORY_HINT`;
+ * כשיש היסטוריה — הכללים הרגילים חלים (ההצעה מוצגת, וכאן null).
+ * לשורה רגילה תמיד null.
+ */
+export function alternateHint(s: Suggestion | null, swapped: boolean): string | null {
+  return swapped && s === null ? NO_HISTORY_HINT : null;
+}
+
 /** הטקסט למסך: "17.5 ק״ג" / "דרגה אחת למעלה" / "אותו משקל" / "משקל גוף", ו-"8 חזרות". */
 export function suggestionLabel(s: Suggestion, spec: Pick<ProgressionSpec, 'isTimed'>): { weight: string; reps: string } {
   const reps = `${s.repTarget} ${unitWord(spec.isTimed)}`;

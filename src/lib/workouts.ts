@@ -469,25 +469,92 @@ export function exercisesFor(
   all: readonly WorkoutEntry[],
 ): LoggedExercise[] {
   const byId = new Map(entry.ex.map((e) => [e.exerciseId, e]));
-  const rows: LoggedExercise[] = [byId.get(WARMUP_ID) ?? blankCardio(WARMUP_ID)];
-  for (const spec of PROGRAM[entry.t]) {
-    const existing = byId.get(spec.id);
-    rows.push(
-      existing
-        ? withSetCount(existing, spec.sets)
-        : blankLoggedExercise(spec, openingWeight(all, spec.id, entry.id)),
-    );
+  const warmup = byId.get(WARMUP_ID) ?? blankCardio(WARMUP_ID);
+  // תרגילי הכוח לפי הסדר שנשמר ברשומה — "דלג ואחזור" (שלב 4.1) מזיז שורה
+  // לסוף, והסדר שבוצע הוא הסדר שנשמר. תא בתוכנית שאין לו שורה ברשומה
+  // (רשומה ישנה) מקבל שורה ריקה במקומו לפי סדר התוכנית.
+  const inProgram = new Set(PROGRAM[entry.t].map((spec) => spec.id));
+  // שורה שאינה בתוכנית ואין בה נתון (תרגיל שירד ולא בוצע) לא מוצגת — כמו קודם.
+  // שורה שהוחלפה (swappedFrom) תופסת את התא של התרגיל המקורי.
+  const strength: LoggedExercise[] = entry.ex.filter(
+    (e) => !isCardio(e) && (inProgram.has(slotOf(e)) || hasData(e)),
+  );
+  const placed = new Set(strength.map(slotOf));
+  const missing = PROGRAM[entry.t].filter((spec) => !placed.has(spec.id));
+  const rows: LoggedExercise[] = [warmup];
+  // סדר: מה שנשמר (עם השלמת סטים למפרט), ואחריו תאים חסרים לפי התוכנית.
+  for (const e of strength) {
+    const spec = PROGRAM[entry.t].find((x) => x.id === slotOf(e));
+    rows.push(spec ? withSetCount(e, spec.sets) : e);
   }
-  const placed = new Set(rows.map((r) => r.exerciseId));
-  for (const e of entry.ex) {
-    if (!placed.has(e.exerciseId) && e.exerciseId !== FINISHER_ID && hasData(e)) {
-      rows.push(e);
-    }
+  for (const spec of missing) {
+    rows.push(blankLoggedExercise(spec, openingWeight(all, spec.id, entry.id)));
   }
   rows.push(
     byId.get(FINISHER_ID) ?? blankCardio(FINISHER_ID, lastFinisherCardio(all, undefined, entry.id)),
   );
   return rows;
+}
+
+/**
+ * "דלג ואחזור" (שלב 4.1): מזיז תרגיל כוח לסוף סדר הכוח של האימון. חימום
+ * נשאר ראשון ואירובי סיום אחרון. הסדר שנשמר = הסדר שיבוצע. לא נוגע בנתונים.
+ */
+// ---------- החלפה חד-פעמית (שלב 4.1) ----------
+
+/** התא בתוכנית שהשורה ממלאת: התרגיל המקורי אם הוחלף, אחרת התרגיל עצמו. */
+export function slotOf(ex: LoggedExercise): string {
+  return ex.swappedFrom ?? ex.exerciseId;
+}
+
+/**
+ * שורה חדשה לחלופה במקום תרגיל התא, לאימון הזה בלבד. המזהה והשם הם של
+ * החלופה (ההיסטוריה וההתקדמות לפי מזהה), `swappedFrom` מצביע על המקורי.
+ * מספר הסטים והטווח מהתא — החלופה ממלאת את המקום שלו; חלופת זמן בתא של
+ * חזרות (או להפך) שומרת את טווח השניות שלה (30–45). המשקל הפותח הוא
+ * המשקל האחרון של החלופה עצמה.
+ */
+export function swapExercise(slot: Exercise, alt: Exercise, weight: number | null = null): LoggedExercise {
+  const sameKind = slot.isTimed === alt.isTimed;
+  const spec: Exercise = {
+    ...alt,
+    sets: slot.sets,
+    ...(sameKind ? { repRangeMin: slot.repRangeMin, repRangeMax: slot.repRangeMax } : {}),
+  };
+  return { ...blankLoggedExercise(spec, weight), swappedFrom: slot.id };
+}
+
+/** "הוחלף מ-<שם המקורי>" לשורה שהוחלפה, אחרת null. */
+export function swappedFromLabel(ex: LoggedExercise): string | null {
+  if (ex.swappedFrom === undefined) return null;
+  return `הוחלף מ-${exerciseById(ex.swappedFrom)?.name ?? ex.swappedFrom}`;
+}
+
+export function moveToEnd(ex: readonly LoggedExercise[], exerciseId: string): LoggedExercise[] {
+  const target = ex.find((e) => e.exerciseId === exerciseId && !isCardio(e));
+  if (!target) return [...ex];
+  const rest = ex.filter((e) => e !== target);
+  const finisherAt = rest.findIndex((e) => e.exerciseId === FINISHER_ID);
+  if (finisherAt === -1) return [...rest, target];
+  return [...rest.slice(0, finisherAt), target, ...rest.slice(finisherAt)];
+}
+
+/** סדר התרגילים כרשימת מזהים — לביטול של "דלג ואחזור". */
+export function orderOf(ex: readonly LoggedExercise[]): string[] {
+  return ex.map((e) => e.exerciseId);
+}
+
+/**
+ * מסדר מחדש לפי רשימת מזהים (ביטול דילוג). הנתונים של כל שורה הם
+ * הנוכחיים; מזהה שאינו ברשימה נשאר בסוף, לפני אירובי הסיום.
+ */
+export function reorderLike(ex: readonly LoggedExercise[], ids: readonly string[]): LoggedExercise[] {
+  const rank = new Map(ids.map((id, i) => [id, i]));
+  const finisher = ex.filter((e) => e.exerciseId === FINISHER_ID);
+  const others = ex.filter((e) => e.exerciseId !== FINISHER_ID);
+  const known = others.filter((e) => rank.has(e.exerciseId)).sort((a, b) => rank.get(a.exerciseId)! - rank.get(b.exerciseId)!);
+  const unknown = others.filter((e) => !rank.has(e.exerciseId));
+  return [...known, ...unknown, ...finisher];
 }
 
 /**

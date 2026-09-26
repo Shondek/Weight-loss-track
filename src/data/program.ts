@@ -48,6 +48,11 @@ export interface Exercise {
    * ידועות: ההצעה אומרת "דרגה אחת למעלה/למטה" וכלל הקפיצה הגדולה (R4) לא חל.
    */
   step: number | null;
+  /**
+   * חלופות מותרות לתא הזה (שלב 4.1) — מזהים במאגר `alternates` או תרגילים
+   * בתוכנית. ריק לתרגיל שאינו בתוכנית. החלפה היא לאימון אחד בלבד.
+   */
+  alternates: string[];
 }
 
 /**
@@ -59,6 +64,7 @@ export const TYPE_CONFIG = REST_SECONDS;
 type OptionalKeys =
   | 'reps'
   | 'step'
+  | 'alternates'
   | 'effort'
   | 'unilateral'
   | 'isTimed'
@@ -102,6 +108,7 @@ function ex(e: ExerciseInput): Exercise {
     note: e.note ?? null,
     videoUrl: e.videoUrl ?? null,
     step: typeof e.step === 'number' && e.step > 0 ? e.step : null,
+    alternates: Array.isArray(e.alternates) ? e.alternates.filter((x): x is string => typeof x === 'string') : [],
   };
 }
 
@@ -146,6 +153,13 @@ export const WORKOUT_TITLES: Record<WorkoutType, string> = {
  */
 export const RETIRED: Exercise[] = programJson.retired.map((e) => ex(e as ExerciseInput));
 
+/**
+ * מאגר החלופות (שלב 4.1): תרגילים שאפשר להחליף אליהם לאימון אחד כשמכונה
+ * תפוסה. סטים וטווח יורשים מהתא בזמן ההחלפה; הערכים כאן הם ברירת מחדל.
+ * מזהה פרוש שתאם בשם הועבר לכאן — ההיסטוריה שלו ממשיכה.
+ */
+export const ALTERNATES: Exercise[] = programJson.alternates.map((e) => ex(e as ExerciseInput));
+
 /** כמה אימונים בשבוע התוכנית מצפה להם. משמש לספירה "n/3" ולסעיף "חסר". */
 export const WORKOUTS_PER_WEEK = 3;
 
@@ -159,8 +173,14 @@ export const CONSTRAINTS =
  * יש `exerciseIn`.
  */
 const BY_ID: Map<string, Exercise> = new Map();
-for (const e of [...WORKOUT_TYPES.flatMap((t) => PROGRAM[t]), ...RETIRED]) {
+for (const e of [...WORKOUT_TYPES.flatMap((t) => PROGRAM[t]), ...ALTERNATES, ...RETIRED]) {
   if (!BY_ID.has(e.id)) BY_ID.set(e.id, e);
+}
+
+for (const e of WORKOUT_TYPES.flatMap((t) => PROGRAM[t])) {
+  for (const id of e.alternates) {
+    if (!BY_ID.has(id)) throw new Error(`program-abc.json: חלופה לא מוכרת "${id}" ב-${e.id}`);
+  }
 }
 
 const BY_NAME: Map<string, string> = new Map(
@@ -235,9 +255,20 @@ export function resolveExerciseId(name: string): string | null {
   return (
     BY_NAME.get(trimmed) ??
     EXERCISE_ALIASES[trimmed] ??
+    ALTERNATES.find((e) => e.name === trimmed)?.id ??
     RETIRED.find((e) => e.name === trimmed)?.id ??
     null
   );
+}
+
+/**
+ * החלופות של תא בתוכנית, לפי הסדר בקובץ. תרגיל שאינו בתוכנית → ריק.
+ * אותו מזהה בשני אימונים (לג-פרס) — אותה רשימה.
+ */
+export function alternatesFor(exerciseId: string): Exercise[] {
+  const spec = WORKOUT_TYPES.flatMap((t) => PROGRAM[t]).find((e) => e.id === exerciseId);
+  if (!spec) return [];
+  return spec.alternates.map((id) => BY_ID.get(id)).filter((e): e is Exercise => e !== undefined);
 }
 
 /** שם קצר לדוח. תרגיל שאינו בתוכנית נשאר עם השם שנרשם איתו. */

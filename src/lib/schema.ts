@@ -335,6 +335,17 @@ function parseRir(v: unknown): { rir: Rir | undefined; bad: boolean } {
   return rir === undefined ? { rir: undefined, bad: true } : { rir, bad: false };
 }
 
+/**
+ * `swappedFrom` (שלב 4.1): חסר/null/ריק = לא הוחלף. מחרוזת = מזהה התרגיל
+ * המקורי (מתורגם דרך הכינויים). ערך אחר לא מאפס את הרשומה: התרגיל נטען
+ * בלי הסימון, והערך השבור נשלח להסגר דרך `reject`.
+ */
+function parseSwappedFrom(v: unknown): { swappedFrom: string | undefined; bad: boolean } {
+  if (v === undefined || v === null || v === '') return { swappedFrom: undefined, bad: false };
+  if (typeof v !== 'string' || v.trim() === '') return { swappedFrom: undefined, bad: true };
+  return { swappedFrom: canonicalExerciseId(v.trim()), bad: false };
+}
+
 function parseExercise(e: Record<string, unknown>, reject?: (raw: unknown, reason: string) => void): LoggedExercise {
   const name = typeof e.n === 'string' ? e.n.trim() : '';
   const rawId = typeof e.exerciseId === 'string' ? e.exerciseId.trim() : '';
@@ -348,6 +359,8 @@ function parseExercise(e: Record<string, unknown>, reject?: (raw: unknown, reaso
   const sets = isNewFormat ? parseLoggedSets(e.sets) : upcastLegacySets(e.r, e.w, timed);
   const { rir, bad: rirBad } = parseRir(e.rir);
   if (rirBad) reject?.(e, `RIR מחוץ לטווח 0–4 בתרגיל "${name !== '' ? name : id ?? UNNAMED_EXERCISE}" — נטען בלי RIR`);
+  const { swappedFrom, bad: swapBad } = parseSwappedFrom(e.swappedFrom);
+  if (swapBad) reject?.(e, `סימון החלפה (swappedFrom) לא תקין בתרגיל "${name !== '' ? name : id ?? UNNAMED_EXERCISE}" — נטען בלי הסימון`);
 
   // שורת חימום/אירובי מזוהה לפי המזהה בלבד — הסוג שנשמר לא יכול לסתור אותה.
   const type = cardio
@@ -372,6 +385,7 @@ function parseExercise(e: Record<string, unknown>, reject?: (raw: unknown, reaso
     assisted: typeof e.assisted === 'boolean' ? e.assisted : (spec?.assisted ?? false),
     ...(cardio ? { cardio: parseCardio(e.cardio, sets) } : {}),
     ...(rir !== undefined && !cardio ? { rir } : {}),
+    ...(swappedFrom !== undefined && !cardio ? { swappedFrom } : {}),
   };
 }
 

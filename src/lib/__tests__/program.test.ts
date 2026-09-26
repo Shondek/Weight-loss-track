@@ -5,6 +5,8 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  ALTERNATES,
+  alternatesFor,
   EXERCISE_ALIASES,
   EXERCISE_ID_ALIASES,
   PROGRAM,
@@ -155,6 +157,91 @@ describe('program-abc.json — step (שלב 4)', () => {
     expect(exerciseById('plank')?.step).toBe(2.5);
     // תרגיל פרוש בלי step בקובץ → null
     for (const r of RETIRED) expect(r.step).toBeNull();
+  });
+});
+
+describe('program-abc.json — חלופות (שלב 4.1)', () => {
+  /** הרשימה מהמפרט: תא → שמות החלופות, בסדר. */
+  const EXPECTED: Record<string, string[]> = {
+    'leg-press': ['הק סקוואט', 'סקוואט- מכונה', 'גובלט סקוואט עם משקולת'],
+    'db-bench-press': ["בנץ' פרס- מכונה", "בנץ' פרס"],
+    'lat-pulldown': ['משיכה מפולי עליון- אחיזה צרה בישיבה', 'משיכה מפולי עליון- אחיזה רחבה בישיבה (סטודיו)', 'מתח- גרוויטון'],
+    'leg-extension': ['סקוואט- סטטי נגד קיר'],
+    'leg-curl': ['כפיפת ברכיים במכונה על הבטן', 'כפיפת ברכיים במכונה רגל-רגל'],
+    'db-lateral-raise-seated': ['הרחקת כתף- כייבל קרוס יד אחת', 'הרחקת כתפיים- עמידה מ.יד'],
+    plank: ['בטן- פלאנק צידי סטטי', 'בטן- כפיפות בטן עם חבל פולי עליון'],
+    'db-rdl': ["היפ הינג'- סמית משין", 'דד-ליפט רומניין', 'פשיטת ירך בספסל רומי'],
+    'seated-cable-row': ['חתירה- מכונה ייעודית', 'חתירה- מכונה ייעודית T-bar', 'חתירה- כייבל קרוס יד אחת'],
+    'pec-deck': ['פרפר- כייבל קרוס', 'פרפר- תחתון כייבל קרוס'],
+    'face-pull': ['הרחקה אופקית- מכונת פרפר', 'הרחקה אופקית- פולי גובה כתף', 'הרחקה אופקית עם משקולות יד'],
+    'db-supinated-curl': ['כפיפת מרפקים- פולי תחתון מוט', 'כפיפת מרפקים- מ.יד מיד פוזישן', 'כפיפת מרפק- כיסא כומר מ.יד סופינציה'],
+    'triceps-pushdown': ['פשיטת מרפקים- פולי עליון מוט', 'פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד'],
+    'machine-hip-abduction': ['בעמידה הרחקת ירך עם גומייה', 'בישיבה הרחקת ירך עם גומייה'],
+    'db-single-arm-row': ['חתירה- כייבל קרוס יד אחת', 'חתירה- מכונה ייעודית T-bar'],
+    'db-incline-bench-press': ["בנץ' פרס עליון- מכונה", "בנץ' פרס עליון"],
+    'db-lateral-raise-standing': ['הרחקת כתף- כייבל קרוס יד אחת', 'הרחקת כתפיים- ישיבה מ.יד'],
+    'cable-torso-rotation': ['בטן- פלאנק צידי סטטי', 'בטן- כפיפת מותן צידית'],
+  };
+
+  it('לכל תא החלופות מהמפרט, בשמות ובסדר; כל מזהה נפתר', () => {
+    for (const { e } of ALL) {
+      expect(alternatesFor(e.id).map((a) => a.name), e.id).toEqual(EXPECTED[e.id]);
+      for (const id of e.alternates) expect(exerciseById(id), `${e.id} → ${id}`).toBeDefined();
+    }
+    expect(alternatesFor('hack-squat')).toEqual([]);
+  });
+
+  it('A/B/C לא השתנו: אותם מזהים, סטים וטווחים', () => {
+    const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
+    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'db-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x30-45']);
+    expect(snapshot('B')).toEqual(['db-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15']);
+    expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'db-single-arm-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
+  });
+
+  it('אין חלופה שהיא הלג-פרס 45° — הוא alias של leg-press, לא תרגיל נפרד', () => {
+    const ids = new Set([...ALTERNATES.map((a) => a.id), ...ALL.flatMap(({ e }) => e.alternates)]);
+    expect(ids.has('leg-press-45')).toBe(false);
+    expect(ids.has('leg-press')).toBe(false);
+    for (const a of ALTERNATES) expect(a.name, a.id).not.toMatch(/45/);
+    expect(EXERCISE_ID_ALIASES['leg-press-45']).toBe('leg-press');
+  });
+
+  it('מזהים פרושים שתאמו בשם עברו למאגר החלופות — ההיסטוריה שלהם מתחברת', () => {
+    const reused = ['single-arm-cable-row', 't-bar-row', 'assisted-pull-up', 'cable-crunch', 'side-bend'];
+    for (const id of reused) {
+      expect(ALTERNATES.some((a) => a.id === id), id).toBe(true);
+      expect(RETIRED.some((r) => r.id === id), id).toBe(false);
+      expect(exerciseById(id)?.id).toBe(id);
+    }
+    expect(RETIRED).toHaveLength(17);
+    expect(exerciseById('assisted-pull-up')?.assisted).toBe(true);
+    // מזהה חלופה לא מתנגש עם התוכנית או עם הפרושים
+    const active = new Set(ALL.map(({ e }) => e.id));
+    for (const a of ALTERNATES) {
+      expect(active.has(a.id), a.id).toBe(false);
+      expect(RETIRED.some((r) => r.id === a.id), a.id).toBe(false);
+    }
+    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(ALTERNATES.length);
+  });
+
+  it('step לפי הכלל: משקולות יד 2.5, כבל 5, מכונת פלטות null, משקל גוף/זמן null; הערות במקומן', () => {
+    const byId = (id: string) => ALTERNATES.find((a) => a.id === id)!;
+    expect(byId('goblet-squat').step).toBe(2.5);
+    expect(byId('cable-fly').step).toBe(5);
+    expect(byId('hack-squat').step).toBeNull();
+    expect(byId('wall-sit').step).toBeNull();
+    expect(byId('side-plank-static').step).toBeNull();
+    expect(byId('band-hip-abduction-seated').step).toBeNull();
+    for (const id of ['hack-squat', 'machine-squat', 'goblet-squat', 'wall-sit']) expect(byId(id).note, id).toBe('עומק עד מקביל');
+    for (const id of ['machine-chest-press', 'barbell-bench-press', 'machine-incline-chest-press', 'barbell-incline-bench-press']) expect(byId(id).note, id).toBe('מרפקים ב-45°');
+    expect(byId('barbell-rdl').note).toBe('מהמתקן, לא מהרצפה');
+    for (const a of ALTERNATES) {
+      if (a.isTimed) {
+        expect(a.repRangeMin, a.id).toBe(30);
+        expect(a.repRangeMax, a.id).toBe(45);
+      }
+      if (a.bodyweightOnly || a.isTimed) expect(a.step, a.id).toBeNull();
+    }
   });
 });
 
