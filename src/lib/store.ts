@@ -11,6 +11,7 @@ import { emptyDb, type DB, type QuarantineItem } from '../types';
 import {
   parseCheckins,
   parseCustomFoods,
+  parseDays,
   parseEntries,
   parseFavorites,
   parseQuarantine,
@@ -35,6 +36,8 @@ export const STORAGE_KEYS = {
   entries: 'fatloss:entries',
   targets: 'fatloss:targets',
   favorites: 'fatloss:favorites',
+  /** מטא-נתונים של ימי תזונה (שלב 3): סגור / ארוחת שישי. */
+  days: 'fatloss:days',
   /** רשומות שנדחו בקריאה. נכתב לפני כל שמירה של מפתח שנדחו ממנו רשומות. */
   quarantine: 'fatloss:quarantine',
 } as const;
@@ -96,6 +99,7 @@ export const KEY_LABELS: Record<DbKey, string> = {
   entries: 'רישומי אכילה',
   targets: 'יעדי תזונה',
   favorites: 'מועדפים',
+  days: 'ימים',
   quarantine: 'הסגר',
 };
 
@@ -379,6 +383,12 @@ export async function loadDB(): Promise<LoadResult> {
         const r = parseFavorites(raw);
         db.favorites = r.ok;
         rejectedBy.set('favorites', r.rejected);
+        break;
+      }
+      case 'days': {
+        const r = parseDays(raw);
+        db.days = r.ok;
+        rejectedBy.set('days', r.rejected);
         break;
       }
       case 'quarantine':

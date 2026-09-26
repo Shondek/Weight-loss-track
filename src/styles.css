@@ -1283,3 +1283,481 @@ input[type='file']::file-selector-button {
   color: var(--ink-2);
   font-style: italic;
 }
+
+/* ============================================================
+   מסך התזונה (שלב 3) — "מינימליזם רך"
+   רקע שמנת, כרטיסים לבנים, מרווחים נדיבים, היררכיה אחת: גיבור >
+   פריטים מהירים > רישומים. מרווה = טוב, ענבר = בינוני, צפחה = נמוך.
+   בלוק שחור אחד בלבד — הפעולה הראשית. כל המספרים ברוחב אחיד.
+   תחום: הטאב הזה והקטעים שעברו למסך הנתונים (.nut-manage) בלבד.
+   ============================================================ */
+
+:root {
+  --nut-cream: #fffdf7;
+  --nut-card: #ffffff;
+  --nut-border: #e8e5de;
+  --nut-divider: #f0ede6;
+  --nut-sage: #8fae7e;
+  --nut-amber: #d4a854;
+  --nut-slate: #8b8b8b;
+  --nut-track: #f0ede6;
+  --nut-radius: 10px;
+  --nut-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.nut {
+  font-variant-numeric: tabular-nums;
+}
+
+.nut-card,
+.nut-manage {
+  background: var(--nut-card);
+  border: 1px solid var(--nut-border);
+  border-radius: var(--nut-radius);
+  box-shadow: var(--nut-shadow);
+  padding: var(--sp-4);
+}
+
+.nut-manage {
+  border-top: 1px solid var(--nut-border);
+  margin-top: var(--sp-4);
+}
+
+.nut .section__head {
+  margin-bottom: var(--sp-3);
+}
+
+.nut h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ---------- שורת תאריך ---------- */
+
+.nut-daybar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+}
+
+.nut-daybar__label {
+  flex: 1;
+  text-align: center;
+  font-size: 15px;
+}
+
+.nut-badge {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--ink-3);
+  border: 1px solid var(--nut-border);
+  border-radius: 999px;
+  padding: 0 var(--sp-2);
+  margin-inline-start: var(--sp-2);
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+.nut-badge--closed {
+  color: var(--confidence-high);
+  border-color: var(--nut-sage);
+}
+
+/* ---------- גיבור ---------- */
+
+.nut-hero {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-4);
+}
+
+.nut-hero.is-closed {
+  border-color: var(--nut-sage);
+}
+
+.nut-hero__row {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.nut-hero__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.nut-hero__label {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.nut-hero__value {
+  font-size: 34px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.nut-hero__target,
+.nut-hero__unit {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-3);
+  letter-spacing: 0;
+}
+
+.nut-hero__note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.nut-tone--high {
+  color: var(--confidence-high);
+}
+.nut-tone--mid {
+  color: var(--confidence-mid);
+}
+.nut-tone--low {
+  color: var(--confidence-low);
+}
+
+.nut-macros {
+  margin: 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--nut-divider);
+}
+
+/* פס התקדמות: מסילה בהירה, מילוי בצבע לפי אחוז, סימון רצפה כקו דק */
+.nut-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--nut-track);
+  overflow: visible;
+}
+
+.nut-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--nut-slate);
+  transition: width 200ms ease-out;
+}
+
+.nut-bar--high .nut-bar__fill {
+  background: var(--nut-sage);
+}
+.nut-bar--mid .nut-bar__fill {
+  background: var(--nut-amber);
+}
+
+.nut-bar__floor {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  background: var(--ink-3);
+  border-radius: 1px;
+}
+
+/* ---------- טוסט (ביטול / הצעה) ---------- */
+
+.nut-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--nut-card);
+  border: 1px solid var(--nut-sage);
+  border-radius: var(--nut-radius);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 14px;
+  box-shadow: var(--nut-shadow);
+}
+
+.nut-toast--offer {
+  border-color: var(--nut-amber);
+}
+
+/* ---------- מה שאני אוכל ---------- */
+
+.nut-quick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.nut-quick__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  border: 1px solid var(--nut-border);
+  border-radius: var(--nut-radius);
+  padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
+  background: var(--nut-cream);
+}
+
+.nut-quick__tap {
+  appearance: none;
+  border: 0;
+  background: none;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: var(--sp-1) 0;
+  text-align: start;
+  display: grid;
+  gap: 2px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.nut-quick__tap:active {
+  opacity: 0.7;
+}
+
+.nut-quick__name {
+  font-size: 15px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- בקרת כמות ---------- */
+
+.nut-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex: 0 0 auto;
+}
+
+.nut-qty .btn--step {
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  flex-basis: 36px;
+  border-color: var(--nut-border);
+  background: var(--nut-card);
+  border-radius: 8px;
+}
+
+.nut-qty__value {
+  min-width: 36px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.nut-qty__input {
+  width: 72px;
+  min-height: 36px;
+  padding: 4px var(--sp-2);
+  border-color: var(--nut-border);
+  border-radius: 8px;
+}
+
+/* ---------- חיפוש ---------- */
+
+.nut-search,
+.nut input[type='search'] {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--nut-cream);
+  border: 1px solid var(--nut-border);
+  border-radius: var(--nut-radius);
+  padding: 10px var(--sp-3);
+  min-height: var(--tap);
+  width: 100%;
+  appearance: none;
+}
+
+.nut .results {
+  border-color: var(--nut-border);
+  border-radius: var(--nut-radius);
+  max-height: 40vh;
+}
+
+.nut .results__btn {
+  border-top-color: var(--nut-divider);
+}
+
+.nut-results__title {
+  margin: var(--sp-2) 0 0;
+}
+
+.nut-selected {
+  margin-top: var(--sp-3);
+  border: 1px solid var(--nut-sage);
+  border-radius: var(--nut-radius);
+  padding: var(--sp-2) var(--sp-3);
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.nut-selected__head,
+.nut-selected__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.nut-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+
+/* ---------- רישומים ---------- */
+
+.nut-meal + .nut-meal {
+  margin-top: var(--sp-4);
+}
+
+.nut-meal__title {
+  margin: 0 0 var(--sp-1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.nut-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nut-row {
+  border-top: 1px solid var(--nut-divider);
+}
+
+.nut-row:first-child {
+  border-top: 0;
+}
+
+.nut-row.is-open {
+  background: var(--nut-cream);
+  margin-inline: calc(-1 * var(--sp-3));
+  padding-inline: var(--sp-3);
+  border-radius: 8px;
+}
+
+.nut-row__tap {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-2) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.nut-row__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+}
+
+.nut-row__nums {
+  flex: 0 0 auto;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.nut-row.is-adhoc .nut-row__name {
+  color: var(--ink-2);
+}
+
+.nut-row__edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 0 var(--sp-3);
+}
+
+/* ---------- צ'יפים (ארוחה, דרגת שישי) ---------- */
+
+.nut-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.nut-chip {
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  min-height: 32px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--nut-border);
+  border-radius: 999px;
+  background: var(--nut-card);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.nut-chip[aria-pressed='true'] {
+  background: var(--nut-sage);
+  border-color: var(--nut-sage);
+  color: #fff;
+  font-weight: 500;
+}
+
+.nut-chip--tier {
+  min-height: var(--tap);
+  flex: 1;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+/* ---------- סגירת יום ---------- */
+
+.nut-close {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.nut-close.is-closed {
+  border-color: var(--nut-sage);
+  background: var(--nut-cream);
+}
+
+.nut-close__state {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 15px;
+  color: var(--confidence-high);
+}
+
+.nut-friday {
+  display: grid;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--nut-divider);
+}
+
+/* ---------- מסך נתונים: מזונות שלי ---------- */
+
+.nut-foods__details {
+  padding-top: var(--sp-1);
+}

@@ -60,6 +60,7 @@ const ALL_KEYS: DbKey[] = [
   'entries',
   'targets',
   'favorites',
+  'days',
   'quarantine',
 ];
 

@@ -11,6 +11,7 @@ import { upsertEntry } from './nutrition/entries';
 import { upsertTarget } from './nutrition/targets';
 import { upsertFavorite } from './nutrition/favorites';
 import { mergeQuarantine } from './quarantine';
+import { upsertDay } from './nutrition/days';
 
 /** התאריך המוקדם ביותר שיש עליו נתון כלשהו. */
 export function firstDataDate(db: DB): ISODate | null {
@@ -63,7 +64,8 @@ function laterOf(a: ISODate | null, b: ISODate | null): ISODate | null {
 /**
  * מיזוג ייבוא לתוך הנתונים הקיימים. הרשומה המיובאת גוברת על התנגשות:
  * משקל ומותניים לפי תאריך, אימון ואירובי עצמאי לפי מזהה, צ'ק-אין לפי שבוע,
- * מזון ורישום אכילה לפי מזהה, יעד לפי תאריך תחילת תוקף, מועדף לפי מזון.
+ * מזון ורישום אכילה לפי מזהה, יעד לפי תאריך תחילת תוקף, מועדף לפי מזון,
+ * יום לפי תאריך.
  * שום דבר קיים לא נמחק — לכן ייבוא בטעות אינו מאבד נתונים.
  *
  * הגדרות מתמזגות שדה-שדה: תחילת התוכנית מהקובץ אם יש בו כזו, הצליל הוא
@@ -99,6 +101,9 @@ export function mergeDb(current: DB, incoming: DB): DB {
   let favorites = current.favorites;
   for (const f of incoming.favorites) favorites = upsertFavorite(favorites, f);
 
+  let days = current.days;
+  for (const d of incoming.days) days = upsertDay(days, d);
+
   return {
     weights,
     waist,
@@ -110,6 +115,7 @@ export function mergeDb(current: DB, incoming: DB): DB {
     entries,
     targets,
     favorites,
+    days,
     // הסגר מתמזג תמיד ולעולם לא מתכווץ — גם בייבוא.
     quarantine: mergeQuarantine(current.quarantine, incoming.quarantine),
     settings: {

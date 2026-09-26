@@ -1,61 +1,64 @@
+/**
+ * מסך התזונה (שלב 3). עונה על שאלה אחת מהר: מה אכלתי היום וכמה נשאר.
+ *
+ * מלמעלה למטה: שורת תאריך · גיבור (חלבון וקלוריות, שני מספרים) · "מה שאני
+ * אוכל" (מחושב מ-14 הימים האחרונים) · חיפוש · ארוחה בחוץ · הרישומים של
+ * היום לפי ארוחה · "סיימתי לרשום היום" וארוחת שישי.
+ *
+ * ניהול (מזונות שלי, ספריית המנות, היעד) עבר למסך "נתונים". החישוב
+ * (lib/nutrition/calc.ts) ומבנה הרישום לא השתנו. בלי ספרות עשרוניות בכלל.
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
-import type { CustomFood, FoodEntry, MealType, NutritionTarget } from '../types';
+import type { FoodEntry, FoodRef, FridayTier } from '../types';
+import { ADHOC_FOOD_ID } from '../types';
 import { useFoodIndex } from '../useFoodIndex';
-import NumberField from '../components/NumberField';
-import CustomFoodEditor, { type EditorMode } from './CustomFoodEditor';
-import { MEAL_HOURS } from '../data/config';
-import { MEAL_MENU, NUT_GRAMS } from '../data/mealMenu';
-import { formatDM } from '../lib/date';
-import { DASH } from '../lib/format';
-import {
-  MAX_GRAMS,
-  MAX_TARGET_CARBS,
-  MAX_TARGET_FAT,
-  MAX_TARGET_KCAL,
-  MAX_TARGET_PROTEIN,
-  MIN_GRAMS,
-  MIN_TARGET_KCAL,
-} from '../lib/schema';
-import { displayValues, fromCustom, removeCustomFood, upsertCustomFood, type Food } from '../lib/nutrition/foods';
+import ProgressBar, { toneOf } from '../components/ProgressBar';
+import { addDays, compareISO, formatDM, dayName } from '../lib/date';
+import { MAX_GRAMS, MIN_GRAMS } from '../lib/schema';
+import { upsertCustomFood, type Food } from '../lib/nutrition/foods';
 import { resolveFood, searchFoods } from '../lib/nutrition/index';
 import {
   ADHOC_MAX_KCAL,
   ADHOC_MAX_MACRO,
-  defaultMeal,
   entriesOn,
   entryName,
   groupByMeal,
-  MACRO_GAP_WARN,
-  macroKcalGap,
+  mealForLogging,
   MEAL_LABELS,
   MEAL_ORDER,
   newAdhocEntry,
   newEntry,
+  newEntryFromRef,
+  normalizeName,
+  relogAdhoc,
   removeEntry,
   setEntryGrams,
+  setEntryMeal,
+  tsForDay,
   upsertEntry,
 } from '../lib/nutrition/entries';
+import { recentFoods } from '../lib/nutrition/favorites';
+import { frequentItems, lastGramsOf, type FrequentItem } from '../lib/nutrition/frequent';
 import {
-  addonFoodIds,
-  dishLoggedOn,
-  expectedAddonCount,
-  menuGroupForHour,
-  nutEntriesOn,
-  nutFoodIds,
-  resolveMenu,
-  type MenuGroupKey,
-  type ResolvedMenuItem,
-} from '../lib/nutrition/menu';
-import { libraryFoodId } from '../lib/nutrition/library';
-import { KCAL_FLOOR, targetFor, upsertTarget } from '../lib/nutrition/targets';
+  applyFridayTier,
+  FRIDAY_TIER_ORDER,
+  FRIDAY_TIERS,
+  fridayEstimateOn,
+  isFriday,
+  removeFridayEstimate,
+} from '../lib/nutrition/friday';
+import { adhocOccurrences, canSaveAsFood, customFoodFromAdhoc, hasCustomFoodNamed, SAVE_OFFER_MIN } from '../lib/nutrition/adhocSave';
+import { dayMeta, setDayClosed, setFridayTier } from '../lib/nutrition/days';
+import { KCAL_FLOOR, targetFor } from '../lib/nutrition/targets';
 import { daySummary, entryNutrition } from '../lib/nutrition/calc';
-import { gramsWholeText, kcalText, macroText } from '../lib/nutrition/display';
+import { kcalText } from '../lib/nutrition/display';
 
-const SEARCH_LIMIT = 20;
-const UNDO_MS = 5000;
-const NUT_IDS = nutFoodIds(MEAL_MENU);
-const ADDON_IDS = addonFoodIds(MEAL_MENU);
+const SEARCH_LIMIT = 12;
+const RECENT_LIMIT = 6;
+const UNDO_MS = 6000;
+const UNIT_MAX = 10;
 
 /** חותמת זמן ממוינת + אקראיות — אותו מתכון כמו במסך האימון. */
 function unique(): string {
@@ -64,6 +67,9 @@ function unique(): string {
     ? c.randomUUID().slice(0, 8)
     : Math.random().toString(36).slice(2, 10);
 }
+
+/** שלם להצגה. כל מספר במסך עובר כאן — אין ספרות עשרוניות בטאב. */
+const int = (n: number | null | undefined): string => kcalText(n);
 
 function parseGrams(text: string): number | null {
   const t = text.trim().replace(',', '.');
@@ -88,778 +94,684 @@ function timeText(ts: number): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/** ערכים לכמות: ל-100 ג' × גרמים / 100 — אותה נוסחה כמו entryNutrition. */
+function scaled(ref: Pick<FoodRef, 'kcal' | 'protein'>, grams: number): { kcal: number; protein: number } {
+  return { kcal: (ref.kcal * grams) / 100, protein: (ref.protein * grams) / 100 };
+}
+
+/** "×3" למזון-יחידה, "150 ג׳" לשאר, "הערכה" לידני. */
+function qtyText(e: FoodEntry): string {
+  if (e.adhoc) return 'הערכה';
+  if (e.ref.unitFood) return `×${int(e.grams)}`;
+  return `${int(e.grams)} ג׳`;
+}
+
+// ---------- בקרת כמות ----------
+
+type QtyProps = {
+  unitFood: boolean;
+  value: number;
+  onChange: (grams: number) => void;
+  label: string;
+};
+
+/** מזון-יחידה: ×1…×10 ברשומה אחת. מזון בגרמים: שדה גרמים. */
+function QtyControl({ unitFood, value, onChange, label }: QtyProps) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => setText(String(value)), [value]);
+  if (unitFood) {
+    const n = Math.max(1, Math.min(UNIT_MAX, Math.round(value)));
+    return (
+      <div className="nut-qty" role="group" aria-label={`כמות — ${label}`}>
+        <button type="button" className="btn btn--step" aria-label="פחות" disabled={n <= 1} onClick={() => onChange(n - 1)}>
+          −
+        </button>
+        <span className="nut-qty__value num" aria-live="polite">
+          ×{n}
+        </span>
+        <button type="button" className="btn btn--step" aria-label="יותר" disabled={n >= UNIT_MAX} onClick={() => onChange(n + 1)}>
+          +
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="nut-qty nut-qty--grams">
+      <input
+        className="nut-qty__input num"
+        type="number"
+        inputMode="decimal"
+        min={MIN_GRAMS}
+        max={MAX_GRAMS}
+        step={1}
+        aria-label={`גרמים — ${label}`}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          const g = parseGrams(e.target.value);
+          if (g !== null) onChange(g);
+        }}
+      />
+      <span className="tiny muted">ג׳</span>
+    </div>
+  );
+}
+
+// ---------- המסך ----------
+
 export default function NutritionScreen({ store, today }: ScreenProps) {
   const { db } = store;
   const foodIndex = useFoodIndex(db.customFoods);
   const resolve = (id: string) => resolveFood(foodIndex.index, id);
 
-  // ---------- סיכום היום ----------
-  const todayEntries = useMemo(() => entriesOn(db.entries, today), [db.entries, today]);
-  const summary = useMemo(
-    () => daySummary(todayEntries, today, (id) => resolveFood(foodIndex.index, id), ADDON_IDS),
-    [todayEntries, today, foodIndex.index],
-  );
-  const expectedAddons = useMemo(() => expectedAddonCount(todayEntries, today, MEAL_MENU), [todayEntries, today]);
-  const target = useMemo(() => targetFor(db.targets, today), [db.targets, today]);
-  /** מעל היעד: עובדה בלבד, בלי צבע. מתחת ליעד לא נאמר דבר — "נשאר" מתגמל תת-אכילה. */
-  const overTarget = target ? Math.max(0, summary.kcal - target.kcal) : 0;
-  const groups = useMemo(() => groupByMeal(todayEntries), [todayEntries]);
-
-  // ---------- הוספת רישום ----------
-  /** התרחיש הנדיר. סגור כברירת מחדל — הרובריקה מכסה את היום-יום. */
-  const [addOpen, setAddOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState<Food | null>(null);
-  const [gramsText, setGramsText] = useState('');
-  const [meal, setMeal] = useState<MealType>(() => defaultMeal(new Date().getHours(), MEAL_HOURS));
-  const [mealTouched, setMealTouched] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const gramsRef = useRef<HTMLInputElement>(null);
-
-  const results = useMemo(
-    () => (selected ? [] : searchFoods(foodIndex.index, query, SEARCH_LIMIT)),
-    [foodIndex.index, query, selected],
-  );
-  const grams = parseGrams(gramsText);
-  const canAdd = selected !== null && grams !== null;
-
-  const pick = (food: Food) => {
-    setSelected(food);
-    setQuery(food.name);
-    // בתוך מחוות המשתמש — כך iOS פותח את המקלדת. השדה תמיד קיים ב-DOM.
-    gramsRef.current?.focus();
-  };
-
-  const clearPick = () => {
-    setSelected(null);
-    setQuery('');
-    setGramsText('');
-    searchRef.current?.focus();
-  };
-
-  const add = () => {
-    if (!selected || grams === null) return;
-    const ts = Date.now();
-    const entry = newEntry(selected, grams, meal, ts, unique());
-    void store.update('entries', upsertEntry(db.entries, entry));
-    // איפוס לרישום הבא מאותה ארוחה; הארוחה נשארת.
-    setSelected(null);
-    setQuery('');
-    setGramsText('');
-    searchRef.current?.focus();
-  };
-
-  // ארוחת ברירת המחדל עוקבת אחרי השעה עד שנוגעים בה ידנית.
+  // ---------- היום המוצג ----------
+  const [day, setDay] = useState(today);
+  // חצות עברה בזמן שהמסך פתוח: יום "מהעתיד" חוזר להיום.
   useEffect(() => {
-    if (mealTouched) return;
-    const id = window.setInterval(() => {
-      setMeal(defaultMeal(new Date().getHours(), MEAL_HOURS));
-    }, 60_000);
-    return () => window.clearInterval(id);
-  }, [mealTouched]);
+    if (compareISO(day, today) > 0) setDay(today);
+  }, [day, today]);
+  const isToday = day === today;
 
-  // ---------- undo: מחיקה מהרשימה, או רישום בלחיצה מהתפריט ----------
-  /** 'added' יכול להיות קבוצה: מנה + ברירות המחדל שלה. "בטל" מסיר את כולן. */
-  type Pending = { kind: 'deleted'; entry: FoodEntry; text: string } | { kind: 'added'; entries: FoodEntry[]; text: string };
+  const dayEntries = useMemo(() => entriesOn(db.entries, day), [db.entries, day]);
+  const summary = useMemo(() => daySummary(dayEntries, day, resolve), [dayEntries, day, foodIndex.index]); // eslint-disable-line react-hooks/exhaustive-deps
+  const target = useMemo(() => targetFor(db.targets, day), [db.targets, day]);
+  const groups = useMemo(() => groupByMeal(dayEntries), [dayEntries]);
+  const meta = dayMeta(db.days, day);
+  const closed = meta?.closed === true;
+  const friday = isFriday(day);
+  const fridayEntry = fridayEstimateOn(db.entries, day);
+  const estimated = summary.adhocCount > 0;
+
+  const nowTs = () => tsForDay(day, today, Date.now());
+  const mealNow = () => mealForLogging(day, today, new Date());
+
+  // ---------- undo ----------
+  type Pending = { kind: 'deleted'; entry: FoodEntry; text: string } | { kind: 'added'; ids: string[]; text: string };
   const [undo, setUndo] = useState<Pending | null>(null);
   const undoTimer = useRef<number | undefined>(undefined);
-
   const armUndo = (pending: Pending | null) => {
     if (undoTimer.current !== undefined) window.clearTimeout(undoTimer.current);
     setUndo(pending);
     if (pending) undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS);
   };
-
-  // מעבר מסך מפרק את הקומפוננטה — ה-undo נעלם איתה, וזה בכוונה.
   useEffect(
     () => () => {
       if (undoTimer.current !== undefined) window.clearTimeout(undoTimer.current);
     },
     [],
   );
-
-  const del = (entry: FoodEntry) => {
-    void store.update('entries', removeEntry(db.entries, entry.id));
-    armUndo({ kind: 'deleted', entry, text: `נמחק: ${entry.ref.name} · ${entry.grams} ג׳` });
-  };
-
   const restore = () => {
     if (!undo) return;
     if (undo.kind === 'deleted') void store.update('entries', upsertEntry(db.entries, undo.entry));
     else {
       let list = db.entries;
-      for (const e of undo.entries) list = removeEntry(list, e.id);
+      for (const id of undo.ids) list = removeEntry(list, id);
       void store.update('entries', list);
     }
     armUndo(null);
   };
 
-  // ---------- "התפריט שלי": רישום בלחיצה אחת ----------
-  const menu = useMemo(
-    () =>
-      resolveMenu(
-        MEAL_MENU,
-        (id) => resolveFood(foodIndex.index, id),
-        (id) => db.customFoods.find((f) => f.id === id)?.recipe ?? null,
-      ),
-    [foodIndex.index, db.customFoods],
-  );
-  const menuEmpty = menu.every((g) => g.items.length === 0);
-  /**
-   * הבלוקים תמיד גלויים, מחוץ לאקורדיונים: הם נרשמים פעמיים ביום בכל שעה,
-   * והשעה לא מנבאת אותם. שני הראשונים בהגדרה (טונה, יוגורט) הם בלוק 1 ו-2
-   * בפועל ומקבלים כפתור רחב; השאר בשורה קטנה מתחת.
-   */
-  const blocks = menu.find((g) => g.group.key === 'blocks');
-  const blockPrimary = blocks?.items.slice(0, 2) ?? [];
-  const blockSecondary = blocks?.items.slice(2) ?? [];
-  /** כמה פעמים המזון נרשם היום — מוצג בתוך הכפתור. נתון, לא חסימה. */
-  const loggedToday = (foodId: string) => todayEntries.filter((e) => e.foodId === foodId).length;
-  // הקבוצה הפתוחה לפי השעה בכניסה למסך; לא נשמרת.
-  const [openGroup, setOpenGroup] = useState<MenuGroupKey | null>(() => menuGroupForHour(new Date().getHours(), MEAL_HOURS));
-  const nutsToday = useMemo(() => nutEntriesOn(db.entries, today, NUT_IDS), [db.entries, today]);
-
-  const logMenuItem = (r: ResolvedMenuItem) => {
-    const ts = Date.now();
-    // הארוחה לפי השעה עכשיו — לא לפי הבחירה בטופס החיפוש.
-    const mealNow = defaultMeal(new Date(ts).getHours(), MEAL_HOURS);
-    const entries = [newEntry(r.food, r.grams, mealNow, ts, unique())];
-    const labels = [r.item.label];
-    let kcal = r.kcal;
-    // ברירות המחדל — רישומים נפרדים, פעם אחת ביום לכל מנה: אם המנה כבר נרשמה
-    // היום, לא נוצרות שוב (תוסף שנמחק לא חוזר).
-    if (r.item.defaults && !dishLoggedOn(db.entries, today, r.food.id)) {
-      for (const d of r.item.defaults) {
-        const food = resolve(libraryFoodId(d.slug));
-        if (!food) continue;
-        entries.push(newEntry(food, d.grams, mealNow, ts, unique()));
-        labels.push(d.label);
-        kcal += (food.kcal * d.grams) / 100;
-      }
-    }
-    let list = db.entries;
-    for (const e of entries) list = upsertEntry(list, e);
-    void store.update('entries', list);
-    // אזהרה רכה: אגוז שני היום. נרשם בכל מקרה.
-    const nutNow = r.item.nut || entries.some((e) => NUT_IDS.has(e.foodId));
-    const nutAgain = nutNow && nutsToday.length > 0 ? ' · כבר נרשם אגוז היום' : '';
-    armUndo({ kind: 'added', entries, text: `${labels.join(' + ')} · ${kcalText(kcal)} קק"ל${nutAgain}` });
+  /** רישום אחד + טוסט. השם והערכים לטוסט מחושבים מהרשומה עצמה. */
+  const commit = (entry: FoodEntry, label: string) => {
+    void store.update('entries', upsertEntry(db.entries, entry));
+    const n = entryNutrition(entry, resolve(entry.foodId));
+    armUndo({ kind: 'added', ids: [entry.id], text: `${label} · ${int(n.kcal)} קק"ל · ${int(n.protein)} חלבון` });
   };
 
-  // ---------- הזנה ידנית: אוכל בחוץ, ערכים לארוחה שלמה ----------
-  const [adhocOpen, setAdhocOpen] = useState(false);
-  const [adhoc, setAdhoc] = useState({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
-  const adhocKcal = parseAmount(adhoc.kcal, ADHOC_MAX_KCAL);
-  const adhocProtein = parseAmount(adhoc.protein, ADHOC_MAX_MACRO);
-  const adhocCarbs = parseAmount(adhoc.carbs, ADHOC_MAX_MACRO);
-  const adhocFat = parseAmount(adhoc.fat, ADHOC_MAX_MACRO);
-  const adhocValid =
-    adhoc.name.trim() !== '' &&
-    typeof adhocKcal === 'number' &&
-    typeof adhocProtein === 'number' &&
-    adhocCarbs !== undefined &&
-    adhocFat !== undefined;
-  const adhocGap =
-    typeof adhocKcal === 'number' && typeof adhocProtein === 'number' && typeof adhocCarbs === 'number' && typeof adhocFat === 'number'
-      ? macroKcalGap(adhocKcal, adhocProtein, adhocCarbs, adhocFat)
-      : null;
+  const del = (entry: FoodEntry) => {
+    void store.update('entries', removeEntry(db.entries, entry.id));
+    armUndo({ kind: 'deleted', entry, text: `נמחק: ${entryName(entry, resolve(entry.foodId)?.name ?? null)}` });
+  };
 
-  const saveAdhoc = () => {
-    if (!adhocValid || typeof adhocKcal !== 'number' || typeof adhocProtein !== 'number') return;
-    const ts = Date.now();
+  // ---------- "מה שאני אוכל" ----------
+  const frequent = useMemo(() => frequentItems(db.entries, today), [db.entries, today]);
+  /** כמות לכל פריט, מאותחלת לאחרונה שנרשמה. מפתח = FrequentItem.key. */
+  const [qty, setQty] = useState<Record<string, number>>({});
+  const qtyOf = (item: FrequentItem) => qty[item.key] ?? item.lastGrams;
+
+  const logFrequent = (item: FrequentItem) => {
+    const grams = qtyOf(item);
+    const ts = nowTs();
+    const meal = mealNow();
+    if (item.kind === 'adhoc') {
+      commit(relogAdhoc(item.ref, item.name, meal, ts, unique()), item.name);
+      return;
+    }
+    const live = resolve(item.foodId);
+    const entry = live
+      ? newEntry(live, grams, meal, ts, unique())
+      : newEntryFromRef(item.foodId, item.ref, grams, meal, ts, unique());
+    commit(entry, `${item.name} ${item.unitFood ? `×${int(grams)}` : `${int(grams)} ג׳`}`);
+  };
+
+  // ---------- חיפוש ----------
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState<Food | null>(null);
+  const [selGrams, setSelGrams] = useState<number>(100);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const recent = useMemo(
+    () =>
+      recentFoods(db.entries.filter((e) => e.foodId !== ADHOC_FOOD_ID), [], RECENT_LIMIT)
+        .map((r) => resolve(r.foodId))
+        .filter((f): f is Food => f !== null),
+    [db.entries, foodIndex.index], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const results = useMemo(
+    () => (query.trim() === '' ? recent : searchFoods(foodIndex.index, query, SEARCH_LIMIT)),
+    [foodIndex.index, query, recent],
+  );
+  /** הכמות שמוצגת לתוצאה: האחרונה שנרשמה, ואם אין — יחידה אחת / 100 ג'. */
+  const portionOf = (f: Food): number => lastGramsOf(db.entries, f.id) ?? (f.unitFood ? 1 : 100);
+
+  const pick = (f: Food) => {
+    setSelected(f);
+    setSelGrams(portionOf(f));
+  };
+  const addSelected = () => {
+    if (!selected) return;
+    commit(newEntry(selected, selGrams, mealNow(), nowTs(), unique()), `${selected.name} ${selected.unitFood ? `×${int(selGrams)}` : `${int(selGrams)} ג׳`}`);
+    setSelected(null);
+    setQuery('');
+  };
+
+  // ---------- ארוחה בחוץ ----------
+  const [outOpen, setOutOpen] = useState(false);
+  const [outMore, setOutMore] = useState(false);
+  const [out, setOut] = useState({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
+  const outKcal = parseAmount(out.kcal, ADHOC_MAX_KCAL);
+  const outProtein = parseAmount(out.protein, ADHOC_MAX_MACRO);
+  const outCarbs = parseAmount(out.carbs, ADHOC_MAX_MACRO);
+  const outFat = parseAmount(out.fat, ADHOC_MAX_MACRO);
+  const outValid =
+    normalizeName(out.name) !== '' && typeof outKcal === 'number' && typeof outProtein === 'number' && outCarbs !== undefined && outFat !== undefined;
+  /** "לשמור כמזון קבוע?" — מוצע אחרי שמירה כשהשם חזר ≥2 פעמים ב-14 יום. */
+  const [saveOffer, setSaveOffer] = useState<{ name: string; ref: FoodRef } | null>(null);
+
+  const saveOut = () => {
+    if (!outValid || typeof outKcal !== 'number' || typeof outProtein !== 'number') return;
+    const name = normalizeName(out.name);
     const entry = newAdhocEntry(
-      { name: adhoc.name, kcal: adhocKcal, protein: adhocProtein, carbs: adhocCarbs ?? null, fat: adhocFat ?? null },
-      meal,
-      ts,
+      { name, kcal: outKcal, protein: outProtein, carbs: outCarbs ?? null, fat: outFat ?? null },
+      mealNow(),
+      nowTs(),
       unique(),
     );
-    void store.update('entries', upsertEntry(db.entries, entry));
-    setAdhoc({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
-    setAdhocOpen(false);
+    commit(entry, name);
+    const occurrences = adhocOccurrences(db.entries, name, today) + 1;
+    if (occurrences >= SAVE_OFFER_MIN && !hasCustomFoodNamed(db.customFoods, name) && canSaveAsFood(entry.ref)) {
+      setSaveOffer({ name, ref: entry.ref });
+    }
+    setOut({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
+    setOutMore(false);
+    setOutOpen(false);
   };
 
-  // ---------- עריכת גרמים בשורת היום ----------
-  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
-  /** שורת רישום פתוחה: רק בה מוצגים עריכת גרמים ו"מחק". שאר השורות שקטות. */
+  const saveAsFood = () => {
+    if (!saveOffer) return;
+    void store.update('customFoods', upsertCustomFood(db.customFoods, customFoodFromAdhoc(saveOffer.ref, saveOffer.name, unique())));
+    setSaveOffer(null);
+  };
+
+  // ---------- עריכת שורה ----------
   const [openEntry, setOpenEntry] = useState<string | null>(null);
 
-  const commitGrams = () => {
-    if (!editing) return;
-    const g = parseGrams(editing.text);
-    if (g !== null) void store.update('entries', setEntryGrams(db.entries, editing.id, g));
-    setEditing(null);
+  // ---------- סגירת יום וארוחת שישי ----------
+  const toggleClosed = () => {
+    void store.update('days', setDayClosed(db.days, day, !closed, new Date().toISOString()));
   };
 
-  // ---------- יעד ----------
-  const [editingTarget, setEditingTarget] = useState(false);
-
-  // ---------- מזונות שלי ----------
-  const [editor, setEditor] = useState<{ existing: CustomFood | null; name?: string; mode?: EditorMode } | null>(null);
-  /** תחזוקה, לא יום-יום: 32 שורות ספרייה סגורות כברירת מחדל. */
-  const [foodsOpen, setFoodsOpen] = useState(false);
-
-  const saveCustom = (food: CustomFood) => {
-    void store.update('customFoods', upsertCustomFood(db.customFoods, food));
-    setEditor(null);
-    // מזון שנוצר מתוך החיפוש נבחר מיד לרישום — ממשיכים מאיפה שעצרנו.
-    if (!editor?.existing) {
-      setSelected(fromCustom(food));
-      setQuery(food.name);
-      setGramsText('');
+  const chooseTier = (tier: FridayTier) => {
+    const current = meta?.fridayTier ?? null;
+    if (current === tier) {
+      // לחיצה חוזרת על הדרגה הנבחרת מסירה את ההערכה.
+      void store.update('entries', removeFridayEstimate(db.entries, day));
+      void store.update('days', setFridayTier(db.days, day, null));
+      return;
     }
+    // רשומה אחת בלבד: הקיימת מוסרת, החדשה נכנסת.
+    void store.update('entries', applyFridayTier(db.entries, day, tier, nowTs(), unique()));
+    void store.update('days', setFridayTier(db.days, day, tier));
   };
 
-  if (editor) {
-    return (
-      <CustomFoodEditor
-        index={foodIndex.index}
-        existing={editor.existing}
-        initialName={editor.name}
-        initialMode={editor.mode}
-        onSave={saveCustom}
-        onCancel={() => setEditor(null)}
-        onDelete={
-          editor.existing
-            ? () => {
-                void store.update('customFoods', removeCustomFood(db.customFoods, editor.existing!.id));
-                setEditor(null);
-              }
-            : undefined
-        }
-      />
-    );
-  }
+  // ---------- נגזרות תצוגה ----------
+  const proteinLeft = target ? target.protein - summary.protein : null;
+  const kcalLeft = target ? target.kcal - summary.kcal : null;
+  const proteinPct = target && target.protein > 0 ? summary.protein / target.protein : 0;
+  const kcalPct = target && target.kcal > 0 ? summary.kcal / target.kcal : 0;
 
   return (
-    <div className="stack--loose">
-      <section className="section section--first">
-        <p className="sub" style={{ margin: 0 }}>
-          היום · <span className="num">{formatDM(today)}</span> · חלבון
-        </p>
-        {/* חלבון הוא היעד היחיד שלא נחתך, ולכן הוא המספר הגדול. יום ריק מושתק. */}
-        <p className={`hero${summary.count === 0 ? ' hero--empty' : ''}`} style={{ margin: 0 }}>
-          <span className="num">{gramsWholeText(summary.protein)}</span>
-        </p>
-        <p className="sub" style={{ margin: '6px 0 0' }}>
+    <div className="nut stack--loose">
+      {/* ---------- שורת תאריך ---------- */}
+      <section className="nut-daybar" aria-label="יום">
+        {/* RTL: "קודם" יושב מימין ומצביע ימינה, "הבא" משמאל ומצביע שמאלה. */}
+        <button type="button" className="btn btn--quiet" aria-label="יום קודם" onClick={() => setDay(addDays(day, -1))}>
+          ›
+        </button>
+        <div className="nut-daybar__label">
+          <span className="strong">{isToday ? 'היום' : dayName(day)}</span>
+          {' · '}
+          <span className="num">{formatDM(day)}</span>
+          {closed && <span className="nut-badge nut-badge--closed"> נסגר</span>}
+          {estimated && <span className="nut-badge"> כולל הערכות</span>}
+        </div>
+        <button type="button" className="btn btn--quiet" aria-label="יום הבא" disabled={isToday} onClick={() => setDay(addDays(day, 1))}>
+          ‹
+        </button>
+      </section>
+
+      {/* ---------- גיבור ---------- */}
+      <section className={`nut-card nut-hero${closed ? ' is-closed' : ''}`} aria-label="סיכום היום">
+        <div className="nut-hero__row">
+          <div className="nut-hero__head">
+            <span className="nut-hero__label">חלבון</span>
+            <span className="nut-hero__value num">
+              {int(summary.protein)}
+              {target && <span className="nut-hero__target"> / {int(target.protein)}</span>}
+              <span className="nut-hero__unit"> ג׳</span>
+            </span>
+          </div>
           {target ? (
             <>
-              ג׳ מתוך <span className="num">{gramsWholeText(target.protein)}</span>
+              <ProgressBar value={summary.protein} target={target.protein} label="חלבון מול היעד" />
+              <p className={`nut-hero__note nut-tone--${toneOf(proteinPct)}`}>
+                {proteinLeft !== null && proteinLeft > 0 ? (
+                  <>
+                    חסרים <span className="num">{int(proteinLeft)}</span>
+                  </>
+                ) : (
+                  'היעד הושלם'
+                )}
+              </p>
             </>
           ) : (
-            <>ג׳ · אין יעד מוגדר</>
+            <p className="nut-hero__note muted">אין יעד מוגדר — במסך "נתונים"</p>
           )}
-        </p>
-
-        {/* המאקרו המשני: אריחים קטנים מהאריח הרגיל — רמה שנייה, לא שווה לחלבון. */}
-        <div className="macros" style={{ marginTop: 'var(--sp-3)' }} role="list">
-          {(
-            [
-              ['פחמימה', summary.carbs, target?.carbs, summary.carbsUnknownGrams > 0],
-              ['שומן', summary.fat, target?.fat, summary.fatUnknownGrams > 0],
-              ['סיבים', summary.fiber, undefined, summary.fiberUnknownGrams > 0],
-            ] as const
-          ).map(([label, consumed, goal, atLeast]) => (
-            <div className="stat stat--small" role="listitem" key={label}>
-              <span className="stat__label">{label}</span>
-              <span className="stat__value">
-                {atLeast && <span className="tiny muted">לפחות </span>}
-                <span className="num">{macroText(consumed)}</span>
-              </span>
-              <span className="stat__note num">
-                {goal === undefined ? 'ג׳' : `/ ${macroText(goal)}`}
-              </span>
-            </div>
-          ))}
         </div>
 
-        {/* קלוריות: נתון, יעד ורצפה באותה שורה. בלי "נשאר", בלי צבע. */}
-        <p className="sub" style={{ margin: 'var(--sp-3) 0 0' }}>
-          קלוריות <span className="num">{kcalText(summary.kcal)}</span>
+        <div className="nut-hero__row">
+          <div className="nut-hero__head">
+            <span className="nut-hero__label">קלוריות</span>
+            <span className="nut-hero__value num">
+              {kcalLeft === null ? (
+                int(summary.kcal)
+              ) : kcalLeft >= 0 ? (
+                <>
+                  <span className="nut-hero__unit">נשארו </span>
+                  {int(kcalLeft)}
+                </>
+              ) : (
+                <>
+                  {int(-kcalLeft)}
+                  <span className="nut-hero__unit"> מעל היעד</span>
+                </>
+              )}
+            </span>
+          </div>
           {target ? (
             <>
-              {' '}· יעד <span className="num">{kcalText(target.kcal)}</span>
+              <ProgressBar value={summary.kcal} target={target.kcal} floor={KCAL_FLOOR} label="קלוריות מול היעד" />
+              <p className={`nut-hero__note nut-tone--${toneOf(kcalPct)}`}>
+                <span className="num">{int(summary.kcal)}</span> מתוך <span className="num">{int(target.kcal)}</span>
+                <span className="muted">
+                  {' '}
+                  · רצפה <span className="num">{int(KCAL_FLOOR)}</span>
+                </span>
+              </p>
             </>
-          ) : (
-            ' · אין יעד מוגדר'
-          )}
-          {' '}· רצפה <span className="num">{kcalText(KCAL_FLOOR)}</span>
-          {overTarget > 0 && (
+          ) : null}
+        </div>
+
+        <p className="nut-macros tiny muted">
+          פחמימה{' '}
+          <span className="num">
+            {summary.carbsUnknownGrams > 0 ? '≥' : ''}
+            {int(summary.carbs)}
+          </span>
+          {target && (
             <>
-              {' '}· מעל היעד ב-<span className="num">{kcalText(overTarget)}</span>
+              /<span className="num">{int(target.carbs)}</span>
             </>
           )}
-        </p>
-        {/* שורת מצב אחת: רישומים, תוספים מול הצפוי, הזנה ידנית. נתונים, בלי צבע —
-            פער בתוספים הוא ממצא לניתוח, לא שגיאה. סיבים כבר באריח למעלה. */}
-        <p className="tiny muted" style={{ margin: '6px 0 0' }} role="status">
+          {' · '}שומן{' '}
+          <span className="num">
+            {summary.fatUnknownGrams > 0 ? '≥' : ''}
+            {int(summary.fat)}
+          </span>
+          {target && (
+            <>
+              /<span className="num">{int(target.fat)}</span>
+            </>
+          )}
+          {' · '}סיבים{' '}
+          <span className="num">
+            {summary.fiberUnknownGrams > 0 ? '≥' : ''}
+            {int(summary.fiber)}
+          </span>
+          {' · '}
           <span className="num">{summary.count}</span> {summary.count === 1 ? 'רישום' : 'רישומים'}
-          {(expectedAddons > 0 || summary.addonCount > 0) && (
-            <>
-              {' '}· תוספים <span className="num">{summary.addonCount}</span>
-              {expectedAddons > 0 && (
-                <>
-                  {' '}מתוך <span className="num">{expectedAddons}</span>
-                </>
-              )}
-              {summary.addonCount > 0 && (
-                <>
-                  {' '}· <span className="num">{kcalText(summary.addonKcal)}</span> קק"ל
-                </>
-              )}
-            </>
-          )}
-          {summary.adhocCount > 0 && (
-            <>
-              {' '}· הזנה ידנית <span className="num">{kcalText(summary.adhocKcal)}</span> קק"ל (
-              <span className="num">{summary.adhocCount}</span>, הערכה)
-            </>
-          )}
         </p>
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>התפריט שלי</h2>
-          <span className="tiny muted">לחיצה = רישום</span>
+      {undo && (
+        <div className="nut-toast" role="status">
+          <span className="grow">{undo.text}</span>
+          <button type="button" className="btn btn--quiet" onClick={restore}>
+            בטל
+          </button>
         </div>
-        {menuEmpty ? (
+      )}
+
+      {saveOffer && (
+        <div className="nut-toast nut-toast--offer" role="status">
+          <span className="grow">
+            "{saveOffer.name}" חוזר על עצמו. לשמור כמזון קבוע?
+          </span>
+          <button type="button" className="btn btn--quiet" onClick={saveAsFood}>
+            שמור
+          </button>
+          <button type="button" className="btn btn--quiet" aria-label="לא עכשיו" onClick={() => setSaveOffer(null)}>
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ---------- מה שאני אוכל ---------- */}
+      <section className="nut-card" aria-label="מה שאני אוכל">
+        <div className="section__head">
+          <h2>מה שאני אוכל</h2>
+          <span className="tiny muted">
+            <span className="num">14</span> ימים אחרונים · טאפ = רישום
+          </span>
+        </div>
+        {frequent.length === 0 ? (
           <p className="small muted" style={{ margin: 0 }}>
-            {foodIndex.status === 'ready'
-              ? 'ספריית המנות לא נטענה. במסך "נתונים" → "טען את ספריית המנות".'
-              : 'טוען מאגר…'}
+            עוד אין מספיק רישומים. חפש מזון למטה — מה שיחזור על עצמו יופיע כאן.
           </p>
         ) : (
-          <div className="menu">
-            {blocks && blocks.items.length > 0 && (
-              <div className="menu__blocks" role="group" aria-label="בלוקים">
-                <div className="menu__blocks-primary">
-                  {blockPrimary.map((r) => {
-                    const n = loggedToday(r.food.id);
-                    return (
-                      <button
-                        key={r.item.slug}
-                        type="button"
-                        className={`block-btn block-btn--primary${n > 0 ? ' is-logged' : ''}`}
-                        onClick={() => logMenuItem(r)}
-                      >
-                        {r.item.label}
-                        <span className="choice__hint">
-                          <span className="num">{kcalText(r.protein)}</span> ח · <span className="num">{kcalText(r.kcal)}</span>
-                          {n > 0 && (
-                            <>
-                              {' '}· נרשם{n > 1 ? <> ×<span className="num">{n}</span></> : ''}
-                            </>
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {blockSecondary.length > 0 && (
-                  <div className="menu__blocks-secondary">
-                    {blockSecondary.map((r) => {
-                      const n = loggedToday(r.food.id);
-                      return (
-                        <button
-                          key={r.item.slug}
-                          type="button"
-                          className={`block-btn block-btn--secondary${n > 0 ? ' is-logged' : ''}`}
-                          aria-label={`${r.item.label}${n > 0 ? `, נרשם היום ${n}` : ''}`}
-                          onClick={() => logMenuItem(r)}
-                        >
-                          {r.item.label}
-                          {n > 0 && (
-                            <span className="choice__hint">
-                              נרשם{n > 1 ? <> ×<span className="num">{n}</span></> : ''}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* undo מיד מתחת לבלוקים, לא אחרי כל הקבוצות — כשתוספות (13) פתוחות
-                הוא היה בורח מתחת למסך. */}
-            {undo?.kind === 'added' && (
-              <div className="undo" role="status" style={{ marginBottom: 'var(--sp-2)' }}>
-                <span className="grow">{undo.text}</span>
-                <button type="button" className="btn" onClick={restore}>
-                  בטל
-                </button>
-              </div>
-            )}
-            {menu.filter((g) => g.group.key !== 'blocks').map((g) => {
-              const open = openGroup === g.group.key;
+          <ul className="nut-quick" role="list">
+            {frequent.map((item) => {
+              const grams = qtyOf(item);
+              const live = item.kind === 'food' ? resolve(item.foodId) : null;
+              const base = live ?? item.ref;
+              const v = item.kind === 'adhoc' ? scaled(item.ref, 1) : scaled(base, grams);
               return (
-                <div className="menu__group" key={g.group.key}>
-                  <button
-                    type="button"
-                    className="menu__head"
-                    aria-expanded={open}
-                    onClick={() => setOpenGroup(open ? null : g.group.key)}
-                  >
-                    <span className="grow">{g.group.label}</span>
-                    {g.group.key === 'extras' && (
-                      <span className="tiny muted">
-                        אגוז = <span className="num">{NUT_GRAMS}</span> ג׳
-                      </span>
-                    )}
-                    <span className="tiny muted num">{g.items.length}</span>
-                    <span className="muted" aria-hidden="true">
-                      {open ? '▾' : '▸'}
+                <li key={item.key} className="nut-quick__item">
+                  <button type="button" className="nut-quick__tap" onClick={() => logFrequent(item)}>
+                    <span className="nut-quick__name">
+                      {item.name}
+                      {item.kind === 'adhoc' && <span className="tiny muted"> · הערכה</span>}
+                    </span>
+                    <span className="nut-quick__nums tiny muted">
+                      <span className="num">{int(v.kcal)}</span> קק"ל · <span className="num">{int(v.protein)}</span> חלבון ·{' '}
+                      <span className="num">{item.days}</span> ימים
                     </span>
                   </button>
-                  {open && (
-                    <ul className="menu__items">
-                      {g.items.map((r) => (
-                        <li key={r.item.slug}>
-                          <button type="button" className="menu__btn" onClick={() => logMenuItem(r)}>
-                            <span className="grow">
-                              {r.item.label}
-                              {r.ingredients && (g.group.key === 'lunch' || g.group.key === 'dinner') && (
-                                <span className="menu__ingredients">{r.ingredients}</span>
-                              )}
-                            </span>
-                            <span className="muted small">
-                              <span className="num">{kcalText(r.protein)}</span> ח · <span className="num">{kcalText(r.kcal)}</span>
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                      {g.group.key === 'extras' && nutsToday.length > 0 && (
-                        <li className="tiny muted" style={{ padding: 'var(--sp-1) var(--sp-3) var(--sp-2)' }} role="note">
-                          כבר נרשם אגוז היום: {nutsToday.map((e) => resolve(e.foodId)?.name ?? e.ref.name).join(', ')}
-                        </li>
-                      )}
-                    </ul>
+                  {item.kind === 'food' && (
+                    <QtyControl
+                      unitFood={item.unitFood}
+                      value={grams}
+                      label={item.name}
+                      onChange={(g) => setQty({ ...qty, [item.key]: g })}
+                    />
                   )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>הוספה</h2>
-          <span className="tiny muted">
-            {foodIndex.status === 'loading' && 'טוען מאגר…'}
-            {foodIndex.status === 'error' && <span className="err">מאגר המזון לא נטען</span>}
-            {foodIndex.status === 'ready' && addOpen && (
-              <button type="button" className="btn btn--quiet" onClick={() => setAddOpen(false)}>
-                סגור
+      {/* ---------- חיפוש ---------- */}
+      <section className="nut-card" aria-label="חיפוש">
+        <label htmlFor="food-search" className="visually-hidden">
+          חיפוש מזון
+        </label>
+        <input
+          id="food-search"
+          ref={searchRef}
+          className="nut-search"
+          type="search"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="search"
+          placeholder={foodIndex.status === 'loading' ? 'טוען מאגר…' : 'חיפוש במאגר או במזונות שלי'}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (selected) setSelected(null);
+          }}
+        />
+        {foodIndex.status === 'error' && <p className="tiny err">מאגר המזון לא נטען.</p>}
+
+        {selected ? (
+          <div className="nut-selected">
+            <div className="nut-selected__head">
+              <span className="grow">
+                {selected.name}
+                {selected.source === 'custom' && !selected.isRecipe && <span className="tiny muted"> · שלי</span>}
+                {selected.isRecipe && <span className="tiny muted"> · מנה</span>}
+                {selected.suspect && <span className="tiny err"> · ערך חשוד</span>}
+              </span>
+              <button type="button" className="btn btn--quiet" aria-label="נקה בחירה" onClick={() => setSelected(null)}>
+                ✕
               </button>
+            </div>
+            <div className="nut-selected__row">
+              <QtyControl unitFood={selected.unitFood} value={selGrams} label={selected.name} onChange={setSelGrams} />
+              <span className="tiny muted grow">
+                <span className="num">{int(scaled(selected, selGrams).kcal)}</span> קק"ל ·{' '}
+                <span className="num">{int(scaled(selected, selGrams).protein)}</span> חלבון
+              </span>
+              <button type="button" className="btn btn--primary" onClick={addSelected}>
+                הוסף
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {query.trim() === '' && results.length > 0 && <p className="tiny muted nut-results__title">אחרונים</p>}
+            {results.length > 0 && (
+              <ul className="results" role="listbox" aria-label={query.trim() === '' ? 'מזונות אחרונים' : 'תוצאות חיפוש'}>
+                {results.map((f) => {
+                  const p = portionOf(f);
+                  const v = scaled(f, p);
+                  return (
+                    <li key={f.id} role="option" aria-selected={false}>
+                      <button type="button" className="results__btn" onClick={() => pick(f)}>
+                        <span className="grow">
+                          {f.name}
+                          {f.source === 'custom' && !f.isRecipe && <span className="tiny muted"> · שלי</span>}
+                          {f.isRecipe && <span className="tiny muted"> · מנה</span>}
+                        </span>
+                        <span className="tiny muted num">
+                          {f.unitFood ? `×${int(p)}` : `${int(p)} ג׳`} · {int(v.kcal)} קק"ל · {int(v.protein)} ח
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
-          </span>
-        </div>
-        {!addOpen ? (
-          <button
-            type="button"
-            className="btn btn--quiet disclosure"
-            aria-expanded={false}
-            onClick={() => setAddOpen(true)}
-          >
-            <span className="grow">חיפוש במאגר · הזנה ידנית</span>
+            {query.trim() !== '' && results.length === 0 && foodIndex.status === 'ready' && (
+              <p className="tiny muted" style={{ margin: 'var(--sp-2) 0 0' }}>
+                לא נמצא. מזון מהתווית מוסיפים במסך "נתונים" → "מזונות שלי".
+              </p>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* ---------- ארוחה בחוץ ---------- */}
+      <section className="nut-card" aria-label="ארוחה בחוץ">
+        {!outOpen ? (
+          <button type="button" className="btn btn--quiet disclosure" aria-expanded={false} onClick={() => setOutOpen(true)}>
+            <span className="grow">ארוחה בחוץ — הערכה</span>
             <span className="muted" aria-hidden="true">
               ▸
             </span>
           </button>
-        ) : adhocOpen ? (
+        ) : (
           <div className="stack">
-            <p className="small muted" style={{ margin: 0 }}>
-              אוכל בחוץ או בלי תווית: הערכה לארוחה שלמה, לא ל-100 ג׳. נרשם כהערכה ומסומן בהיסטוריה.
-            </p>
+            <div className="section__head">
+              <h2>ארוחה בחוץ</h2>
+              <span className="tiny muted">הערכה לארוחה שלמה</span>
+            </div>
             <div>
-              <label htmlFor="adhoc-name">שם</label>
+              <label htmlFor="out-name">מה</label>
               <input
-                id="adhoc-name"
+                id="out-name"
                 type="text"
                 autoComplete="off"
                 placeholder="המבורגר, מסעדה"
-                value={adhoc.name}
-                onChange={(e) => setAdhoc({ ...adhoc, name: e.target.value })}
+                value={out.name}
+                onChange={(e) => setOut({ ...out, name: e.target.value })}
               />
             </div>
-            <div className="macros">
-              {(
-                [
-                  ['adhoc-kcal', 'קלוריות', 'kcal', ADHOC_MAX_KCAL, true],
-                  ['adhoc-protein', 'חלבון ג׳', 'protein', ADHOC_MAX_MACRO, true],
-                  ['adhoc-carbs', 'פחמימה ג׳', 'carbs', ADHOC_MAX_MACRO, false],
-                  ['adhoc-fat', 'שומן ג׳', 'fat', ADHOC_MAX_MACRO, false],
-                ] as const
-              ).map(([id, label, key, max, required]) => (
-                <div key={id}>
-                  <label htmlFor={id}>
-                    {label}
-                    {!required && <span className="muted"> (לא חובה)</span>}
-                  </label>
-                  <input
-                    id={id}
-                    type="number"
-                    inputMode="decimal"
-                    step={0.1}
-                    min={0}
-                    max={max}
-                    value={adhoc[key]}
-                    onChange={(e) => setAdhoc({ ...adhoc, [key]: e.target.value })}
-                  />
-                </div>
-              ))}
-            </div>
-            {adhocGap !== null && adhocGap > MACRO_GAP_WARN && (
-              <p className="notice" style={{ margin: 0 }}>
-                המאקרו מסתכם ל-
-                <span className="num">{kcalText(4 * (adhocProtein as number) + 4 * (adhocCarbs as number) + 9 * (adhocFat as number))}</span> קק"ל,
-                פער של <span className="num">{Math.round(adhocGap * 100)}%</span> מהקלוריות שהוזנו. אפשר לשמור בכל מקרה.
-              </p>
-            )}
-            <div role="group" aria-label="ארוחה">
-              <span className="label">ארוחה</span>
-              <div className="choice">
-                {MEAL_ORDER.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    className="choice__btn"
-                    aria-pressed={meal === m}
-                    onClick={() => {
-                      setMeal(m);
-                      setMealTouched(true);
-                    }}
-                  >
-                    {MEAL_LABELS[m]}
-                  </button>
-                ))}
+            <div className="nut-two">
+              <div>
+                <label htmlFor="out-kcal">קלוריות</label>
+                <input
+                  id="out-kcal"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={ADHOC_MAX_KCAL}
+                  value={out.kcal}
+                  onChange={(e) => setOut({ ...out, kcal: e.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor="out-protein">חלבון ג׳</label>
+                <input
+                  id="out-protein"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={ADHOC_MAX_MACRO}
+                  value={out.protein}
+                  onChange={(e) => setOut({ ...out, protein: e.target.value })}
+                />
               </div>
             </div>
-            <div className="row">
-              <button type="button" className="btn btn--primary btn--block" disabled={!adhocValid} onClick={saveAdhoc}>
-                שמור הזנה ידנית
+            {outMore ? (
+              <div className="nut-two">
+                <div>
+                  <label htmlFor="out-carbs">פחמימה ג׳</label>
+                  <input
+                    id="out-carbs"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={ADHOC_MAX_MACRO}
+                    value={out.carbs}
+                    onChange={(e) => setOut({ ...out, carbs: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="out-fat">שומן ג׳</label>
+                  <input
+                    id="out-fat"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={ADHOC_MAX_MACRO}
+                    value={out.fat}
+                    onChange={(e) => setOut({ ...out, fat: e.target.value })}
+                  />
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="btn btn--quiet" style={{ alignSelf: 'flex-start' }} onClick={() => setOutMore(true)}>
+                עוד — פחמימה ושומן
               </button>
-              <button type="button" className="btn" onClick={() => setAdhocOpen(false)}>
+            )}
+            <div className="row">
+              <button type="button" className="btn btn--primary btn--block" disabled={!outValid} onClick={saveOut}>
+                רשום
+              </button>
+              <button type="button" className="btn" onClick={() => setOutOpen(false)}>
                 ביטול
               </button>
             </div>
           </div>
-        ) : (
-        <div className="stack">
-          <div>
-            <label htmlFor="food-search">מזון</label>
-            <input
-              id="food-search"
-              ref={searchRef}
-              // הטופס נפתח בטאפ מפורש, אז הפוקוס הוא המשך המחווה.
-              autoFocus
-              type="search"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              enterKeyHint="search"
-              placeholder="חיפוש במאגר…"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                if (selected) setSelected(null);
-              }}
-            />
-            {results.length > 0 && (
-              <ul className="results" role="listbox" aria-label="תוצאות חיפוש">
-                {results.map((f) => (
-                  <li key={f.id} role="option" aria-selected={false}>
-                    <button type="button" className="results__btn" onClick={() => pick(f)}>
-                      <span className="grow">
-                        {f.name}
-                        {f.isRecipe && <span className="tiny muted"> · מנה</span>}
-                        {f.source === 'custom' && !f.isRecipe && <span className="tiny muted"> · שלי</span>}
-                        {f.suspect && <span className="tiny err"> · ערך חשוד במאגר</span>}
-                      </span>
-                      <span className="num muted small">{kcalText(displayValues(f).kcal)}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {!selected && query.trim() !== '' && results.length === 0 && foodIndex.status === 'ready' && (
-              <div className="row row--wrap" style={{ marginTop: 'var(--sp-2)' }}>
-                <span className="tiny muted">לא נמצא במאגר.</span>
-                <button type="button" className="btn btn--quiet" onClick={() => setEditor({ existing: null, name: query.trim(), mode: 'label' })}>
-                  הוסף מהתווית
-                </button>
-                <button type="button" className="btn btn--quiet" onClick={() => setEditor({ existing: null, name: query.trim(), mode: 'recipe' })}>
-                  בנה מנה
-                </button>
-              </div>
-            )}
-            {selected && (
-              <p className="tiny muted" style={{ margin: '4px 0 0' }}>
-                <span className="num">{kcalText(displayValues(selected).kcal)}</span> קק"ל ·{' '}
-                <span className="num">{macroText(displayValues(selected).protein)}</span> חלבון ·{' '}
-                <span className="num">{displayValues(selected).carbs === null ? DASH : macroText(displayValues(selected).carbs!)}</span> פחמימה ·{' '}
-                <span className="num">{displayValues(selected).fat === null ? DASH : macroText(displayValues(selected).fat!)}</span> שומן · {displayValues(selected).per}
-                {selected.suspect && <span className="err"> · ערך חשוד במאגר</span>}
-                {' '}
-                <button type="button" className="btn btn--quiet tiny" onClick={clearPick} style={{ minHeight: 0 }}>
-                  נקה
-                </button>
-              </p>
-            )}
-          </div>
-
-          <div className="grams">
-            <label htmlFor="food-grams">גרמים</label>
-            <input
-              id="food-grams"
-              ref={gramsRef}
-              type="number"
-              inputMode="decimal"
-              step={0.1}
-              min={MIN_GRAMS}
-              max={MAX_GRAMS}
-              placeholder="0"
-              enterKeyHint="done"
-              value={gramsText}
-              onChange={(e) => setGramsText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && canAdd) add();
-              }}
-            />
-          </div>
-
-          <div role="group" aria-label="ארוחה">
-            <span className="label">ארוחה</span>
-            <div className="choice">
-              {MEAL_ORDER.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  className="choice__btn"
-                  aria-pressed={meal === m}
-                  onClick={() => {
-                    setMeal(m);
-                    setMealTouched(true);
-                  }}
-                >
-                  {MEAL_LABELS[m]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button type="button" className="btn btn--primary btn--block" disabled={!canAdd} onClick={add}>
-            הוסף
-          </button>
-          <button
-            type="button"
-            className="btn btn--quiet"
-            style={{ marginInlineStart: 'calc(-1 * var(--sp-2))' }}
-            onClick={() => setAdhocOpen(true)}
-          >
-            הזנה ידנית — אוכל בחוץ, בלי תווית
-          </button>
-        </div>
         )}
       </section>
 
-      <section className="section">
-        <h2 style={{ marginBottom: 'var(--sp-3)' }}>מה אכלתי היום</h2>
-        {undo?.kind === 'deleted' && (
-          <div className="undo" role="status" style={{ marginBottom: 'var(--sp-3)' }}>
-            <span className="grow">{undo.text}</span>
-            <button type="button" className="btn" onClick={restore}>
-              בטל
-            </button>
-          </div>
-        )}
+      {/* ---------- הרישומים של היום ---------- */}
+      <section className="nut-card" aria-label="מה אכלתי">
+        <div className="section__head">
+          <h2>{isToday ? 'מה אכלתי היום' : `מה אכלתי · ${formatDM(day)}`}</h2>
+          <span className="tiny muted">טאפ על שורה לעריכה</span>
+        </div>
         {groups.length === 0 ? (
-          <p className="muted small" style={{ margin: 0 }}>
-            עדיין לא נרשם דבר היום.
+          <p className="small muted" style={{ margin: 0 }}>
+            עדיין לא נרשם דבר.
           </p>
         ) : (
           groups.map((g) => (
-            <div key={g.meal} style={{ marginTop: 'var(--sp-3)' }}>
-              <h3 className="sub" style={{ marginBottom: 'var(--sp-1)' }}>
+            <div key={g.meal} className="nut-meal">
+              <h3 className="nut-meal__title">
                 {MEAL_LABELS[g.meal]}
+                <span className="tiny muted num">
+                  {' '}
+                  {int(g.entries.reduce((s, e) => s + entryNutrition(e, resolve(e.foodId)).kcal, 0))} קק"ל
+                </span>
               </h3>
-              <ul className="list">
+              <ul className="nut-log" role="list">
                 {g.entries.map((e) => {
                   const live = resolve(e.foodId);
                   const n = entryNutrition(e, live);
                   const isOpen = openEntry === e.id;
                   return (
-                    <li key={e.id} className={n.adhoc ? 'is-adhoc' : undefined} style={{ flexWrap: 'wrap' }}>
-                      {/* השורה עצמה היא הכפתור: שם, גרמים, שעה, דגלים רק כשיש. */}
+                    <li key={e.id} className={`nut-row${isOpen ? ' is-open' : ''}${n.adhoc ? ' is-adhoc' : ''}`}>
                       <button
                         type="button"
-                        className="btn btn--quiet grow"
-                        style={{ justifyContent: 'flex-start', textAlign: 'start', paddingInline: 0 }}
+                        className="nut-row__tap"
                         aria-expanded={isOpen}
-                        onClick={() => {
-                          setOpenEntry(isOpen ? null : e.id);
-                          if (isOpen) setEditing(null);
-                        }}
+                        onClick={() => setOpenEntry(isOpen ? null : e.id)}
                       >
-                        <span className="grow">
+                        <span className="nut-row__name">
                           {entryName(e, live?.name ?? null)}
                           <span className="tiny muted">
-                            {n.adhoc ? (
-                              <>
-                                {' '}· <span className="adhoc-note">הזנה ידנית · הערכה</span> ·{' '}
-                                <span className="num">{macroText(n.protein)}</span> חלבון
-                              </>
-                            ) : (
-                              <>
-                                {' '}· <span className="num">{e.grams}</span> ג׳
-                              </>
-                            )}
-                            {' '}· <span className="num">{timeText(e.ts)}</span>
-                            {live?.isRecipe && ' · מנה'}
-                            {n.live === 'differs' && ' · ההגדרה השתנתה מאז הרישום'}
+                            {' '}
+                            · <span className="num">{qtyText(e)}</span> · <span className="num">{timeText(e.ts)}</span>
+                            {n.live === 'differs' && ' · ההגדרה השתנתה'}
                             {n.live === 'missing' && !n.adhoc && ' · המזון נמחק'}
-                            {live?.suspect && <span className="err"> · ערך חשוד</span>}
                           </span>
                         </span>
-                        <span className="num strong">{kcalText(n.kcal)}</span>
+                        <span className="nut-row__nums num">
+                          {int(n.kcal)} <span className="tiny muted">קק"ל</span> · {int(n.protein)} <span className="tiny muted">ח</span>
+                        </span>
                       </button>
                       {isOpen && (
-                        <div className="row" style={{ width: '100%', paddingBottom: 'var(--sp-1)' }}>
-                          {!n.adhoc &&
-                            (editing?.id === e.id ? (
-                              <input
-                                className="list__grams"
-                                type="number"
-                                inputMode="decimal"
-                                step={0.1}
-                                min={MIN_GRAMS}
-                                max={MAX_GRAMS}
-                                aria-label={`גרמים — ${e.ref.name}`}
-                                autoFocus
-                                value={editing.text}
-                                onChange={(ev) => setEditing({ id: e.id, text: ev.target.value })}
-                                onBlur={commitGrams}
-                                onKeyDown={(ev) => {
-                                  if (ev.key === 'Enter') commitGrams();
-                                  if (ev.key === 'Escape') setEditing(null);
-                                }}
-                              />
-                            ) : (
+                        <div className="nut-row__edit">
+                          {!n.adhoc && (
+                            <QtyControl
+                              unitFood={e.ref.unitFood === true}
+                              value={e.grams}
+                              label={entryName(e, live?.name ?? null)}
+                              onChange={(g) => void store.update('entries', setEntryGrams(db.entries, e.id, g))}
+                            />
+                          )}
+                          <div className="nut-chips" role="group" aria-label="ארוחה">
+                            {MEAL_ORDER.map((m) => (
                               <button
+                                key={m}
                                 type="button"
-                                className="btn btn--quiet btn--outlined"
-                                aria-label={`שנה גרמים — ${e.ref.name}`}
-                                onClick={() => setEditing({ id: e.id, text: String(e.grams) })}
+                                className="nut-chip"
+                                aria-pressed={e.meal === m}
+                                onClick={() => void store.update('entries', setEntryMeal(db.entries, e.id, m))}
                               >
-                                שנה גרמים
+                                {MEAL_LABELS[m]}
                               </button>
                             ))}
-                          <span className="grow" />
+                          </div>
                           <button
                             type="button"
-                            className="btn btn--quiet"
-                            aria-label={`מחק ${e.ref.name}`}
+                            className="btn btn--quiet err"
+                            aria-label={`מחק ${entryName(e, live?.name ?? null)}`}
                             onClick={() => {
                               setOpenEntry(null);
                               del(e);
@@ -878,156 +790,60 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
         )}
       </section>
 
-      <section className="section">
-        <button
-          type="button"
-          className="btn btn--quiet disclosure"
-          aria-expanded={foodsOpen}
-          onClick={() => setFoodsOpen((v) => !v)}
-        >
-          <span className="grow">
-            מזונות שלי · <span className="num">{db.customFoods.length}</span>
-          </span>
-          <span className="muted" aria-hidden="true">
-            {foodsOpen ? '▾' : '▸'}
-          </span>
-        </button>
-        {foodsOpen && (
-          <div className="stack" style={{ marginTop: 'var(--sp-3)' }}>
-        {db.customFoods.length > 0 && (
-          <ul className="list">
-            {db.customFoods.map((f) => (
-              <li key={f.id}>
-                <span className="grow">
-                  {f.name}
-                  <span className="tiny muted">
-                    {f.archived && ' · בארכיון'}
-                    {f.recipe ? ' · מנה' : ' · מהתווית'} ·{' '}
-                    <span className="num">{kcalText(displayValues(fromCustom(f)).kcal)}</span> קק"ל {displayValues(fromCustom(f)).per}
-                    {f.note ? ` · ${f.note}` : ''}
-                  </span>
+      {/* ---------- סגירת יום · ארוחת שישי ---------- */}
+      <section className={`nut-card nut-close${closed ? ' is-closed' : ''}`} aria-label="סגירת היום">
+        {friday && (
+          <div className="nut-friday">
+            <p className="small" style={{ margin: 0 }}>
+              ארוחת שישי — הערכה
+              {fridayEntry && (
+                <span className="tiny muted">
+                  {' '}
+                  · נרשמה: <span className="num">{int(fridayEntry.ref.kcal / 100)}</span> קק"ל
                 </span>
-                <button type="button" className="btn btn--quiet" aria-label={`ערוך ${f.name}`} onClick={() => setEditor({ existing: f })}>
-                  ערוך
+              )}
+            </p>
+            <div className="nut-chips" role="group" aria-label="גודל ארוחת שישי">
+              {FRIDAY_TIER_ORDER.map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  className="nut-chip nut-chip--tier"
+                  aria-pressed={meta?.fridayTier === tier}
+                  onClick={() => chooseTier(tier)}
+                >
+                  {FRIDAY_TIERS[tier].label}
+                  <span className="tiny num"> {FRIDAY_TIERS[tier].kcal}</span>
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="row">
-          <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'label' })}>
-            מזון מהתווית
-          </button>
-          <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'recipe' })}>
-            מנה ממרכיבים
-          </button>
-        </div>
-        <p className="tiny muted" style={{ margin: 0 }}>
-          מנה: בונים פעם אחת ממרכיבים, שוקלים את הצלחת ומזינים גרמים כמו בכל מזון.
-        </p>
+              ))}
+            </div>
           </div>
         )}
-      </section>
-
-      {/* היעד: נקבע פעם בכמה שבועות. שורה סגורה עם המספרים; הטופס בטאפ. */}
-      <section className="section">
-        <button
-          type="button"
-          className="btn btn--quiet disclosure"
-          aria-expanded={editingTarget}
-          onClick={() => setEditingTarget((v) => !v)}
-        >
-          <span className="grow">
-            {target ? (
-              <>
-                יעד יומי · <span className="num">{kcalText(target.kcal)}</span> קק"ל ·{' '}
-                <span className="num">{gramsWholeText(target.protein)}</span> חלבון ·{' '}
-                <span className="num">{gramsWholeText(target.carbs)}</span> פחמימה ·{' '}
-                <span className="num">{gramsWholeText(target.fat)}</span> שומן
-              </>
-            ) : (
-              'יעד יומי · לא הוגדר'
-            )}
-          </span>
-          <span className="muted" aria-hidden="true">
-            {editingTarget ? '▾' : '▸'}
-          </span>
-        </button>
-        {editingTarget && (
-          <TargetForm
-            current={target}
-            today={today}
-            onCancel={() => setEditingTarget(false)}
-            onSave={(t) => {
-              void store.update('targets', upsertTarget(db.targets, t));
-              setEditingTarget(false);
-            }}
-          />
+        {closed ? (
+          <div className="nut-close__state">
+            <span className="grow">
+              היום נסגר
+              {meta?.closedAt && (
+                <span className="tiny muted">
+                  {' '}
+                  · <span className="num">{timeText(Date.parse(meta.closedAt))}</span>
+                </span>
+              )}
+              <span className="tiny muted"> · אפשר עדיין לערוך</span>
+            </span>
+            <button type="button" className="btn btn--quiet" onClick={toggleClosed}>
+              פתח מחדש
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="btn btn--primary btn--block" onClick={toggleClosed}>
+            סיימתי לרשום {isToday ? 'היום' : 'ביום הזה'}
+          </button>
         )}
+        <p className="tiny muted" style={{ margin: 0 }}>
+          יום שלא נסגר אינו מלא, ולא מסיקים ממנו על קלוריות.
+        </p>
       </section>
-
-      <p className="tiny muted" style={{ margin: 0 }}>
-        הערכים ל-100 ג׳ מהמאגר הלאומי של משרד הבריאות
-        {foodIndex.fetchedAt ? (
-          <>
-            {' '}
-            (נמשך <span className="num">{foodIndex.fetchedAt.slice(0, 10)}</span>)
-          </>
-        ) : null}
-        . קלוריות מהמאגר, לא מחושבות מהמאקרו.
-      </p>
-    </div>
-  );
-}
-
-// ---------- טופס יעד ----------
-
-type TargetFormProps = {
-  current: NutritionTarget | null;
-  today: string;
-  onSave: (t: NutritionTarget) => void;
-  onCancel: () => void;
-};
-
-/**
- * יעד חדש נכנס בתוקף מהיום; היעד הקודם נשאר בהיסטוריה כדי שסיכומים
- * ישנים לא ישתנו.
- */
-function TargetForm({ current, today, onSave, onCancel }: TargetFormProps) {
-  const [kcal, setKcal] = useState<number | null>(current?.kcal ?? null);
-  const [protein, setProtein] = useState<number | null>(current?.protein ?? null);
-  const [carbs, setCarbs] = useState<number | null>(current?.carbs ?? null);
-  const [fat, setFat] = useState<number | null>(current?.fat ?? null);
-  const valid = kcal !== null && kcal >= MIN_TARGET_KCAL && protein !== null && carbs !== null && fat !== null;
-
-  return (
-    <div className="stack" style={{ marginTop: 'var(--sp-3)' }}>
-      <NumberField label="קלוריות ליום" value={kcal} onChange={setKcal} min={MIN_TARGET_KCAL} max={MAX_TARGET_KCAL} />
-      <div className="macros">
-        <NumberField label="חלבון" suffix="ג׳" value={protein} onChange={setProtein} min={0} max={MAX_TARGET_PROTEIN} />
-        <NumberField label="פחמימה" suffix="ג׳" value={carbs} onChange={setCarbs} min={0} max={MAX_TARGET_CARBS} />
-        <NumberField label="שומן" suffix="ג׳" value={fat} onChange={setFat} min={0} max={MAX_TARGET_FAT} />
-      </div>
-      <div className="row">
-        <button
-          type="button"
-          className="btn btn--primary btn--block"
-          disabled={!valid}
-          onClick={() => {
-            if (!valid) return;
-            onSave({ from: today, kcal, protein, carbs, fat });
-          }}
-        >
-          {current ? 'עדכן יעד מהיום' : 'שמור יעד'}
-        </button>
-        <button type="button" className="btn" onClick={onCancel}>
-          ביטול
-        </button>
-      </div>
-      <p className="tiny muted" style={{ margin: 0 }}>
-        קלוריות <span className="num">{MIN_TARGET_KCAL}</span>–<span className="num">{MAX_TARGET_KCAL}</span>.
-        יעד קודם נשמר בהיסטוריה — סיכומים של ימים קודמים לא משתנים.
-      </p>
     </div>
   );
 }

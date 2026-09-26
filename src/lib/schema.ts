@@ -8,12 +8,14 @@ import {
   type CardioMode,
   type CardioSegment,
   type CustomFood,
+  type DayMeta,
   type DB,
   type ExerciseType,
   type Favorite,
   type FoodEntry,
   type FoodPortion,
   type FoodRef,
+  type FridayTier,
   type ISODate,
   type LegacyWorkout,
   type LoggedExercise,
@@ -814,6 +816,47 @@ export function parseFavorites(input: unknown): ParseResult<Favorite> {
   return { ok: [...byFood.values()], rejected };
 }
 
+// ---------- ימים ----------
+
+const FRIDAY_TIERS: readonly FridayTier[] = ['medium', 'regular', 'large'];
+
+/**
+ * מטא-נתונים של ימים. נדחה: לא אובייקט, תאריך שבור, `closed` שאינו בוליאני.
+ * `closedAt` ו-`fridayTier` שבורים נשמטים בשקט — הם תוספת, לא הרשומה.
+ * כפילות תאריך: האחרונה גוברת.
+ */
+export function parseDays(input: unknown): ParseResult<DayMeta> {
+  const rejected: Rejection[] = [];
+  const byDate = new Map<ISODate, DayMeta>();
+
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
+      continue;
+    }
+    if (!isValidISO(raw.d)) {
+      rejected.push({ raw, reason: 'תאריך לא תקין' });
+      continue;
+    }
+    if (typeof raw.closed !== 'boolean') {
+      rejected.push({ raw, reason: 'סטטוס סגירה שאינו כן/לא' });
+      continue;
+    }
+    const closedAt =
+      typeof raw.closedAt === 'string' && Number.isFinite(Date.parse(raw.closedAt)) ? raw.closedAt : null;
+    const tier = FRIDAY_TIERS.find((t) => t === raw.fridayTier) ?? null;
+    byDate.set(raw.d, {
+      d: raw.d,
+      closed: raw.closed,
+      ...(closedAt !== null ? { closedAt } : {}),
+      ...(tier !== null ? { fridayTier: tier } : {}),
+    });
+  }
+
+  const ok = [...byDate.values()].sort((a, b) => compareISO(a.d, b.d));
+  return { ok, rejected };
+}
+
 // ---------- הסגר ----------
 
 /**
@@ -880,6 +923,8 @@ export function parseDb(input: unknown): DbParseResult {
   const entries = parseEntries(src.entries);
   const targets = parseTargets(src.targets);
   const favorites = parseFavorites(src.favorites);
+  // גיבוי מלפני שלב 3 פשוט לא מכיל `days` — ריק, בלי דחייה.
+  const days = parseDays(src.days);
   // הסגר מהגיבוי (אופציונלי — גיבוי ישן פשוט לא מכיל אותו), ואחריו מה שנדחה
   // בייבוא הזה עצמו: גם רשומה שבורה בקובץ לא נעלמת.
   const at = new Date().toISOString();
@@ -892,6 +937,7 @@ export function parseDb(input: unknown): DbParseResult {
     ...quarantineFromRejections('entries', entries.rejected, at),
     ...quarantineFromRejections('targets', targets.rejected, at),
     ...quarantineFromRejections('favorites', favorites.rejected, at),
+    ...quarantineFromRejections('days', days.rejected, at),
   ]);
 
   return {
@@ -908,6 +954,7 @@ export function parseDb(input: unknown): DbParseResult {
       entries: entries.ok,
       targets: targets.ok,
       favorites: favorites.ok,
+      days: days.ok,
       quarantine,
     },
     counts: {
@@ -934,6 +981,7 @@ export function parseDb(input: unknown): DbParseResult {
       ...tally('רישומי אכילה', entries.rejected),
       ...tally('יעדי תזונה', targets.rejected),
       ...tally('מועדפים', favorites.rejected),
+      ...tally('ימים', days.rejected),
     ],
   };
 }
