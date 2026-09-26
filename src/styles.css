@@ -645,8 +645,9 @@ button {
 }
 
 .day {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--cream);
   padding: var(--sp-2) 2px;
   text-align: center;
   min-height: 58px;
@@ -700,7 +701,7 @@ button {
 }
 
 .list > li {
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--divider);
   padding-block: var(--sp-2);
   min-height: var(--tap);
   display: flex;
@@ -725,10 +726,15 @@ button {
 }
 
 .weeknav__label {
-  font-size: 14px;
-  color: var(--ink-2);
+  font-size: 15px;
+  color: var(--ink);
   text-align: center;
   flex: 1;
+}
+
+.weeknav .btn--step {
+  border-color: var(--border);
+  border-radius: 8px;
 }
 
 /* ---------- אריחי סיכום ---------- */
@@ -740,8 +746,9 @@ button {
 }
 
 .stat {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--cream);
   padding: var(--sp-3);
   display: flex;
   flex-direction: column;
@@ -790,9 +797,10 @@ button {
 
 /* ---------- גרף ---------- */
 
+/* קו מרווה לממוצעים השבועיים, נקודות צפחה לשקילות היומיות. בלי קווי רשת. */
 .chart {
   width: 100%;
-  height: 96px;
+  height: 112px;
   display: block;
   overflow: visible;
 }
