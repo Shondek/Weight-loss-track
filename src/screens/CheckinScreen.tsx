@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
 import type { WeeklyCheckin } from '../types';
@@ -6,6 +6,8 @@ import { NOTE_MAX } from '../types';
 import { emptyCheckin, getCheckin, isFilled, upsertCheckin } from '../lib/checkins';
 import { backupJson, buildChatReport } from '../lib/exportText';
 import { buildWeekSummary } from '../lib/weekSummary';
+import { buildWeeklySummary, defaultSummaryWeek } from '../lib/weeklySummary';
+import { downloadText } from '../platform/download';
 import { formatDMY, isSaturday, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import WeekNav from '../components/WeekNav';
@@ -27,6 +29,10 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
   const report = useMemo(() => buildChatReport(db, week, today), [db, week, today]);
   const summary = useMemo(() => buildWeekSummary(db, week, today), [db, week, today]);
   const json = useMemo(() => backupJson(db, new Date().toISOString()), [db]);
+  /** שבוע הסיכום לצ'אט (שלב 5): נפרד מהשבוע של הצ'ק-אין. בשבת — השבוע הזה; אחרת השבוע השלם האחרון. */
+  const [summaryWeek, setSummaryWeek] = useState<string>(() => defaultSummaryWeek(today));
+  const weekly = useMemo(() => buildWeeklySummary(db, summaryWeek), [db, summaryWeek]);
+  const summaryWeekNo = start ? weekNumber(start, summaryWeek) : null;
 
   const patch = (next: Partial<WeeklyCheckin>) => {
     void store.update('checkins', upsertCheckin(db.checkins, { ...value, ...next }));
@@ -108,6 +114,29 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
               </span>
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section__head">
+          <h2>סיכום שבועי לצ'אט</h2>
+          <span className="tiny muted">
+            <span className="num">{weekly.length}</span> תווים
+          </span>
+        </div>
+        <div className="stack">
+          <WeekNav week={summaryWeek} onChange={setSummaryWeek} today={today} weekNo={summaryWeekNo} />
+          <CopyBlock text={weekly} label="העתק סיכום שבועי" boxLabel="סיכום שבועי לצ'אט" primary />
+          <button
+            type="button"
+            className="btn btn--block"
+            onClick={() => downloadText(`fatloss-week-${summaryWeekNo ?? 'x'}-${summaryWeek}.txt`, weekly, 'text/plain')}
+          >
+            הורד כקובץ טקסט
+          </button>
+          <p className="tiny muted" style={{ margin: 0 }}>
+            נתונים מחושבים בלבד — משקל, מותניים, אימונים, אירובי, תזונה (ימים סגורים), צ'ק-אין ודגלים.
+          </p>
         </div>
       </section>
 
