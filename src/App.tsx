@@ -112,7 +112,7 @@ export default function App() {
         {store.missingKeys.length > 0 && (
           // חוסם ולא ניתן לסגירה: המפתחות האלה היו באחסון ונעלמו. שום דבר לא
           // נשמר מעליהם עד שחזור מגיבוי במסך "נתונים" (סיכון #4).
-          <div className="banner banner--error stack--tight" role="alert">
+          <div className="banner banner--error banner--blocking stack--tight" role="alert">
             <p className="strong" style={{ margin: 0 }}>
               נתונים חסרים באחסון — שחזר מגיבוי לפני שממשיכים
             </p>
@@ -157,7 +157,7 @@ export default function App() {
         )}
 
         {store.notices.length > 0 && (
-          <div className="banner stack--tight" style={{ marginBottom: 'var(--sp-4)' }}>
+          <div className="banner stack--tight" role="status">
             {store.notices.map((n) => (
               <p key={n} style={{ margin: 0 }}>
                 {n}

@@ -137,7 +137,7 @@ body {
 .app__main {
   flex: 1;
   padding-block: var(--sp-4);
-  padding-bottom: calc(var(--tap) + var(--sp-6) + env(safe-area-inset-bottom));
+  padding-bottom: calc(52px + var(--sp-6) + env(safe-area-inset-bottom));
 }
 
 /* ---------- ניווט תחתון ---------- */
@@ -147,8 +147,9 @@ body {
   inset-inline: 0;
   bottom: 0;
   z-index: 20;
-  background: var(--paper);
-  border-top: 1px solid var(--rule);
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -165,13 +166,14 @@ body {
   background: none;
   font: inherit;
   font-size: 14px;
-  color: var(--ink-2);
-  min-height: var(--tap);
+  color: var(--ink-3);
+  min-height: 52px;
   padding: var(--sp-2) var(--sp-1);
   cursor: pointer;
   position: relative;
 }
 
+/* הטאב הפעיל: כהה ומודגש, עם פס מרווה מעוגל למעלה. */
 .tab[aria-selected='true'] {
   color: var(--ink);
   font-weight: 600;
@@ -181,9 +183,14 @@ body {
   content: '';
   position: absolute;
   top: 0;
-  inset-inline: 22%;
-  height: 2px;
-  background: var(--ink);
+  inset-inline: 18%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--sage);
+}
+
+.tab__dot {
+  background: var(--amber);
 }
 
 .tab__dot {
@@ -588,25 +595,45 @@ button {
 
 /* ---------- באנרים ---------- */
 
+/* באנר = כרטיס רך, לא פס מלא. פס צד: צפחה (הודעה), טרקוטה (שגיאה). */
 .banner {
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--slate);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3) var(--sp-4);
   font-size: 14px;
-  background: var(--paper-sunk);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  margin-bottom: var(--sp-4);
 }
 
 .banner--error {
-  border-color: var(--error);
-  color: var(--error);
-  background: var(--paper);
+  border-inline-start-color: var(--terracotta);
+  color: var(--ink);
+  background: var(--card);
 }
 
+.banner--error .btn--quiet.err {
+  color: var(--terracotta);
+}
+
+/* "נתונים חסרים" (שלב 2): חוסם ובולט — מסגרת טרקוטה מלאה על רקע חם. */
+.banner--blocking {
+  border: 2px solid var(--terracotta);
+  border-inline-start-width: 2px;
+  background: var(--terracotta-soft);
+  box-shadow: none;
+}
+
+/* תזכורת (גיבוי / מותניים): שורה שקטה עם פס ענבר — נתון, לא אזעקה. */
 .notice {
   font-size: 13px;
   color: var(--ink-2);
-  border-inline-start: 2px solid var(--rule-strong);
-  padding-inline-start: var(--sp-3);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--amber);
+  border-radius: var(--radius-card);
+  padding: var(--sp-2) var(--sp-3);
 }
 
 /* ---------- רשתות ורשימות ---------- */
@@ -1026,10 +1053,16 @@ button {
 .resttimer {
   position: fixed;
   inset-inline: 0;
-  bottom: calc(var(--tap) + env(safe-area-inset-bottom));
+  bottom: calc(52px + env(safe-area-inset-bottom));
   z-index: 25;
-  background: var(--paper);
-  border-top: 1px solid var(--ink);
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--divider);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.resttimer__count {
+  color: var(--ink);
 }
 
 .resttimer__inner {
@@ -1062,7 +1095,7 @@ button {
 
 /* מרווח נוסף בתחתית המסך כשהטיימר רץ, כדי שלא יכסה תוכן */
 .app__main--timer {
-  padding-bottom: calc(var(--tap) * 2 + var(--sp-6) + env(safe-area-inset-bottom));
+  padding-bottom: calc(52px + var(--tap) + var(--sp-6) + env(safe-area-inset-bottom));
 }
 
 /* ---------- תזונה ---------- */
