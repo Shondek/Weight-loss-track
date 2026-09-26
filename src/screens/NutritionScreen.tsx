@@ -127,9 +127,20 @@ type QtyProps = {
  * הערך שיוצא תמיד בגרמים — זה מה שנשמר.
  */
 function QtyControl({ unit, grams, onChange, label }: QtyProps) {
-  const [gramsMode, setGramsMode] = useState(() => unit.kind === 'grams' || (unit.kind !== 'unit' && !onUnitGrid(unit, grams)));
+  const startInGrams = () => unit.kind === 'grams' || (unit.kind !== 'unit' && !onUnitGrid(unit, grams));
+  const [gramsMode, setGramsMode] = useState(startInGrams);
   const [text, setText] = useState(String(grams));
   useEffect(() => setText(String(grams)), [grams]);
+  /**
+   * היחידה יכולה להשתנות אחרי הרינדור הראשון — מאגר המזון נטען אחרי המסך,
+   * ועד אז כל מזון נפתר ל"גרמים". כשהיחידה מתחלפת, מצב הגרמים נקבע מחדש;
+   * בחירה ידנית של המשתמש (המעבר "ג׳") נשמרת כל עוד היחידה אותה יחידה.
+   */
+  const unitKey = unit.kind === 'grams' || unit.kind === 'unit' ? unit.kind : `${unit.kind}:${unit.label}:${unit.g}`;
+  useEffect(() => {
+    setGramsMode(startInGrams());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unitKey]);
 
   if (unit.kind === 'unit') {
     const n = Math.max(unit.min, Math.min(unit.max, Math.round(grams)));
