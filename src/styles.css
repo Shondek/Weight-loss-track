@@ -528,14 +528,15 @@ button {
   gap: var(--sp-1);
 }
 
+/* צ'יפ לחיץ: מסגרת רכה, מעוגל; הנבחר מתמלא במרווה. אותם ערכים ושדות. */
 .choice__btn {
   appearance: none;
   min-height: var(--tap);
   min-width: var(--tap);
   flex: 1 0 var(--tap);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
   color: var(--ink);
   font-size: 15px;
   font-variant-numeric: tabular-nums;
@@ -543,9 +544,9 @@ button {
 }
 
 .choice__btn[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  background: var(--sage);
+  color: #fff;
+  border-color: var(--sage);
   font-weight: 500;
 }
 
@@ -553,6 +554,7 @@ button {
   display: grid;
   /* חמש עמודות: 1–10 יוצא 5+5, 0–10 יוצא 5+5+1, 0–7 יוצא 5+3 */
   grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-2);
 }
 
 .choice--big .choice__btn {
@@ -582,6 +584,13 @@ button {
   color: var(--ink-2);
   font-size: 16px;
   font-weight: 400;
+}
+
+/* כרטיסי A/B/C: הנבחר ("הבא בתור") כהה — זו הפעולה הראשית של הכרטיס. */
+.choice--big .choice__btn[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
 }
 
 .choice--big .choice__btn--aside[aria-pressed='true'] {
@@ -822,12 +831,18 @@ button {
   font-size: 13px;
   line-height: 1.55;
   white-space: pre-wrap;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
   padding: var(--sp-3);
-  background: var(--paper-sunk);
+  background: var(--cream);
   min-height: 240px;
   color: var(--ink);
+}
+
+textarea {
+  border-color: var(--border);
+  border-radius: 8px;
+  background: var(--card);
 }
 
 /* ---------- תרגיל ---------- */
