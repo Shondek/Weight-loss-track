@@ -6,15 +6,19 @@ import ConfirmButton from '../components/ConfirmButton';
 import DateField from '../components/DateField';
 import WeekNav from '../components/WeekNav';
 import WeeklyChart from '../components/WeeklyChart';
+import NumberField from '../components/NumberField';
 import {
   addDays,
   compareISO,
   dayLetter,
+  dayName,
   formatDM,
   formatDMY,
   weekDays,
   weekNumber,
 } from '../lib/date';
+import { canStepForward, defaultStepsDate, recentSteps, stepsGoalFor, stepsStatus } from '../lib/steps';
+import { setDaySteps, stepsOn } from '../lib/nutrition/days';
 import {
   daysSinceWaist,
   lastWaist,
@@ -32,7 +36,7 @@ import {
   waistReminderDue,
   WEEK_LENGTH,
 } from '../lib/weights';
-import { MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../lib/schema';
+import { MAX_DAY_STEPS, MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../lib/schema';
 import { programStartWeek } from '../lib/db';
 import { daysSinceBackup, needsBackupReminder } from '../lib/backup';
 import { DASH } from '../lib/format';
@@ -50,6 +54,9 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   const [draft, setDraft] = useState<number | null>(null);
   const [waistDate, setWaistDate] = useState(today);
   const [waistDraft, setWaistDraft] = useState<number | null>(null);
+  /** צעדים (שלב 6): מוזנים בבוקר על אתמול, יחד עם השקילה. */
+  const [stepsDate, setStepsDate] = useState(() => defaultStepsDate(today));
+  const [stepsDraft, setStepsDraft] = useState<number | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const savedTimer = useRef<number | undefined>(undefined);
   /** שורת שקילה פתוחה ב"שקילות אחרונות" — רק בה מוצג כפתור המחיקה. */
@@ -74,6 +81,24 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   // ברירת המחדל של השדה היא השקילה האחרונה: לאשר או לשנות, לא להקליד מחדש.
   const existing = db.weights.find((e) => e.d === entryDate) ?? null;
   const weightValue = draft ?? existing?.w ?? last?.w ?? null;
+
+  const stepsExisting = stepsOn(db.days, stepsDate);
+  const stepsValue = stepsDraft ?? stepsExisting;
+  const stepsGoal = stepsGoalFor(stepsDate);
+  const stepsRecent = useMemo(() => recentSteps(db.days, stepsDate), [db.days, stepsDate]);
+  const stepsLabel =
+    stepsDate === addDays(today, -1) ? 'צעדים אתמול' : stepsDate === today ? 'צעדים היום' : `צעדים · יום ${dayName(stepsDate)}`;
+
+  const moveStepsDate = (d: string) => {
+    setStepsDate(d);
+    setStepsDraft(null);
+  };
+
+  const saveSteps = () => {
+    if (stepsValue === null) return;
+    void store.update('days', setDaySteps(db.days, stepsDate, stepsValue));
+    setStepsDraft(null);
+  };
 
   const waistLast = useMemo(() => lastWaist(db.waist), [db.waist]);
   const waistExisting = db.waist.find((e) => e.d === waistDate) ?? null;
@@ -267,6 +292,80 @@ export default function WeightScreen({ store, today }: ScreenProps) {
           >
             {savedFlash ? 'נשמר' : existing ? 'עדכן שקילה' : 'שמור שקילה'}
           </button>
+        </div>
+      </section>
+
+      {/* צעדים (שלב 6): כרטיס קומפקטי — אתמול כברירת מחדל, דפדוף אחורה, לא אל העתיד. */}
+      <section className="section">
+        <div className="section__head">
+          <h2>צעדים</h2>
+          {stepsGoal !== null ? (
+            <span className="tiny muted">
+              יעד <span className="num">{stepsGoal.toLocaleString('en-US')}</span>
+            </span>
+          ) : (
+            <span className="tiny muted">הזנה ידנית, בבוקר</span>
+          )}
+        </div>
+        <div className="stack--tight">
+          <div className="weeknav">
+            <button
+              type="button"
+              className="btn btn--step"
+              aria-label="יום קודם"
+              onClick={() => moveStepsDate(addDays(stepsDate, -1))}
+            >
+              ›
+            </button>
+            <div className="weeknav__label">
+              {stepsLabel} · <span className="num">{formatDM(stepsDate)}</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn--step"
+              aria-label="יום הבא"
+              disabled={!canStepForward(stepsDate, today)}
+              onClick={() => canStepForward(stepsDate, today) && moveStepsDate(addDays(stepsDate, 1))}
+            >
+              ‹
+            </button>
+          </div>
+          <div className="row">
+            <div className="grow">
+              <NumberField
+                label={`צעדים — ${formatDMY(stepsDate)}`}
+                hideLabel
+                value={stepsValue}
+                onChange={setStepsDraft}
+                min={0}
+                max={MAX_DAY_STEPS}
+                placeholder="צעדים"
+              />
+            </div>
+            <button type="button" className="btn" disabled={stepsValue === null} onClick={saveSteps}>
+              {stepsExisting !== null ? 'עדכן' : 'שמור'}
+            </button>
+            {stepsExisting !== null && (
+              <ConfirmButton
+                className="btn btn--danger"
+                ariaLabel={`מחק צעדים של ${formatDMY(stepsDate)}`}
+                onConfirm={() => void store.update('days', setDaySteps(db.days, stepsDate, null))}
+              />
+            )}
+          </div>
+          <div className="steps-row" role="list" aria-label="צעדים בשבעת הימים האחרונים">
+            {stepsRecent.map(({ d, steps }) => {
+              const status = steps === null ? null : stepsStatus(steps, d);
+              return (
+                <div key={d} role="listitem" className={`steps-day${d === stepsDate ? ' is-current' : ''}`}>
+                  <span className="tiny muted">{dayLetter(d)}</span>
+                  <span className={`num steps-val${status ? ` steps-val--${status}` : ''}`}>
+                    {steps === null ? DASH : steps.toLocaleString('en-US')}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 

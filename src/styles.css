@@ -1909,3 +1909,37 @@ input[type='file']::file-selector-button {
   font-size: 15px;
   font-weight: 500;
 }
+
+/* צעדים (שלב 6): שורת שבעת הימים האחרונים */
+.steps-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--sp-1);
+  text-align: center;
+}
+
+.steps-day {
+  display: grid;
+  gap: 2px;
+  padding: var(--sp-1) 0;
+  border: 1px solid transparent;
+  border-radius: var(--nut-radius);
+}
+
+.steps-day.is-current {
+  border-color: var(--nut-border);
+  background: var(--nut-cream);
+}
+
+.steps-val {
+  font-size: 13px;
+}
+
+/* מול היעד (מ-1/11): מרווה = עמד, אפור-צפחה = מתחת. לפני כן — בלי צבע. */
+.steps-val--ok {
+  color: var(--nut-sage);
+}
+
+.steps-val--low {
+  color: var(--nut-slate);
+}
