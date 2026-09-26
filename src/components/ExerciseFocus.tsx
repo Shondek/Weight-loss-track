@@ -3,13 +3,16 @@ import type { LoggedExercise, LoggedSet, Rir } from '../types';
 import type { Exercise } from '../data/program';
 import { WEIGHT_STEP } from '../data/config';
 import type { ExerciseHistory } from '../lib/workouts';
-import { emptySet, lastWeightOf, progressPoints, setPerformed, setValue } from '../lib/workouts';
+import { emptySet, hasData, lastWeightOf, progressPoints, setPerformed, setValue, swappedFromLabel } from '../lib/workouts';
 import { formatDM } from '../lib/date';
 import { clean, DASH } from '../lib/format';
 import Stepper from './Stepper';
 import NumberField from './NumberField';
 import ExerciseChart from './ExerciseChart';
-import { suggestionLabel, type Suggestion } from '../lib/progression';
+import { alternateHint, suggestionLabel, type Suggestion } from '../lib/progression';
+
+/** חלופה שמוצעת ב"החלף": המפרט שלה והביצוע האחרון שלה (לפי המזהה שלה). */
+export type AlternateOption = { spec: Exercise; last: ExerciseHistory | null };
 
 type Props = {
   spec: Exercise;
@@ -31,6 +34,12 @@ type Props = {
   suggestion?: Suggestion | null | undefined;
   /** "דלג ואחזור" (שלב 4.1): מזיז את התרגיל לסוף האימון. חסר = לא מוצג. */
   onSkip?: (() => void) | undefined;
+  /** "החלף" (שלב 4.1): החלופות לתא הזה. ריק/חסר = אין כפתור. */
+  alternates?: readonly AlternateOption[] | undefined;
+  /** נבחרה חלופה — מחליפה את התרגיל לאימון הזה בלבד. */
+  onSwap?: ((alt: Exercise) => void) | undefined;
+  /** מחזיר את התרגיל המקורי לתא. מוצג רק בשורה שהוחלפה ועדיין בלי נתונים. */
+  onUnswap?: (() => void) | undefined;
 };
 
 const MAX_WEIGHT = 500;
@@ -80,6 +89,9 @@ export default function ExerciseFocus({
   onToggleHistory,
   suggestion = null,
   onSkip,
+  alternates = [],
+  onSwap,
+  onUnswap,
 }: Props) {
   const timed = spec.isTimed;
   // תרגיל זמן עם משקל (פלאנק + פלטה): שדה משקל אופציונלי; ריק = משקל גוף.
@@ -87,7 +99,13 @@ export default function ExerciseFocus({
   const side = sideLabel(spec);
   const weight = lastWeightOf(log);
   const [showAll, setShowAll] = useState(false);
+  const [swapOpen, setSwapOpen] = useState(false);
   const historyId = useId();
+  const altsId = useId();
+  const swapped = swappedFromLabel(log);
+  const hint = alternateHint(suggestion, log.swappedFrom !== undefined);
+  const canSwap = onSwap !== undefined && alternates.length > 0 && log.swappedFrom === undefined;
+  const canUnswap = onUnswap !== undefined && log.swappedFrom !== undefined && !hasData(log);
   const measure = timed ? 'seconds' : usesWeight ? 'weight' : 'reps';
   const unit = timed ? 'שנ׳' : usesWeight ? 'ק״ג' : 'חזרות';
   const points = progressPoints(fullHistory, measure);
@@ -137,6 +155,12 @@ export default function ExerciseFocus({
         )}
       </h3>
 
+      {swapped && (
+        <p className="tiny wk-swapped" style={{ margin: 0 }}>
+          {swapped}
+        </p>
+      )}
+
       <div className="row row--between row--baseline focus__meta">
         <span className="tiny muted grow" style={{ direction: 'ltr', textAlign: 'start' }}>
           {spec.machine ?? 'משקל גוף'}
@@ -157,12 +181,54 @@ export default function ExerciseFocus({
 
       {spec.note && <p className="focus__note small">{spec.note}</p>}
 
-      {onSkip && (
+      {(onSkip || canSwap || canUnswap) && (
         <div className="wk-actions">
-          <button type="button" className="btn btn--quiet btn--outlined" onClick={onSkip}>
-            דלג ואחזור
-          </button>
+          {onSkip && (
+            <button type="button" className="btn btn--quiet btn--outlined" onClick={onSkip}>
+              דלג ואחזור
+            </button>
+          )}
+          {canSwap && (
+            <button
+              type="button"
+              className="btn btn--quiet btn--outlined"
+              aria-expanded={swapOpen}
+              aria-controls={altsId}
+              onClick={() => setSwapOpen((v) => !v)}
+            >
+              החלף
+            </button>
+          )}
+          {canUnswap && (
+            <button type="button" className="btn btn--quiet btn--outlined" onClick={onUnswap}>
+              בטל החלפה
+            </button>
+          )}
         </div>
+      )}
+
+      {/* "החלף": רשימת החלופות לתא — שם, הערה, והביצוע האחרון של החלופה עצמה. */}
+      {canSwap && swapOpen && (
+        <ul id={altsId} className="list list--block wk-alts" aria-label={`חלופות ל-${spec.name}`}>
+          {alternates.map((a) => (
+            <li key={a.spec.id}>
+              <button
+                type="button"
+                className="btn btn--quiet wk-alt"
+                onClick={() => {
+                  setSwapOpen(false);
+                  onSwap?.(a.spec);
+                }}
+              >
+                <span className="wk-alt__name">{a.spec.name}</span>
+                {a.spec.note && <span className="tiny muted">{a.spec.note}</span>}
+                <span className="tiny muted num">
+                  {a.last ? `אחרון: ${historyText(a.last, a.spec.isTimed, !a.spec.bodyweightOnly)}` : 'אין ביצוע קודם'}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       {/*
@@ -225,6 +291,13 @@ export default function ExerciseFocus({
           </div>
         )}
       </div>
+
+      {/* חלופה בלי היסטוריה משלה: הנחיה במקום כלל. */}
+      {hint && (
+        <div className="wk-suggest wk-suggest--unknown" role="note">
+          <span className="small">{hint}</span>
+        </div>
+      )}
 
       {/* הצעה לאימון הבא — מוצגת בלבד; השדה מתמלא רק בלחיצה על "השתמש". */}
       {suggestion && (

@@ -16,13 +16,24 @@ import {
   WORKOUTS_PER_WEEK,
   WORKOUT_TITLES,
   WORKOUT_TYPES,
+  alternatesFor,
   exerciseById,
   exerciseIn,
   restSeconds,
 } from '../data/program';
 import { HISTORY_ROWS } from '../data/config';
 import { suggestNext } from '../lib/progression';
-import { moveToEnd, orderOf, reorderLike } from '../lib/workouts';
+import {
+  blankLoggedExercise,
+  lastExercise,
+  moveToEnd,
+  openingWeight,
+  orderOf,
+  reorderLike,
+  swapExercise,
+  swappedFromLabel,
+} from '../lib/workouts';
+import type { AlternateOption } from '../components/ExerciseFocus';
 import {
   cardioDetailLine,
   cardioLine,
@@ -194,7 +205,10 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
           <ul className="list list--block small">
             {w.ex.filter(hasData).map((e) => (
               <li key={e.exerciseId}>
-                <div>{exerciseLine(e)}</div>
+                <div>
+                  {exerciseLine(e)}
+                  {swappedFromLabel(e) && <span className="tiny wk-swapped"> · {swappedFromLabel(e)}</span>}
+                </div>
                 {isCardio(e) && cardioDetailLine(e) && (
                   <p className="tiny muted" style={{ margin: 0 }}>
                     {cardioDetailLine(e)}
@@ -388,11 +402,23 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const defaultDate = compareISO(week, weekStart(today)) === 0 ? today : weekEnd(week);
 
   /**
+   * שורה שהוחלפה (שלב 4.1): המפרט של החלופה, עם הסטים והטווח שנקבעו לתא
+   * בזמן ההחלפה (נשמרים בשורה). כך גם ההצעה מחושבת על הטווח של התא.
+   */
+  const swappedSpecOf = (log: LoggedExercise): Exercise | undefined => {
+    if (log.swappedFrom === undefined) return undefined;
+    const alt = exerciseById(log.exerciseId);
+    if (!alt) return undefined;
+    return { ...alt, sets: log.sets.length, repRangeMin: log.targetRepMin, repRangeMax: log.targetRepMax };
+  };
+
+  /**
    * המפרט לתצוגה: קודם כפי שהוא באימון הזה (סטים/טווח יכולים להיות שונים
    * בין A ל-B), אחרת הזהות הכללית, ותרגיל שירד מהתוכנית עדיין ניתן לעריכה
    * לפי מה שנשמר איתו.
    */
   const specOf = (log: LoggedExercise): Exercise =>
+    swappedSpecOf(log) ??
     (open ? exerciseIn(open.t, log.exerciseId) : undefined) ??
     exerciseById(log.exerciseId) ?? {
       id: log.exerciseId,
@@ -591,6 +617,35 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     if (!open || !skipUndo) return;
     patch({ ...open, ex: reorderLike(rows, skipUndo.ids) });
     setSkipUndo(null);
+  };
+
+  /**
+   * "החלף" (שלב 4.1): החלופות לתא של השורה — רק לשורה שלא הוחלפה, ובלי
+   * תרגיל שכבר נמצא באימון הזה. הביצוע האחרון של כל חלופה לפי המזהה שלה.
+   */
+  const alternativesOf = (row: LoggedExercise): AlternateOption[] => {
+    if (!open || row.swappedFrom !== undefined) return [];
+    return alternatesFor(row.exerciseId)
+      .filter((alt) => !rows.some((r) => r.exerciseId === alt.id))
+      .map((alt) => ({ spec: alt, last: lastExercise(db.workouts, alt.id, open.id) }));
+  };
+
+  /** מחליף את תרגיל התא בחלופה, לאימון הזה בלבד. הרשומה: המזהה של החלופה + swappedFrom. */
+  const swapTo = (row: LoggedExercise, alt: Exercise) => {
+    if (!open) return;
+    const next = swapExercise(specOf(row), alt, openingWeight(db.workouts, alt.id, open.id));
+    setSkipUndo(null);
+    patch({ ...open, ex: rows.map((e) => (e.exerciseId === row.exerciseId ? next : e)) });
+  };
+
+  /** מחזיר את התרגיל המקורי לתא (רק כשעוד לא נרשם דבר בחלופה). */
+  const unswap = (row: LoggedExercise) => {
+    if (!open || row.swappedFrom === undefined) return;
+    const slot = exerciseIn(open.t, row.swappedFrom) ?? exerciseById(row.swappedFrom);
+    if (!slot) return;
+    const next = blankLoggedExercise(slot, openingWeight(db.workouts, slot.id, open.id));
+    setSkipUndo(null);
+    patch({ ...open, ex: rows.map((e) => (e.exerciseId === row.exerciseId ? next : e)) });
   };
 
   /** פותח אימון קיים לעריכה ומעביר את התצוגה לשבוע שלו. */
@@ -937,6 +992,9 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               historyOpen={historyOpen}
               onToggleHistory={() => setHistoryOpen((v) => !v)}
               onSkip={rows.filter((r) => !isCardio(r)).length > 1 ? () => skipExercise(current) : undefined}
+              alternates={alternativesOf(current)}
+              onSwap={(alt) => swapTo(current, alt)}
+              onUnswap={() => unswap(current)}
             />
           )}
 

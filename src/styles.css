@@ -1881,3 +1881,31 @@ input[type='file']::file-selector-button {
   gap: var(--sp-2);
   margin-top: var(--sp-2);
 }
+
+/* "הוחלף מ-…" — סימון עובדתי, בענבר */
+.wk-swapped {
+  color: var(--confidence-mid);
+}
+
+/* רשימת החלופות */
+.wk-alts {
+  margin-top: var(--sp-2);
+  border: 1px solid var(--nut-border);
+  border-radius: var(--nut-radius);
+  background: var(--nut-cream);
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.wk-alt {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  text-align: start;
+  padding: var(--sp-2) var(--sp-1);
+}
+
+.wk-alt__name {
+  font-size: 15px;
+  font-weight: 500;
+}

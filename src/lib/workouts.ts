@@ -475,13 +475,16 @@ export function exercisesFor(
   // (רשומה ישנה) מקבל שורה ריקה במקומו לפי סדר התוכנית.
   const inProgram = new Set(PROGRAM[entry.t].map((spec) => spec.id));
   // שורה שאינה בתוכנית ואין בה נתון (תרגיל שירד ולא בוצע) לא מוצגת — כמו קודם.
-  const strength: LoggedExercise[] = entry.ex.filter((e) => !isCardio(e) && (inProgram.has(e.exerciseId) || hasData(e)));
-  const placed = new Set(strength.map((r) => r.exerciseId));
+  // שורה שהוחלפה (swappedFrom) תופסת את התא של התרגיל המקורי.
+  const strength: LoggedExercise[] = entry.ex.filter(
+    (e) => !isCardio(e) && (inProgram.has(slotOf(e)) || hasData(e)),
+  );
+  const placed = new Set(strength.map(slotOf));
   const missing = PROGRAM[entry.t].filter((spec) => !placed.has(spec.id));
   const rows: LoggedExercise[] = [warmup];
   // סדר: מה שנשמר (עם השלמת סטים למפרט), ואחריו תאים חסרים לפי התוכנית.
   for (const e of strength) {
-    const spec = PROGRAM[entry.t].find((x) => x.id === e.exerciseId);
+    const spec = PROGRAM[entry.t].find((x) => x.id === slotOf(e));
     rows.push(spec ? withSetCount(e, spec.sets) : e);
   }
   for (const spec of missing) {
@@ -497,6 +500,36 @@ export function exercisesFor(
  * "דלג ואחזור" (שלב 4.1): מזיז תרגיל כוח לסוף סדר הכוח של האימון. חימום
  * נשאר ראשון ואירובי סיום אחרון. הסדר שנשמר = הסדר שיבוצע. לא נוגע בנתונים.
  */
+// ---------- החלפה חד-פעמית (שלב 4.1) ----------
+
+/** התא בתוכנית שהשורה ממלאת: התרגיל המקורי אם הוחלף, אחרת התרגיל עצמו. */
+export function slotOf(ex: LoggedExercise): string {
+  return ex.swappedFrom ?? ex.exerciseId;
+}
+
+/**
+ * שורה חדשה לחלופה במקום תרגיל התא, לאימון הזה בלבד. המזהה והשם הם של
+ * החלופה (ההיסטוריה וההתקדמות לפי מזהה), `swappedFrom` מצביע על המקורי.
+ * מספר הסטים והטווח מהתא — החלופה ממלאת את המקום שלו; חלופת זמן בתא של
+ * חזרות (או להפך) שומרת את טווח השניות שלה (30–45). המשקל הפותח הוא
+ * המשקל האחרון של החלופה עצמה.
+ */
+export function swapExercise(slot: Exercise, alt: Exercise, weight: number | null = null): LoggedExercise {
+  const sameKind = slot.isTimed === alt.isTimed;
+  const spec: Exercise = {
+    ...alt,
+    sets: slot.sets,
+    ...(sameKind ? { repRangeMin: slot.repRangeMin, repRangeMax: slot.repRangeMax } : {}),
+  };
+  return { ...blankLoggedExercise(spec, weight), swappedFrom: slot.id };
+}
+
+/** "הוחלף מ-<שם המקורי>" לשורה שהוחלפה, אחרת null. */
+export function swappedFromLabel(ex: LoggedExercise): string | null {
+  if (ex.swappedFrom === undefined) return null;
+  return `הוחלף מ-${exerciseById(ex.swappedFrom)?.name ?? ex.swappedFrom}`;
+}
+
 export function moveToEnd(ex: readonly LoggedExercise[], exerciseId: string): LoggedExercise[] {
   const target = ex.find((e) => e.exerciseId === exerciseId && !isCardio(e));
   if (!target) return [...ex];
