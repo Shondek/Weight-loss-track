@@ -1,4 +1,4 @@
-/** מטא-נתונים של ימי תזונה: "סיימתי לרשום" וארוחת שישי. מודול טהור. */
+/** מטא-נתונים של ימים: "סיימתי לרשום", ארוחת שישי, וצעדים (שלב 6). מודול טהור. */
 
 import type { DayMeta, FridayTier, ISODate } from '../../types';
 import { compareISO } from '../date';
@@ -38,4 +38,17 @@ export function setFridayTier(list: readonly DayMeta[], d: ISODate, tier: Friday
   const { fridayTier: _drop, ...rest } = current;
   void _drop;
   return upsertDay(list, tier === null ? rest : { ...rest, fridayTier: tier });
+}
+
+/** צעדי היום, או null כשלא הוזנו. */
+export function stepsOn(list: readonly DayMeta[], d: ISODate): number | null {
+  return dayMeta(list, d)?.steps ?? null;
+}
+
+/** קובע או מסיר (null) את צעדי היום. שאר השדות (סגירה, שישי) לא משתנים. */
+export function setDaySteps(list: readonly DayMeta[], d: ISODate, steps: number | null): DayMeta[] {
+  const current = dayMeta(list, d) ?? { d, closed: false };
+  const { steps: _drop, ...rest } = current;
+  void _drop;
+  return upsertDay(list, steps === null ? rest : { ...rest, steps });
 }

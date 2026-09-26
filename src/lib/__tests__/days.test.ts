@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseDays, parseDb } from '../schema';
-import { dayMeta, isDayClosed, setDayClosed, setFridayTier, upsertDay } from '../nutrition/days';
+import { dayMeta, isDayClosed, setDayClosed, setDaySteps, setFridayTier, stepsOn, upsertDay } from '../nutrition/days';
 import { mergeDb } from '../db';
 import { buildBackup } from '../exportText';
 import { emptyDb, type DayMeta, type DB } from '../../types';
@@ -81,5 +81,70 @@ describe('days — גיבוי, ייבוא, מיזוג', () => {
       db({ days: [D] }),
     );
     expect(merged.days).toEqual([{ d: '2026-09-20', closed: true }, D]);
+  });
+});
+
+describe('צעדים (שלב 6)', () => {
+  it('פרסור: שלם 0–100,000 נשמר; חסר/null → אין שדה; רשומה ישנה נטענת בלי שינוי', () => {
+    const r = parseDays([
+      { d: '2026-09-25', closed: true, steps: 9812 },
+      { d: '2026-09-24', closed: false, steps: 0 },
+      { d: '2026-09-23', closed: false, steps: null },
+      { d: '2026-09-22', closed: true, closedAt: '2026-09-22T21:00:00.000Z', fridayTier: 'large' },
+    ]);
+    expect(r.rejected).toEqual([]);
+    expect(r.ok).toEqual([
+      { d: '2026-09-22', closed: true, closedAt: '2026-09-22T21:00:00.000Z', fridayTier: 'large' },
+      { d: '2026-09-23', closed: false },
+      { d: '2026-09-24', closed: false, steps: 0 },
+      { d: '2026-09-25', closed: true, steps: 9812 },
+    ]);
+  });
+
+  it('150000 / 8.5 / "x" / −1 → רק השדה נשמט, היום נשאר (closed נשאר true), והשורה הגולמית נדחית עם reason "steps"', () => {
+    for (const bad of [150000, 8.5, 'x', -1]) {
+      const row = { d: '2026-09-25', closed: true, closedAt: '2026-09-25T21:00:00.000Z', fridayTier: 'regular', steps: bad };
+      const r = parseDays([row]);
+      expect(r.ok).toEqual([{ d: '2026-09-25', closed: true, closedAt: '2026-09-25T21:00:00.000Z', fridayTier: 'regular' }]);
+      expect(r.rejected).toHaveLength(1);
+      expect(r.rejected[0]?.raw).toBe(row);
+      expect(r.rejected[0]?.reason).toMatch(/^steps/);
+    }
+  });
+
+  it('ייבוא: צעדים שבורים → הסגר במפתח days, היום נשמר; גיבוי ומיזוג שומרים צעדים; גיבוי ישן בלי צעדים נקלט כמו קודם', () => {
+    const r = parseDb({ v: 2, days: [{ d: '2026-09-25', closed: true, steps: 150000 }] });
+    expect(r.db.days).toEqual([{ d: '2026-09-25', closed: true }]);
+    expect(r.db.quarantine.map((q) => [q.key, q.raw])).toEqual([['days', { d: '2026-09-25', closed: true, steps: 150000 }]]);
+    expect(r.rejected).toEqual([{ section: 'ימים', reason: expect.stringMatching(/^steps/), count: 1 }]);
+
+    const D: DayMeta = { d: '2026-09-25', closed: true, closedAt: '2026-09-25T21:00:00.000Z', steps: 9812 };
+    const b = buildBackup(db({ days: [D] }), '2026-09-26T00:00:00.000Z');
+    expect(b.days).toEqual([D]);
+    const roundTrip = parseDb(JSON.parse(JSON.stringify(b)));
+    expect(roundTrip.db.days).toEqual([D]);
+    expect(roundTrip.rejected).toEqual([]);
+
+    const merged = mergeDb(db({ days: [{ d: '2026-09-25', closed: false }] }), db({ days: [D] }));
+    expect(merged.days).toEqual([D]);
+    const back = mergeDb(db({ days: [D] }), db({ days: [{ d: '2026-09-25', closed: false }] }));
+    expect(back.days).toEqual([{ d: '2026-09-25', closed: false }]);
+
+    const old = parseDb({ v: 2, days: [{ d: '2026-09-25', closed: true, fridayTier: 'regular' }] });
+    expect(old.db.days).toEqual([{ d: '2026-09-25', closed: true, fridayTier: 'regular' }]);
+    expect(old.rejected).toEqual([]);
+  });
+
+  it('setDaySteps קובע/מסיר בלי לגעת בסגירה ובשישי; stepsOn', () => {
+    let list: DayMeta[] = [{ d: '2026-09-25', closed: true, closedAt: '2026-09-25T21:00:00.000Z', fridayTier: 'regular' }];
+    list = setDaySteps(list, '2026-09-25', 9812);
+    expect(dayMeta(list, '2026-09-25')).toEqual({ d: '2026-09-25', closed: true, closedAt: '2026-09-25T21:00:00.000Z', fridayTier: 'regular', steps: 9812 });
+    expect(stepsOn(list, '2026-09-25')).toBe(9812);
+    list = setDaySteps(list, '2026-09-24', 7000);
+    expect(dayMeta(list, '2026-09-24')).toEqual({ d: '2026-09-24', closed: false, steps: 7000 });
+    list = setDaySteps(list, '2026-09-25', null);
+    expect(dayMeta(list, '2026-09-25')).toEqual({ d: '2026-09-25', closed: true, closedAt: '2026-09-25T21:00:00.000Z', fridayTier: 'regular' });
+    expect(stepsOn(list, '2026-09-25')).toBeNull();
+    expect(stepsOn(list, '2026-09-01')).toBeNull();
   });
 });
