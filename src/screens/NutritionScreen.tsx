@@ -344,8 +344,9 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     <div className="nut stack--loose">
       {/* ---------- שורת תאריך ---------- */}
       <section className="nut-daybar" aria-label="יום">
+        {/* RTL: "קודם" יושב מימין ומצביע ימינה, "הבא" משמאל ומצביע שמאלה. */}
         <button type="button" className="btn btn--quiet" aria-label="יום קודם" onClick={() => setDay(addDays(day, -1))}>
-          ‹
+          ›
         </button>
         <div className="nut-daybar__label">
           <span className="strong">{isToday ? 'היום' : dayName(day)}</span>
@@ -355,7 +356,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           {estimated && <span className="nut-badge"> כולל הערכות</span>}
         </div>
         <button type="button" className="btn btn--quiet" aria-label="יום הבא" disabled={isToday} onClick={() => setDay(addDays(day, 1))}>
-          ›
+          ‹
         </button>
       </section>
 
