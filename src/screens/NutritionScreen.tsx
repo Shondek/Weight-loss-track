@@ -54,6 +54,7 @@ import { dayMeta, setDayClosed, setFridayTier } from '../lib/nutrition/days';
 import { KCAL_FLOOR, targetFor } from '../lib/nutrition/targets';
 import { daySummary, entryNutrition } from '../lib/nutrition/calc';
 import { kcalText } from '../lib/nutrition/display';
+import { compositionLine } from '../lib/nutrition/composition';
 
 const SEARCH_LIMIT = 12;
 const RECENT_LIMIT = 6;
@@ -163,6 +164,10 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   const { db } = store;
   const foodIndex = useFoodIndex(db.customFoods);
   const resolve = (id: string) => resolveFood(foodIndex.index, id);
+  /** המזון שלי לפי מזהה — למתכון ולהערה. מזון שנמחק → null, ואין שורה. */
+  const customOf = (id: string) => db.customFoods.find((f) => f.id === id) ?? null;
+  /** שורת התכולה של מנה מורכבת, או null. */
+  const compositionOf = (id: string) => compositionLine(customOf(id)?.recipe, (i) => resolve(i)?.name ?? null);
 
   // ---------- היום המוצג ----------
   const [day, setDay] = useState(today);
@@ -502,6 +507,9 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                       {item.name}
                       {item.kind === 'adhoc' && <span className="tiny muted"> · הערכה</span>}
                     </span>
+                    {item.kind === 'food' && compositionOf(item.foodId) && (
+                      <span className="nut-comp">{compositionOf(item.foodId)}</span>
+                    )}
                     <span className="nut-quick__nums tiny muted">
                       <span className="num">{int(v.kcal)}</span> קק"ל · <span className="num">{int(v.protein)}</span> חלבון ·{' '}
                       <span className="num">{item.days}</span> ימים
@@ -558,6 +566,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                 ✕
               </button>
             </div>
+            {compositionOf(selected.id) && <span className="nut-comp nut-comp--full">{compositionOf(selected.id)}</span>}
             <div className="nut-selected__row">
               <QtyControl unitFood={selected.unitFood} value={selGrams} label={selected.name} onChange={setSelGrams} />
               <span className="tiny muted grow">
@@ -580,10 +589,11 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                   return (
                     <li key={f.id} role="option" aria-selected={false}>
                       <button type="button" className="results__btn" onClick={() => pick(f)}>
-                        <span className="grow">
+                        <span className="grow nut-result">
                           {f.name}
                           {f.source === 'custom' && !f.isRecipe && <span className="tiny muted"> · שלי</span>}
                           {f.isRecipe && <span className="tiny muted"> · מנה</span>}
+                          {compositionOf(f.id) && <span className="nut-comp">{compositionOf(f.id)}</span>}
                         </span>
                         <span className="tiny muted num">
                           {f.unitFood ? `×${int(p)}` : `${int(p)} ג׳`} · {int(v.kcal)} קק"ל · {int(v.protein)} ח
@@ -740,6 +750,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                             {n.live === 'differs' && ' · ההגדרה השתנתה'}
                             {n.live === 'missing' && !n.adhoc && ' · המזון נמחק'}
                           </span>
+                          {!isOpen && compositionOf(e.foodId) && <span className="nut-comp">{compositionOf(e.foodId)}</span>}
                         </span>
                         <span className="nut-row__nums num">
                           {int(n.kcal)} <span className="tiny muted">קק"ל</span> · {int(n.protein)} <span className="tiny muted">ח</span>
@@ -747,6 +758,12 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                       </button>
                       {isOpen && (
                         <div className="nut-row__edit">
+                          {(compositionOf(e.foodId) || customOf(e.foodId)?.note) && (
+                            <p className="nut-row__about tiny muted">
+                              {compositionOf(e.foodId) && <span className="nut-comp nut-comp--full">{compositionOf(e.foodId)}</span>}
+                              {customOf(e.foodId)?.note && <span className="nut-comp nut-comp--full">{customOf(e.foodId)?.note}</span>}
+                            </p>
+                          )}
                           {!n.adhoc && (
                             <QtyControl
                               unitFood={e.ref.unitFood === true}
