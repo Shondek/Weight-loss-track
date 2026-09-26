@@ -169,9 +169,12 @@ export function buildChatReport(db: DB, week: ISODate, today: ISODate): string {
 
 // ---------- גיבוי JSON ----------
 
+/** גרסת קובץ הגיבוי. 2 = סטים באורך משתנה עם משקל לכל סט; 1 = הפורמט הישן, עדיין נקלט בייבוא. */
+export const BACKUP_VERSION = 2;
+
 export type BackupFile = {
-  /** 2 = סטים באורך משתנה עם משקל לכל סט. 1 = הפורמט הישן, עדיין נקלט בייבוא. */
-  v: 2;
+  /** ראה `BACKUP_VERSION`. */
+  v: typeof BACKUP_VERSION;
   exported: string;
   weights: DB['weights'];
   workouts: DB['workouts'];
@@ -199,7 +202,7 @@ export type BackupFile = {
 /** גיבוי מלא. `exportedAt` מגיע מבחוץ כדי שהמודול יישאר טהור. */
 export function buildBackup(db: DB, exportedAt: string): BackupFile {
   return {
-    v: 2,
+    v: BACKUP_VERSION,
     exported: exportedAt,
     weights: db.weights,
     workouts: db.workouts,

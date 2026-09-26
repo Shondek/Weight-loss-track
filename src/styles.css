@@ -303,6 +303,17 @@ h3 {
   margin-top: 0;
 }
 
+/* אזור מסוכן (מסך נתונים): מופרד, מסגרת טרקוטה מקווקוות על רקע חם. */
+.section--danger {
+  border: 1px dashed var(--terracotta);
+  background: var(--terracotta-soft);
+  box-shadow: none;
+}
+
+.stack--loose > .section--danger {
+  margin-top: var(--sp-6);
+}
+
 /* סעיף בתוך כרטיס: קו הפרדה בלבד, בלי כרטיס בתוך כרטיס. */
 .section .section {
   background: none;
@@ -584,6 +595,12 @@ button {
   color: var(--ink-2);
   font-size: 16px;
   font-weight: 400;
+}
+
+/* "החלפה" בייבוא: בחירה הרסנית — טרקוטה במקום מרווה. */
+.choice__btn--danger[aria-pressed='true'] {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
 }
 
 /* כרטיסי A/B/C: הנבחר ("הבא בתור") כהה — זו הפעולה הראשית של הכרטיס. */
