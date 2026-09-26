@@ -343,6 +343,25 @@ export const DEFAULT_SETTINGS: Settings = {
   lastBackup: null,
 };
 
+// ---------- ימים ----------
+
+/** ארוחת שישי לפי הערכה: בינונית / רגילה / גדולה (ערכים ב-lib/nutrition/friday.ts). */
+export type FridayTier = 'medium' | 'regular' | 'large';
+
+/**
+ * מטא-נתונים של יום תזונה (שלב 3). `closed` — "סיימתי לרשום היום": יום
+ * שלא נסגר אינו מלא, ואי אפשר להסיק ממנו על קלוריות. `fridayTier` — איזו
+ * הערכת ארוחת שישי נרשמה ליום (הרשומה עצמה היא FoodEntry ידני).
+ * מפתח משלו (`fatloss:days`), בגיבוי, מאוחד לפי תאריך.
+ */
+export type DayMeta = {
+  d: ISODate;
+  closed: boolean;
+  /** ISO 8601, מתי נסגר לאחרונה. */
+  closedAt?: string;
+  fridayTier?: FridayTier;
+};
+
 // ---------- הסגר ----------
 
 /**
@@ -378,6 +397,8 @@ export type DB = {
   entries: FoodEntry[];
   targets: NutritionTarget[];
   favorites: Favorite[];
+  /** מטא-נתונים של ימי תזונה: סגור / ארוחת שישי. */
+  days: DayMeta[];
   /** רשומות שנדחו בקריאה. מפתח משלו (`fatloss:quarantine`), בגיבוי, לא נמחק. */
   quarantine: QuarantineItem[];
 };
@@ -399,6 +420,7 @@ export function emptyDb(): DB {
     entries: [],
     targets: [],
     favorites: [],
+    days: [],
     quarantine: [],
   };
 }

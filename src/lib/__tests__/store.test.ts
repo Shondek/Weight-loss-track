@@ -202,6 +202,7 @@ describe('ייבוא גיבוי מלפני שלב 2 (בלי quarantine)', () => 
       entries: [],
       targets: OLD_BACKUP.targets,
       favorites: OLD_BACKUP.favorites,
+      days: [],
     });
     expect(r.rejected).toEqual([]);
   });
@@ -330,5 +331,22 @@ describe('סמן המיגרציה — localStorage ישן לא חוזר (סיכ�
     const again = await (await store()).loadDB();
     expect(again.missingKeys).toEqual([]);
     expect(again.readErrors).toEqual([]);
+  });
+});
+
+describe('fatloss:days — אותו מסלול כמו כל מפתח (שלב 3)', () => {
+  it('שורה שבורה נכנסת להסגר, התקינות נטענות ונשמרות, המפתח נרשם בסמן', async () => {
+    const good = { d: '2026-09-25', closed: true };
+    h.idb.set('fatloss:days', [good, { d: 'bad', closed: true }]);
+    const s = await store();
+    const res = await s.loadDB();
+    expect(res.db.days).toEqual([good]);
+    expect(res.quarantined).toBe(1);
+    expect(res.db.quarantine[0]).toMatchObject({ key: 'days', raw: { d: 'bad', closed: true } });
+    await s.persist('days', res.db.days);
+    expect(h.idb.get('fatloss:days')).toEqual([good]);
+    expect((h.idb.get('fatloss:meta:ls-migrated') as { keys: string[] }).keys).toContain('days');
+    await s.wipeAll();
+    expect(h.idb.get('fatloss:days')).toBeUndefined();
   });
 });

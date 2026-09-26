@@ -187,6 +187,8 @@ export type BackupFile = {
   entries: DB['entries'];
   targets: DB['targets'];
   favorites: DB['favorites'];
+  /** ימי תזונה (שלב 3): סגור / ארוחת שישי. אופציונלי — גיבוי ישן נקלט כרגיל. */
+  days?: DB['days'];
   /**
    * רשומות שנדחו בקריאה (שלב 2). אופציונלי: גיבוי מלפני השדה נקלט כרגיל,
    * וגיבוי עם השדה מתמזג לפי טביעת אצבע.
@@ -210,6 +212,7 @@ export function buildBackup(db: DB, exportedAt: string): BackupFile {
     entries: db.entries,
     targets: db.targets,
     favorites: db.favorites,
+    days: db.days,
     quarantine: db.quarantine,
   };
 }

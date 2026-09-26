@@ -242,7 +242,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
             רישומי אכילה <span className="num">{db.entries.length}</span> · מזונות שלי{' '}
             <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
             <span className="num">{db.targets.length}</span> · מועדפים{' '}
-            <span className="num">{db.favorites.length}</span>
+            <span className="num">{db.favorites.length}</span> · ימים סגורים{' '}
+            <span className="num">{db.days.filter((x) => x.closed).length}</span>
           </li>
           <li>
             {/* רשומות שנדחו בקריאה ונשמרו גולמיות במקום להיעלם. אין עריכה ואין מחיקה. */}
