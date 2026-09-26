@@ -168,7 +168,7 @@ export default function ExerciseFocus({
         <span className="tiny muted">
           יעד{' '}
           <span className="num">
-            {spec.repRangeMin}
+            {log.sets.length}×{spec.repRangeMin}
             {spec.repRangeMin === spec.repRangeMax ? '' : `–${spec.repRangeMax}`}
           </span>
           {timed ? ' שנ׳' : ''}
@@ -180,56 +180,6 @@ export default function ExerciseFocus({
       <p className="tiny muted focus__muscles">{spec.muscles.join(' · ')}</p>
 
       {spec.note && <p className="focus__note small">{spec.note}</p>}
-
-      {(onSkip || canSwap || canUnswap) && (
-        <div className="wk-actions">
-          {onSkip && (
-            <button type="button" className="btn btn--quiet btn--outlined" onClick={onSkip}>
-              דלג ואחזור
-            </button>
-          )}
-          {canSwap && (
-            <button
-              type="button"
-              className="btn btn--quiet btn--outlined"
-              aria-expanded={swapOpen}
-              aria-controls={altsId}
-              onClick={() => setSwapOpen((v) => !v)}
-            >
-              החלף
-            </button>
-          )}
-          {canUnswap && (
-            <button type="button" className="btn btn--quiet btn--outlined" onClick={onUnswap}>
-              בטל החלפה
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* "החלף": רשימת החלופות לתא — שם, הערה, והביצוע האחרון של החלופה עצמה. */}
-      {canSwap && swapOpen && (
-        <ul id={altsId} className="list list--block wk-alts" aria-label={`חלופות ל-${spec.name}`}>
-          {alternates.map((a) => (
-            <li key={a.spec.id}>
-              <button
-                type="button"
-                className="btn btn--quiet wk-alt"
-                onClick={() => {
-                  setSwapOpen(false);
-                  onSwap?.(a.spec);
-                }}
-              >
-                <span className="wk-alt__name">{a.spec.name}</span>
-                {a.spec.note && <span className="tiny muted">{a.spec.note}</span>}
-                <span className="tiny muted num">
-                  {a.last ? `אחרון: ${historyText(a.last, a.spec.isTimed, !a.spec.bodyweightOnly)}` : 'אין ביצוע קודם'}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
 
       {/*
         היסטוריה לקריאה בלבד, מקופלת: הכותרת תמיד גלויה ואומרת כמה יש
@@ -321,39 +271,41 @@ export default function ExerciseFocus({
         </div>
       )}
 
-      {usesWeight && (
-        <div className="focus__weight">
-          <Stepper
-            label={`משקל — ${spec.name}`}
-            value={weight}
-            onChange={setWeight}
-            step={WEIGHT_STEP}
-            min={0}
-            max={MAX_WEIGHT}
-            decimals={1}
-            unit='ק"ג'
-            placeholder={timed ? 'משקל גוף' : 'ק"ג'}
-          />
-        </div>
-      )}
-
-      <div className="focus__sets">
-        {log.sets.map((s, i) => (
-          <div className="focus__set" key={i}>
-            <span className="focus__setno tiny muted">סט {i + 1}</span>
-            <div className="focus__reps">
-              <NumberField
-                label={`${timed ? 'שניות' : 'חזרות'}, סט ${i + 1} — ${spec.name}`}
-                hideLabel
-                value={timed ? s.seconds : s.reps}
-                onChange={(v) => patchSet(i, timed ? { seconds: v } : { reps: v })}
-                min={0}
-                max={MAX_REPS}
-                placeholder={timed ? 'שנ׳' : 'חזרות'}
-              />
-            </div>
+      <div className="focus__entry">
+        {usesWeight && (
+          <div className="focus__weight">
+            <Stepper
+              label={`משקל — ${spec.name}`}
+              value={weight}
+              onChange={setWeight}
+              step={WEIGHT_STEP}
+              min={0}
+              max={MAX_WEIGHT}
+              decimals={1}
+              unit='ק"ג'
+              placeholder={timed ? 'משקל גוף' : 'ק"ג'}
+            />
           </div>
-        ))}
+        )}
+
+        <div className="focus__sets">
+          {log.sets.map((s, i) => (
+            <div className="focus__set" key={i}>
+              <span className="focus__setno tiny muted">סט {i + 1}</span>
+              <div className="focus__reps">
+                <NumberField
+                  label={`${timed ? 'שניות' : 'חזרות'}, סט ${i + 1} — ${spec.name}`}
+                  hideLabel
+                  value={timed ? s.seconds : s.reps}
+                  onChange={(v) => patchSet(i, timed ? { seconds: v } : { reps: v })}
+                  min={0}
+                  max={MAX_REPS}
+                  placeholder={timed ? 'שנ׳' : 'חזרות'}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* RIR בסט האחרון — הקלט שכללי ההתקדמות צריכים (R1/R5). */}
@@ -367,6 +319,56 @@ export default function ExerciseFocus({
           ))}
         </div>
       </div>
+
+      {(onSkip || canSwap || canUnswap) && (
+        <div className="wk-actions">
+          {onSkip && (
+            <button type="button" className="btn btn--quiet btn--outlined" onClick={onSkip}>
+              דלג ואחזור
+            </button>
+          )}
+          {canSwap && (
+            <button
+              type="button"
+              className="btn btn--quiet btn--outlined"
+              aria-expanded={swapOpen}
+              aria-controls={altsId}
+              onClick={() => setSwapOpen((v) => !v)}
+            >
+              החלף
+            </button>
+          )}
+          {canUnswap && (
+            <button type="button" className="btn btn--quiet btn--outlined" onClick={onUnswap}>
+              בטל החלפה
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* "החלף": רשימת החלופות לתא — שם, הערה, והביצוע האחרון של החלופה עצמה. */}
+      {canSwap && swapOpen && (
+        <ul id={altsId} className="list list--block wk-alts" aria-label={`חלופות ל-${spec.name}`}>
+          {alternates.map((a) => (
+            <li key={a.spec.id}>
+              <button
+                type="button"
+                className="btn btn--quiet wk-alt"
+                onClick={() => {
+                  setSwapOpen(false);
+                  onSwap?.(a.spec);
+                }}
+              >
+                <span className="wk-alt__name">{a.spec.name}</span>
+                {a.spec.note && <span className="tiny muted">{a.spec.note}</span>}
+                <span className="tiny muted num">
+                  {a.last ? `אחרון: ${historyText(a.last, a.spec.isTimed, !a.spec.bodyweightOnly)}` : 'אין ביצוע קודם'}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

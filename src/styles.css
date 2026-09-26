@@ -556,9 +556,12 @@ button {
 }
 
 .choice--big .choice__btn {
-  min-height: 56px;
+  min-height: 64px;
   font-size: 20px;
   font-weight: 500;
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--cream);
 }
 
 .choice__hint {
@@ -857,23 +860,27 @@ button {
   flex-wrap: wrap;
 }
 
-/* נקודת ניווט קטנה מ-44px בכוונה: זו קיצור-דרך, והניווט העיקרי הוא
-   כפתורי "הקודם"/"הבא" שמתחת, שהם בגודל מלא. */
+.focusnav__dots {
+  gap: var(--sp-1);
+}
+
+/* נקודות ניווט בגודל מגע מלא (44px); נשברות לשורה שנייה כשצריך. */
 .focusnav__dot {
   appearance: none;
-  width: 26px;
-  height: 26px;
+  width: var(--tap);
+  height: var(--tap);
   padding: 0;
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
 .focusnav__dot.is-done {
-  background: var(--paper-sunk);
+  background: var(--cream);
+  border-color: var(--sage);
   color: var(--ink);
 }
 
@@ -884,10 +891,13 @@ button {
   font-weight: 600;
 }
 
+/* כרטיס התרגיל: שמנת בתוך כרטיס האימון הלבן — המקום שבו מזינים. */
 .focus {
-  border-top: 1px solid var(--rule);
   margin-top: var(--sp-3);
-  padding-top: var(--sp-4);
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
 }
 
 .focus__name {
@@ -928,13 +938,13 @@ button {
 
 .focus__note {
   margin: var(--sp-3) 0 0;
-  border-inline-start: 2px solid var(--ink);
+  border-inline-start: 3px solid var(--slate);
   padding-inline-start: var(--sp-3);
 }
 
 .focus__history {
   margin: var(--sp-3) 0 0;
-  border-inline-start: 2px solid var(--rule-strong);
+  border-inline-start: 3px solid var(--border);
   padding-inline-start: var(--sp-3);
 }
 
@@ -956,12 +966,22 @@ button {
   margin-top: var(--sp-1);
 }
 
-.focus__weight {
+/* הזנה: משקל (עמודה אחת לתרגיל — משקל אחד לכל הסטים) ליד חזרות לכל סט. */
+.focus__entry {
   margin-top: var(--sp-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-3) var(--sp-2);
+  align-items: start;
+}
+
+.focus__weight .stepper {
+  gap: 6px;
 }
 
 .focus__sets {
-  margin-top: var(--sp-3);
+  display: grid;
+  gap: var(--sp-2);
 }
 
 .focus__set {
@@ -970,33 +990,32 @@ button {
   gap: var(--sp-2);
 }
 
-.focus__set + .focus__set {
-  margin-top: var(--sp-2);
-}
-
 .focus__setno {
-  min-width: 32px;
+  min-width: 36px;
+  font-size: 13px;
 }
 
 .focus__reps {
-  width: 120px;
-  flex: 0 0 120px;
+  flex: 1;
+  min-width: 0;
 }
 
-/* שדות גדולים יותר במסך האימון — הזנה באגודל אחד, בעמידה */
-.focus__set input[type='number'] {
-  min-height: 52px;
-  font-size: 19px;
-}
-
+/* שדות גדולים — הזנה באגודל אחד, בעמידה: 48px לפחות, ומקלדת מספרים. */
+.focus__set input[type='number'],
 .focus__weight input[type='number'] {
   min-height: 52px;
   font-size: 19px;
+  background: var(--card);
+  border-color: var(--border);
+  border-radius: 8px;
 }
 
 .focus__weight .btn--step {
   min-height: 52px;
   height: 52px;
+  border-color: var(--border);
+  background: var(--card);
+  border-radius: 8px;
 }
 
 /* ---------- חימום / אירובי סיום ---------- */
@@ -1910,6 +1929,12 @@ input[type='file']::file-selector-button {
   margin-top: var(--sp-3);
 }
 
+/* צ'יפי RIR בגודל מגע מלא, שקטים — לא מתחרים בהזנת הסטים. */
+.wk-rir .nut-chip {
+  min-height: var(--tap);
+  min-width: var(--tap);
+}
+
 /* הצעה לאימון הבא: כרטיס רך; מרווה = עלייה, צפחה = אותו משקל, ענבר = ירידה / RIR חסר */
 .wk-suggest {
   margin-top: var(--sp-3);
@@ -1951,12 +1976,20 @@ input[type='file']::file-selector-button {
   font-weight: 500;
 }
 
-/* דלג ואחזור / החלף (שלב 4.1) */
+/* דלג ואחזור / החלף (שלב 4.1): פעולות משניות, שקטות, בתחתית הכרטיס. */
 .wk-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
-  margin-top: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--divider);
+}
+
+.wk-actions .btn {
+  font-size: 14px;
+  color: var(--ink-2);
+  background: var(--card);
 }
 
 /* "הוחלף מ-…" — סימון עובדתי, בענבר */
@@ -1967,9 +2000,9 @@ input[type='file']::file-selector-button {
 /* רשימת החלופות */
 .wk-alts {
   margin-top: var(--sp-2);
-  border: 1px solid var(--nut-border);
-  border-radius: var(--nut-radius);
-  background: var(--nut-cream);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
   padding: var(--sp-1) var(--sp-2);
 }
 
