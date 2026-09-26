@@ -55,6 +55,7 @@ const ALL_KEYS: DbKey[] = [
   'entries',
   'targets',
   'favorites',
+  'quarantine',
 ];
 
 export function useDb(): DbApi {
@@ -77,11 +78,15 @@ export function useDb(): DbApi {
       try {
         const res = await loadDB();
         if (!mounted.current) return;
+        const notices =
+          res.quarantined > 0
+            ? [...res.notices, `${res.quarantined} רשומות שלא עברו אימות הועברו להסגר — ראה מסך "נתונים".`]
+            : res.notices;
         setState({
           db: res.db,
           loading: false,
           backend: res.backend,
-          notices: res.notices,
+          notices,
           errors: res.readErrors,
           dirtyKeys: [],
         });

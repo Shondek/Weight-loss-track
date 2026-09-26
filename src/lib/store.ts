@@ -7,19 +7,22 @@
  */
 
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
-import { emptyDb, type DB } from '../types';
+import { emptyDb, type DB, type QuarantineItem } from '../types';
 import {
   parseCheckins,
   parseCustomFoods,
   parseEntries,
   parseFavorites,
+  parseQuarantine,
   parseSettings,
   parseStandaloneCardio,
   parseTargets,
   parseWaist,
   parseWeights,
   parseWorkouts,
+  type Rejection,
 } from './schema';
+import { mergeQuarantine, quarantineFromRejections } from './quarantine';
 
 export const STORAGE_KEYS = {
   weights: 'fatloss:weights',
@@ -32,6 +35,8 @@ export const STORAGE_KEYS = {
   entries: 'fatloss:entries',
   targets: 'fatloss:targets',
   favorites: 'fatloss:favorites',
+  /** רשומות שנדחו בקריאה. נכתב לפני כל שמירה של מפתח שנדחו ממנו רשומות. */
+  quarantine: 'fatloss:quarantine',
 } as const;
 
 /**
@@ -63,7 +68,21 @@ export const KEY_LABELS: Record<DbKey, string> = {
   entries: 'רישומי אכילה',
   targets: 'יעדי תזונה',
   favorites: 'מועדפים',
+  quarantine: 'הסגר',
 };
+
+/**
+ * מפתחות שאסור לשמור בסשן הזה, והסיבה. נכנסים לכאן כשההסגר של רשומות
+ * שנדחו מהמפתח לא נכתב לדיסק: שמירה של המערך המסונן הייתה מוחקת אותן
+ * סופית (סיכון #1). `persist` זורק עליהם; `persistAll` (ייבוא מפורש)
+ * משחרר אותם אחרי שההסגר נכתב.
+ */
+const blocked = new Map<DbKey, string>();
+
+/** לבדיקות ולתצוגה: המפתחות החסומים כרגע. */
+export function blockedKeys(): DbKey[] {
+  return [...blocked.keys()];
+}
 
 export type Backend = 'indexeddb' | 'localstorage' | 'memory';
 
@@ -152,6 +171,8 @@ export type LoadResult = {
   notices: string[];
   /** קריאה שנכשלה — הנתון עלול להיות חסר. */
   readErrors: string[];
+  /** כמה רשומות נכנסו להסגר בטעינה הזו (חדשות, אחרי איחוד). */
+  quarantined: number;
 };
 
 /**
@@ -177,6 +198,9 @@ export async function loadDB(): Promise<LoadResult> {
   const migrated: string[] = [];
   let workoutsRaw: unknown;
   let workoutsUpgraded = 0;
+  /** דחיות לפי מפתח — הופכות להסגר אחרי הלולאה, לפני כל שמירה. */
+  const rejectedBy = new Map<DbKey, Rejection[]>();
+  blocked.clear();
 
   for (const key of Object.keys(STORAGE_KEYS) as DbKey[]) {
     const storageKey = STORAGE_KEYS[key];
@@ -204,6 +228,7 @@ export async function loadDB(): Promise<LoadResult> {
       case 'weights': {
         const r = parseWeights(raw);
         db.weights = r.ok;
+        rejectedBy.set('weights', r.rejected);
         if (fromLegacy && r.ok.length) migrated.push(`${r.ok.length} שקילות`);
         break;
       }
@@ -219,35 +244,55 @@ export async function loadDB(): Promise<LoadResult> {
       case 'waist': {
         const r = parseWaist(raw);
         db.waist = r.ok;
+        rejectedBy.set('waist', r.rejected);
         if (fromLegacy && r.ok.length) migrated.push(`${r.ok.length} מדידות מותניים`);
         break;
       }
       case 'checkins': {
         const r = parseCheckins(raw);
         db.checkins = r.ok;
+        rejectedBy.set('checkins', r.rejected);
         if (fromLegacy && r.ok.length) migrated.push(`${r.ok.length} צ'ק-אינים`);
         break;
       }
       case 'standaloneCardio': {
         // מפתח חדש: לפני שנוצר אין מה לקרוא, ו-parse על undefined מחזיר ריק.
-        db.standaloneCardio = parseStandaloneCardio(raw).ok;
+        const r = parseStandaloneCardio(raw);
+        db.standaloneCardio = r.ok;
+        rejectedBy.set('standaloneCardio', r.rejected);
         break;
       }
       case 'settings':
         db.settings = parseSettings(raw);
         break;
       // מפתחות התזונה חדשים — אין להם גרסת HTML ישנה ואין מהם מיגרציה.
-      case 'customFoods':
-        db.customFoods = parseCustomFoods(raw).ok;
+      case 'customFoods': {
+        const r = parseCustomFoods(raw);
+        db.customFoods = r.ok;
+        rejectedBy.set('customFoods', r.rejected);
         break;
-      case 'entries':
-        db.entries = parseEntries(raw).ok;
+      }
+      case 'entries': {
+        const r = parseEntries(raw);
+        db.entries = r.ok;
+        rejectedBy.set('entries', r.rejected);
         break;
-      case 'targets':
-        db.targets = parseTargets(raw).ok;
+      }
+      case 'targets': {
+        const r = parseTargets(raw);
+        db.targets = r.ok;
+        rejectedBy.set('targets', r.rejected);
         break;
-      case 'favorites':
-        db.favorites = parseFavorites(raw).ok;
+      }
+      case 'favorites': {
+        const r = parseFavorites(raw);
+        db.favorites = r.ok;
+        rejectedBy.set('favorites', r.rejected);
+        break;
+      }
+      case 'quarantine':
+        // סלחני ולא דוחה — ראה parseQuarantine.
+        db.quarantine = parseQuarantine(raw);
         break;
     }
 
@@ -268,12 +313,58 @@ export async function loadDB(): Promise<LoadResult> {
 
   legacyWorkoutsRaw = db.legacyWorkouts.map((l) => l.raw);
 
+  // הסגר קודם לכל שמירה. רק אחרי שהרשומות שנדחו כתובות לדיסק מותר לשמור
+  // את המערכים המסוננים — אחרת השמירה הבאה הייתה מוחקת אותן (סיכון #1).
+  const quarantined = await quarantineRejected(db, rejectedBy, readErrors);
+
   if (workoutsUpgraded > 0) {
     const notice = await upgradeWorkoutsOnDisk(workoutsRaw, db);
     if (notice) notices.push(`${workoutsUpgraded} ${notice}`);
   }
 
-  return { db, backend, notices, readErrors };
+  return { db, backend, notices, readErrors, quarantined };
+}
+
+/**
+ * מכניס להסגר את הרשומות שנדחו בטעינה וכותב אותו לדיסק. מחזיר כמה
+ * פריטים חדשים נוספו. אם הכתיבה נכשלת — כל מפתח שנדחו ממנו רשומות נחסם
+ * לשמירה בסשן הזה, והשגיאה מדווחת לבאנר.
+ */
+async function quarantineRejected(
+  db: DB,
+  rejectedBy: ReadonlyMap<DbKey, readonly Rejection[]>,
+  readErrors: string[],
+): Promise<number> {
+  const at = new Date().toISOString();
+  const incoming: QuarantineItem[] = [];
+  const sources: DbKey[] = [];
+  for (const [key, rejected] of rejectedBy) {
+    const items = quarantineFromRejections(key, rejected, at);
+    if (items.length === 0) continue;
+    incoming.push(...items);
+    sources.push(key);
+  }
+  if (incoming.length === 0) return 0;
+
+  const merged = mergeQuarantine(db.quarantine, incoming);
+  const added = merged.length - db.quarantine.length;
+  db.quarantine = merged;
+  if (added === 0) return 0;
+
+  try {
+    await rawSet(STORAGE_KEYS.quarantine, merged);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    for (const key of sources) {
+      blocked.set(key, `ההסגר לא נכתב לדיסק (${detail})`);
+    }
+    readErrors.push(
+      `${added} רשומות שנדחו לא נכנסו להסגר: ${detail}. ${sources
+        .map((k) => KEY_LABELS[k])
+        .join(' · ')} לא יישמרו עד שתייצא גיבוי ותרענן.`,
+    );
+  }
+  return added;
 }
 
 /**
@@ -316,6 +407,8 @@ async function upgradeWorkoutsOnDisk(raw: unknown, db: DB): Promise<string | nul
 
 /** שומר מפתח אחד. זורק StoreWriteError אם הכתיבה נכשלה. */
 export async function persist<K extends DbKey>(key: K, value: DB[K]): Promise<void> {
+  const why = blocked.get(key);
+  if (why !== undefined) throw new StoreWriteError(key, why);
   // האימונים שלא הומרו נכתבים תמיד בסוף אותו מפתח, כדי שלא ייעלמו בשמירה.
   const toWrite: unknown =
     key === 'workouts' && legacyWorkoutsRaw.length
@@ -328,10 +421,18 @@ export async function persist<K extends DbKey>(key: K, value: DB[K]): Promise<vo
   }
 }
 
-/** שומר את כל בסיס הנתונים (ייבוא / מחיקה גורפת). */
+/**
+ * שומר את כל בסיס הנתונים (ייבוא / מחיקה גורפת). ההסגר נכתב ראשון: ייבוא
+ * הוא הדרך היחידה שבה מפתח שנחסם (כי ההסגר לא נכתב) משתחרר, ורק אחרי
+ * שההסגר בדיסק.
+ */
 export async function persistAll(db: DB): Promise<void> {
   legacyWorkoutsRaw = db.legacyWorkouts.map((l) => l.raw);
+  blocked.delete('quarantine');
+  await persist('quarantine', db.quarantine);
+  blocked.clear();
   for (const key of Object.keys(STORAGE_KEYS) as DbKey[]) {
+    if (key === 'quarantine') continue;
     await persist(key, db[key]);
   }
 }

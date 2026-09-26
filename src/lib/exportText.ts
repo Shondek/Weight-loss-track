@@ -187,6 +187,11 @@ export type BackupFile = {
   entries: DB['entries'];
   targets: DB['targets'];
   favorites: DB['favorites'];
+  /**
+   * רשומות שנדחו בקריאה (שלב 2). אופציונלי: גיבוי מלפני השדה נקלט כרגיל,
+   * וגיבוי עם השדה מתמזג לפי טביעת אצבע.
+   */
+  quarantine?: DB['quarantine'];
 };
 
 /** גיבוי מלא. `exportedAt` מגיע מבחוץ כדי שהמודול יישאר טהור. */
@@ -205,6 +210,7 @@ export function buildBackup(db: DB, exportedAt: string): BackupFile {
     entries: db.entries,
     targets: db.targets,
     favorites: db.favorites,
+    quarantine: db.quarantine,
   };
 }
 

@@ -12,6 +12,8 @@ import CopyBlock from '../components/CopyBlock';
 import { downloadText, readFileAsText } from '../platform/download';
 import { loadMealLibrary } from '../platform/mealLibrary';
 import { isLibraryFoodId, mergeLibrary, type LibraryMerge } from '../lib/nutrition/library';
+import { mergeQuarantine, quarantineCounts } from '../lib/quarantine';
+import { KEY_LABELS, type DbKey } from '../lib/store';
 
 type Mode = 'merge' | 'replace';
 
@@ -63,6 +65,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const start = useMemo(() => programStartWeek(db), [db]);
   const firstData = useMemo(() => firstDataDate(db), [db]);
   const sinceBackup = daysSinceBackup(db.settings, today);
+  const quarantineByKey = useMemo(() => quarantineCounts(db.quarantine), [db.quarantine]);
 
   /** גיבוי מלא יצא מהמכשיר — הורדה או העתקה שהצליחה. מזין את התזכורת. */
   const markBackedUp = () => {
@@ -82,7 +85,11 @@ export default function DataScreen({ store, today }: ScreenProps) {
     }
     const result = parseDb(parsedJson);
     const before = total(db);
-    const next = mode === 'replace' ? result.db : mergeDb(db, result.db);
+    // ההסגר מתמזג גם בהחלפה — הוא לעולם לא מתכווץ.
+    const next =
+      mode === 'replace'
+        ? { ...result.db, quarantine: mergeQuarantine(db.quarantine, result.db.quarantine) }
+        : mergeDb(db, result.db);
     void store.replaceAll(next);
     setReport({
       mode,
@@ -147,6 +154,20 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
             <span className="num">{db.targets.length}</span> · מועדפים{' '}
             <span className="num">{db.favorites.length}</span>
+          </li>
+          <li>
+            {/* רשומות שנדחו בקריאה ונשמרו גולמיות במקום להיעלם. אין עריכה ואין מחיקה. */}
+            רשומות בהסגר: <span className="num">{db.quarantine.length}</span>
+            {db.quarantine.length > 0 && (
+              <span className="tiny muted">
+                {' '}
+                (
+                {Object.entries(quarantineByKey)
+                  .map(([k, n]) => `${KEY_LABELS[k as DbKey] ?? k} ${n}`)
+                  .join(' · ')}
+                )
+              </span>
+            )}
           </li>
         </ul>
       </section>
