@@ -854,9 +854,25 @@ export function parseFavorites(input: unknown): ParseResult<Favorite> {
 
 const FRIDAY_TIERS: readonly FridayTier[] = ['medium', 'regular', 'large'];
 
+/** צעדים יומיים (שלב 6): שלם 0–100,000 — אותה תקרה כמו צעדי הליכון. */
+export const MAX_DAY_STEPS = MAX_STEPS;
+
+/**
+ * צעדים יומיים: חסר/null = אין. שלם 0–100,000 = נשמר. ערך אחר לא מאפס
+ * את היום: השדה נשמט לבדו והשורה הגולמית נשלחת להסגר דרך `rejected`
+ * (סגירה/ארוחת שישי לעולם לא הולכות לאיבוד). בניגוד לצעדי הליכון — בלי עיגול.
+ */
+function parseDaySteps(v: unknown): { steps: number | undefined; bad: boolean } {
+  if (v === undefined || v === null) return { steps: undefined, bad: false };
+  const n = num(v);
+  if (n === null || !Number.isInteger(n) || n < 0 || n > MAX_DAY_STEPS) return { steps: undefined, bad: true };
+  return { steps: n, bad: false };
+}
+
 /**
  * מטא-נתונים של ימים. נדחה: לא אובייקט, תאריך שבור, `closed` שאינו בוליאני.
  * `closedAt` ו-`fridayTier` שבורים נשמטים בשקט — הם תוספת, לא הרשומה.
+ * `steps` שבור נשמט, והשורה נשלחת להסגר (דחיית שדה — היום עצמו נטען).
  * כפילות תאריך: האחרונה גוברת.
  */
 export function parseDays(input: unknown): ParseResult<DayMeta> {
@@ -879,11 +895,14 @@ export function parseDays(input: unknown): ParseResult<DayMeta> {
     const closedAt =
       typeof raw.closedAt === 'string' && Number.isFinite(Date.parse(raw.closedAt)) ? raw.closedAt : null;
     const tier = FRIDAY_TIERS.find((t) => t === raw.fridayTier) ?? null;
+    const { steps, bad: stepsBad } = parseDaySteps(raw.steps);
+    if (stepsBad) rejected.push({ raw, reason: `steps — צעדים לא תקינים ב-${raw.d} (שלם 0–${MAX_DAY_STEPS.toLocaleString('en-US')}) — היום נטען בלי צעדים` });
     byDate.set(raw.d, {
       d: raw.d,
       closed: raw.closed,
       ...(closedAt !== null ? { closedAt } : {}),
       ...(tier !== null ? { fridayTier: tier } : {}),
+      ...(steps !== undefined ? { steps } : {}),
     });
   }
 
