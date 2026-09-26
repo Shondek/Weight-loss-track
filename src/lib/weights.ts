@@ -6,7 +6,7 @@
  */
 
 import type { ISODate, WaistEntry, WeightEntry } from '../types';
-import { addDays, compareISO, diffDays, weekDays, weekStart } from './date';
+import { addDays, compareISO, dayOfWeek, diffDays, weekDays, weekStart } from './date';
 import { mean, round2 } from './format';
 
 export const WEEK_LENGTH = 7;
@@ -184,4 +184,16 @@ export function daysSinceWaist(
 ): number | null {
   const last = lastWaist(list);
   return last ? diffDays(last.d, today) : null;
+}
+
+/** יום המדידה השבועי: רביעי (0 = ראשון). */
+export const WAIST_DAY = 3;
+
+/**
+ * תזכורת מותניים (שלב 4): ביום רביעי, כל עוד אין מדידה לאותו רביעי.
+ * ביום אחר — לעולם לא. האחסון של המדידה לא השתנה.
+ */
+export function waistReminderDue(list: readonly WaistEntry[], today: ISODate): boolean {
+  if (dayOfWeek(today) !== WAIST_DAY) return false;
+  return !list.some((e) => e.d === today);
 }

@@ -29,7 +29,7 @@ import {
   waistInWeek,
   weekChange,
   weeklyAverages,
-  WAIST_REMINDER_DAYS,
+  waistReminderDue,
   WEEK_LENGTH,
 } from '../lib/weights';
 import { MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../lib/schema';
@@ -79,6 +79,7 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   const waistExisting = db.waist.find((e) => e.d === waistDate) ?? null;
   const waistValue = waistDraft ?? waistExisting?.cm ?? waistLast?.cm ?? null;
   const sinceWaist = useMemo(() => daysSinceWaist(db.waist, today), [db.waist, today]);
+  const waistDue = useMemo(() => waistReminderDue(db.waist, today), [db.waist, today]);
   const waistThisWeek = useMemo(() => waistInWeek(db.waist, week), [db.waist, week]);
   const waistPrev = useMemo(() => waistBeforeWeek(db.waist, week), [db.waist, week]);
 
@@ -115,11 +116,18 @@ export default function WeightScreen({ store, today }: ScreenProps) {
         </p>
       )}
 
-      {(sinceWaist === null || sinceWaist >= WAIST_REMINDER_DAYS) && db.weights.length > 0 && (
+      {/* שלב 4: תזכורת מותניים ביום רביעי בבוקר, נעלמת כשיש מדידה לאותו רביעי. */}
+      {waistDue && (
         <p className="notice" style={{ margin: 0 }}>
-          {sinceWaist === null
-            ? 'מותניים: אין עדיין מדידה.'
-            : `מותניים: עברו ${sinceWaist} ימים מהמדידה האחרונה.`}
+          מותניים: יום רביעי — מדידת בוקר.
+          {sinceWaist !== null && (
+            <>
+              {' '}
+              <span className="muted">
+                (האחרונה לפני <span className="num">{sinceWaist}</span> ימים)
+              </span>
+            </>
+          )}
         </p>
       )}
 
