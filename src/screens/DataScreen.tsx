@@ -9,7 +9,7 @@ import { displayValues, fromCustom, removeCustomFood, upsertCustomFood } from '.
 import { targetFor, upsertTarget } from '../lib/nutrition/targets';
 import { gramsWholeText, kcalText } from '../lib/nutrition/display';
 import { mergeDb } from '../lib/db';
-import { backupJson } from '../lib/exportText';
+import { BACKUP_VERSION, backupJson } from '../lib/exportText';
 import { currentBackend } from '../lib/store';
 import { formatDM, formatDMY, toLocalISO, weekRangeLabel, weekStart } from '../lib/date';
 import { firstDataDate, programStartWeek, recordCount } from '../lib/db';
@@ -298,216 +298,9 @@ export default function DataScreen({ store, today }: ScreenProps) {
           </li>
         </ul>
       </section>
-
       <section className="section">
         <div className="section__head">
-          <h2>ספריית המנות</h2>
-          <span className="tiny muted">
-            <span className="num">{libraryCount}</span> פריטים במכשיר
-          </span>
-        </div>
-        <div className="stack">
-          <p className="small muted" style={{ margin: 0 }}>
-            המנות, הבלוקים והתוספות של "התפריט שלי". מיזוג בלבד: פריט קיים מתעדכן, מזון שלי אחר לא נוגע,
-            רישומים קודמים לא משתנים.
-          </p>
-          <button
-            type="button"
-            className="btn btn--primary btn--block"
-            disabled={library.status === 'loading'}
-            onClick={() => void loadLibrary()}
-          >
-            {library.status === 'loading' ? 'טוען…' : 'טען את ספריית המנות'}
-          </button>
-          {library.status === 'error' && (
-            <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
-              {library.message}
-            </p>
-          )}
-          {library.status === 'done' && (
-            <div className="banner stack--tight" role="status">
-              <p style={{ margin: 0 }}>
-                נוספו <span className="num">{library.merge.added}</span> · עודכנו{' '}
-                <span className="num">{library.merge.updated}</span> · ללא שינוי{' '}
-                <span className="num">{library.merge.unchanged}</span> · בספרייה{' '}
-                <span className="num">{library.total}</span>
-              </p>
-              {library.rejected.length > 0 && (
-                <ul className="list list--block tiny">
-                  {library.rejected.map((r) => (
-                    <li key={`${r.section}-${r.reason}`}>
-                      {r.section}: <span className="num">{r.count}</span> — {r.reason}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="section nut-manage">
-        <button
-          type="button"
-          className="btn btn--quiet disclosure"
-          aria-expanded={foodsOpen}
-          onClick={() => setFoodsOpen((v) => !v)}
-        >
-          <span className="grow">
-            מזונות שלי · <span className="num">{db.customFoods.length}</span>
-          </span>
-          <span className="muted" aria-hidden="true">
-            {foodsOpen ? '▾' : '▸'}
-          </span>
-        </button>
-        {foodsOpen && (
-          <div className="stack" style={{ marginTop: 'var(--sp-3)' }}>
-            {db.customFoods.length > 0 && (
-              <ul className="list nut-foods">
-                {db.customFoods.map((f) => {
-                  const open = details.has(f.id);
-                  const dv = displayValues(fromCustom(f));
-                  return (
-                    <li key={f.id} style={{ flexWrap: 'wrap' }}>
-                      <span className="grow">
-                        {f.name}
-                        <span className="tiny muted">
-                          {' '}
-                          · <span className="num">{kcalText(dv.kcal)}</span> קק"ל · <span className="num">{gramsWholeText(dv.protein)}</span> חלבון{' '}
-                          {dv.per}
-                          {f.archived && ' · בארכיון'}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn--quiet"
-                        aria-expanded={open}
-                        aria-label={`פרטים — ${f.name}`}
-                        onClick={() =>
-                          setDetails((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(f.id)) next.delete(f.id);
-                            else next.add(f.id);
-                            return next;
-                          })
-                        }
-                      >
-                        פרטים
-                      </button>
-                      <button type="button" className="btn btn--quiet" aria-label={`ערוך ${f.name}`} onClick={() => setEditor({ existing: f })}>
-                        ערוך
-                      </button>
-                      {open && (
-                        <p className="tiny muted nut-foods__details" style={{ width: '100%', margin: 0 }}>
-                          {f.recipe ? 'מנה ממרכיבים' : 'מהתווית'}
-                          {f.unitFood && ' · יחידה = 1 ג׳'} · מזהה <span className="num">{f.id}</span>
-                          {f.cat !== null && (
-                            <>
-                              {' '}· קטגוריה <span className="num">{f.cat}</span>
-                            </>
-                          )}
-                          {f.note ? ` · ${f.note}` : ''}
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <div className="row">
-              <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'label' })}>
-                מזון מהתווית
-              </button>
-              <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'recipe' })}>
-                מנה ממרכיבים
-              </button>
-            </div>
-            <p className="tiny muted" style={{ margin: 0 }}>
-              מזון שנשמר כאן מופיע בחיפוש במסך התזונה. מנה: בונים פעם אחת ממרכיבים ורושמים בגרמים.
-              {foodIndex.status === 'error' && <span className="err"> מאגר המזון לא נטען.</span>}
-            </p>
-          </div>
-        )}
-      </section>
-
-      <section className="section nut-manage">
-        <button
-          type="button"
-          className="btn btn--quiet disclosure"
-          aria-expanded={editingTarget}
-          onClick={() => setEditingTarget((v) => !v)}
-        >
-          <span className="grow">
-            {target ? (
-              <>
-                יעד יומי · <span className="num">{kcalText(target.kcal)}</span> קק"ל ·{' '}
-                <span className="num">{gramsWholeText(target.protein)}</span> חלבון ·{' '}
-                <span className="num">{gramsWholeText(target.carbs)}</span> פחמימה ·{' '}
-                <span className="num">{gramsWholeText(target.fat)}</span> שומן
-              </>
-            ) : (
-              'יעד יומי · לא הוגדר'
-            )}
-          </span>
-          <span className="muted" aria-hidden="true">
-            {editingTarget ? '▾' : '▸'}
-          </span>
-        </button>
-        {editingTarget && (
-          <TargetForm
-            current={target}
-            today={today}
-            onCancel={() => setEditingTarget(false)}
-            onSave={(t) => {
-              void store.update('targets', upsertTarget(db.targets, t));
-              setEditingTarget(false);
-            }}
-          />
-        )}
-      </section>
-
-      <section className="section">
-        <div className="section__head">
-          <h2>תחילת התוכנית</h2>
-          <span className="tiny muted">שבוע 1</span>
-        </div>
-        <div className="stack">
-          <p className="small muted" style={{ margin: 0 }}>
-            קובע רק את מספר השבוע בכותרת הדוח לצ'אט. אינו משפיע על שום חישוב.
-          </p>
-          <p className="sub" style={{ margin: 0 }}>
-            כרגע:{' '}
-            <span className="num">
-              {start ? weekRangeLabel(start) : DASH_TEXT}
-            </span>{' '}
-            {db.settings.programStart ? '(נקבע ידנית)' : '(אוטומטי — מהנתון הראשון)'}
-          </p>
-          <DateField
-            label="בחר תאריך בשבוע 1"
-            value={db.settings.programStart ?? start ?? today}
-            max={today}
-            onChange={(d) =>
-              void store.update('settings', { ...db.settings, programStart: weekStart(d) })
-            }
-          />
-          {db.settings.programStart && (
-            <button
-              type="button"
-              className="btn btn--quiet"
-              onClick={() =>
-                void store.update('settings', { ...db.settings, programStart: null })
-              }
-            >
-              חזרה לאוטומטי
-              {firstData ? ` (${formatDM(weekStart(firstData))})` : ''}
-            </button>
-          )}
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="section__head">
-          <h2>ייצוא</h2>
+          <h2>גיבוי</h2>
           <span className="tiny muted">
             <span className="num">{json.length}</span> תווים
           </span>
@@ -515,7 +308,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
         <div className="stack">
           <button
             type="button"
-            className="btn btn--block"
+            className="btn btn--primary btn--block"
             onClick={() => {
               const ok = downloadText(`fatloss-${toLocalISO(new Date())}.json`, json);
               if (!ok) setImportError('ההורדה נחסמה. השתמש ב"העתק JSON מלא".');
@@ -545,10 +338,9 @@ export default function DataScreen({ store, today }: ScreenProps) {
             הכול נשמר על המכשיר בלבד. אין חשבון ואין ענן — גיבוי הוא באחריותך.
           </p>
         </div>
-      </section>
 
-      <section className="section">
-        <h2 style={{ marginBottom: 'var(--sp-3)' }}>ייבוא</h2>
+        <div className="section">
+          <h3 style={{ marginBottom: 'var(--sp-3)' }}>ייבוא</h3>
         <div className="stack">
           <div role="group" aria-label="אופן הייבוא">
             <span className="label">אופן הייבוא</span>
@@ -563,7 +355,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
               </button>
               <button
                 type="button"
-                className="choice__btn"
+                className="choice__btn choice__btn--danger"
                 aria-pressed={mode === 'replace'}
                 onClick={() => setMode('replace')}
               >
@@ -619,7 +411,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
 
           <button
             type="button"
-            className="btn btn--primary btn--block"
+            className="btn btn--block"
             disabled={raw.trim() === '' || !replaceReady}
             onClick={() => runImport(raw)}
           >
@@ -713,10 +505,216 @@ export default function DataScreen({ store, today }: ScreenProps) {
             </div>
           )}
         </div>
+        </div>
       </section>
-
       <section className="section">
-        <h2 style={{ marginBottom: 'var(--sp-3)' }}>מחיקת הכול</h2>
+        <div className="section__head">
+          <h2>ספריית המנות</h2>
+          <span className="tiny muted">
+            <span className="num">{libraryCount}</span> פריטים במכשיר
+          </span>
+        </div>
+        <div className="stack">
+          <p className="small muted" style={{ margin: 0 }}>
+            המנות, הבלוקים והתוספות של "התפריט שלי". מיזוג בלבד: פריט קיים מתעדכן, מזון שלי אחר לא נוגע,
+            רישומים קודמים לא משתנים.
+          </p>
+          <button
+            type="button"
+            className="btn btn--primary btn--block"
+            disabled={library.status === 'loading'}
+            onClick={() => void loadLibrary()}
+          >
+            {library.status === 'loading' ? 'טוען…' : 'טען את ספריית המנות'}
+          </button>
+          {library.status === 'error' && (
+            <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
+              {library.message}
+            </p>
+          )}
+          {library.status === 'done' && (
+            <div className="banner stack--tight" role="status">
+              <p style={{ margin: 0 }}>
+                נוספו <span className="num">{library.merge.added}</span> · עודכנו{' '}
+                <span className="num">{library.merge.updated}</span> · ללא שינוי{' '}
+                <span className="num">{library.merge.unchanged}</span> · בספרייה{' '}
+                <span className="num">{library.total}</span>
+              </p>
+              {library.rejected.length > 0 && (
+                <ul className="list list--block tiny">
+                  {library.rejected.map((r) => (
+                    <li key={`${r.section}-${r.reason}`}>
+                      {r.section}: <span className="num">{r.count}</span> — {r.reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+      <section className="section nut-manage">
+        <button
+          type="button"
+          className="btn btn--quiet disclosure"
+          aria-expanded={foodsOpen}
+          onClick={() => setFoodsOpen((v) => !v)}
+        >
+          <span className="grow">
+            מזונות שלי · <span className="num">{db.customFoods.length}</span>
+          </span>
+          <span className="muted" aria-hidden="true">
+            {foodsOpen ? '▾' : '▸'}
+          </span>
+        </button>
+        {foodsOpen && (
+          <div className="stack" style={{ marginTop: 'var(--sp-3)' }}>
+            {db.customFoods.length > 0 && (
+              <ul className="list nut-foods">
+                {db.customFoods.map((f) => {
+                  const open = details.has(f.id);
+                  const dv = displayValues(fromCustom(f));
+                  return (
+                    <li key={f.id} style={{ flexWrap: 'wrap' }}>
+                      <span className="grow">
+                        {f.name}
+                        <span className="tiny muted">
+                          {' '}
+                          · <span className="num">{kcalText(dv.kcal)}</span> קק"ל · <span className="num">{gramsWholeText(dv.protein)}</span> חלבון{' '}
+                          {dv.per}
+                          {f.archived && ' · בארכיון'}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn--quiet"
+                        aria-expanded={open}
+                        aria-label={`פרטים — ${f.name}`}
+                        onClick={() =>
+                          setDetails((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(f.id)) next.delete(f.id);
+                            else next.add(f.id);
+                            return next;
+                          })
+                        }
+                      >
+                        פרטים
+                      </button>
+                      <button type="button" className="btn btn--quiet" aria-label={`ערוך ${f.name}`} onClick={() => setEditor({ existing: f })}>
+                        ערוך
+                      </button>
+                      {open && (
+                        <p className="tiny muted nut-foods__details" style={{ width: '100%', margin: 0 }}>
+                          {f.recipe ? 'מנה ממרכיבים' : 'מהתווית'}
+                          {f.unitFood && ' · יחידה = 1 ג׳'} · מזהה <span className="num">{f.id}</span>
+                          {f.cat !== null && (
+                            <>
+                              {' '}· קטגוריה <span className="num">{f.cat}</span>
+                            </>
+                          )}
+                          {f.note ? ` · ${f.note}` : ''}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <div className="row">
+              <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'label' })}>
+                מזון מהתווית
+              </button>
+              <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'recipe' })}>
+                מנה ממרכיבים
+              </button>
+            </div>
+            <p className="tiny muted" style={{ margin: 0 }}>
+              מזון שנשמר כאן מופיע בחיפוש במסך התזונה. מנה: בונים פעם אחת ממרכיבים ורושמים בגרמים.
+              {foodIndex.status === 'error' && <span className="err"> מאגר המזון לא נטען.</span>}
+            </p>
+          </div>
+        )}
+      </section>
+      <section className="section nut-manage">
+        <button
+          type="button"
+          className="btn btn--quiet disclosure"
+          aria-expanded={editingTarget}
+          onClick={() => setEditingTarget((v) => !v)}
+        >
+          <span className="grow">
+            {target ? (
+              <>
+                יעד יומי · <span className="num">{kcalText(target.kcal)}</span> קק"ל ·{' '}
+                <span className="num">{gramsWholeText(target.protein)}</span> חלבון ·{' '}
+                <span className="num">{gramsWholeText(target.carbs)}</span> פחמימה ·{' '}
+                <span className="num">{gramsWholeText(target.fat)}</span> שומן
+              </>
+            ) : (
+              'יעד יומי · לא הוגדר'
+            )}
+          </span>
+          <span className="muted" aria-hidden="true">
+            {editingTarget ? '▾' : '▸'}
+          </span>
+        </button>
+        {editingTarget && (
+          <TargetForm
+            current={target}
+            today={today}
+            onCancel={() => setEditingTarget(false)}
+            onSave={(t) => {
+              void store.update('targets', upsertTarget(db.targets, t));
+              setEditingTarget(false);
+            }}
+          />
+        )}
+      </section>
+      <section className="section">
+        <div className="section__head">
+          <h2>תחילת התוכנית</h2>
+          <span className="tiny muted">שבוע 1</span>
+        </div>
+        <div className="stack">
+          <p className="small muted" style={{ margin: 0 }}>
+            קובע רק את מספר השבוע בכותרת הדוח לצ'אט. אינו משפיע על שום חישוב.
+          </p>
+          <p className="sub" style={{ margin: 0 }}>
+            כרגע:{' '}
+            <span className="num">
+              {start ? weekRangeLabel(start) : DASH_TEXT}
+            </span>{' '}
+            {db.settings.programStart ? '(נקבע ידנית)' : '(אוטומטי — מהנתון הראשון)'}
+          </p>
+          <DateField
+            label="בחר תאריך בשבוע 1"
+            value={db.settings.programStart ?? start ?? today}
+            max={today}
+            onChange={(d) =>
+              void store.update('settings', { ...db.settings, programStart: weekStart(d) })
+            }
+          />
+          {db.settings.programStart && (
+            <button
+              type="button"
+              className="btn btn--quiet"
+              onClick={() =>
+                void store.update('settings', { ...db.settings, programStart: null })
+              }
+            >
+              חזרה לאוטומטי
+              {firstData ? ` (${formatDM(weekStart(firstData))})` : ''}
+            </button>
+          )}
+        </div>
+      </section>
+      {/* אזור מסוכן: בתחתית, מופרד, מסגרת טרקוטה מקווקוות. */}
+      <section className="section section--danger">
+        <div className="section__head">
+          <h2>אזור מסוכן</h2>
+          <span className="tiny muted">מחיקת הכול</span>
+        </div>
         <div className="stack">
           {wipeStep === 0 && (
             <button
@@ -794,7 +792,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
 
       <p className="tiny muted" style={{ margin: 0 }}>
         היום: <span className="num">{today}</span> · גרסת נתונים{' '}
-        <span className="num">1</span>
+        <span className="num">{BACKUP_VERSION}</span>
         {total(db) === 0 ? ' · ריק' : ''}
       </p>
     </div>

@@ -1,7 +1,11 @@
 /* ============================================================
-   מערכת עיצוב
-   נקי, שקט, מדויק. בלי גרדיאנטים, בלי צללים, בלי כרטיסים צבעוניים.
-   היררכיה נוצרת מגודל ומשקל פונט בלבד. צבע אחד בלבד — לשגיאות.
+   מערכת עיצוב — "מינימליזם רך" (שלב 7: בכל הטאבים)
+   רקע נייר, כרטיסים לבנים עם מסגרת רכה וצל עדין, מרווחים נדיבים.
+   מצבים: מרווה = טוב, ענבר = בינוני / נתון לתשומת לב, צפחה = נמוך.
+   פעולה ראשית אחת (כפתור כהה) לכל כרטיס; פעולה הרסנית בטרקוטה עמומה.
+   כל המספרים ברוחב אחיד. אזור מגע 44px לפחות; 48px+ בהזנת סטים.
+   האסימונים חיים ב-:root ומשותפים לכל המסכים; קידומת nut- נשמרת כשם
+   נרדף כדי שמסך התזונה (שלב 3) יישאר זהה.
    ============================================================ */
 
 @font-face {
@@ -34,6 +38,21 @@
   --rule: #e2dfd8;
   --rule-strong: #8e8a81;
   --error: #a32a22;
+
+  /* אסימוני "מינימליזם רך" (שלב 3 → כל האפליקציה בשלב 7) */
+  --card: #ffffff;
+  --cream: #fffdf7;
+  --border: #e8e5de;
+  --divider: #f0ede6;
+  --sage: #8fae7e;
+  --amber: #d4a854;
+  --slate: #8b8b8b;
+  --track: #f0ede6;
+  --radius-card: 10px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* פעולה הרסנית: טרקוטה עמומה, לא אדום. 5.0:1 על לבן, 4.8:1 על נייר. */
+  --terracotta: #a85a3a;
+  --terracotta-soft: #f6ebe5;
 
   /* ביטחון בנתון — מלאות השבוע בלבד (7/7, 4–6, פחות מ-4). נבדק מול AA
      על --paper: 4.70, 4.83, 5.28. לעולם לא על כיוון שינוי או על משקל. */
@@ -118,7 +137,7 @@ body {
 .app__main {
   flex: 1;
   padding-block: var(--sp-4);
-  padding-bottom: calc(var(--tap) + var(--sp-6) + env(safe-area-inset-bottom));
+  padding-bottom: calc(52px + var(--sp-6) + env(safe-area-inset-bottom));
 }
 
 /* ---------- ניווט תחתון ---------- */
@@ -128,8 +147,9 @@ body {
   inset-inline: 0;
   bottom: 0;
   z-index: 20;
-  background: var(--paper);
-  border-top: 1px solid var(--rule);
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -146,13 +166,14 @@ body {
   background: none;
   font: inherit;
   font-size: 14px;
-  color: var(--ink-2);
-  min-height: var(--tap);
+  color: var(--ink-3);
+  min-height: 52px;
   padding: var(--sp-2) var(--sp-1);
   cursor: pointer;
   position: relative;
 }
 
+/* הטאב הפעיל: כהה ומודגש, עם פס מרווה מעוגל למעלה. */
 .tab[aria-selected='true'] {
   color: var(--ink);
   font-weight: 600;
@@ -162,9 +183,14 @@ body {
   content: '';
   position: absolute;
   top: 0;
-  inset-inline: 22%;
-  height: 2px;
-  background: var(--ink);
+  inset-inline: 18%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--sage);
+}
+
+.tab__dot {
+  background: var(--amber);
 }
 
 .tab__dot {
@@ -264,16 +290,38 @@ h3 {
 
 /* ---------- מבנים ---------- */
 
+/* כרטיס: כל סעיף במסך הוא כרטיס לבן עם מסגרת רכה וצל עדין (כמו .nut-card). */
 .section {
-  border-top: 1px solid var(--rule);
-  padding-top: var(--sp-4);
-  margin-top: var(--sp-5);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  padding: var(--sp-4);
 }
 
 .section--first {
-  border-top: 0;
   margin-top: 0;
-  padding-top: 0;
+}
+
+/* אזור מסוכן (מסך נתונים): מופרד, מסגרת טרקוטה מקווקוות על רקע חם. */
+.section--danger {
+  border: 1px dashed var(--terracotta);
+  background: var(--terracotta-soft);
+  box-shadow: none;
+}
+
+.stack--loose > .section--danger {
+  margin-top: var(--sp-6);
+}
+
+/* סעיף בתוך כרטיס: קו הפרדה בלבד, בלי כרטיס בתוך כרטיס. */
+.section .section {
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--divider);
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--sp-4) 0 0;
 }
 
 .section__head {
@@ -426,12 +474,18 @@ button {
 
 /* כפתור שקט עם גבול דק: פעולה משנית שצריכה להיבדל משורה שנפתחת. */
 .btn--outlined {
-  border-color: var(--rule);
+  border-color: var(--border);
 }
 
+/* פעולה הרסנית: טרקוטה עמומה. לעולם לא אדום בוהק, ולעולם לא מלא. */
 .btn--danger {
-  color: var(--error);
-  border-color: var(--error);
+  color: var(--terracotta);
+  border-color: var(--terracotta);
+  background: var(--card);
+}
+
+.btn--danger.err {
+  color: var(--terracotta);
 }
 
 .btn--block {
@@ -485,14 +539,15 @@ button {
   gap: var(--sp-1);
 }
 
+/* צ'יפ לחיץ: מסגרת רכה, מעוגל; הנבחר מתמלא במרווה. אותם ערכים ושדות. */
 .choice__btn {
   appearance: none;
   min-height: var(--tap);
   min-width: var(--tap);
   flex: 1 0 var(--tap);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
   color: var(--ink);
   font-size: 15px;
   font-variant-numeric: tabular-nums;
@@ -500,9 +555,9 @@ button {
 }
 
 .choice__btn[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  background: var(--sage);
+  color: #fff;
+  border-color: var(--sage);
   font-weight: 500;
 }
 
@@ -510,12 +565,16 @@ button {
   display: grid;
   /* חמש עמודות: 1–10 יוצא 5+5, 0–10 יוצא 5+5+1, 0–7 יוצא 5+3 */
   grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-2);
 }
 
 .choice--big .choice__btn {
-  min-height: 56px;
+  min-height: 64px;
   font-size: 20px;
   font-weight: 500;
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--cream);
 }
 
 .choice__hint {
@@ -538,6 +597,19 @@ button {
   font-weight: 400;
 }
 
+/* "החלפה" בייבוא: בחירה הרסנית — טרקוטה במקום מרווה. */
+.choice__btn--danger[aria-pressed='true'] {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+}
+
+/* כרטיסי A/B/C: הנבחר ("הבא בתור") כהה — זו הפעולה הראשית של הכרטיס. */
+.choice--big .choice__btn[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
 .choice--big .choice__btn--aside[aria-pressed='true'] {
   background: var(--ink-2);
   color: var(--paper);
@@ -547,31 +619,50 @@ button {
 /* סקשן של דבר שאינו אימון — אותו סימון מקווקו כמו הכרטיס. */
 .section--aside {
   border: 1px dashed var(--rule-strong);
-  border-radius: var(--radius);
-  padding: var(--sp-3);
+  box-shadow: none;
 }
 
 /* ---------- באנרים ---------- */
 
+/* באנר = כרטיס רך, לא פס מלא. פס צד: צפחה (הודעה), טרקוטה (שגיאה). */
 .banner {
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--slate);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3) var(--sp-4);
   font-size: 14px;
-  background: var(--paper-sunk);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  margin-bottom: var(--sp-4);
 }
 
 .banner--error {
-  border-color: var(--error);
-  color: var(--error);
-  background: var(--paper);
+  border-inline-start-color: var(--terracotta);
+  color: var(--ink);
+  background: var(--card);
 }
 
+.banner--error .btn--quiet.err {
+  color: var(--terracotta);
+}
+
+/* "נתונים חסרים" (שלב 2): חוסם ובולט — מסגרת טרקוטה מלאה על רקע חם. */
+.banner--blocking {
+  border: 2px solid var(--terracotta);
+  border-inline-start-width: 2px;
+  background: var(--terracotta-soft);
+  box-shadow: none;
+}
+
+/* תזכורת (גיבוי / מותניים): שורה שקטה עם פס ענבר — נתון, לא אזעקה. */
 .notice {
   font-size: 13px;
   color: var(--ink-2);
-  border-inline-start: 2px solid var(--rule-strong);
-  padding-inline-start: var(--sp-3);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--amber);
+  border-radius: var(--radius-card);
+  padding: var(--sp-2) var(--sp-3);
 }
 
 /* ---------- רשתות ורשימות ---------- */
@@ -583,8 +674,9 @@ button {
 }
 
 .day {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--cream);
   padding: var(--sp-2) 2px;
   text-align: center;
   min-height: 58px;
@@ -638,7 +730,7 @@ button {
 }
 
 .list > li {
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--divider);
   padding-block: var(--sp-2);
   min-height: var(--tap);
   display: flex;
@@ -663,10 +755,15 @@ button {
 }
 
 .weeknav__label {
-  font-size: 14px;
-  color: var(--ink-2);
+  font-size: 15px;
+  color: var(--ink);
   text-align: center;
   flex: 1;
+}
+
+.weeknav .btn--step {
+  border-color: var(--border);
+  border-radius: 8px;
 }
 
 /* ---------- אריחי סיכום ---------- */
@@ -678,8 +775,9 @@ button {
 }
 
 .stat {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--cream);
   padding: var(--sp-3);
   display: flex;
   flex-direction: column;
@@ -728,9 +826,10 @@ button {
 
 /* ---------- גרף ---------- */
 
+/* קו מרווה לממוצעים השבועיים, נקודות צפחה לשקילות היומיות. בלי קווי רשת. */
 .chart {
   width: 100%;
-  height: 96px;
+  height: 112px;
   display: block;
   overflow: visible;
 }
@@ -749,12 +848,18 @@ button {
   font-size: 13px;
   line-height: 1.55;
   white-space: pre-wrap;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
   padding: var(--sp-3);
-  background: var(--paper-sunk);
+  background: var(--cream);
   min-height: 240px;
   color: var(--ink);
+}
+
+textarea {
+  border-color: var(--border);
+  border-radius: 8px;
+  background: var(--card);
 }
 
 /* ---------- תרגיל ---------- */
@@ -787,23 +892,27 @@ button {
   flex-wrap: wrap;
 }
 
-/* נקודת ניווט קטנה מ-44px בכוונה: זו קיצור-דרך, והניווט העיקרי הוא
-   כפתורי "הקודם"/"הבא" שמתחת, שהם בגודל מלא. */
+.focusnav__dots {
+  gap: var(--sp-1);
+}
+
+/* נקודות ניווט בגודל מגע מלא (44px); נשברות לשורה שנייה כשצריך. */
 .focusnav__dot {
   appearance: none;
-  width: 26px;
-  height: 26px;
+  width: var(--tap);
+  height: var(--tap);
   padding: 0;
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
 .focusnav__dot.is-done {
-  background: var(--paper-sunk);
+  background: var(--cream);
+  border-color: var(--sage);
   color: var(--ink);
 }
 
@@ -814,10 +923,13 @@ button {
   font-weight: 600;
 }
 
+/* כרטיס התרגיל: שמנת בתוך כרטיס האימון הלבן — המקום שבו מזינים. */
 .focus {
-  border-top: 1px solid var(--rule);
   margin-top: var(--sp-3);
-  padding-top: var(--sp-4);
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
 }
 
 .focus__name {
@@ -858,13 +970,13 @@ button {
 
 .focus__note {
   margin: var(--sp-3) 0 0;
-  border-inline-start: 2px solid var(--ink);
+  border-inline-start: 3px solid var(--slate);
   padding-inline-start: var(--sp-3);
 }
 
 .focus__history {
   margin: var(--sp-3) 0 0;
-  border-inline-start: 2px solid var(--rule-strong);
+  border-inline-start: 3px solid var(--border);
   padding-inline-start: var(--sp-3);
 }
 
@@ -886,12 +998,22 @@ button {
   margin-top: var(--sp-1);
 }
 
-.focus__weight {
+/* הזנה: משקל (עמודה אחת לתרגיל — משקל אחד לכל הסטים) ליד חזרות לכל סט. */
+.focus__entry {
   margin-top: var(--sp-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-3) var(--sp-2);
+  align-items: start;
+}
+
+.focus__weight .stepper {
+  gap: 6px;
 }
 
 .focus__sets {
-  margin-top: var(--sp-3);
+  display: grid;
+  gap: var(--sp-2);
 }
 
 .focus__set {
@@ -900,33 +1022,32 @@ button {
   gap: var(--sp-2);
 }
 
-.focus__set + .focus__set {
-  margin-top: var(--sp-2);
-}
-
 .focus__setno {
-  min-width: 32px;
+  min-width: 36px;
+  font-size: 13px;
 }
 
 .focus__reps {
-  width: 120px;
-  flex: 0 0 120px;
+  flex: 1;
+  min-width: 0;
 }
 
-/* שדות גדולים יותר במסך האימון — הזנה באגודל אחד, בעמידה */
-.focus__set input[type='number'] {
-  min-height: 52px;
-  font-size: 19px;
-}
-
+/* שדות גדולים — הזנה באגודל אחד, בעמידה: 48px לפחות, ומקלדת מספרים. */
+.focus__set input[type='number'],
 .focus__weight input[type='number'] {
   min-height: 52px;
   font-size: 19px;
+  background: var(--card);
+  border-color: var(--border);
+  border-radius: 8px;
 }
 
 .focus__weight .btn--step {
   min-height: 52px;
   height: 52px;
+  border-color: var(--border);
+  background: var(--card);
+  border-radius: 8px;
 }
 
 /* ---------- חימום / אירובי סיום ---------- */
@@ -991,10 +1112,16 @@ button {
 .resttimer {
   position: fixed;
   inset-inline: 0;
-  bottom: calc(var(--tap) + env(safe-area-inset-bottom));
+  bottom: calc(52px + env(safe-area-inset-bottom));
   z-index: 25;
-  background: var(--paper);
-  border-top: 1px solid var(--ink);
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--divider);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.resttimer__count {
+  color: var(--ink);
 }
 
 .resttimer__inner {
@@ -1027,7 +1154,7 @@ button {
 
 /* מרווח נוסף בתחתית המסך כשהטיימר רץ, כדי שלא יכסה תוכן */
 .app__main--timer {
-  padding-bottom: calc(var(--tap) * 2 + var(--sp-6) + env(safe-area-inset-bottom));
+  padding-bottom: calc(52px + var(--tap) + var(--sp-6) + env(safe-area-inset-bottom));
 }
 
 /* ---------- תזונה ---------- */
@@ -1293,16 +1420,17 @@ input[type='file']::file-selector-button {
    ============================================================ */
 
 :root {
-  --nut-cream: #fffdf7;
-  --nut-card: #ffffff;
-  --nut-border: #e8e5de;
-  --nut-divider: #f0ede6;
-  --nut-sage: #8fae7e;
-  --nut-amber: #d4a854;
-  --nut-slate: #8b8b8b;
-  --nut-track: #f0ede6;
-  --nut-radius: 10px;
-  --nut-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* שמות נרדפים לאסימוני השורש — אותם ערכים בדיוק, מסך התזונה לא משתנה. */
+  --nut-cream: var(--cream);
+  --nut-card: var(--card);
+  --nut-border: var(--border);
+  --nut-divider: var(--divider);
+  --nut-sage: var(--sage);
+  --nut-amber: var(--amber);
+  --nut-slate: var(--slate);
+  --nut-track: var(--track);
+  --nut-radius: var(--radius-card);
+  --nut-shadow: var(--shadow);
 }
 
 .nut {
@@ -1833,6 +1961,12 @@ input[type='file']::file-selector-button {
   margin-top: var(--sp-3);
 }
 
+/* צ'יפי RIR בגודל מגע מלא, שקטים — לא מתחרים בהזנת הסטים. */
+.wk-rir .nut-chip {
+  min-height: var(--tap);
+  min-width: var(--tap);
+}
+
 /* הצעה לאימון הבא: כרטיס רך; מרווה = עלייה, צפחה = אותו משקל, ענבר = ירידה / RIR חסר */
 .wk-suggest {
   margin-top: var(--sp-3);
@@ -1874,12 +2008,20 @@ input[type='file']::file-selector-button {
   font-weight: 500;
 }
 
-/* דלג ואחזור / החלף (שלב 4.1) */
+/* דלג ואחזור / החלף (שלב 4.1): פעולות משניות, שקטות, בתחתית הכרטיס. */
 .wk-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
-  margin-top: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--divider);
+}
+
+.wk-actions .btn {
+  font-size: 14px;
+  color: var(--ink-2);
+  background: var(--card);
 }
 
 /* "הוחלף מ-…" — סימון עובדתי, בענבר */
@@ -1890,9 +2032,9 @@ input[type='file']::file-selector-button {
 /* רשימת החלופות */
 .wk-alts {
   margin-top: var(--sp-2);
-  border: 1px solid var(--nut-border);
-  border-radius: var(--nut-radius);
-  background: var(--nut-cream);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
   padding: var(--sp-1) var(--sp-2);
 }
 

@@ -5,13 +5,14 @@ import { useElementWidth } from './useElementWidth';
 
 type Props = { weeks: WeekSummary[] };
 
-const H = 96;
+const H = 112;
 const PAD_TOP = 12;
 const PAD_BOTTOM = 24;
 const PAD_X = 10;
 /** שוליים בצד שמאל לתוויות הערך (גבול עליון ותחתון של הציר). */
 const GUTTER = 40;
 const R = 3;
+const R_DAY = 1.75;
 /**
  * רצפה לטווח ציר ה-Y, בק"ג. בלי רצפה, 0.3 ק"ג על פני שמונה שבועות נראים
  * כמו מדרון; המסך הזה אמור להראות "משקל תקוע" כתקוע.
@@ -19,9 +20,9 @@ const R = 3;
 const MIN_SPAN = 1;
 
 /**
- * ממוצעים שבועיים בלבד — לא שקילות יומיות.
- * שבוע חלקי מסומן בנקודה חלולה. בלי צבע, בלי אנימציה, בלי צירים.
- * הזמן זורם מימין לשמאל, כמו שאר הממשק.
+ * ממוצעים שבועיים כקו מרווה (שבוע חלקי — נקודה חלולה), ושקילות יומיות
+ * כנקודות צפחה קטנות סביבו. בלי קווי רשת, בלי אנימציה; שני מספרים בקצה
+ * הציר נותנים קנה מידה. הזמן זורם מימין לשמאל, כמו שאר הממשק.
  */
 export default function WeeklyChart({ weeks }: Props) {
   const box = useRef<HTMLDivElement>(null);
@@ -31,7 +32,8 @@ export default function WeeklyChart({ weeks }: Props) {
 
   let body = null;
   if (width > 40 && points.length >= 2) {
-    const values = points.map((p) => p.avg);
+    const daily = weeks.flatMap((w, i) => w.days.flatMap((v, j) => (v === null ? [] : [{ i, j, v }])));
+    const values = [...points.map((p) => p.avg), ...daily.map((d) => d.v)];
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = Math.max(max - min, MIN_SPAN);
@@ -41,14 +43,18 @@ export default function WeeklyChart({ weeks }: Props) {
     const hi = lo + span;
     const innerW = width - PAD_X - GUTTER;
     const innerH = H - PAD_TOP - PAD_BOTTOM;
+    const n = weeks.length;
+    const step = n > 1 ? innerW / (n - 1) : 0;
 
-    // x=0 הוא הימני ביותר (השבוע המוקדם) — כיוון הזמן ב-RTL.
-    const xy = points.map((p, i) => {
-      const t = points.length === 1 ? 0 : i / (points.length - 1);
-      const x = width - PAD_X - t * innerW;
-      const y = PAD_TOP + (1 - (p.avg - lo) / span) * innerH;
-      return { x, y, complete: p.complete, week: p.weekStart, avg: p.avg };
+    // x=0 הוא הימני ביותר (השבוע המוקדם) — כיוון הזמן ב-RTL. כל שבוע
+    // תופס "צעד" אחד; הימים שלו פרוסים סביב מרכזו, ראשון מימין לשבת משמאל.
+    const xOfWeek = (i: number) => width - PAD_X - i * step;
+    const yOf = (v: number) => PAD_TOP + (1 - (v - lo) / span) * innerH;
+    const xy = points.map((p) => {
+      const i = weeks.indexOf(p);
+      return { x: xOfWeek(i), y: yOf(p.avg), complete: p.complete, week: p.weekStart, avg: p.avg };
     });
+    const dots = daily.map((d) => ({ x: xOfWeek(d.i) + ((3 - d.j) / 7) * step, y: yOf(d.v), key: `${d.i}-${d.j}` }));
 
     body = (
       <svg
@@ -61,11 +67,14 @@ export default function WeeklyChart({ weeks }: Props) {
           .map((p) => `${formatDM(p.weekStart)} ${p.avg.toFixed(2)}${p.complete ? '' : ' חלקי'}`)
           .join(', ')}`}
       >
+        {dots.map((d) => (
+          <circle key={d.key} cx={d.x} cy={d.y} r={R_DAY} fill="var(--slate)" opacity="0.7" />
+        ))}
         <polyline
           points={xy.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
           fill="none"
-          stroke="var(--ink)"
-          strokeWidth="1.25"
+          stroke="var(--sage)"
+          strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -75,9 +84,9 @@ export default function WeeklyChart({ weeks }: Props) {
             cx={p.x}
             cy={p.y}
             r={R}
-            fill={p.complete ? 'var(--ink)' : 'var(--paper)'}
-            stroke="var(--ink)"
-            strokeWidth="1.25"
+            fill={p.complete ? 'var(--sage)' : 'var(--card)'}
+            stroke="var(--sage)"
+            strokeWidth="2"
           />
         ))}
         <text
