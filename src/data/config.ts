@@ -74,6 +74,15 @@ export const CARDIO_BUDGET_SCHEDULE: readonly { from: ISODate; minutes: number }
   { from: '2026-11-01', minutes: 120 },
 ];
 
+/**
+ * יעד צעדים יומי (שלב 6). null עד 31/10/2026 — אין יעד ואין צבע; 8,000
+ * מ-1/11/2026 (שלב 2 של התוכנית). אותו דפוס כמו תקציב האירובי:
+ * `stepsGoalFor` ב-lib/steps.ts בוחר את השלב שכבר נכנס לתוקף בתאריך.
+ */
+export const STEPS_GOAL_SCHEDULE: readonly { from: ISODate; steps: number }[] = [
+  { from: '2026-11-01', steps: 8000 },
+];
+
 /** קפיצת כפתורי ה-± בשדה המשקל, בק"ג. */
 export const WEIGHT_STEP = 0.5;
 
