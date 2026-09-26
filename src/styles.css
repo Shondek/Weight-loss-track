@@ -1864,3 +1864,12 @@ input[type='file']::file-selector-button {
 .wk-suggest__warn {
   color: var(--confidence-mid);
 }
+
+/* תקציב אירובי: מעל התקציב בענבר (נתון, לא אזהרה) */
+.wk-budget--over {
+  color: var(--confidence-mid);
+}
+
+.wk-budget__flag {
+  font-weight: 500;
+}

@@ -33,6 +33,8 @@ type Props = {
   onFinish: () => void;
   /** "רישום ידני": סיכום עם מקטע אחד מהטופס, בלי ריצה. */
   onManual: () => void;
+  /** דקות שנשארו בתקציב השבועי של השבוע של הרשומה (שלב 4). */
+  remainingMinutes?: number | null | undefined;
 };
 
 /**
@@ -49,6 +51,7 @@ export default function StandaloneCardioEditor({
   session,
   sessionBusy,
   onStart,
+  remainingMinutes = null,
   onSessionChange,
   onFinish,
   onManual,
@@ -221,6 +224,11 @@ export default function StandaloneCardioEditor({
             רישום ידני
           </button>
         </div>
+        {remainingMinutes !== null && (
+          <p className={`tiny${remainingMinutes === 0 ? ' wk-budget--over' : ' muted'}`} style={{ margin: 0 }}>
+            {remainingMinutes === 0 ? 'התקציב השבועי נוצל' : <>נשארו <span className="num">{remainingMinutes}</span> דק׳ השבוע</>}
+          </p>
+        )}
         <p className="tiny muted" style={{ margin: 0 }}>
           {sessionBusy
             ? 'ריצת אירובי אחרת פעילה — סיים אותה קודם.'

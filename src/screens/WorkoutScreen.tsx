@@ -63,6 +63,7 @@ import {
   standaloneInWeek,
   standaloneLine,
   upsertStandalone,
+  remainingMinutes,
 } from '../lib/cardio';
 import {
   deriveSegments,
@@ -637,9 +638,10 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           <span className="strong">{upNext}</span>
         </p>
         {/* דקות, לא מפגשים. סיום מתוך האימונים, עצמאי מהמפתח שלו. */}
-        <p className="sub" style={{ margin: 'var(--sp-1) 0 0' }}>
-          אירובי: <span className="num">{cardioSum.total}</span> /{' '}
+        <p className={`sub${cardioSum.over ? ' wk-budget--over' : ''}`} style={{ margin: 'var(--sp-1) 0 0' }}>
+          אירובי <span className="num">{cardioSum.total}</span> /{' '}
           <span className="num">{cardioSum.budget}</span> דק׳{' '}
+          {cardioSum.over && <span className="wk-budget__flag">· מעל התקציב השבועי</span>}
           <span className="muted tiny">
             · סיום: <span className="num">{cardioSum.finisher}</span> · עצמאי:{' '}
             <span className="num">{cardioSum.standalone}</span>
@@ -754,6 +756,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           today={today}
           onChange={setCardioOpen}
           onClose={() => setCardioOpen(null)}
+          remainingMinutes={remainingMinutes(cardioWeek(db, weekStart(cardioOpen.d)))}
           defaultsFor={(mode) => lastStandalone(db.standaloneCardio, mode)}
           session={sessionFor({ kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note })}
           sessionBusy={session !== null}
@@ -842,6 +845,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               }}
               onStart={(minutes) => onCardioStart(current, minutes)}
               detailed={current.exerciseId === FINISHER_ID}
+              remainingMinutes={current.exerciseId === FINISHER_ID ? remainingMinutes(cardioWeek(db, weekStart(open.d))) : null}
               defaultsFor={
                 current.exerciseId === FINISHER_ID
                   ? (mode) => lastFinisherCardio(db.workouts, mode, open.id)

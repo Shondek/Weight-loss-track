@@ -183,7 +183,14 @@ export type CardioWeek = {
    * ואז לא מוצג. לא מד צעדים יומי: בלי יעד, בלי אחוזים.
    */
   steps: number | null;
+  /** מעל התקציב השבועי (total > budget). מוצג בענבר — נתון, לא שיפוט. */
+  over: boolean;
 };
+
+/** כמה דקות נשארו השבוע (0 כשמעל התקציב). */
+export function remainingMinutes(c: Pick<CardioWeek, 'total' | 'budget'>): number {
+  return Math.max(0, c.budget - c.total);
+}
 
 /** Σ צעדים ברשומות שרשמו; null כשאין אף אחת. */
 export function stepsInWeek(db: DB, ws: ISODate): number | null {
@@ -212,11 +219,14 @@ export function stepsInWeek(db: DB, ws: ISODate): number | null {
 export function cardioWeek(db: DB, ws: ISODate): CardioWeek {
   const finisher = finisherMinutesInWeek(db.workouts, ws);
   const standalone = standaloneMinutesInWeek(db.standaloneCardio, ws);
+  const budget = cardioBudgetFor(ws);
+  const total = finisher + standalone;
   return {
     finisher,
     standalone,
-    total: finisher + standalone,
-    budget: cardioBudgetFor(ws),
+    total,
+    budget,
     steps: stepsInWeek(db, ws),
+    over: total > budget,
   };
 }
