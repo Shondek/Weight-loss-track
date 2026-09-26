@@ -402,7 +402,8 @@ export function blankLoggedExercise(
   spec: Exercise,
   weight: number | null = null,
 ): LoggedExercise {
-  const usesWeight = !spec.isTimed && !spec.bodyweightOnly;
+  // תרגיל זמן יכול לשאת משקל (פלאנק עם פלטה): רק משקל-גוף-בלבד בלי משקל.
+  const usesWeight = !spec.bodyweightOnly;
   return {
     exerciseId: spec.id,
     n: spec.name,

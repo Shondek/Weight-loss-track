@@ -99,7 +99,11 @@ export function exerciseText(e: LoggedExercise): string {
       return v === null ? DASH : String(v);
     })
     .join(',');
-  if (isTimedExercise(e)) return `${name} ${values} שנ׳`;
+  // תרגיל זמן: בלי משקל כמו קודם; עם פלטה — "פלאנק 5×45,45,45 שנ׳".
+  if (isTimedExercise(e)) {
+    const w = weightText(e);
+    return w === DASH ? `${name} ${values} שנ׳` : `${name} ${w}×${values} שנ׳`;
+  }
   // תרגיל משקל גוף לא מקבל אסימון משקל — "—×10,10,10" הוא רעש, לא מידע.
   if (e.bodyweightOnly) return `${name} ${values}`;
   return `${name} ${weightText(e)}×${values}`;

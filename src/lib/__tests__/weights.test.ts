@@ -8,6 +8,7 @@ import {
   weekChange,
   weeklyAverages,
   daysSinceWaist,
+  waistReminderDue,
   waistBeforeWeek,
   waistInWeek,
   upsertWaist,
@@ -201,5 +202,19 @@ describe('מותניים', () => {
   it('ימים מאז המדידה האחרונה', () => {
     expect(daysSinceWaist(waist, '2026-09-09')).toBe(7);
     expect(daysSinceWaist([], '2026-09-09')).toBeNull();
+  });
+});
+
+describe('תזכורת מותניים ביום רביעי (שלב 4)', () => {
+  const waist = [{ d: '2026-09-16', cm: 95 }]; // רביעי
+  it('רביעי בלי מדידה → מוצג; עם מדידה לאותו רביעי → לא; ימים אחרים → לא', () => {
+    expect(waistReminderDue([], '2026-09-23')).toBe(true); // רביעי
+    expect(waistReminderDue(waist, '2026-09-23')).toBe(true); // מדידה מהרביעי הקודם לא מספיקה
+    expect(waistReminderDue([{ d: '2026-09-23', cm: 94.5 }], '2026-09-23')).toBe(false);
+    for (const d of ['2026-09-20', '2026-09-21', '2026-09-22', '2026-09-24', '2026-09-25', '2026-09-26']) {
+      expect(waistReminderDue([], d), d).toBe(false);
+    }
+    // מדידה מיום שלישי לא מכבה את הרביעי
+    expect(waistReminderDue([{ d: '2026-09-22', cm: 95 }], '2026-09-23')).toBe(true);
   });
 });

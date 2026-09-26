@@ -44,6 +44,8 @@ type Props = {
   onFinishSession?: (() => void) | undefined;
   /** אירובי שכבר נרשם: פותח את הסיכום לעריכה. */
   onEditSummary?: (() => void) | undefined;
+  /** דקות שנשארו בתקציב השבועי (שלב 4). null = לא מוצג (חימום). */
+  remainingMinutes?: number | null | undefined;
 };
 
 /**
@@ -63,6 +65,7 @@ export default function CardioFocus({
   session,
   sessionBusy,
   onStartSession,
+  remainingMinutes = null,
   onSessionChange,
   onFinishSession,
   onEditSummary,
@@ -247,6 +250,12 @@ export default function CardioFocus({
             placeholder="0.0"
           />
         </div>
+      )}
+
+      {detailed && remainingMinutes !== null && (
+        <p className={`tiny${remainingMinutes === 0 ? ' wk-budget--over' : ' muted'}`} style={{ margin: 'var(--sp-2) 0 0' }}>
+          {remainingMinutes === 0 ? 'התקציב השבועי נוצל' : <>נשארו <span className="num">{remainingMinutes}</span> דק׳ השבוע</>}
+        </p>
       )}
 
       <p className="tiny muted" style={{ margin: 'var(--sp-3) 0 0' }}>

@@ -1821,3 +1821,55 @@ input[type='file']::file-selector-button {
 .nut-foods__details {
   padding-top: var(--sp-1);
 }
+
+/* ============================================================
+   מסך אימונים — תוספות שלב 4 (RIR, הצעה, תקציב אירובי).
+   אותם אסימונים של שלב 3; שאר הטאב לא עוצב מחדש.
+   ============================================================ */
+
+.wk-rir {
+  display: grid;
+  gap: var(--sp-1);
+  margin-top: var(--sp-3);
+}
+
+/* הצעה לאימון הבא: כרטיס רך; מרווה = עלייה, צפחה = אותו משקל, ענבר = ירידה / RIR חסר */
+.wk-suggest {
+  margin-top: var(--sp-3);
+  border: 1px solid var(--nut-border);
+  border-inline-start: 3px solid var(--nut-slate);
+  border-radius: var(--nut-radius);
+  background: var(--nut-cream);
+  padding: var(--sp-2) var(--sp-3);
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.wk-suggest--up {
+  border-inline-start-color: var(--nut-sage);
+}
+
+.wk-suggest--down,
+.wk-suggest--unknown {
+  border-inline-start-color: var(--nut-amber);
+}
+
+.wk-suggest__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 15px;
+}
+
+.wk-suggest__warn {
+  color: var(--confidence-mid);
+}
+
+/* תקציב אירובי: מעל התקציב בענבר (נתון, לא אזהרה) */
+.wk-budget--over {
+  color: var(--confidence-mid);
+}
+
+.wk-budget__flag {
+  font-weight: 500;
+}

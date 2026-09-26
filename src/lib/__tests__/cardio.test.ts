@@ -132,8 +132,8 @@ describe('מונה שבועי — שני המקורות', () => {
   it('סיום מתוך האימונים, עצמאי מהמפתח שלו, סכום מול תקציב', () => {
     expect(finisherMinutesInWeek(db().workouts, WEEK)).toBe(15);
     expect(finisherMinutesInWeek(db().workouts, '2026-08-23')).toBe(12);
-    expect(cardioWeek(db(), WEEK)).toEqual({ finisher: 15, standalone: 60, total: 75, budget: 60, steps: null });
-    expect(cardioWeek(emptyDb(), WEEK)).toEqual({ finisher: 0, standalone: 0, total: 0, budget: 60, steps: null });
+    expect(cardioWeek(db(), WEEK)).toEqual({ finisher: 15, standalone: 60, total: 75, budget: 60, steps: null, over: true });
+    expect(cardioWeek(emptyDb(), WEEK)).toEqual({ finisher: 0, standalone: 0, total: 0, budget: 60, steps: null, over: false });
   });
 
   it('קריטי: אירובי — סיום או עצמאי — לא מזיז את "אימונים השבוע"', () => {
@@ -154,7 +154,7 @@ describe('מונה שבועי — שני המקורות', () => {
         : w,
     );
     expect(workoutsInWeek(d.workouts, WEEK).length).toBe(2);
-    expect(cardioWeek(d, WEEK)).toEqual({ finisher: 35, standalone: 120, total: 155, budget: 60, steps: null });
+    expect(cardioWeek(d, WEEK)).toEqual({ finisher: 35, standalone: 120, total: 155, budget: 60, steps: null, over: true });
   });
 
   it('הסיכום השבועי והדוח לצ׳אט מציגים את אותם מספרים', () => {

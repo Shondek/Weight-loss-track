@@ -130,6 +130,31 @@ describe('program-abc.json — תוכן כל תרגיל', () => {
     }
     expect(exerciseById('assisted-pull-up')?.assisted).toBe(true);
     expect(exerciseById('assisted-pull-up')?.bodyweightOnly).toBe(false);
+    // שלב 4: פלאנק הוא תרגיל זמן שנושא משקל (פלטה) — לא משקל-גוף-בלבד.
+    expect(exerciseById('plank')?.isTimed).toBe(true);
+    expect(exerciseById('plank')?.bodyweightOnly).toBe(false);
+    expect(exerciseById('plank')?.machine).toBeNull();
+  });
+});
+
+describe('program-abc.json — step (שלב 4)', () => {
+  it('לכל תרגיל בתוכנית step מספרי חיובי או null; ברירות המחדל לפי סוג הציוד', () => {
+    for (const { e } of ALL) {
+      expect(e.step === null || e.step > 0, e.id).toBe(true);
+    }
+    for (const id of ['db-bench-press', 'db-rdl', 'db-lateral-raise-seated', 'db-lateral-raise-standing', 'db-supinated-curl', 'db-single-arm-row', 'db-incline-bench-press']) {
+      expect(exerciseById(id)?.step, id).toBe(2.5);
+    }
+    expect(exerciseById('leg-press')?.step).toBe(5);
+    for (const id of ['lat-pulldown', 'seated-cable-row', 'face-pull', 'triceps-pushdown', 'cable-torso-rotation']) {
+      expect(exerciseById(id)?.step, id).toBe(5);
+    }
+    for (const id of ['pec-deck', 'machine-hip-abduction', 'leg-extension', 'leg-curl']) {
+      expect(exerciseById(id)?.step, id).toBeNull();
+    }
+    expect(exerciseById('plank')?.step).toBe(2.5);
+    // תרגיל פרוש בלי step בקובץ → null
+    for (const r of RETIRED) expect(r.step).toBeNull();
   });
 });
 

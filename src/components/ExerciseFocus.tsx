@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import type { LoggedExercise, LoggedSet } from '../types';
+import type { LoggedExercise, LoggedSet, Rir } from '../types';
 import type { Exercise } from '../data/program';
 import { WEIGHT_STEP } from '../data/config';
 import type { ExerciseHistory } from '../lib/workouts';
@@ -9,6 +9,7 @@ import { clean, DASH } from '../lib/format';
 import Stepper from './Stepper';
 import NumberField from './NumberField';
 import ExerciseChart from './ExerciseChart';
+import { suggestionLabel, type Suggestion } from '../lib/progression';
 
 type Props = {
   spec: Exercise;
@@ -26,10 +27,13 @@ type Props = {
    */
   historyOpen: boolean;
   onToggleHistory: () => void;
+  /** הצעה לאימון הזה מכללי ההתקדמות (lib/progression.ts). null = אין היסטוריה. */
+  suggestion?: Suggestion | null | undefined;
 };
 
 const MAX_WEIGHT = 500;
 const MAX_REPS = 999;
+const RIR_OPTIONS: readonly Rir[] = [0, 1, 2, 3, 4];
 
 /** "לרגל" לתרגילי רגליים, "ליד" לתרגילי ידיים, "לצד" לשאר. */
 function sideLabel(spec: Exercise): string {
@@ -55,7 +59,9 @@ function historyText(h: ExerciseHistory, timed: boolean, usesWeight: boolean): s
   if (usesWeight) {
     const weights = performed.map((s) => (s.weight === null ? DASH : clean(s.weight)));
     const distinct = new Set(weights);
-    parts.push(`${distinct.size === 1 ? (weights[0] ?? DASH) : weights.join(',')} ק״ג`);
+    // תרגיל זמן שנרשם בלי משקל (פלאנק ישן) = משקל גוף, לא "—".
+    if (timed && performed.length > 0 && performed.every((s) => s.weight === null)) parts.push('משקל גוף');
+    else parts.push(`${distinct.size === 1 ? (weights[0] ?? DASH) : weights.join(',')} ק״ג`);
   }
   parts.push(timed ? `${values} שנ׳` : values);
   return parts.join(' · ');
@@ -70,9 +76,11 @@ export default function ExerciseFocus({
   onSetLogged,
   historyOpen,
   onToggleHistory,
+  suggestion = null,
 }: Props) {
   const timed = spec.isTimed;
-  const usesWeight = !timed && !spec.bodyweightOnly;
+  // תרגיל זמן עם משקל (פלאנק + פלטה): שדה משקל אופציונלי; ריק = משקל גוף.
+  const usesWeight = !spec.bodyweightOnly;
   const side = sideLabel(spec);
   const weight = lastWeightOf(log);
   const [showAll, setShowAll] = useState(false);
@@ -87,6 +95,12 @@ export default function ExerciseFocus({
    */
   const setWeight = (w: number | null) => {
     onChange({ ...log, sets: log.sets.map((s) => ({ ...s, weight: w })) });
+  };
+
+  /** RIR בסט האחרון: לחיצה חוזרת מנקה. אופציונלי — לא חוסם שמירה. */
+  const setRir = (v: Rir) => {
+    const { rir: current, ...rest } = log;
+    onChange(current === v ? rest : { ...rest, rir: v });
   };
 
   const patchSet = (i: number, patch: Partial<LoggedSet>) => {
@@ -201,6 +215,28 @@ export default function ExerciseFocus({
         )}
       </div>
 
+      {/* הצעה לאימון הבא — מוצגת בלבד; השדה מתמלא רק בלחיצה על "השתמש". */}
+      {suggestion && (
+        <div className={`wk-suggest wk-suggest--${suggestion.rirUnknown ? 'unknown' : suggestion.action}`} role="note">
+          <div className="wk-suggest__head">
+            <span className="grow">
+              הצעה: <span className="num strong">{suggestionLabel(suggestion, spec).weight}</span> ·{' '}
+              <span className="num">{suggestionLabel(suggestion, spec).reps}</span>
+              <span className="tiny muted"> · {suggestion.rule}</span>
+            </span>
+            {usesWeight && suggestion.weight !== null && (
+              <button type="button" className="btn btn--quiet btn--outlined" onClick={() => setWeight(suggestion.weight)}>
+                השתמש
+              </button>
+            )}
+          </div>
+          <p className="tiny muted" style={{ margin: 0 }}>
+            {suggestion.reason}
+            {suggestion.rirUnknown && <span className="wk-suggest__warn"> · RIR לא נרשם — אשר בעצמך</span>}
+          </p>
+        </div>
+      )}
+
       {usesWeight && (
         <div className="focus__weight">
           <Stepper
@@ -212,7 +248,7 @@ export default function ExerciseFocus({
             max={MAX_WEIGHT}
             decimals={1}
             unit='ק"ג'
-            placeholder='ק"ג'
+            placeholder={timed ? 'משקל גוף' : 'ק"ג'}
           />
         </div>
       )}
@@ -234,6 +270,18 @@ export default function ExerciseFocus({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* RIR בסט האחרון — הקלט שכללי ההתקדמות צריכים (R1/R5). */}
+      <div className="wk-rir" role="group" aria-label={`חזרות ברזרבה בסט האחרון — ${spec.name}`}>
+        <span className="tiny muted">חזרות ברזרבה בסט האחרון</span>
+        <div className="nut-chips">
+          {RIR_OPTIONS.map((v) => (
+            <button key={v} type="button" className="nut-chip" aria-pressed={log.rir === v} onClick={() => setRir(v)}>
+              {v === 4 ? '4+' : v}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

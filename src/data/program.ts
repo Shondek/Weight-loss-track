@@ -43,6 +43,11 @@ export interface Exercise {
   note: string | null;
   /** סרטון הדגמה. null כשאין — ואז שום דבר לא מרונדר. */
   videoUrl: string | null;
+  /**
+   * קפיצת המשקל בק"ג להצעת האימון הבא (שלב 4). null = מכונה עם מדרגות לא
+   * ידועות: ההצעה אומרת "דרגה אחת למעלה/למטה" וכלל הקפיצה הגדולה (R4) לא חל.
+   */
+  step: number | null;
 }
 
 /**
@@ -53,6 +58,7 @@ export const TYPE_CONFIG = REST_SECONDS;
 
 type OptionalKeys =
   | 'reps'
+  | 'step'
   | 'effort'
   | 'unilateral'
   | 'isTimed'
@@ -95,6 +101,7 @@ function ex(e: ExerciseInput): Exercise {
     assisted: e.assisted ?? false,
     note: e.note ?? null,
     videoUrl: e.videoUrl ?? null,
+    step: typeof e.step === 'number' && e.step > 0 ? e.step : null,
   };
 }
 
