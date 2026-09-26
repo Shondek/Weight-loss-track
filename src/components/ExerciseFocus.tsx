@@ -9,6 +9,7 @@ import { clean, DASH } from '../lib/format';
 import Stepper from './Stepper';
 import NumberField from './NumberField';
 import ExerciseChart from './ExerciseChart';
+import { suggestionLabel, type Suggestion } from '../lib/progression';
 
 type Props = {
   spec: Exercise;
@@ -26,6 +27,8 @@ type Props = {
    */
   historyOpen: boolean;
   onToggleHistory: () => void;
+  /** הצעה לאימון הזה מכללי ההתקדמות (lib/progression.ts). null = אין היסטוריה. */
+  suggestion?: Suggestion | null | undefined;
 };
 
 const MAX_WEIGHT = 500;
@@ -73,6 +76,7 @@ export default function ExerciseFocus({
   onSetLogged,
   historyOpen,
   onToggleHistory,
+  suggestion = null,
 }: Props) {
   const timed = spec.isTimed;
   // תרגיל זמן עם משקל (פלאנק + פלטה): שדה משקל אופציונלי; ריק = משקל גוף.
@@ -210,6 +214,28 @@ export default function ExerciseFocus({
           </div>
         )}
       </div>
+
+      {/* הצעה לאימון הבא — מוצגת בלבד; השדה מתמלא רק בלחיצה על "השתמש". */}
+      {suggestion && (
+        <div className={`wk-suggest wk-suggest--${suggestion.rirUnknown ? 'unknown' : suggestion.action}`} role="note">
+          <div className="wk-suggest__head">
+            <span className="grow">
+              הצעה: <span className="num strong">{suggestionLabel(suggestion, spec).weight}</span> ·{' '}
+              <span className="num">{suggestionLabel(suggestion, spec).reps}</span>
+              <span className="tiny muted"> · {suggestion.rule}</span>
+            </span>
+            {usesWeight && suggestion.weight !== null && (
+              <button type="button" className="btn btn--quiet btn--outlined" onClick={() => setWeight(suggestion.weight)}>
+                השתמש
+              </button>
+            )}
+          </div>
+          <p className="tiny muted" style={{ margin: 0 }}>
+            {suggestion.reason}
+            {suggestion.rirUnknown && <span className="wk-suggest__warn"> · RIR לא נרשם — אשר בעצמך</span>}
+          </p>
+        </div>
+      )}
 
       {usesWeight && (
         <div className="focus__weight">

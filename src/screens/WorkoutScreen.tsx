@@ -21,6 +21,7 @@ import {
   restSeconds,
 } from '../data/program';
 import { HISTORY_ROWS } from '../data/config';
+import { suggestNext } from '../lib/progression';
 import {
   cardioDetailLine,
   cardioLine,
@@ -885,6 +886,10 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               history={recentExercises(db.workouts, current.exerciseId, HISTORY_ROWS, open.id)}
               fullHistory={exerciseHistory(db.workouts, current.exerciseId).filter(
                 (h) => h.workoutId !== open.id,
+              )}
+              suggestion={suggestNext(
+                exerciseHistory(db.workouts, current.exerciseId).filter((h) => h.workoutId !== open.id),
+                specOf(current),
               )}
               onChange={(next) => {
                 patch({
