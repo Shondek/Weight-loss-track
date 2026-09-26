@@ -99,6 +99,7 @@ function fixture(): DB {
   ];
   db.days = [closed('2026-09-06'), closed('2026-09-07'), closed('2026-09-08'), closed('2026-09-09'), closed('2026-09-11', { fridayTier: 'regular' })];
   db.checkins = [{ weekStart: WEEK2, adherence: 8, hunger: 5, energy: 7, sleepHours: 7, unplannedSnackDays: 1, note: ' שבוע טוב ' }];
+  db.targets = [{ from: '2026-08-30', kcal: 1900, protein: 190, carbs: 120, fat: 60 }];
   return db;
 }
 
@@ -207,10 +208,10 @@ describe('4. תזונה — ימים סגורים בלבד', () => {
   it('ממוצעים, חלבון ≥190, מתחת ל-1850, הערכות, ארוחת שישי, ימים פתוחים', () => {
     const d = buildWeeklySummaryData(fixture(), WEEK2);
     expect(d.nutrition.closedDays).toEqual(['2026-09-06', '2026-09-07', '2026-09-08', '2026-09-09', '2026-09-11']);
-    expect(d.nutrition).toMatchObject({ avgKcal: 1910, avgProtein: 193, proteinDays: 4, lowKcalDays: 1, estimateDays: 2, fridayTier: 'regular', openDays: 1 });
+    expect(d.nutrition).toMatchObject({ target: { kcal: 1900, protein: 190 }, avgKcal: 1910, avgProtein: 193, proteinDays: 4, lowKcalDays: 1, estimateDays: 2, fridayTier: 'regular', openDays: 1 });
     const text = weeklySummaryText(d);
     expect(text).toContain('ימים סגורים 5/7 (א ב ג ד ו)');
-    expect(text).toContain('ימים סגורים: ממוצע 1910 קק״ל · 193 ג׳ חלבון · חלבון ≥190: 4/5 · מתחת ל-1850: 1/5 · עם הערכה: 2/5 · ארוחת שישי: רגילה');
+    expect(text).toContain('ימים סגורים: ממוצע 1910 קק״ל · 193 ג׳ חלבון · יעד 1900/190 · חלבון ≥190: 4/5 · מתחת ל-1850: 1/5 · עם הערכה: 2/5 · ארוחת שישי: רגילה');
     expect(text).toContain('נרשמו ולא נסגרו: 1');
     expect(d.flags.some((f) => f.includes('מתחת ל-1850'))).toBe(false);
   });
@@ -231,6 +232,25 @@ describe('4. תזונה — ימים סגורים בלבד', () => {
     const text = weeklySummaryText(dn);
     expect(text).toContain('ימים סגורים 0/7');
     expect(text).not.toContain('ימים סגורים: ממוצע');
+  });
+});
+
+describe('4ב. יעדים — targetFor על שבת של השבוע', () => {
+  it('שינוי יעד החלבון השמור משנה את ספירת ≥יעד; הרצפה היא הקבוע ב-targets.ts ולא תלויה ביעד', () => {
+    const db = fixture();
+    db.targets = [{ from: '2026-08-30', kcal: 2100, protein: 200, carbs: 120, fat: 60 }];
+    const d = buildWeeklySummaryData(db, WEEK2);
+    expect(d.nutrition).toMatchObject({ target: { kcal: 2100, protein: 200 }, proteinDays: 1, lowKcalDays: 1 });
+    expect(weeklySummaryText(d)).toContain('יעד 2100/200 · חלבון ≥200: 1/5 · מתחת ל-1850: 1/5');
+    // יעד חדש שנכנס לתוקף באמצע השבוע — היעד של שבת קובע
+    db.targets = [...db.targets, { from: '2026-09-10', kcal: 1800, protein: 180, carbs: 100, fat: 50 }];
+    const d2 = buildWeeklySummaryData(db, WEEK2);
+    expect(d2.nutrition).toMatchObject({ target: { kcal: 1800, protein: 180 }, proteinDays: 5, lowKcalDays: 1 });
+    // יעד שנכנס לתוקף אחרי השבוע לא נספר; בלי יעד בכלל — "—"
+    db.targets = [{ from: '2026-09-13', kcal: 1900, protein: 190, carbs: 120, fat: 60 }];
+    const d3 = buildWeeklySummaryData(db, WEEK2);
+    expect(d3.nutrition).toMatchObject({ target: null, proteinDays: null, lowKcalDays: 1 });
+    expect(weeklySummaryText(d3)).toContain('יעד — · חלבון ≥יעד: — · מתחת ל-1850: 1/5');
   });
 });
 

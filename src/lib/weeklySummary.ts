@@ -8,7 +8,8 @@
  *  - שבוע תקף = 7/7 שקילות. שבוע תקף מושווה לשבוע התקף האחרון שלפניו —
  *    לא בהכרח השבוע הקודם.
  *  - מותניים נמדדים ברביעי.
- *  - החלטות קלוריות רק מימים סגורים; רצפה 1,850; יעד חלבון 190.
+ *  - החלטות קלוריות רק מימים סגורים; הרצפה מ-targets.ts; היעדים (קק״ל,
+ *    חלבון) הם היעד שבתוקף בשבת של השבוע (`targetFor`).
  *
  * הדוח הישן (exportText.buildChatReport) נשאר כמו שהוא — זה מסמך אחר.
  */
@@ -23,7 +24,7 @@ import { cardioWeek, type CardioWeek } from './cardio';
 import { daySummary } from './nutrition/calc';
 import { isDayClosed } from './nutrition/days';
 import { FRIDAY_TIERS } from './nutrition/friday';
-import { KCAL_FLOOR } from './nutrition/targets';
+import { KCAL_FLOOR, targetFor } from './nutrition/targets';
 import { suggestionLabel, suggestNext, type ProgressionSpec, type Suggestion } from './progression';
 import { cardioLineText } from './weekSummary';
 import { summarizeWeek, WAIST_DAY, WEEK_LENGTH, weeklyAverages, type WeekSummary } from './weights';
@@ -40,8 +41,6 @@ import {
 } from './workouts';
 
 export const MAX_SUMMARY_CHARS = 6000;
-/** יעד חלבון יומי (ג׳) — הכלל של התוכנית, לא היעד שנשמר במסך. */
-export const PROTEIN_TARGET_G = 190;
 /** כמה מדידות מותניים קודמות (כל יום בשבוע) מוצגות ליד מדידת הרביעי. */
 export const PREVIOUS_WAIST = 3;
 /** מספר ימים סגורים מתחת לרצפה שמדליק דגל. */
@@ -96,10 +95,13 @@ export type WeeklySummaryData = {
   cardio: CardioWeek;
   nutrition: {
     closedDays: ISODate[];
+    /** היעד שבתוקף בשבת של השבוע. null = אין יעד שמור. */
+    target: { kcal: number; protein: number } | null;
     /** ממוצעים על ימים סגורים בלבד; null כשאין. */
     avgKcal: number | null;
     avgProtein: number | null;
-    proteinDays: number;
+    /** ימים סגורים עם חלבון ≥ היעד. null כשאין יעד. */
+    proteinDays: number | null;
     lowKcalDays: number;
     estimateDays: number;
     fridayTier: FridayTier | null;
@@ -237,11 +239,13 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
   const summaries = closedDays.map((d) => daySummary(db.entries, d, () => null));
   const avg = (vals: number[]) => (vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null);
   const fridayTier = db.days.find((m) => days.includes(m.d) && m.fridayTier !== undefined)?.fridayTier ?? null;
+  const target = targetFor(db.targets, saturday);
   const nutrition = {
     closedDays,
+    target: target ? { kcal: target.kcal, protein: target.protein } : null,
     avgKcal: avg(summaries.map((s) => s.kcal)),
     avgProtein: avg(summaries.map((s) => s.protein)),
-    proteinDays: summaries.filter((s) => s.protein >= PROTEIN_TARGET_G).length,
+    proteinDays: target ? summaries.filter((s) => s.protein >= target.protein).length : null,
     lowKcalDays: summaries.filter((s) => s.kcal < KCAL_FLOOR).length,
     estimateDays: summaries.filter((s) => s.adhocCount > 0).length,
     fridayTier,
@@ -357,8 +361,11 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
   );
   if (nu.closedDays.length) {
     const n = nu.closedDays.length;
+    const t = nu.target;
     L.push(
-      `ימים סגורים: ממוצע ${num(nu.avgKcal)} קק״ל · ${num(nu.avgProtein)} ג׳ חלבון · חלבון ≥${PROTEIN_TARGET_G}: ${nu.proteinDays}/${n} · מתחת ל-${KCAL_FLOOR}: ${nu.lowKcalDays}/${n} · עם הערכה: ${nu.estimateDays}/${n}${
+      `ימים סגורים: ממוצע ${num(nu.avgKcal)} קק״ל · ${num(nu.avgProtein)} ג׳ חלבון · יעד ${t ? `${t.kcal}/${t.protein}` : DASH} · חלבון ≥${
+        t ? t.protein : 'יעד'
+      }: ${nu.proteinDays === null ? DASH : `${nu.proteinDays}/${n}`} · מתחת ל-${KCAL_FLOOR}: ${nu.lowKcalDays}/${n} · עם הערכה: ${nu.estimateDays}/${n}${
         nu.fridayTier ? ` · ארוחת שישי: ${FRIDAY_TIERS[nu.fridayTier].label}` : ''
       }`,
     );
