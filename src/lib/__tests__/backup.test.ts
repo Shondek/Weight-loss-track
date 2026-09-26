@@ -33,9 +33,9 @@ describe('needsBackupReminder', () => {
   });
 
   it('הסף הוא בדיוק BACKUP_REMINDER_DAYS', () => {
-    expect(BACKUP_REMINDER_DAYS).toBe(14);
-    expect(needsBackupReminder(withData('2026-08-20'), '2026-09-02')).toBe(false); // 13
-    expect(needsBackupReminder(withData('2026-08-19'), '2026-09-02')).toBe(true); // 14
+    expect(BACKUP_REMINDER_DAYS).toBe(7);
+    expect(needsBackupReminder(withData('2026-08-27'), '2026-09-02')).toBe(false); // 6
+    expect(needsBackupReminder(withData('2026-08-26'), '2026-09-02')).toBe(true); // 7
   });
 
   it('גיבוי "מהעתיד" (שעון שהוזז) נחשב עדכני', () => {

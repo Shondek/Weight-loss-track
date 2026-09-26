@@ -343,6 +343,25 @@ export const DEFAULT_SETTINGS: Settings = {
   lastBackup: null,
 };
 
+// ---------- הסגר ----------
+
+/**
+ * רשומה שהפרסר דחה בקריאה מהאחסון או בייבוא. עד כאן היא הייתה נעלמת:
+ * הפרסר השמיט אותה, והשמירה הבאה כתבה את המערך המסונן במקומה.
+ * מעכשיו היא נשמרת כאן, גולמית, ולעולם לא נמחקת אוטומטית.
+ *
+ * `key` — המפתח שממנו נדחתה (למשל "weights"). `fp` — טביעת אצבע
+ * (JSON של `raw`) לאיחוד כפילויות בין טעינות ובין גיבויים.
+ */
+export type QuarantineItem = {
+  key: string;
+  raw: unknown;
+  reason: string;
+  /** ISO 8601 */
+  at: string;
+  fp: string;
+};
+
 /** כל בסיס הנתונים בזיכרון. */
 export type DB = {
   weights: WeightEntry[];
@@ -359,6 +378,8 @@ export type DB = {
   entries: FoodEntry[];
   targets: NutritionTarget[];
   favorites: Favorite[];
+  /** רשומות שנדחו בקריאה. מפתח משלו (`fatloss:quarantine`), בגיבוי, לא נמחק. */
+  quarantine: QuarantineItem[];
 };
 
 /**
@@ -378,5 +399,6 @@ export function emptyDb(): DB {
     entries: [],
     targets: [],
     favorites: [],
+    quarantine: [],
   };
 }

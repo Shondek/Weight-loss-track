@@ -10,6 +10,7 @@ import { upsertCustomFood } from './nutrition/foods';
 import { upsertEntry } from './nutrition/entries';
 import { upsertTarget } from './nutrition/targets';
 import { upsertFavorite } from './nutrition/favorites';
+import { mergeQuarantine } from './quarantine';
 
 /** התאריך המוקדם ביותר שיש עליו נתון כלשהו. */
 export function firstDataDate(db: DB): ISODate | null {
@@ -109,6 +110,8 @@ export function mergeDb(current: DB, incoming: DB): DB {
     entries,
     targets,
     favorites,
+    // הסגר מתמזג תמיד ולעולם לא מתכווץ — גם בייבוא.
+    quarantine: mergeQuarantine(current.quarantine, incoming.quarantine),
     settings: {
       programStart: incoming.settings.programStart ?? current.settings.programStart,
       soundEnabled: current.settings.soundEnabled,

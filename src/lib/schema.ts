@@ -20,6 +20,7 @@ import {
   type LoggedSet,
   type MealType,
   type NutritionTarget,
+  type QuarantineItem,
   type Recipe,
   type Settings,
   type StandaloneCardio,
@@ -45,8 +46,13 @@ import { sortStandalone } from './cardio';
 import { dominantSegment, totalMinutes } from './cardioSession';
 import { CARDIO_INCLINE_MAX, CARDIO_SPEED_MAX } from '../data/config';
 import { isCustomFoodId, isMohFoodId } from './nutrition/foods';
+import { fingerprint, mergeQuarantine, quarantineFromRejections } from './quarantine';
 
-export type Rejection = { reason: string };
+/**
+ * דחייה. `raw` קיים כשהרשומה עצמה נדחתה ולא תיכנס ל-`ok` — היא הולכת להסגר
+ * (lib/quarantine.ts). דחייה בלי `raw` היא הערה על רשומה שכן נשמרה.
+ */
+export type Rejection = { reason: string; raw?: unknown };
 
 export type ParseResult<T> = { ok: T[]; rejected: Rejection[] };
 
@@ -85,20 +91,20 @@ export function parseWeights(input: unknown): ParseResult<WeightEntry> {
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     if (!isValidISO(raw.d)) {
-      rejected.push({ reason: 'תאריך לא תקין' });
+      rejected.push({ raw, reason: 'תאריך לא תקין' });
       continue;
     }
     const w = num(raw.w);
     if (w === null) {
-      rejected.push({ reason: 'משקל שאינו מספר' });
+      rejected.push({ raw, reason: 'משקל שאינו מספר' });
       continue;
     }
     if (w < MIN_WEIGHT || w > MAX_WEIGHT) {
-      rejected.push({ reason: `משקל מחוץ לטווח ${MIN_WEIGHT}–${MAX_WEIGHT} ק"ג` });
+      rejected.push({ raw, reason: `משקל מחוץ לטווח ${MIN_WEIGHT}–${MAX_WEIGHT} ק"ג` });
       continue;
     }
     byDate.set(raw.d, { d: raw.d, w });
@@ -119,20 +125,20 @@ export function parseWaist(input: unknown): ParseResult<WaistEntry> {
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     if (!isValidISO(raw.d)) {
-      rejected.push({ reason: 'תאריך לא תקין' });
+      rejected.push({ raw, reason: 'תאריך לא תקין' });
       continue;
     }
     const cm = num(raw.cm);
     if (cm === null) {
-      rejected.push({ reason: 'היקף מותניים שאינו מספר' });
+      rejected.push({ raw, reason: 'היקף מותניים שאינו מספר' });
       continue;
     }
     if (cm < MIN_WAIST || cm > MAX_WAIST) {
-      rejected.push({ reason: `היקף מותניים מחוץ לטווח ${MIN_WAIST}–${MAX_WAIST} ס"מ` });
+      rejected.push({ raw, reason: `היקף מותניים מחוץ לטווח ${MIN_WAIST}–${MAX_WAIST} ס"מ` });
       continue;
     }
     byDate.set(raw.d, { d: raw.d, cm });
@@ -425,11 +431,11 @@ export function parseCheckins(input: unknown): ParseResult<WeeklyCheckin> {
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     if (!isValidISO(raw.weekStart)) {
-      rejected.push({ reason: 'תאריך שבוע לא תקין' });
+      rejected.push({ raw, reason: 'תאריך שבוע לא תקין' });
       continue;
     }
     // מנרמלים לראשון גם אם הגיע תאריך אחר בתוך השבוע
@@ -468,16 +474,16 @@ export function parseStandaloneCardio(input: unknown): ParseResult<StandaloneCar
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     if (!isValidISO(raw.d)) {
-      rejected.push({ reason: 'תאריך לא תקין' });
+      rejected.push({ raw, reason: 'תאריך לא תקין' });
       continue;
     }
     const minutes = count(raw.minutes);
     if (minutes === null || minutes <= 0) {
-      rejected.push({ reason: 'דקות שאינן מספר חיובי' });
+      rejected.push({ raw, reason: 'דקות שאינן מספר חיובי' });
       continue;
     }
     const id =
@@ -640,17 +646,17 @@ export function parseCustomFoods(input: unknown): ParseResult<CustomFood> {
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     const id = typeof raw.id === 'string' ? raw.id.trim() : '';
     if (!isCustomFoodId(id)) {
-      rejected.push({ reason: 'מזהה מזון שאינו "c:" + מזהה' });
+      rejected.push({ raw, reason: 'מזהה מזון שאינו "c:" + מזהה' });
       continue;
     }
     const per100 = parsePer100(raw);
     if ('error' in per100) {
-      rejected.push({ reason: per100.error });
+      rejected.push({ raw, reason: per100.error });
       continue;
     }
     const cat = intInRange(raw.cat, 1, 9);
@@ -690,12 +696,12 @@ export function parseEntries(input: unknown): ParseResult<FoodEntry> {
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     const id = typeof raw.id === 'string' ? raw.id.trim() : '';
     if (id === '') {
-      rejected.push({ reason: 'רישום בלי מזהה' });
+      rejected.push({ raw, reason: 'רישום בלי מזהה' });
       continue;
     }
     const ts = num(raw.ts);
@@ -706,21 +712,21 @@ export function parseEntries(input: unknown): ParseResult<FoodEntry> {
         ? toLocalISO(new Date(ts))
         : null;
     if (d === null || ts === null || ts <= 0) {
-      rejected.push({ reason: 'תאריך או שעה לא תקינים' });
+      rejected.push({ raw, reason: 'תאריך או שעה לא תקינים' });
       continue;
     }
     const foodId = typeof raw.foodId === 'string' ? raw.foodId.trim() : '';
     if (!isMohFoodId(foodId) && !isCustomFoodId(foodId)) {
-      rejected.push({ reason: 'מזהה מזון לא תקין' });
+      rejected.push({ raw, reason: 'מזהה מזון לא תקין' });
       continue;
     }
     const grams = inRange(raw.grams, MIN_GRAMS, MAX_GRAMS);
     if (grams === null) {
-      rejected.push({ reason: `כמות מחוץ לטווח ${MIN_GRAMS}–${MAX_GRAMS} ג'` });
+      rejected.push({ raw, reason: `כמות מחוץ לטווח ${MIN_GRAMS}–${MAX_GRAMS} ג'` });
       continue;
     }
     if (!isRecord(raw.ref)) {
-      rejected.push({ reason: 'רישום בלי ערכי מזון' });
+      rejected.push({ raw, reason: 'רישום בלי ערכי מזון' });
       continue;
     }
     // רישום ידני: השם והדגל מוקפאים ברישום, כמו `n` באימון. הפרסר חייב להכיר אותם.
@@ -729,7 +735,7 @@ export function parseEntries(input: unknown): ParseResult<FoodEntry> {
     const adhoc = raw.adhoc === true;
     const per100 = parsePer100(raw.ref, adhoc ? { kcal: ADHOC_MAX_KCAL, macro: ADHOC_MAX_MACRO } : undefined);
     if ('error' in per100) {
-      rejected.push({ reason: `ערכי מזון: ${per100.error}` });
+      rejected.push({ raw, reason: `ערכי מזון: ${per100.error}` });
       continue;
     }
     const meal = MEALS.find((m) => m === raw.meal) ?? 'snack';
@@ -760,23 +766,23 @@ export function parseTargets(input: unknown): ParseResult<NutritionTarget> {
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     if (!isValidISO(raw.from)) {
-      rejected.push({ reason: 'תאריך תחילת תוקף לא תקין' });
+      rejected.push({ raw, reason: 'תאריך תחילת תוקף לא תקין' });
       continue;
     }
     const kcal = inRange(raw.kcal, MIN_TARGET_KCAL, MAX_TARGET_KCAL);
     if (kcal === null) {
-      rejected.push({ reason: `יעד קלוריות מחוץ לטווח ${MIN_TARGET_KCAL}–${MAX_TARGET_KCAL}` });
+      rejected.push({ raw, reason: `יעד קלוריות מחוץ לטווח ${MIN_TARGET_KCAL}–${MAX_TARGET_KCAL}` });
       continue;
     }
     const protein = inRange(raw.protein, 0, MAX_TARGET_PROTEIN);
     const carbs = inRange(raw.carbs, 0, MAX_TARGET_CARBS);
     const fat = inRange(raw.fat, 0, MAX_TARGET_FAT);
     if (protein === null || carbs === null || fat === null) {
-      rejected.push({ reason: 'יעד מאקרו מחוץ לטווח' });
+      rejected.push({ raw, reason: 'יעד מאקרו מחוץ לטווח' });
       continue;
     }
     byFrom.set(raw.from, { from: raw.from, kcal, protein, carbs, fat });
@@ -792,12 +798,12 @@ export function parseFavorites(input: unknown): ParseResult<Favorite> {
 
   for (const raw of asArray(input)) {
     if (!isRecord(raw)) {
-      rejected.push({ reason: 'רשומה שאינה אובייקט' });
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
       continue;
     }
     const foodId = typeof raw.foodId === 'string' ? raw.foodId.trim() : '';
     if (!isMohFoodId(foodId) && !isCustomFoodId(foodId)) {
-      rejected.push({ reason: 'מזהה מזון לא תקין' });
+      rejected.push({ raw, reason: 'מזהה מזון לא תקין' });
       continue;
     }
     const grams = raw.grams === null || raw.grams === undefined ? null : inRange(raw.grams, MIN_GRAMS, MAX_GRAMS);
@@ -806,6 +812,31 @@ export function parseFavorites(input: unknown): ParseResult<Favorite> {
   }
 
   return { ok: [...byFood.values()], rejected };
+}
+
+// ---------- הסגר ----------
+
+/**
+ * הסגר. מקסימום סלחנות ואפס דחיות: פריט שבור לא נזרק אלא נעטף כמו שהוא,
+ * כי הסגר שמאבד פריטים מחטיא את המטרה שלו. `fp` חסר מחושב מ-`raw`.
+ */
+export function parseQuarantine(input: unknown): QuarantineItem[] {
+  const out: QuarantineItem[] = [];
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      out.push({ key: 'unknown', raw, reason: 'פריט הסגר שאינו אובייקט', at: '', fp: fingerprint(raw) });
+      continue;
+    }
+    const inner = 'raw' in raw ? raw.raw : raw;
+    out.push({
+      key: typeof raw.key === 'string' && raw.key !== '' ? raw.key : 'unknown',
+      raw: inner,
+      reason: typeof raw.reason === 'string' ? raw.reason : '',
+      at: typeof raw.at === 'string' ? raw.at : '',
+      fp: typeof raw.fp === 'string' && raw.fp !== '' ? raw.fp : fingerprint(inner),
+    });
+  }
+  return out;
 }
 
 // ---------- בסיס נתונים שלם ----------
@@ -849,6 +880,19 @@ export function parseDb(input: unknown): DbParseResult {
   const entries = parseEntries(src.entries);
   const targets = parseTargets(src.targets);
   const favorites = parseFavorites(src.favorites);
+  // הסגר מהגיבוי (אופציונלי — גיבוי ישן פשוט לא מכיל אותו), ואחריו מה שנדחה
+  // בייבוא הזה עצמו: גם רשומה שבורה בקובץ לא נעלמת.
+  const at = new Date().toISOString();
+  const quarantine = mergeQuarantine(parseQuarantine(src.quarantine), [
+    ...quarantineFromRejections('weights', weights.rejected, at),
+    ...quarantineFromRejections('waist', waist.rejected, at),
+    ...quarantineFromRejections('checkins', checkins.rejected, at),
+    ...quarantineFromRejections('standaloneCardio', standaloneCardio.rejected, at),
+    ...quarantineFromRejections('customFoods', customFoods.rejected, at),
+    ...quarantineFromRejections('entries', entries.rejected, at),
+    ...quarantineFromRejections('targets', targets.rejected, at),
+    ...quarantineFromRejections('favorites', favorites.rejected, at),
+  ]);
 
   return {
     db: {
@@ -864,6 +908,7 @@ export function parseDb(input: unknown): DbParseResult {
       entries: entries.ok,
       targets: targets.ok,
       favorites: favorites.ok,
+      quarantine,
     },
     counts: {
       weights: weights.ok.length,

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
+import type { DB } from '../types';
 import { parseDb, type DbParseResult } from '../lib/schema';
 import { mergeDb } from '../lib/db';
 import { backupJson } from '../lib/exportText';
@@ -12,6 +13,10 @@ import CopyBlock from '../components/CopyBlock';
 import { downloadText, readFileAsText } from '../platform/download';
 import { loadMealLibrary } from '../platform/mealLibrary';
 import { isLibraryFoodId, mergeLibrary, type LibraryMerge } from '../lib/nutrition/library';
+import { mergeQuarantine, quarantineCounts } from '../lib/quarantine';
+import { guardedRun, isConfirmed, nutritionErasure, REPLACE_WORD, WIPE_WORD, type NutritionErasure } from '../lib/guard';
+import { KEY_LABELS, type DbKey } from '../lib/store';
+import { PERSIST_LABEL, usePersistStatus } from '../platform/storagePersist';
 
 type Mode = 'merge' | 'replace';
 
@@ -29,8 +34,19 @@ type ImportReport = {
   totalAfter: number;
 };
 
-const WIPE_WORD = 'מחק';
 const DASH_TEXT = '—';
+
+/** החלפה שנעצרה על אזהרת מחיקת תזונה — ממתינה לאישור מוקלד שני. */
+type PendingReplace = { result: DbParseResult; erasure: NutritionErasure };
+
+const NUTRITION_LABELS: Record<keyof NutritionErasure, string> = {
+  entries: 'רישומי אכילה',
+  customFoods: 'מזונות שלי',
+  targets: 'יעדי תזונה',
+  favorites: 'מועדפים',
+};
+
+const BACKUP_FAILED = 'הגיבוי האוטומטי לא יצא — הפעולה בוטלה ושום דבר לא השתנה. ייצא גיבוי ידנית ונסה שוב.';
 
 const BACKEND_LABEL: Record<string, string> = {
   indexeddb: 'IndexedDB',
@@ -55,6 +71,12 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const [importError, setImportError] = useState<string | null>(null);
   const [wipeStep, setWipeStep] = useState(0);
   const [wipeText, setWipeText] = useState('');
+  const [wipeError, setWipeError] = useState<string | null>(null);
+  /** אישור מוקלד להחלפה; נדרש לפני שהקובץ בכלל נקרא. */
+  const [replaceText, setReplaceText] = useState('');
+  const [pending, setPending] = useState<PendingReplace | null>(null);
+  const [pendingText, setPendingText] = useState('');
+  const replaceReady = mode === 'merge' || isConfirmed(replaceText, REPLACE_WORD);
   const fileInput = useRef<HTMLInputElement>(null);
   const [library, setLibrary] = useState<LibraryState>({ status: 'idle' });
   const libraryCount = db.customFoods.filter((f) => isLibraryFoodId(f.id)).length;
@@ -63,6 +85,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const start = useMemo(() => programStartWeek(db), [db]);
   const firstData = useMemo(() => firstDataDate(db), [db]);
   const sinceBackup = daysSinceBackup(db.settings, today);
+  const quarantineByKey = useMemo(() => quarantineCounts(db.quarantine), [db.quarantine]);
+  const persist = usePersistStatus();
 
   /** גיבוי מלא יצא מהמכשיר — הורדה או העתקה שהצליחה. מזין את התזכורת. */
   const markBackedUp = () => {
@@ -70,20 +94,15 @@ export default function DataScreen({ store, today }: ScreenProps) {
     void store.update('settings', { ...db.settings, lastBackup: today });
   };
 
-  const runImport = (text: string) => {
-    setReport(null);
-    setImportError(null);
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(text);
-    } catch {
-      setImportError('הקובץ אינו JSON תקין.');
-      return;
-    }
-    const result = parseDb(parsedJson);
-    const before = total(db);
-    const next = mode === 'replace' ? result.db : mergeDb(db, result.db);
-    void store.replaceAll(next);
+  /**
+   * הגיבוי האוטומטי שלפני פעולה הרסנית: אותו JSON מלא, בשם שמסביר למה.
+   * לא מעדכן lastBackup: ההגדרות ממילא מוחלפות/נמחקות מיד אחריו.
+   */
+  const autoBackup = (what: 'replace' | 'wipe'): boolean =>
+    downloadText(`fatloss-before-${what}-${toLocalISO(new Date())}.json`, json);
+
+  /** הדוח מוצג גם אם השמירה נכשלה — הנתונים בזיכרון ומסומנים "לא נשמרו" בבאנר. */
+  const finishImport = (result: DbParseResult, next: DB, before: number) => {
     setReport({
       mode,
       counts: result.counts,
@@ -92,6 +111,79 @@ export default function DataScreen({ store, today }: ScreenProps) {
       totalAfter: total(next),
     });
     setRaw('');
+    setReplaceText('');
+    setPending(null);
+    setPendingText('');
+  };
+
+  /**
+   * החלפה: אישור מוקלד → גיבוי אוטומטי → כתיבה. אם אחד השניים הראשונים
+   * לא מתקיים, replaceAll לא נקרא (lib/guard.ts).
+   */
+  const applyReplace = async (result: DbParseResult, typed: string) => {
+    const before = total(db);
+    // ההסגר מתמזג גם בהחלפה — הוא לעולם לא מתכווץ.
+    const next: DB = { ...result.db, quarantine: mergeQuarantine(db.quarantine, result.db.quarantine) };
+    const r = await guardedRun({
+      typed,
+      word: REPLACE_WORD,
+      backup: () => autoBackup('replace'),
+      run: () => store.replaceAll(next),
+    });
+    if (!r.ok) {
+      setImportError(r.reason === 'not-confirmed' ? `הקלד "${REPLACE_WORD}" כדי לאשר החלפה.` : BACKUP_FAILED);
+      return;
+    }
+    finishImport(result, next, before);
+  };
+
+  const runImport = (text: string) => {
+    setReport(null);
+    setImportError(null);
+    setPending(null);
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(text);
+    } catch {
+      setImportError('הקובץ אינו JSON תקין.');
+      return;
+    }
+    const result = parseDb(parsedJson);
+
+    if (mode === 'merge') {
+      const before = total(db);
+      const next = mergeDb(db, result.db);
+      void store.replaceAll(next);
+      finishImport(result, next, before);
+      return;
+    }
+
+    // החלפה בקובץ בלי תזונה כשיש תזונה במכשיר: אזהרה מפורשת + אישור שני.
+    const erasure = nutritionErasure(db, parsedJson);
+    if (erasure) {
+      setPending({ result, erasure });
+      setPendingText('');
+      return;
+    }
+    void applyReplace(result, replaceText);
+  };
+
+  /** "מחק הכול": אישור מוקלד → גיבוי אוטומטי → מחיקה. */
+  const runWipe = async () => {
+    setWipeError(null);
+    const r = await guardedRun({
+      typed: wipeText,
+      word: WIPE_WORD,
+      backup: () => autoBackup('wipe'),
+      run: () => store.wipe(),
+    });
+    if (!r.ok) {
+      setWipeError(r.reason === 'not-confirmed' ? `הקלד "${WIPE_WORD}" כדי לאשר.` : BACKUP_FAILED);
+      return;
+    }
+    setWipeStep(0);
+    setWipeText('');
+    setReport(null);
   };
 
   /**
@@ -129,6 +221,10 @@ export default function DataScreen({ store, today }: ScreenProps) {
             אחסון: {BACKEND_LABEL[currentBackend()] ?? currentBackend()}
           </li>
           <li>
+            {/* navigator.storage.persisted() — האם הדפדפן התחייב לא לפנות את נתוני האתר. */}
+            אחסון קבוע: {PERSIST_LABEL[persist]}
+          </li>
+          <li>
             שקילות <span className="num">{db.weights.length}</span> · אימונים{' '}
             <span className="num">{db.workouts.length}</span>
             {db.legacyWorkouts.length > 0 && (
@@ -147,6 +243,20 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
             <span className="num">{db.targets.length}</span> · מועדפים{' '}
             <span className="num">{db.favorites.length}</span>
+          </li>
+          <li>
+            {/* רשומות שנדחו בקריאה ונשמרו גולמיות במקום להיעלם. אין עריכה ואין מחיקה. */}
+            רשומות בהסגר: <span className="num">{db.quarantine.length}</span>
+            {db.quarantine.length > 0 && (
+              <span className="tiny muted">
+                {' '}
+                (
+                {Object.entries(quarantineByKey)
+                  .map(([k, n]) => `${KEY_LABELS[k as DbKey] ?? k} ${n}`)
+                  .join(' · ')}
+                )
+              </span>
+            )}
           </li>
         </ul>
       </section>
@@ -305,9 +415,22 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <p className="tiny muted" style={{ margin: '4px 0 0' }}>
               {mode === 'merge'
                 ? 'רשומה מיובאת גוברת על אותו תאריך/מזהה. שום דבר קיים לא נמחק.'
-                : 'כל הנתונים הקיימים יימחקו ויוחלפו בקובץ.'}
+                : 'כל הנתונים הקיימים יימחקו ויוחלפו בקובץ. לפני כן יורד אוטומטית גיבוי מלא של המצב הנוכחי.'}
             </p>
           </div>
+
+          {mode === 'replace' && (
+            <div>
+              <label htmlFor="replace-word">הקלד "{REPLACE_WORD}" כדי לאפשר החלפה</label>
+              <input
+                id="replace-word"
+                type="text"
+                value={replaceText}
+                onChange={(e) => setReplaceText(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="import-file">קובץ JSON</label>
@@ -316,6 +439,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
               ref={fileInput}
               type="file"
               accept="application/json,.json,text/plain"
+              disabled={!replaceReady}
               onChange={(e) => {
                 void pickFile(e.target.files?.[0]);
                 e.target.value = '';
@@ -338,11 +462,55 @@ export default function DataScreen({ store, today }: ScreenProps) {
           <button
             type="button"
             className="btn btn--primary btn--block"
-            disabled={raw.trim() === ''}
+            disabled={raw.trim() === '' || !replaceReady}
             onClick={() => runImport(raw)}
           >
             ייבא מהטקסט
           </button>
+
+          {pending && (
+            <div className="banner banner--error stack--tight" role="alert">
+              <p className="strong" style={{ margin: 0 }}>
+                הקובץ אינו מכיל נתוני תזונה. החלפה תמחק מהמכשיר:
+              </p>
+              <p style={{ margin: 0 }}>
+                {(Object.keys(NUTRITION_LABELS) as (keyof NutritionErasure)[])
+                  .filter((k) => pending.erasure[k] > 0)
+                  .map((k) => `${NUTRITION_LABELS[k]} ${pending.erasure[k]}`)
+                  .join(' · ')}
+              </p>
+              <div>
+                <label htmlFor="replace-word-again">הקלד "{REPLACE_WORD}" שוב כדי למחוק אותם ולהחליף</label>
+                <input
+                  id="replace-word-again"
+                  type="text"
+                  value={pendingText}
+                  onChange={(e) => setPendingText(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="row">
+                <button
+                  type="button"
+                  className="btn btn--danger btn--block"
+                  disabled={!isConfirmed(pendingText, REPLACE_WORD)}
+                  onClick={() => void applyReplace(pending.result, pendingText)}
+                >
+                  החלף ומחק תזונה
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    setPending(null);
+                    setPendingText('');
+                  }}
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          )}
 
           {importError && (
             <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
@@ -406,7 +574,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <>
               <p className="small err" style={{ margin: 0 }}>
                 פעולה בלתי הפיכה. <span className="num">{total(db)}</span> רשומות יימחקו
-                מהמכשיר. ייצא גיבוי קודם.
+                מהמכשיר. לפני המחיקה יורד אוטומטית גיבוי מלא; אם ההורדה נכשלת — לא נמחק דבר.
               </p>
               <div className="row">
                 <button
@@ -439,13 +607,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
                 <button
                   type="button"
                   className="btn btn--danger btn--block"
-                  disabled={wipeText.trim() !== WIPE_WORD}
-                  onClick={() => {
-                    void store.wipe();
-                    setWipeStep(0);
-                    setWipeText('');
-                    setReport(null);
-                  }}
+                  disabled={!isConfirmed(wipeText, WIPE_WORD)}
+                  onClick={() => void runWipe()}
                 >
                   מחק הכול
                 </button>
@@ -455,11 +618,17 @@ export default function DataScreen({ store, today }: ScreenProps) {
                   onClick={() => {
                     setWipeStep(0);
                     setWipeText('');
+                    setWipeError(null);
                   }}
                 >
                   ביטול
                 </button>
               </div>
+              {wipeError && (
+                <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
+                  {wipeError}
+                </p>
+              )}
             </>
           )}
         </div>

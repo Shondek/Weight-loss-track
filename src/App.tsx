@@ -6,6 +6,7 @@ import { needsCheckin } from './lib/checkins';
 import { firstDataDate } from './lib/db';
 import { KEY_LABELS } from './lib/store';
 import { onAppUpdate } from './platform/appUpdate';
+import { requestPersistentStorage } from './platform/storagePersist';
 import { useRestTimer } from './hooks/useRestTimer';
 import RestTimerBar from './components/RestTimerBar';
 import WeightScreen from './screens/WeightScreen';
@@ -30,6 +31,10 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('weight');
   const [updateReady, setUpdateReady] = useState(false);
   useEffect(() => onAppUpdate(() => setUpdateReady(true)), []);
+  // בקשה לאחסון קבוע בכל טעינה (סיכון #5). התוצאה מוצגת במסך "נתונים".
+  useEffect(() => {
+    void requestPersistentStorage();
+  }, []);
 
   /**
    * הטיימר חי כאן ולא בתוך מסך האימון. המסכים מוחלפים בהחלפת טאב,
@@ -101,6 +106,20 @@ export default function App() {
             >
               רענן
             </button>
+          </div>
+        )}
+
+        {store.missingKeys.length > 0 && (
+          // חוסם ולא ניתן לסגירה: המפתחות האלה היו באחסון ונעלמו. שום דבר לא
+          // נשמר מעליהם עד שחזור מגיבוי במסך "נתונים" (סיכון #4).
+          <div className="banner banner--error stack--tight" role="alert">
+            <p className="strong" style={{ margin: 0 }}>
+              נתונים חסרים באחסון — שחזר מגיבוי לפני שממשיכים
+            </p>
+            <p style={{ margin: 0 }}>
+              חסר: {store.missingKeys.map((k) => KEY_LABELS[k]).join(' · ')}. המפתחות האלה היו
+              במכשיר ואינם עוד. הם נטענו ריקים ולא יישמרו עד שתייבא גיבוי במסך "נתונים".
+            </p>
           </div>
         )}
 
