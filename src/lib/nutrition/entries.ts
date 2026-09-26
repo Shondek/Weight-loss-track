@@ -3,7 +3,7 @@
 import { ADHOC_FOOD_ID, ADHOC_MAX_KCAL, ADHOC_MAX_MACRO, UNIT_FOOD_SCALE, type FoodEntry, type FoodRef, type ISODate, type MealType } from '../../types';
 
 export { ADHOC_MAX_KCAL, ADHOC_MAX_MACRO };
-import { toLocalISO } from '../date';
+import { fromISO, toLocalISO } from '../date';
 import { sortableStamp } from '../workouts';
 import { refOf, type Food } from './foods';
 
@@ -65,6 +65,36 @@ export function newEntry(
     grams,
     ref,
     ...(note.trim() === '' ? {} : { note: note.trim() }),
+  };
+}
+
+/**
+ * רישום ממזהה ו-ref קיימים — לרישום חוזר של פריט מ"מה שאני אוכל" גם כשהמזון
+ * החי כבר לא קיים: אותם ערכים בדיוק כמו בפעם הקודמת.
+ */
+export function newEntryFromRef(
+  foodId: string,
+  ref: FoodRef,
+  grams: number,
+  meal: MealType,
+  ts: number,
+  unique: string,
+): FoodEntry {
+  return { id: makeEntryId(ts, unique), d: toLocalISO(new Date(ts)), ts, meal, foodId: foodId, grams, ref: { ...ref } };
+}
+
+/** רישום ידני חוזר עם אותו ref ואותו שם — בלי לחשב מחדש. */
+export function relogAdhoc(ref: FoodRef, name: string, meal: MealType, ts: number, unique: string): FoodEntry {
+  return {
+    id: makeEntryId(ts, unique),
+    d: toLocalISO(new Date(ts)),
+    ts,
+    meal,
+    foodId: ADHOC_FOOD_ID,
+    grams: 1,
+    ref: { ...ref },
+    n: name,
+    adhoc: true,
   };
 }
 
@@ -138,6 +168,47 @@ export function groupByMeal(list: readonly FoodEntry[]): { meal: MealType; entri
   return MEAL_ORDER.map((meal) => ({ meal, entries: sorted.filter((e) => e.meal === meal) })).filter(
     (g) => g.entries.length > 0,
   );
+}
+
+/**
+ * גבולות הארוחות לפי שעת הרישום (שלב 3): לפני 11:00 בוקר, 11:00–15:59
+ * צהריים, 16:00–19:29 ביניים, מ-19:30 ערב. הארוחה נקבעת אוטומטית ברישום
+ * ומוצגת כצ'יפ שאפשר לשנות.
+ */
+export const MEAL_TIME_BOUNDS = { lunch: 11 * 60, snack: 16 * 60, dinner: 19 * 60 + 30 } as const;
+
+export function mealForTime(hour: number, minute: number): MealType {
+  const m = hour * 60 + minute;
+  if (m < MEAL_TIME_BOUNDS.lunch) return 'breakfast';
+  if (m < MEAL_TIME_BOUNDS.snack) return 'lunch';
+  if (m < MEAL_TIME_BOUNDS.dinner) return 'snack';
+  return 'dinner';
+}
+
+/** הארוחה לרישום עכשיו: לפי השעה כשזה היום, ערב כשמשלימים יום שעבר. */
+export function mealForLogging(d: ISODate, today: ISODate, now: Date): MealType {
+  return d === today ? mealForTime(now.getHours(), now.getMinutes()) : 'dinner';
+}
+
+/**
+ * חותמת הזמן לרישום ביום נתון: עכשיו כשזה היום; ביום שעבר — 19:30 מקומית
+ * של אותו יום, כך ש-`d` שנגזר ממנה נכון והארוחה היא ערב.
+ */
+export function tsForDay(d: ISODate, today: ISODate, nowMs: number): number {
+  if (d === today) return nowMs;
+  const at = fromISO(d);
+  at.setHours(19, 30, 0, 0);
+  return at.getTime();
+}
+
+/** שם מנורמל לקיבוץ הזנות ידניות: קיצוץ ואיחוד רווחים. */
+export function normalizeName(name: string): string {
+  return name.trim().split(/\s+/).filter((w) => w !== '').join(' ');
+}
+
+/** עדכון ארוחה בלבד. */
+export function setEntryMeal(list: readonly FoodEntry[], id: string, meal: MealType): FoodEntry[] {
+  return list.map((e) => (e.id === id ? { ...e, meal } : e));
 }
 
 /**
