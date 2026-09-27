@@ -526,9 +526,11 @@ button {
   gap: var(--sp-2);
 }
 
+/* שדה הערך לעולם לא צר מ-72px: "15.0" / "6.5" / "120" נראים במלואם,
+   בלי להקטין את הטקסט. כשאין מקום לשני סטפרים בשורה — הם נערמים. */
 .stepper input {
   flex: 1;
-  min-width: 0;
+  min-width: 72px;
 }
 
 /* ---------- בחירה בכפתורים (0–10 וכו') ---------- */
@@ -1002,7 +1004,7 @@ textarea {
 .focus__entry {
   margin-top: var(--sp-4);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
   gap: var(--sp-3) var(--sp-2);
   align-items: start;
 }
@@ -1095,15 +1097,14 @@ textarea {
   border-top: 0;
 }
 
-/* שיפוע | מהירות — לאירובי סיום בלבד */
+/* שיפוע | מהירות: זה לצד זה כשיש ≥176px לכל סטפר (−, +, 72px ערך),
+   אחרת אחד מתחת לשני עם התווית מעל כל אחד. הטקסט לא מתכווץ. */
 .cardio__gauges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+  gap: var(--sp-3);
   margin-top: var(--sp-3);
-  align-items: flex-start;
-}
-
-.cardio__gauges > * {
-  flex: 1 1 0;
-  min-width: 0;
+  align-items: start;
 }
 
 /* ---------- טיימר מנוחה ---------- */
@@ -2084,4 +2085,15 @@ input[type='file']::file-selector-button {
 
 .steps-val--low {
   color: var(--nut-slate);
+}
+
+/* רמז צעדי הליכון מהאירובי (שלב 7.1): שורה שקטה, כפתור משני, "נוסף ✓" במרווה */
+.steps-cardio {
+  min-height: var(--tap);
+}
+
+.steps-cardio__done {
+  color: var(--confidence-high);
+  font-weight: 500;
+  padding-inline: var(--sp-2);
 }
