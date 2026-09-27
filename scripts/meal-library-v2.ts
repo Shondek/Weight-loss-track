@@ -18,6 +18,7 @@ import { resolveFood } from '../src/lib/nutrition/index.ts';
 import { fromCustom } from '../src/lib/nutrition/foods.ts';
 import { buildRecipeFood } from '../src/lib/nutrition/recipe.ts';
 import { LIB_PREFIX, libraryFoodId } from '../src/lib/nutrition/library.ts';
+import { PROTEIN_SHAKES } from '../src/data/proteinShakes.ts';
 
 export { LIB_PREFIX };
 const id = libraryFoodId;
@@ -90,7 +91,74 @@ const per100 = (kcal: number, protein: number, grams: number) => ({
 /** ערכי יחידה במזון `unitFood`: ל-100 ג' = ×100, והדגל פוטר מתקרת הסבירות. */
 const perUnitAs1 = (kcal: number, protein: number) => ({ ...per100(kcal, protein, GRAMS.unitAs1), unitFood: true as const });
 
+/** משקל סקופ לפי מוצר, ממקום אחד (src/data/proteinShakes.ts). */
+const scoop = (slug: string) => {
+  const p = PROTEIN_SHAKES.find((x) => x.slug === slug);
+  if (!p) throw new Error(`${slug}: לא מוגדר ב-PROTEIN_SHAKES`);
+  return [{ u: 'סקופ', g: p.scoopGrams }];
+};
+
+/**
+ * אבקות חלבון Impact (Myprotein) — ערכי התווית ל-100 ג', צולמו 27/9/2026.
+ * אין שדה נתרן בפריט; המלח מהתווית בהערה (נתרן מ"ג = מלח ג' × 400).
+ */
+const SHAKE_POWDERS: Custom[] = [
+  {
+    id: id('impact-whey-vanilla'),
+    name: 'Impact Whey — וניל',
+    cat: 1,
+    kcal: 379,
+    protein: 72,
+    carbs: 8.9,
+    fat: 5.9,
+    fiber: null,
+    portions: scoop('impact-whey-vanilla'),
+    barcode: null,
+    note: 'תווית 27/9/2026 ל-100 ג\': 379 קק"ל · 72 חלבון · 8.9 פחמימה · 5.9 שומן · מלח 0.44 ג\' (≈176 מ"ג נתרן). סקופ 30 ג\' = 114 / 22',
+  },
+  {
+    id: id('impact-whey-chocolate'),
+    name: 'Impact Whey — שוקולד חלק',
+    cat: 1,
+    kcal: 376,
+    protein: 73,
+    carbs: 6.5,
+    fat: 6.2,
+    fiber: null,
+    portions: scoop('impact-whey-chocolate'),
+    barcode: null,
+    note: 'תווית 27/9/2026 ל-100 ג\': 376 קק"ל · 73 חלבון · 6.5 פחמימה · 6.2 שומן · מלח 0.43 ג\' (≈172 מ"ג נתרן). סקופ 30 ג\' = 113 / 22',
+  },
+  {
+    id: id('impact-milkshake-fudge'),
+    name: "Impact Whey Milkshake — שוקולד פאדג'",
+    cat: 1,
+    kcal: 362,
+    protein: 69,
+    carbs: 7.4,
+    fat: 5.2,
+    fiber: null,
+    portions: scoop('impact-milkshake-fudge'),
+    barcode: null,
+    note: 'תווית 27/9/2026 ל-100 ג\': 362 קק"ל · 69 חלבון · 7.4 פחמימה · 5.2 שומן · מלח 0.86 ג\' (≈344 מ"ג נתרן). סקופ 29 ג\' = 105 / 20',
+  },
+  {
+    id: id('impact-milkshake-caramel'),
+    name: 'Impact Whey Milkshake — קרמל מלוח',
+    cat: 1,
+    kcal: 367,
+    protein: 68,
+    carbs: 14,
+    fat: 4.1,
+    fiber: null,
+    portions: scoop('impact-milkshake-caramel'),
+    barcode: null,
+    note: 'תווית 27/9/2026 ל-100 ג\': 367 קק"ל · 68 חלבון · 14 פחמימה · 4.1 שומן · מלח 1.5 ג\' (≈600 מ"ג נתרן). סקופ 29 ג\' = 106 / 20',
+  },
+];
+
 export const CUSTOM_FOODS: Custom[] = [
+  ...SHAKE_POWDERS,
   {
     id: id('roastbeef-hod-maadan'),
     name: 'רוסטביף הוד מעדן',

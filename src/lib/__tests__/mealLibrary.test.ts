@@ -29,8 +29,8 @@ function dishNutrition(slug: string) {
 }
 
 describe('ספריית המנות v2 — חישוב מול המסמך', () => {
-  it('נבנים 32 מזונות: 9 ממותגים + 10 עותקי מאגר + 13 מנות, אף אחת בארכיון, כולם עם קידומת הספרייה', () => {
-    expect(foods).toHaveLength(32);
+  it('נבנים 36 מזונות: 13 ממותגים (כולל 4 אבקות חלבון) + 10 עותקי מאגר + 13 מנות, אף אחת בארכיון, כולם עם קידומת הספרייה', () => {
+    expect(foods).toHaveLength(36);
     expect(foods.filter((f) => f.recipe)).toHaveLength(13);
     expect(foods.filter((f) => f.archived)).toHaveLength(0);
     expect(foods.every((f) => f.id.startsWith(LIB_PREFIX))).toBe(true);
@@ -323,9 +323,9 @@ describe('קובץ הייבוא', () => {
     expect(buildMealLibrary(mohIndex)).toEqual(foods);
   });
 
-  it('parseDb קולט את הקובץ כגיבוי: 32 מזונות, 13 מתכונים, בלי דחיות', () => {
+  it('parseDb קולט את הקובץ כגיבוי: 36 מזונות, 13 מתכונים, בלי דחיות', () => {
     const r = parseDb(parsed);
-    expect(r.counts.customFoods).toBe(32);
+    expect(r.counts.customFoods).toBe(36);
     expect(r.db.customFoods.find((f) => f.id === 'c:lib2:lunch-2-roastbeef')?.archived).toBeUndefined();
     expect(r.db.customFoods.filter((f) => f.recipe)).toHaveLength(13);
     expect(r.rejected).toEqual([]);
@@ -344,7 +344,7 @@ describe('קובץ הייבוא', () => {
     };
     const once = mergeDb(existing, parseDb(parsed).db);
     const twice = mergeDb(once, parseDb(parsed).db);
-    expect(once.customFoods).toHaveLength(33);
+    expect(once.customFoods).toHaveLength(37);
     expect(twice.customFoods).toEqual(once.customFoods);
     expect(once.customFoods.find((f) => f.id === 'c:mine')).toEqual(mine);
     expect(once.customFoods.find((f) => f.id === stale.id)?.kcal).toBe(foods[0]!.kcal);
@@ -352,5 +352,35 @@ describe('קובץ הייבוא', () => {
     expect(once.entries).toEqual(existing.entries);
     expect(once.entries[0]?.ref.kcal).toBe(999);
     expect(once.targets).toEqual(existing.targets);
+  });
+});
+
+describe('אבקות חלבון Impact — ערכי התווית ל-100 ג׳ ויחידת "סקופ"', () => {
+  const expected: Record<string, { kcal: number; protein: number; carbs: number; fat: number; scoop: number; perScoop: [number, number] }> = {
+    'impact-whey-vanilla': { kcal: 379, protein: 72, carbs: 8.9, fat: 5.9, scoop: 30, perScoop: [114, 22] },
+    'impact-whey-chocolate': { kcal: 376, protein: 73, carbs: 6.5, fat: 6.2, scoop: 30, perScoop: [113, 22] },
+    'impact-milkshake-fudge': { kcal: 362, protein: 69, carbs: 7.4, fat: 5.2, scoop: 29, perScoop: [105, 20] },
+    'impact-milkshake-caramel': { kcal: 367, protein: 68, carbs: 14, fat: 4.1, scoop: 29, perScoop: [106, 20] },
+  };
+
+  it('ארבעה פריטים עם id יציב, ערכים מהתווית, סקופ אחד = ערכי השפיות, מלח בהערה', () => {
+    for (const [slug, e] of Object.entries(expected)) {
+      const f = foods.find((x) => x.id === libId(slug))!;
+      expect(f, slug).toBeDefined();
+      expect(f).toMatchObject({ kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat, cat: 1 });
+      expect(f.portions).toEqual([{ u: 'סקופ', g: e.scoop }]);
+      expect(f.note).toContain('מלח');
+      const n = entryNutrition(newEntry(resolveFood(index, f.id)!, e.scoop, 'snack', 1, 't'), resolveFood(index, f.id));
+      expect(Math.round(n.kcal)).toBe(e.perScoop[0]);
+      expect(Math.round(n.protein)).toBe(e.perScoop[1]);
+    }
+  });
+
+  it('הקובץ שנבנה מכיל את ארבעת הפריטים ולא שינה אף פריט קיים', () => {
+    const file = JSON.parse(readFileSync(join(ROOT, 'public', 'library', 'meal-library-v2.json'), 'utf8')) as { customFoods: CustomFood[] };
+    const ids = file.customFoods.map((f) => f.id);
+    for (const slug of Object.keys(expected)) expect(ids).toContain(libId(slug));
+    // כל פריט בקובץ זהה למה שהסקריפט בונה — הקובץ מעודכן.
+    expect(file.customFoods).toEqual(foods);
   });
 });
