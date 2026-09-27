@@ -192,6 +192,8 @@ export type BackupFile = {
   favorites: DB['favorites'];
   /** ימי תזונה (שלב 3): סגור / ארוחת שישי. אופציונלי — גיבוי ישן נקלט כרגיל. */
   days?: DB['days'];
+  /** סימוני קריאטין. אופציונלי — גיבוי מלפני המעקב נקלט כרגיל. */
+  creatine?: DB['creatine'];
   /**
    * רשומות שנדחו בקריאה (שלב 2). אופציונלי: גיבוי מלפני השדה נקלט כרגיל,
    * וגיבוי עם השדה מתמזג לפי טביעת אצבע.
@@ -216,6 +218,7 @@ export function buildBackup(db: DB, exportedAt: string): BackupFile {
     targets: db.targets,
     favorites: db.favorites,
     days: db.days,
+    creatine: db.creatine,
     quarantine: db.quarantine,
   };
 }

@@ -381,6 +381,21 @@ export type DayMeta = {
   steps?: number;
 };
 
+// ---------- קריאטין ----------
+
+/**
+ * סימון יומי של קריאטין (5 ג׳ מ-27/9/2026, כל יום). מפתח משלו
+ * (`fatloss:creatine`) — לא ביומן האוכל, 0 קק״ל. רשומה = היום סומן;
+ * מחיקת הרשומה = ביטול הסימון. `at` — מתי סומן (ISO 8601).
+ */
+export type CreatineDay = {
+  d: ISODate;
+  taken: true;
+  at: string;
+  /** גרמים. */
+  dose_g: number;
+};
+
 // ---------- הסגר ----------
 
 /**
@@ -418,6 +433,8 @@ export type DB = {
   favorites: Favorite[];
   /** מטא-נתונים של ימי תזונה: סגור / ארוחת שישי. */
   days: DayMeta[];
+  /** סימוני קריאטין יומיים. מפתח משלו (`fatloss:creatine`), בגיבוי. */
+  creatine: CreatineDay[];
   /** רשומות שנדחו בקריאה. מפתח משלו (`fatloss:quarantine`), בגיבוי, לא נמחק. */
   quarantine: QuarantineItem[];
 };
@@ -440,6 +457,7 @@ export function emptyDb(): DB {
     targets: [],
     favorites: [],
     days: [],
+    creatine: [],
     quarantine: [],
   };
 }

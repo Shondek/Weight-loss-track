@@ -352,6 +352,7 @@ describe('backupJson', () => {
       'targets',
       'favorites',
       'days',
+      'creatine',
       'quarantine',
     ]);
   });

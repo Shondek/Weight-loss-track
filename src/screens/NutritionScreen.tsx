@@ -55,6 +55,11 @@ import { KCAL_FLOOR, targetFor } from '../lib/nutrition/targets';
 import { daySummary, entryNutrition } from '../lib/nutrition/calc';
 import { kcalText } from '../lib/nutrition/display';
 import { compositionLine } from '../lib/nutrition/composition';
+import { resolveShakes, shakeEntries, type ShakeCombo } from '../lib/nutrition/shakes';
+import { shakesOpenByDefault } from '../data/proteinShakes';
+import { CREATINE_DOSE_G, creatineOn, creatineTimeText, toggleCreatine } from '../lib/creatine';
+import { toLocalISO } from '../lib/date';
+import { MEAL_HOURS } from '../data/config';
 import { gramsFor, qtyFor, qtyText as unitQtyText, quantityLabel, unitFor, type PortionSource, type UnitSpec } from '../lib/nutrition/portions';
 
 const SEARCH_LIMIT = 12;
@@ -312,6 +317,33 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     commit(entry, `${item.name} ${quantityLabel(sourceOf(item.foodId) ?? { portions: [], unitFood: item.unitFood }, grams)}`);
   };
 
+  // ---------- קריאטין ----------
+  const creatineToday = creatineOn(db.creatine, day);
+  const creatineTime = creatineToday && toLocalISO(new Date(creatineToday.at)) === day ? creatineTimeText(creatineToday.at) : null;
+  const toggleCreatineDay = () => {
+    void store.update('creatine', toggleCreatine(db.creatine, day, new Date().toISOString()));
+  };
+
+  // ---------- שייקי חלבון ----------
+  const shakes = useMemo(() => resolveShakes(resolve), [foodIndex.index]); // eslint-disable-line react-hooks/exhaustive-deps
+  const shakesMissing = shakes.every((p) => p.powder === null);
+  /** פתוח כברירת מחדל לפני הצהריים ואחרי הביניים — כמו "בלוקים"; טאפ משנה. */
+  const [shakesOpen, setShakesOpen] = useState(() => shakesOpenByDefault(new Date().getHours(), MEAL_HOURS));
+  const [openShake, setOpenShake] = useState<string | null>(null);
+
+  /** שילוב = רישום מיידי: שורה אחת במים, שתיים בחלב; "בטל" מסיר את כולן. */
+  const logShake = (combo: ShakeCombo) => {
+    const entries = shakeEntries(combo, mealNow(), nowTs(), () => unique());
+    let list = db.entries;
+    for (const e of entries) list = upsertEntry(list, e);
+    void store.update('entries', list);
+    armUndo({
+      kind: 'added',
+      ids: entries.map((e) => e.id),
+      text: `${combo.shake.label} · ${combo.label} · ${int(combo.kcal)} קק"ל · ${int(combo.protein)} חלבון`,
+    });
+  };
+
   // ---------- חיפוש ----------
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Food | null>(null);
@@ -430,6 +462,19 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
         </div>
         <button type="button" className="btn btn--quiet" aria-label="יום הבא" disabled={isToday} onClick={() => setDay(addDays(day, 1))}>
           ‹
+        </button>
+      </section>
+
+      {/* ---------- קריאטין: שורה אחת, נגיעה מחליפה מצב ליום המוצג. לא מזון, 0 קק״ל. ---------- */}
+      <section className="nut-card nut-creatine" aria-label="קריאטין">
+        <button type="button" className="nut-creatine__tap" aria-pressed={creatineToday !== null} onClick={toggleCreatineDay}>
+          <span className={`nut-creatine__mark${creatineToday ? ' is-on' : ''}`} aria-hidden="true">
+            {creatineToday ? '✓' : '○'}
+          </span>
+          <span className="grow">
+            קריאטין <span className="num">{CREATINE_DOSE_G}</span> גר׳
+          </span>
+          <span className="tiny muted num">{creatineToday ? (creatineTime ?? 'סומן') : 'לא סומן'}</span>
         </button>
       </section>
 
@@ -599,6 +644,71 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
       </section>
 
       {/* ---------- חיפוש ---------- */}
+      {/* ---------- שייקי חלבון: קבוצה מתקפלת, 4 מוצרים × 4 שילובים, טאפ = רישום ---------- */}
+      <section className="nut-card" aria-label="שייקי חלבון">
+        <button
+          type="button"
+          className="btn btn--quiet disclosure"
+          aria-expanded={shakesOpen}
+          onClick={() => setShakesOpen((v) => !v)}
+        >
+          <span className="grow">שייקי חלבון</span>
+          <span className="tiny muted">סקופ · מים / חלב 3%</span>
+          <span className="muted" aria-hidden="true">
+            {shakesOpen ? '▾' : '▸'}
+          </span>
+        </button>
+        {shakesOpen &&
+          (shakesMissing ? (
+            <p className="small muted" style={{ margin: 'var(--sp-2) 0 0' }}>
+              האבקות עוד לא בספרייה — במסך "נתונים" לחץ "טען את ספריית המנות".
+            </p>
+          ) : (
+            <div className="stack--tight" style={{ marginTop: 'var(--sp-2)' }}>
+              {shakes.map((p) => {
+                const open = openShake === p.shake.slug;
+                return (
+                  <div key={p.shake.slug} className="menu__group">
+                    <button
+                      type="button"
+                      className="menu__head"
+                      aria-expanded={open}
+                      onClick={() => setOpenShake(open ? null : p.shake.slug)}
+                    >
+                      <span className="grow">{p.shake.label}</span>
+                      <span className="tiny muted">
+                        סקופ <span className="num">{p.shake.scoopGrams}</span> ג׳
+                      </span>
+                      <span className="muted" aria-hidden="true">
+                        {open ? '▾' : '▸'}
+                      </span>
+                    </button>
+                    {open && (
+                      <ul className="menu__items">
+                        {p.combos.length === 0 && (
+                          <li className="tiny muted" style={{ padding: 'var(--sp-2) var(--sp-3)' }}>
+                            הפריט לא בספרייה — טען את ספריית המנות במסך "נתונים".
+                          </li>
+                        )}
+                        {p.combos.map((c) => (
+                          <li key={`${c.scoops}-${c.liquid}`}>
+                            <button type="button" className="menu__btn" onClick={() => logShake(c)}>
+                              <span className="grow">{c.label}</span>
+                              <span className="tiny muted num">
+                                {int(c.kcal)} · {int(c.protein)}ח
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+      </section>
+
       <section className="nut-card" aria-label="חיפוש">
         <label htmlFor="food-search" className="visually-hidden">
           חיפוש מזון

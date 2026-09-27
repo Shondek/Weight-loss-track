@@ -512,6 +512,7 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
       entries: 0,
       targets: 0,
       favorites: 0,
+      creatine: 0,
     });
     expect(r.rejected).toEqual([
       { section: 'משקל', reason: 'תאריך לא תקין', count: 1 },
@@ -531,6 +532,7 @@ describe('parseDb — ייבוא מהגרסה הישנה', () => {
       entries: 0,
       targets: 0,
       favorites: 0,
+      creatine: 0,
     });
   });
 

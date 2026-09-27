@@ -9,6 +9,7 @@ import {
   type CardioSegment,
   type CustomFood,
   type DayMeta,
+  type CreatineDay,
   type DB,
   type ExerciseType,
   type Favorite,
@@ -910,6 +911,43 @@ export function parseDays(input: unknown): ParseResult<DayMeta> {
   return { ok, rejected };
 }
 
+// ---------- קריאטין ----------
+
+/**
+ * סימוני קריאטין. נדחה: לא אובייקט, תאריך שבור, `taken` שאינו true, `at`
+ * שאינו זמן, מינון שאינו מספר חיובי. כפילות תאריך: האחרונה גוברת.
+ */
+export function parseCreatine(input: unknown): ParseResult<CreatineDay> {
+  const rejected: Rejection[] = [];
+  const byDate = new Map<ISODate, CreatineDay>();
+  for (const raw of asArray(input)) {
+    if (!isRecord(raw)) {
+      rejected.push({ raw, reason: 'רשומה שאינה אובייקט' });
+      continue;
+    }
+    if (!isValidISO(raw.d)) {
+      rejected.push({ raw, reason: 'תאריך לא תקין' });
+      continue;
+    }
+    if (raw.taken !== true) {
+      rejected.push({ raw, reason: 'סימון שאינו true' });
+      continue;
+    }
+    if (typeof raw.at !== 'string' || !Number.isFinite(Date.parse(raw.at))) {
+      rejected.push({ raw, reason: 'זמן הסימון לא תקין' });
+      continue;
+    }
+    const dose = num(raw.dose_g);
+    if (dose === null || dose <= 0) {
+      rejected.push({ raw, reason: 'מינון לא תקין' });
+      continue;
+    }
+    byDate.set(raw.d, { d: raw.d, taken: true, at: raw.at, dose_g: dose });
+  }
+  const ok = [...byDate.values()].sort((a, b) => compareISO(a.d, b.d));
+  return { ok, rejected };
+}
+
 // ---------- הסגר ----------
 
 /**
@@ -948,7 +986,8 @@ export type DbParseResult = {
     | 'customFoods'
     | 'entries'
     | 'targets'
-    | 'favorites',
+    | 'favorites'
+    | 'creatine',
     number
   >;
   rejected: { section: string; reason: string; count: number }[];
@@ -978,6 +1017,8 @@ export function parseDb(input: unknown): DbParseResult {
   const favorites = parseFavorites(src.favorites);
   // גיבוי מלפני שלב 3 פשוט לא מכיל `days` — ריק, בלי דחייה.
   const days = parseDays(src.days);
+  // גיבוי מלפני מעקב הקריאטין פשוט לא מכיל `creatine` — ריק, בלי דחייה.
+  const creatine = parseCreatine(src.creatine);
   // הסגר מהגיבוי (אופציונלי — גיבוי ישן פשוט לא מכיל אותו), ואחריו מה שנדחה
   // בייבוא הזה עצמו: גם רשומה שבורה בקובץ לא נעלמת.
   const at = new Date().toISOString();
@@ -992,6 +1033,7 @@ export function parseDb(input: unknown): DbParseResult {
     ...quarantineFromRejections('targets', targets.rejected, at),
     ...quarantineFromRejections('favorites', favorites.rejected, at),
     ...quarantineFromRejections('days', days.rejected, at),
+    ...quarantineFromRejections('creatine', creatine.rejected, at),
   ]);
 
   return {
@@ -1009,6 +1051,7 @@ export function parseDb(input: unknown): DbParseResult {
       targets: targets.ok,
       favorites: favorites.ok,
       days: days.ok,
+      creatine: creatine.ok,
       quarantine,
     },
     counts: {
@@ -1021,6 +1064,7 @@ export function parseDb(input: unknown): DbParseResult {
       entries: entries.ok.length,
       targets: targets.ok.length,
       favorites: favorites.ok.length,
+      creatine: creatine.ok.length,
     },
     rejected: [
       ...tally('משקל', weights.rejected),
@@ -1039,6 +1083,7 @@ export function parseDb(input: unknown): DbParseResult {
       ...tally('יעדי תזונה', targets.rejected),
       ...tally('מועדפים', favorites.rejected),
       ...tally('ימים', days.rejected),
+      ...tally('קריאטין', creatine.rejected),
     ],
   };
 }
