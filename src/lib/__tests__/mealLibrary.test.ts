@@ -359,7 +359,7 @@ describe('אבקות חלבון Impact — ערכי התווית ל-100 ג׳ ו�
   const expected: Record<string, { kcal: number; protein: number; carbs: number; fat: number; scoop: number; perScoop: [number, number] }> = {
     'impact-whey-vanilla': { kcal: 379, protein: 72, carbs: 8.9, fat: 5.9, scoop: 30, perScoop: [114, 22] },
     'impact-whey-chocolate': { kcal: 376, protein: 73, carbs: 6.5, fat: 6.2, scoop: 30, perScoop: [113, 22] },
-    'impact-milkshake-fudge': { kcal: 362, protein: 69, carbs: 7.4, fat: 5.2, scoop: 29, perScoop: [105, 20] },
+    'impact-milkshake-fudge': { kcal: 362, protein: 69, carbs: 7.4, fat: 5.2, scoop: 33, perScoop: [119, 23] },
     'impact-milkshake-caramel': { kcal: 367, protein: 68, carbs: 14, fat: 4.1, scoop: 29, perScoop: [106, 20] },
   };
 
@@ -382,5 +382,34 @@ describe('אבקות חלבון Impact — ערכי התווית ל-100 ג׳ ו�
     for (const slug of Object.keys(expected)) expect(ids).toContain(libId(slug));
     // כל פריט בקובץ זהה למה שהסקריפט בונה — הקובץ מעודכן.
     expect(file.customFoods).toEqual(foods);
+  });
+});
+
+describe('Impact Whey Milkshake שוקולד פאדג׳ — סקופ שנשקל 33 ג׳', () => {
+  const id = libId('impact-milkshake-fudge');
+
+  it('מנת ברירת המחדל 33 ג׳ = 119 קק״ל (±1) ו-22.8 חלבון (±0.1); id ושם לא השתנו', () => {
+    const f = foods.find((x) => x.id === id)!;
+    expect(f.name).toBe("Impact Whey Milkshake — שוקולד פאדג'");
+    expect(f.portions).toEqual([{ u: 'סקופ', g: 33 }]);
+    const live = resolveFood(index, id)!;
+    const n = entryNutrition(newEntry(live, 33, 'snack', 1, 't'), live);
+    expect(Math.abs(n.kcal - 119)).toBeLessThanOrEqual(1);
+    expect(Math.abs(n.protein - 22.8)).toBeLessThanOrEqual(0.1);
+    expect(f.note).toContain('33');
+  });
+
+  it('רישום שכבר נרשם לא משנה ערך: ה-ref שהוקפא קובע, גם כשהפריט בספרייה שונה ממנו', () => {
+    // רישום ישן עם ref של הפריט כפי שהיה (אותם ערכים ל-100 ג׳, סקופ 29 ג׳ = 29 ג׳ ברישום)
+    const live = resolveFood(index, id)!;
+    const old = newEntry(live, 29, 'snack', 1, 'old');
+    const before = entryNutrition(old, live);
+    // "עדכון" הפריט: ערכים אחרים ל-100 ג׳ — הרישום הישן לא זז
+    const changed = { ...live, kcal: 999, protein: 99 };
+    const after = entryNutrition(old, changed);
+    expect(after.kcal).toBe(before.kcal);
+    expect(after.protein).toBe(before.protein);
+    expect(after.live).toBe('differs');
+    expect(Math.round(before.kcal)).toBe(105);
   });
 });
