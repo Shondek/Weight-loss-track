@@ -17,7 +17,7 @@ import {
   weekDays,
   weekNumber,
 } from '../lib/date';
-import { canStepForward, defaultStepsDate, recentSteps, stepsGoalFor, stepsStatus } from '../lib/steps';
+import { addCardioSteps, canStepForward, cardioStepsOn, defaultStepsDate, recentSteps, stepsGoalFor, stepsStatus } from '../lib/steps';
 import { setDaySteps, stepsOn } from '../lib/nutrition/days';
 import {
   daysSinceWaist,
@@ -57,6 +57,8 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   /** צעדים (שלב 6): מוזנים בבוקר על אתמול, יחד עם השקילה. */
   const [stepsDate, setStepsDate] = useState(() => defaultStepsDate(today));
   const [stepsDraft, setStepsDraft] = useState<number | null>(null);
+  /** צעדי הליכון מהאירובי כבר נוספו לשדה (לתאריך הזה). לעולם לא אוטומטית. */
+  const [cardioAddedFor, setCardioAddedFor] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const savedTimer = useRef<number | undefined>(undefined);
   /** שורת שקילה פתוחה ב"שקילות אחרונות" — רק בה מוצג כפתור המחיקה. */
@@ -86,12 +88,22 @@ export default function WeightScreen({ store, today }: ScreenProps) {
   const stepsValue = stepsDraft ?? stepsExisting;
   const stepsGoal = stepsGoalFor(stepsDate);
   const stepsRecent = useMemo(() => recentSteps(db.days, stepsDate), [db.days, stepsDate]);
+  const cardioSteps = useMemo(() => cardioStepsOn(db, stepsDate), [db, stepsDate]);
+  const cardioAdded = cardioAddedFor === stepsDate;
   const stepsLabel =
     stepsDate === addDays(today, -1) ? 'צעדים אתמול' : stepsDate === today ? 'צעדים היום' : `צעדים · יום ${dayName(stepsDate)}`;
 
   const moveStepsDate = (d: string) => {
     setStepsDate(d);
     setStepsDraft(null);
+    setCardioAddedFor(null);
+  };
+
+  /** מוסיף את צעדי האירובי לשדה בלבד — נשמר רק בלחיצה על שמור/עדכן. פעם אחת לתאריך. */
+  const addCardio = () => {
+    if (cardioAdded || cardioSteps <= 0) return;
+    setStepsDraft(addCardioSteps(stepsValue, cardioSteps));
+    setCardioAddedFor(stepsDate);
   };
 
   const saveSteps = () => {
@@ -353,6 +365,22 @@ export default function WeightScreen({ store, today }: ScreenProps) {
               />
             )}
           </div>
+          {cardioSteps > 0 && (
+            <div className="row steps-cardio">
+              <span className="tiny muted grow">
+                באירובי נרשמו <span className="num">{cardioSteps.toLocaleString('en-US')}</span> צעדים
+              </span>
+              {cardioAdded ? (
+                <span className="tiny steps-cardio__done" role="status">
+                  נוסף ✓
+                </span>
+              ) : (
+                <button type="button" className="btn btn--quiet btn--outlined" onClick={addCardio}>
+                  הוסף לספירה
+                </button>
+              )}
+            </div>
+          )}
           <div className="steps-row" role="list" aria-label="צעדים בשבעת הימים האחרונים">
             {stepsRecent.map(({ d, steps }) => {
               const status = steps === null ? null : stepsStatus(steps, d);

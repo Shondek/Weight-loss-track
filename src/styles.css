@@ -2086,3 +2086,14 @@ input[type='file']::file-selector-button {
 .steps-val--low {
   color: var(--nut-slate);
 }
+
+/* רמז צעדי הליכון מהאירובי (שלב 7.1): שורה שקטה, כפתור משני, "נוסף ✓" במרווה */
+.steps-cardio {
+  min-height: var(--tap);
+}
+
+.steps-cardio__done {
+  color: var(--confidence-high);
+  font-weight: 500;
+  padding-inline: var(--sp-2);
+}

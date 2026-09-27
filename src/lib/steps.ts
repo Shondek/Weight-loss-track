@@ -2,14 +2,17 @@
  * צעדים יומיים (שלב 6). מודול טהור.
  *
  * הזנה ידנית (PWA לא קורא Apple Health): הערך נשמר על DayMeta.steps
- * (`fatloss:days`). צעדי הליכון מרשומות האירובי אינם נספרים כאן —
- * זה מד יומי, לא מד אימון.
+ * (`fatloss:days`). צעדי הליכון מרשומות האירובי אינם נספרים כאן
+ * אוטומטית — הטלפון לא תמיד על ההליכון. הם מוצעים בלבד (`cardioStepsOn`),
+ * והמשתמש מוסיף אותם לשדה בלחיצה מפורשת.
  */
 
-import type { DayMeta, ISODate } from '../types';
+import type { DayMeta, DB, ISODate } from '../types';
 import { STEPS_GOAL_SCHEDULE } from '../data/config';
 import { addDays, compareISO, weekDays } from './date';
 import { stepsOn } from './nutrition/days';
+import { cardioMinutesDone, FINISHER_ID } from './workouts';
+import { MAX_DAY_STEPS } from './schema';
 
 /** יעד הצעדים בתאריך: השלב האחרון שכבר נכנס לתוקף, או null כשאין יעד. */
 export function stepsGoalFor(d: ISODate): number | null {
@@ -76,4 +79,28 @@ export function stepsWeek(list: readonly DayMeta[], ws: ISODate): StepsWeek {
     goal,
     atGoal: goal === null ? null : present.filter((v) => v >= goal).length,
   };
+}
+
+/**
+ * צעדי הליכון שנרשמו באירובי של היום: אירובי סיום (שבוצע) + עצמאי.
+ * רשומה בלי `steps` לא נספרת. לעולם לא נוסף לספירה היומית מעצמו.
+ */
+export function cardioStepsOn(db: Pick<DB, 'workouts' | 'standaloneCardio'>, d: ISODate): number {
+  let sum = 0;
+  for (const w of db.workouts) {
+    if (w.d !== d) continue;
+    for (const ex of w.ex) {
+      if (ex.exerciseId !== FINISHER_ID || cardioMinutesDone(ex) === null) continue;
+      if (ex.cardio?.steps !== undefined) sum += ex.cardio.steps;
+    }
+  }
+  for (const e of db.standaloneCardio) {
+    if (e.d === d && e.steps !== undefined) sum += e.steps;
+  }
+  return sum;
+}
+
+/** הערך בשדה אחרי "הוסף לספירה": הנוכחי (או 0) + צעדי האירובי, עד התקרה. לא נשמר כאן. */
+export function addCardioSteps(current: number | null, cardioSteps: number): number {
+  return Math.min(MAX_DAY_STEPS, (current ?? 0) + cardioSteps);
 }
