@@ -38,6 +38,28 @@ describe('החלפת מצב', () => {
     expect(today(new Date('2026-09-27T21:00:00.000Z'))).toBe('2026-09-28');
     expect(toLocalISO(new Date(AT))).toBe('2026-09-27');
   });
+
+  it('סימון סביב חצות נופל על התאריך הנכון בשעון ישראל — גם אחרי המעבר לשעון חורף', () => {
+    // הזרימה של המסך: היום המוצג נגזר מהשעון המקומי, והסימון נרשם לאותו יום עם חותמת הזמן.
+    const tapAt = (iso: string) => {
+      const now = new Date(iso);
+      const d = today(now);
+      const list = toggleCreatine([], d, now.toISOString());
+      return { d: list[0]!.d, time: creatineTimeText(list[0]!.at), week: creatineWeek(list, '2026-09-27') };
+    };
+    // שעון קיץ (UTC+3): 23:59 ב-27/9 עדיין 27/9; 00:30 כבר 28/9
+    expect(tapAt('2026-09-27T20:59:00.000Z')).toMatchObject({ d: '2026-09-27', time: '23:59' });
+    expect(tapAt('2026-09-27T21:30:00.000Z')).toMatchObject({ d: '2026-09-28', time: '00:30' });
+    expect(tapAt('2026-09-27T21:30:00.000Z').week).toMatchObject({ taken: 1, days: [false, true, false, false, false, false, false] });
+    // שעון חורף (UTC+2, מ-25/10/2026): 22:30 UTC ב-1/11 הוא 00:30 ב-2/11
+    expect(tapAt('2026-11-01T21:30:00.000Z')).toMatchObject({ d: '2026-11-01', time: '23:30' });
+    expect(tapAt('2026-11-01T22:30:00.000Z')).toMatchObject({ d: '2026-11-02', time: '00:30' });
+    // הסימון נופל בשבוע הנכון: 00:30 של ראשון 4/10 שייך לשבוע 4–10/10, לא לשבוע שלפניו
+    const sunday = toggleCreatine([], today(new Date('2026-10-03T21:30:00.000Z')), '2026-10-03T21:30:00.000Z');
+    expect(sunday[0]!.d).toBe('2026-10-04');
+    expect(creatineWeek(sunday, '2026-09-27').taken).toBe(0);
+    expect(creatineWeek(sunday, '2026-10-04').taken).toBe(1);
+  });
 });
 
 describe('ספירה שבועית', () => {
