@@ -13,14 +13,15 @@ export type ProteinShake = {
   slug: string;
   /** השם על כפתור המוצר. */
   label: string;
-  /** משקל סקופ אחד בגרמים, לפי התווית. */
+  /** משקל סקופ אחד בגרמים — לפי התווית, או לפי שקילה בפועל כשנשקל. */
   scoopGrams: number;
 };
 
 export const PROTEIN_SHAKES: readonly ProteinShake[] = [
   { slug: 'impact-whey-vanilla', label: 'Impact Whey וניל', scoopGrams: 30 },
   { slug: 'impact-whey-chocolate', label: 'Impact Whey שוקולד חלק', scoopGrams: 30 },
-  { slug: 'impact-milkshake-fudge', label: "Impact Milkshake שוקולד פאדג'", scoopGrams: 29 },
+  // סקופ נשקל בפועל 27/9/2026: 33 ג׳ (בתווית כתוב 29).
+  { slug: 'impact-milkshake-fudge', label: "Impact Milkshake שוקולד פאדג'", scoopGrams: 33 },
   { slug: 'impact-milkshake-caramel', label: 'Impact Milkshake קרמל מלוח', scoopGrams: 29 },
 ];
 
