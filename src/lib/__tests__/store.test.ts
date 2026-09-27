@@ -203,6 +203,7 @@ describe('ייבוא גיבוי מלפני שלב 2 (בלי quarantine)', () => 
       targets: OLD_BACKUP.targets,
       favorites: OLD_BACKUP.favorites,
       days: [],
+      creatine: [],
     });
     expect(r.rejected).toEqual([]);
   });
@@ -348,5 +349,31 @@ describe('fatloss:days — אותו מסלול כמו כל מפתח (שלב 3)',
     expect((h.idb.get('fatloss:meta:ls-migrated') as { keys: string[] }).keys).toContain('days');
     await s.wipeAll();
     expect(h.idb.get('fatloss:days')).toBeUndefined();
+  });
+});
+
+describe('fatloss:creatine — אותו מסלול כמו כל מפתח', () => {
+  it('שורה שבורה נכנסת להסגר, התקינות נטענות ונשמרות, המפתח נרשם בסמן, נמחק במחיקת הכול', async () => {
+    const good = { d: '2026-09-27', taken: true, at: '2026-09-27T05:15:00.000Z', dose_g: 5 };
+    h.idb.set('fatloss:creatine', [good, { d: '2026-09-28', taken: true, at: 'bad', dose_g: 5 }]);
+    const s = await store();
+    const res = await s.loadDB();
+    expect(res.db.creatine).toEqual([good]);
+    expect(res.quarantined).toBe(1);
+    expect(res.db.quarantine[0]).toMatchObject({ key: 'creatine', raw: { d: '2026-09-28', taken: true, at: 'bad', dose_g: 5 } });
+    await s.persist('creatine', res.db.creatine);
+    expect(h.idb.get('fatloss:creatine')).toEqual([good]);
+    expect((h.idb.get('fatloss:meta:ls-migrated') as { keys: string[] }).keys).toContain('creatine');
+    await s.wipeAll();
+    expect(h.idb.get('fatloss:creatine')).toBeUndefined();
+  });
+
+  it('מכשיר בלי המפתח: לא "נתונים חסרים", יומן ריק, ושמירה ראשונה מוסיפה אותו לסמן', async () => {
+    h.idb.set('fatloss:weights', [{ d: '2026-09-27', w: 78.4 }]);
+    const s = await store();
+    const res = await s.loadDB();
+    expect(res.db.creatine).toEqual([]);
+    expect(res.missingKeys).toEqual([]);
+    expect(h.idb.get('fatloss:weights')).toEqual([{ d: '2026-09-27', w: 78.4 }]);
   });
 });

@@ -2097,3 +2097,44 @@ input[type='file']::file-selector-button {
   font-weight: 500;
   padding-inline: var(--sp-2);
 }
+
+/* קריאטין (מסך תזונה): שורה אחת, נגיעה = סימון. ○ / ✓ במרווה. */
+.nut-creatine {
+  padding: var(--sp-1) var(--sp-3);
+}
+
+.nut-creatine__tap {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font: inherit;
+  font-size: 15px;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.nut-creatine__mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  font-size: 15px;
+  flex: 0 0 28px;
+}
+
+.nut-creatine__mark.is-on {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #fff;
+}

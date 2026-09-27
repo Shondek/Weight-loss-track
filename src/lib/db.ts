@@ -12,6 +12,7 @@ import { upsertTarget } from './nutrition/targets';
 import { upsertFavorite } from './nutrition/favorites';
 import { mergeQuarantine } from './quarantine';
 import { upsertDay } from './nutrition/days';
+import { sortCreatine } from './creatine';
 
 /** התאריך המוקדם ביותר שיש עליו נתון כלשהו. */
 export function firstDataDate(db: DB): ISODate | null {
@@ -50,7 +51,8 @@ export function recordCount(db: DB): number {
     db.checkins.length +
     db.standaloneCardio.length +
     db.customFoods.length +
-    db.entries.length
+    db.entries.length +
+    db.creatine.length
   );
 }
 
@@ -104,6 +106,11 @@ export function mergeDb(current: DB, incoming: DB): DB {
   let days = current.days;
   for (const d of incoming.days) days = upsertDay(days, d);
 
+  // קריאטין לפי תאריך: הנכנס גובר; גיבוי בלי המפתח לא נוגע בקיים.
+  const creatineByDate = new Map(current.creatine.map((c) => [c.d, c]));
+  for (const c of incoming.creatine) creatineByDate.set(c.d, c);
+  const creatine = sortCreatine([...creatineByDate.values()]);
+
   return {
     weights,
     waist,
@@ -116,6 +123,7 @@ export function mergeDb(current: DB, incoming: DB): DB {
     targets,
     favorites,
     days,
+    creatine,
     // הסגר מתמזג תמיד ולעולם לא מתכווץ — גם בייבוא.
     quarantine: mergeQuarantine(current.quarantine, incoming.quarantine),
     settings: {

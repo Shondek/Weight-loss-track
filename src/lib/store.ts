@@ -12,6 +12,7 @@ import {
   parseCheckins,
   parseCustomFoods,
   parseDays,
+  parseCreatine,
   parseEntries,
   parseFavorites,
   parseQuarantine,
@@ -38,6 +39,8 @@ export const STORAGE_KEYS = {
   favorites: 'fatloss:favorites',
   /** מטא-נתונים של ימי תזונה (שלב 3): סגור / ארוחת שישי. */
   days: 'fatloss:days',
+  /** סימוני קריאטין יומיים. */
+  creatine: 'fatloss:creatine',
   /** רשומות שנדחו בקריאה. נכתב לפני כל שמירה של מפתח שנדחו ממנו רשומות. */
   quarantine: 'fatloss:quarantine',
 } as const;
@@ -100,6 +103,7 @@ export const KEY_LABELS: Record<DbKey, string> = {
   targets: 'יעדי תזונה',
   favorites: 'מועדפים',
   days: 'ימים',
+  creatine: 'קריאטין',
   quarantine: 'הסגר',
 };
 
@@ -391,6 +395,12 @@ export async function loadDB(): Promise<LoadResult> {
         const r = parseDays(raw);
         db.days = r.ok;
         rejectedBy.set('days', r.rejected);
+        break;
+      }
+      case 'creatine': {
+        const r = parseCreatine(raw);
+        db.creatine = r.ok;
+        rejectedBy.set('creatine', r.rejected);
         break;
       }
       case 'quarantine':

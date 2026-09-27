@@ -280,7 +280,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
             <span className="num">{db.targets.length}</span> · מועדפים{' '}
             <span className="num">{db.favorites.length}</span> · ימים סגורים{' '}
-            <span className="num">{db.days.filter((x) => x.closed).length}</span>
+            <span className="num">{db.days.filter((x) => x.closed).length}</span> · קריאטין{' '}
+            <span className="num">{db.creatine.length}</span>
           </li>
           <li>
             {/* רשומות שנדחו בקריאה ונשמרו גולמיות במקום להיעלם. אין עריכה ואין מחיקה. */}
@@ -482,7 +483,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
                 רישומי אכילה <span className="num">{report.counts.entries}</span> · מזונות שלי{' '}
                 <span className="num">{report.counts.customFoods}</span> · יעדי תזונה{' '}
                 <span className="num">{report.counts.targets}</span> · מועדפים{' '}
-                <span className="num">{report.counts.favorites}</span>
+                <span className="num">{report.counts.favorites}</span> · קריאטין{' '}
+                <span className="num">{report.counts.creatine}</span>
               </p>
               <p style={{ margin: 0 }}>
                 סה"כ רשומות: <span className="num">{report.totalBefore}</span> →{' '}

@@ -22,6 +22,7 @@ import { clean, DASH, round2 } from './format';
 import { getCheckin, isFilled } from './checkins';
 import { cardioWeek, type CardioWeek } from './cardio';
 import { stepsWeek, type StepsWeek } from './steps';
+import { creatineWeek, type CreatineWeek } from './creatine';
 import { daySummary } from './nutrition/calc';
 import { isDayClosed } from './nutrition/days';
 import { FRIDAY_TIERS } from './nutrition/friday';
@@ -101,6 +102,8 @@ export type WeeklySummaryData = {
   cardio: CardioWeek;
   /** צעדים יומיים (שלב 6) — הזנה ידנית; צעדי הליכון מהאירובי לא נספרים. */
   steps: StepsWeek;
+  /** קריאטין X/7 — null כשכל השבוע לפני תאריך ההתחלה (27/9/2026). */
+  creatine: CreatineWeek | null;
   nutrition: {
     closedDays: ISODate[];
     /** היעד שבתוקף בשבת של השבוע. null = אין יעד שמור. */
@@ -248,6 +251,8 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
   const avg = (vals: number[]) => (vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null);
   const fridayTier = db.days.find((m) => days.includes(m.d) && m.fridayTier !== undefined)?.fridayTier ?? null;
   const target = targetFor(db.targets, saturday);
+  const creatineW = creatineWeek(db.creatine, ws);
+  const creatine = creatineW.eligible > 0 ? creatineW : null;
   const nutrition = {
     closedDays,
     target: target ? { kcal: target.kcal, protein: target.protein } : null,
@@ -293,6 +298,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     cardio,
     steps,
     nutrition,
+    creatine,
     checkin,
     flags,
   };
@@ -395,6 +401,7 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
     );
   }
   L.push(`נרשמו ולא נסגרו: ${nu.openDays}`);
+  if (data.creatine) L.push(`קריאטין ${data.creatine.taken}/${data.creatine.eligible}`);
   L.push('');
 
   // 7. צ'ק-אין

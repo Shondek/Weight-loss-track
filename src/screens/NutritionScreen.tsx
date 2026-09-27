@@ -57,6 +57,8 @@ import { kcalText } from '../lib/nutrition/display';
 import { compositionLine } from '../lib/nutrition/composition';
 import { resolveShakes, shakeEntries, type ShakeCombo } from '../lib/nutrition/shakes';
 import { shakesOpenByDefault } from '../data/proteinShakes';
+import { CREATINE_DOSE_G, creatineOn, creatineTimeText, toggleCreatine } from '../lib/creatine';
+import { toLocalISO } from '../lib/date';
 import { MEAL_HOURS } from '../data/config';
 import { gramsFor, qtyFor, qtyText as unitQtyText, quantityLabel, unitFor, type PortionSource, type UnitSpec } from '../lib/nutrition/portions';
 
@@ -315,6 +317,13 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     commit(entry, `${item.name} ${quantityLabel(sourceOf(item.foodId) ?? { portions: [], unitFood: item.unitFood }, grams)}`);
   };
 
+  // ---------- קריאטין ----------
+  const creatineToday = creatineOn(db.creatine, day);
+  const creatineTime = creatineToday && toLocalISO(new Date(creatineToday.at)) === day ? creatineTimeText(creatineToday.at) : null;
+  const toggleCreatineDay = () => {
+    void store.update('creatine', toggleCreatine(db.creatine, day, new Date().toISOString()));
+  };
+
   // ---------- שייקי חלבון ----------
   const shakes = useMemo(() => resolveShakes(resolve), [foodIndex.index]); // eslint-disable-line react-hooks/exhaustive-deps
   const shakesMissing = shakes.every((p) => p.powder === null);
@@ -453,6 +462,19 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
         </div>
         <button type="button" className="btn btn--quiet" aria-label="יום הבא" disabled={isToday} onClick={() => setDay(addDays(day, 1))}>
           ‹
+        </button>
+      </section>
+
+      {/* ---------- קריאטין: שורה אחת, נגיעה מחליפה מצב ליום המוצג. לא מזון, 0 קק״ל. ---------- */}
+      <section className="nut-card nut-creatine" aria-label="קריאטין">
+        <button type="button" className="nut-creatine__tap" aria-pressed={creatineToday !== null} onClick={toggleCreatineDay}>
+          <span className={`nut-creatine__mark${creatineToday ? ' is-on' : ''}`} aria-hidden="true">
+            {creatineToday ? '✓' : '○'}
+          </span>
+          <span className="grow">
+            קריאטין <span className="num">{CREATINE_DOSE_G}</span> גר׳
+          </span>
+          <span className="tiny muted num">{creatineToday ? (creatineTime ?? 'סומן') : 'לא סומן'}</span>
         </button>
       </section>
 
