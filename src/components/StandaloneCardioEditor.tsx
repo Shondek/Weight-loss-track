@@ -171,7 +171,7 @@ export default function StandaloneCardioEditor({
           placeholder="דק׳"
         />
 
-        <div className="row">
+        <div className="row cardio__gauges">
           <Stepper
             label="שיפוע"
             unit="%"
