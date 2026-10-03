@@ -431,7 +431,7 @@ describe('התוכנית', () => {
   it('מספר התרגילים בכל אימון', () => {
     expect(PROGRAM.A).toHaveLength(7);
     expect(PROGRAM.B).toHaveLength(7);
-    expect(PROGRAM.C).toHaveLength(7);
+    expect(PROGRAM.C).toHaveLength(8); // מ-3/10/2026: C7 כפיפת מרפקים בפולי תחתון חבל;
   });
 
   it('כל תרגיל תקין: טווח, סטים, שם קצר', () => {
