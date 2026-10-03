@@ -49,6 +49,13 @@ export interface Exercise {
    */
   step: number | null;
   /**
+   * מצב ההתקדמות (3/10/2026). `maintain` = מצב שימור: היעד קבוע
+   * (repRangeMax × sets), וההצעה לאימון הבא היא תמיד "שימור" — בלי R1–R6
+   * ובלי תלות ב-RIR (lib/progression.ts). `progress` (ברירת המחדל כשהשדה
+   * חסר ב-JSON) = כללי ההתקדמות הרגילים. A7 (פלאנק) הוא היחיד בשימור.
+   */
+  mode: 'progress' | 'maintain';
+  /**
    * חלופות מותרות לתא הזה (שלב 4.1) — מזהים במאגר `alternates` או תרגילים
    * בתוכנית. ריק לתרגיל שאינו בתוכנית. החלפה היא לאימון אחד בלבד.
    */
@@ -64,6 +71,7 @@ export const TYPE_CONFIG = REST_SECONDS;
 type OptionalKeys =
   | 'reps'
   | 'step'
+  | 'mode'
   | 'alternates'
   | 'effort'
   | 'unilateral'
@@ -76,7 +84,7 @@ type OptionalKeys =
 /** צורת התרגיל ב-JSON: הזהות חובה, השאר אופציונלי. `type` מגיע כמחרוזת. */
 type ExerciseInput = Omit<Exercise, OptionalKeys | 'type'> & {
   type: string;
-} & Partial<{ [K in OptionalKeys]: Exercise[K] | undefined }>;
+} & Partial<{ [K in Exclude<OptionalKeys, 'mode'>]: Exercise[K] | undefined }> & { mode?: string | undefined };
 
 /**
  * ברירות מחדל לדגלים, כדי שרק החריגים יצוינו במפורש ב-JSON.
@@ -86,6 +94,9 @@ function ex(e: ExerciseInput): Exercise {
   const type = e.type as ExerciseType;
   if (!(type in REST_SECONDS) || type === 'cardio') {
     throw new Error(`program-abc.json: סוג תרגיל לא מוכר "${e.type}" ב-${e.id}`);
+  }
+  if (e.mode !== undefined && e.mode !== 'progress' && e.mode !== 'maintain') {
+    throw new Error(`program-abc.json: mode לא מוכר "${e.mode}" ב-${e.id}`);
   }
   const effort = e.effort?.trim();
   return {
@@ -108,6 +119,7 @@ function ex(e: ExerciseInput): Exercise {
     note: e.note ?? null,
     videoUrl: e.videoUrl ?? null,
     step: typeof e.step === 'number' && e.step > 0 ? e.step : null,
+    mode: e.mode === 'maintain' ? 'maintain' : 'progress',
     alternates: Array.isArray(e.alternates) ? e.alternates.filter((x): x is string => typeof x === 'string') : [],
   };
 }

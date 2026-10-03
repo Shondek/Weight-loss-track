@@ -315,6 +315,28 @@ describe('5. אימונים — החלפה, RIR, הצעה וכלל לכל תרג
   });
 });
 
+describe('5ב. A7 פלאנק במצב שימור (3/10/2026)', () => {
+  it('השורה של הפלאנק: "הבא: 60 שנ׳ × 3 · שימור" — בלי תג כלל, גם עם RIR 0 וזמנים מעל 60', () => {
+    const db: DB = { ...emptyDb() };
+    db.workouts = [
+      wk('w0', '2026-09-20', 'A', [{ ...le('plank', null, [45, 45, 45]), rir: 0 }]),
+      wk('w1', '2026-09-27', 'A', [{ ...le('plank', null, [75, 60, 60]), rir: 0 }, { ...le('leg-press', 60, [12, 12, 12]), rir: 2 }]),
+    ];
+    const d = buildWeeklySummaryData(db, WEEK5);
+    const a = d.workouts.items[0]!;
+    expect(a.lines[0]).toMatchObject({ name: 'פלאנק', text: 'פלאנק 75,60,60 שנ׳', rir: 0, next: '60 שנ׳ × 3 · שימור', rirUnknown: false });
+    expect(a.lines[0]?.suggestion).toMatchObject({ rule: 'M', action: 'same', weight: null, repTarget: 60 });
+    // שאר התרגילים — הכללים הרגילים
+    expect(a.lines[1]).toMatchObject({ next: '65 ק״ג · 10 חזרות' });
+    expect(a.lines[1]?.suggestion?.rule).toBe('R1');
+    const text = weeklySummaryText(d);
+    expect(text).toContain('  פלאנק 75,60,60 שנ׳ · RIR 0 · הבא: 60 שנ׳ × 3 · שימור\n');
+    expect(text).toContain('  לג-פרס 60×12,12,12 · RIR 2 · הבא: 65 ק״ג · 10 חזרות (R1)');
+    expect(text).not.toContain('(R5)');
+    expect(d.workouts.drops).toEqual([]);
+  });
+});
+
 describe('6. מספר השבוע וגבולות ראשון–שבת', () => {
   it('programStart 2026-08-30 = שבוע 1; תאריך באמצע השבוע מנורמל לראשון; שבת שייכת לשבוע שלפני', () => {
     const db = fixture();

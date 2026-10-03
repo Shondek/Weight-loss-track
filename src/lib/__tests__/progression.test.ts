@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { LoggedExercise } from '../../types';
 import { exerciseById, exerciseIn } from '../../data/program';
 import { exerciseHistory } from '../workouts';
-import { roundDownToStep, suggestNext, suggestionLabel, type ProgressionSpec, type Session } from '../progression';
+import { roundDownToStep, suggestNext, suggestionLabel, suggestionText, type ProgressionSpec, type Session } from '../progression';
 import { le, wk } from './helpers';
 
 function specOf(id: string): ProgressionSpec {
   const e = exerciseById(id)!;
-  return { step: e.step, repRangeMin: e.repRangeMin, repRangeMax: e.repRangeMax, isTimed: e.isTimed, bodyweightOnly: e.bodyweightOnly };
+  return { step: e.step, repRangeMin: e.repRangeMin, repRangeMax: e.repRangeMax, isTimed: e.isTimed, bodyweightOnly: e.bodyweightOnly, mode: e.mode, sets: e.sets };
 }
 
 const session = (d: string, ex: LoggedExercise): Session => ({ d, ex });
@@ -136,14 +136,58 @@ describe('2. כללים ומקרי קצה', () => {
     expect(suggestNext([session('2026-09-24', le('db-bench-press', 15, [null, null, null]))], bench)).toBeNull();
   });
 
-  it('פלאנק: שניות הן "החזרות"; 45×3 עם משקל גוף → R1 מציע את הפלטה הראשונה', () => {
-    const plank = specOf('plank'); // 30–45, step 2.5, timed
-    const s = suggestNext([session('2026-09-24', { ...le('plank', null, [45, 45, 45]), rir: 2 })], plank);
+  it('תרגיל זמן בהתקדמות רגילה: שניות הן "החזרות"; 45×3 עם משקל גוף → R1 מציע את הפלטה הראשונה', () => {
+    // המפרט הישן של הפלאנק (לפני 3/10/2026) — הכללים לתרגילי זמן לא השתנו.
+    const timed: ProgressionSpec = { step: 2.5, repRangeMin: 30, repRangeMax: 45, isTimed: true, bodyweightOnly: false };
+    const s = suggestNext([session('2026-09-24', { ...le('plank', null, [45, 45, 45]), rir: 2 })], timed);
     expect(s).toMatchObject({ action: 'up', weight: 2.5, repTarget: 30, rule: 'R1' });
     expect(suggestionLabel(s!, { isTimed: true })).toEqual({ weight: '2.5 ק״ג', reps: '30 שנ׳' });
-    const mid = suggestNext([session('2026-09-24', le('plank', null, [45, 40, 35]))], plank);
+    const mid = suggestNext([session('2026-09-24', le('plank', null, [45, 40, 35]))], timed);
     expect(mid).toMatchObject({ action: 'same', weight: null, repTarget: 36, rule: 'R6' });
     expect(suggestionLabel(mid!, { isTimed: true }).weight).toBe('משקל גוף');
+  });
+});
+
+describe('3. מצב שימור (M) — A7 פלאנק מ-3/10/2026', () => {
+  const plank = specOf('plank'); // 60–60, step 2.5, timed, mode maintain, 3 sets
+  const MAINTAIN = '60 שנ׳ × 3 · שימור';
+
+  it('הסשן של 27/9 (75, 60, 60 שנ׳, RIR 0) → שימור, לא R5', () => {
+    const s = suggestNext([session('2026-09-27', { ...le('plank', null, [75, 60, 60]), rir: 0 })], plank);
+    expect(s).toMatchObject({ action: 'same', weight: null, repTarget: 60, rule: 'M', rirUnknown: false, lastDate: '2026-09-27' });
+    expect(suggestionText(s!, plank)).toBe(MAINTAIN);
+    expect(suggestionLabel(s!, plank)).toEqual({ weight: 'משקל גוף', reps: '60 שנ׳' });
+    expect(s?.reason).toContain('שימור');
+  });
+
+  it('בכל תרחיש אותה הצעה: RIR 0/1/2, בלי RIR, זמנים מעל 60 ומתחת, עם פלטה, ושני אימונים גרועים', () => {
+    const cases: Session[][] = [
+      [session('2026-09-27', { ...le('plank', null, [75, 60, 60]), rir: 0 })],
+      [session('2026-09-27', { ...le('plank', null, [60, 60, 60]), rir: 1 })],
+      [session('2026-09-27', { ...le('plank', null, [60, 60, 60]), rir: 2 })],
+      [session('2026-09-27', le('plank', null, [60, 60, 60]))],
+      [session('2026-09-27', le('plank', null, [90, 80, 70]))],
+      [session('2026-09-27', le('plank', null, [45, 40, 35]))],
+      [session('2026-09-20', le('plank', null, [40, 40, 40])), session('2026-09-27', le('plank', null, [40, 35, 30]))],
+      [session('2026-09-27', { ...le('plank', null, [60, 60, 60]), sets: [60, 60, 60].map((v) => ({ weight: 5, reps: null, seconds: v })), rir: 3 })],
+    ];
+    for (const history of cases) {
+      const s = suggestNext(history, plank);
+      expect(s).toMatchObject({ action: 'same', weight: null, repTarget: 60, rule: 'M', rirUnknown: false });
+      expect(suggestionText(s!, plank)).toBe(MAINTAIN);
+    }
+  });
+
+  it('בלי היסטוריה → null, כמו בכל תרגיל; סטים ריקים → null', () => {
+    expect(suggestNext([], plank)).toBeNull();
+    expect(suggestNext([session('2026-09-27', le('plank', null, [null, null, null]))], plank)).toBeNull();
+  });
+
+  it('M חל רק על mode: maintain — אותו מפרט בלי mode חוזר לכללים הרגילים', () => {
+    const { mode: _m, ...progress } = plank;
+    const s = suggestNext([session('2026-09-27', { ...le('plank', null, [75, 60, 60]), rir: 0 })], progress);
+    expect(s?.rule).toBe('R5');
+    expect(suggestionText(s!, progress)).toBe('משקל גוף · 60 שנ׳');
   });
 
   it('עיגול למטה ל-step', () => {

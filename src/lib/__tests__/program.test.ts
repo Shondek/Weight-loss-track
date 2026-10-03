@@ -139,6 +139,21 @@ describe('program-abc.json — תוכן כל תרגיל', () => {
   });
 });
 
+describe('program-abc.json — mode (3/10/2026)', () => {
+  it('A7 פלאנק במצב שימור: 3×60 שנ׳, משקל גוף כברירת מחדל, שדה המשקל נשאר; כל השאר בהתקדמות', () => {
+    const plank = exerciseIn('A', 'plank')!;
+    expect(plank).toMatchObject({ mode: 'maintain', sets: 3, repRangeMin: 60, repRangeMax: 60, isTimed: true, bodyweightOnly: false, step: 2.5 });
+    expect(plank.reps).toBe("60 שנ'");
+    // הזהות לא השתנתה — המפתח להיסטוריה
+    expect(plank.id).toBe('plank');
+    expect(plank.name).toBe('בטן- פלאנק סטטי');
+    for (const { e } of ALL) {
+      if (e.id !== 'plank') expect(e.mode, e.id).toBe('progress');
+    }
+    for (const e of [...ALTERNATES, ...RETIRED]) expect(e.mode, e.id).toBe('progress');
+  });
+});
+
 describe('program-abc.json — step (שלב 4)', () => {
   it('לכל תרגיל בתוכנית step מספרי חיובי או null; ברירות המחדל לפי סוג הציוד', () => {
     for (const { e } of ALL) {
@@ -193,7 +208,7 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
 
   it('A/B/C לא השתנו: אותם מזהים, סטים וטווחים', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
-    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'db-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x30-45']);
+    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'db-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
     expect(snapshot('B')).toEqual(['db-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15']);
     expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'db-single-arm-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
   });

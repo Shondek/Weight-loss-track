@@ -27,7 +27,7 @@ import { daySummary } from './nutrition/calc';
 import { isDayClosed } from './nutrition/days';
 import { FRIDAY_TIERS } from './nutrition/friday';
 import { KCAL_FLOOR, targetFor } from './nutrition/targets';
-import { suggestionLabel, suggestNext, type ProgressionSpec, type Suggestion } from './progression';
+import { suggestionText, suggestNext, type ProgressionSpec, type Suggestion } from './progression';
 import { cardioLineText } from './weekSummary';
 import { summarizeWeek, WAIST_DAY, WEEK_LENGTH, weeklyAverages, type WeekSummary } from './weights';
 import {
@@ -141,14 +141,25 @@ function progressionSpecFor(t: WorkoutType, row: LoggedExercise): ProgressionSpe
   const alt = row.swappedFrom !== undefined ? exerciseById(row.exerciseId) : undefined;
   const spec = alt ?? exerciseIn(t, row.exerciseId) ?? exerciseById(row.exerciseId);
   if (spec && !alt) {
-    return { step: spec.step, repRangeMin: spec.repRangeMin, repRangeMax: spec.repRangeMax, isTimed: spec.isTimed, bodyweightOnly: spec.bodyweightOnly };
+    return {
+      step: spec.step,
+      repRangeMin: spec.repRangeMin,
+      repRangeMax: spec.repRangeMax,
+      isTimed: spec.isTimed,
+      bodyweightOnly: spec.bodyweightOnly,
+      mode: spec.mode,
+      sets: spec.sets,
+    };
   }
+  // שורה שהוחלפה: הכללים של החלופה (התקדמות רגילה), לא מצב השימור של התא.
   return {
     step: spec?.step ?? null,
     repRangeMin: row.targetRepMin,
     repRangeMax: row.targetRepMax,
     isTimed: spec?.isTimed ?? isTimedExercise(row),
     bodyweightOnly: spec?.bodyweightOnly ?? row.bodyweightOnly,
+    mode: 'progress',
+    sets: row.sets.length,
   };
 }
 
@@ -185,7 +196,6 @@ function exerciseLine(db: DB, w: WorkoutEntry, row: LoggedExercise): ExerciseLin
     (h) => compareISO(h.d, w.d) < 0 || (h.d === w.d && h.workoutId <= w.id),
   );
   const suggestion = suggestNext(history, spec);
-  const label = suggestion ? suggestionLabel(suggestion, spec) : null;
   return {
     exerciseId: row.exerciseId,
     name: shortName(row.exerciseId, row.n),
@@ -193,7 +203,7 @@ function exerciseLine(db: DB, w: WorkoutEntry, row: LoggedExercise): ExerciseLin
     rir: row.rir ?? null,
     swappedFrom: row.swappedFrom === undefined ? null : `הוחלף מ-${shortName(row.swappedFrom, exerciseById(row.swappedFrom)?.name ?? row.swappedFrom)}`,
     suggestion,
-    next: label ? `${label.weight} · ${label.reps}` : null,
+    next: suggestion ? suggestionText(suggestion, spec) : null,
     rirUnknown: suggestion?.rirUnknown ?? false,
   };
 }
@@ -360,7 +370,12 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
       const parts = [line.text];
       if (line.swappedFrom) parts.push(`(${line.swappedFrom})`);
       parts.push(`RIR ${line.rir === null ? DASH : line.rir}`);
-      parts.push(line.suggestion && line.next ? `הבא: ${line.next} (${line.suggestion.rule})` : `הבא: ${DASH}`);
+      // מצב שימור (M) — "הבא: 60 שנ׳ × 3 · שימור", בלי תג כלל.
+      parts.push(
+        line.suggestion && line.next
+          ? `הבא: ${line.next}${line.suggestion.rule === 'M' ? '' : ` (${line.suggestion.rule})`}`
+          : `הבא: ${DASH}`,
+      );
       if (line.rirUnknown) parts.push(RIR_UNKNOWN_NOTE);
       L.push(`  ${parts.join(' · ')}`);
     }

@@ -440,6 +440,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       note: null,
       videoUrl: null,
       step: null,
+      mode: 'progress',
       alternates: [],
     };
 
