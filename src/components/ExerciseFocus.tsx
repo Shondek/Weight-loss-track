@@ -9,7 +9,7 @@ import { clean, DASH } from '../lib/format';
 import Stepper from './Stepper';
 import NumberField from './NumberField';
 import ExerciseChart from './ExerciseChart';
-import { alternateHint, suggestionLabel, type Suggestion } from '../lib/progression';
+import { alternateHint, suggestionLabel, suggestionText, type Suggestion } from '../lib/progression';
 
 /** חלופה שמוצעת ב"החלף": המפרט שלה והביצוע האחרון שלה (לפי המזהה שלה). */
 export type AlternateOption = { spec: Exercise; last: ExerciseHistory | null };
@@ -254,9 +254,18 @@ export default function ExerciseFocus({
         <div className={`wk-suggest wk-suggest--${suggestion.rirUnknown ? 'unknown' : suggestion.action}`} role="note">
           <div className="wk-suggest__head">
             <span className="grow">
-              הצעה: <span className="num strong">{suggestionLabel(suggestion, spec).weight}</span> ·{' '}
-              <span className="num">{suggestionLabel(suggestion, spec).reps}</span>
-              <span className="tiny muted"> · {suggestion.rule}</span>
+              {suggestion.rule === 'M' ? (
+                // מצב שימור: "60 שנ׳ × 3 · שימור" — בלי משקל ובלי תג כלל.
+                <>
+                  הצעה: <span className="num strong">{suggestionText(suggestion, spec)}</span>
+                </>
+              ) : (
+                <>
+                  הצעה: <span className="num strong">{suggestionLabel(suggestion, spec).weight}</span> ·{' '}
+                  <span className="num">{suggestionLabel(suggestion, spec).reps}</span>
+                  <span className="tiny muted"> · {suggestion.rule}</span>
+                </>
+              )}
             </span>
             {usesWeight && suggestion.weight !== null && (
               <button type="button" className="btn btn--quiet btn--outlined" onClick={() => setWeight(suggestion.weight)}>

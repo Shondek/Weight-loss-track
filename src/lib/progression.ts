@@ -14,8 +14,11 @@
  *      targetRepMax + 2 בכל הסטים, ואז קופצים.
  *  R5  ב-targetRepMax עם RIR 0–1 → נשארים (עוד לא נקי).
  *  R6  אחרת → אותו משקל, +1 חזרה בסט הנמוך.
+ *  M   מצב שימור (`mode: "maintain"` בתוכנית, A7 פלאנק מ-3/10/2026): יעד
+ *      קבוע — ההצעה היא תמיד "repRangeMax × sets · שימור", בלי R1–R6,
+ *      בלי תלות ב-RIR ובלי תלות בזמנים שנרשמו (מעל או מתחת ליעד).
  *
- * תרגיל זמן (פלאנק): השניות הן "החזרות", והטווח הוא 30–45.
+ * תרגיל זמן: השניות הן "החזרות" (פלאנק: 60 × 3 בשימור; חלופות זמן: 30–45).
  */
 
 import type { ISODate, LoggedExercise, Rir } from '../types';
@@ -32,9 +35,17 @@ export type ProgressionSpec = {
   repRangeMax: number;
   isTimed: boolean;
   bodyweightOnly: boolean;
+  /** `maintain` = מצב שימור (M). חסר = `progress` (R1–R6). `Exercise` מתאים כמו שהוא. */
+  mode?: 'progress' | 'maintain';
+  /** מספר הסטים — לטקסט "60 שנ׳ × 3" במצב שימור בלבד. חסר = בלי "× n". */
+  sets?: number;
 };
 
-export type Rule = 'R1' | 'R3' | 'R4' | 'R5' | 'R6';
+/** R1–R6 — כללי ההתקדמות; M — מצב שימור (בלי התקדמות). */
+export type Rule = 'R1' | 'R3' | 'R4' | 'R5' | 'R6' | 'M';
+
+/** שימור: היעד הקבוע של התרגיל. */
+export const MAINTAIN_LABEL = 'שימור';
 
 export type Suggestion = {
   action: 'up' | 'down' | 'same';
@@ -106,12 +117,25 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
   const { repRangeMin: min, repRangeMax: max, step, isTimed: timed } = spec;
   const unit = unitWord(timed);
   const w = L.weight;
+  const mixedNote = L.mixed ? ' · משקלים שונים בין סטים' : '';
+  const base = { mixedWeights: L.mixed, basisWeight: w, lastDate: L.d, rirUnknown: false };
+
+  // M — מצב שימור: לפני כל כלל אחר. לא קורא RIR ולא את הערכים שנרשמו.
+  if (spec.mode === 'maintain') {
+    return {
+      ...base,
+      action: 'same',
+      weight: null,
+      repTarget: max,
+      rule: 'M',
+      reason: `${MAINTAIN_LABEL} — יעד קבוע ${max} ${unit}${spec.sets !== undefined ? ` × ${spec.sets}` : ''}, בלי התקדמות ובלי תלות ב-RIR`,
+    };
+  }
+
   const lowest = Math.min(...L.values);
   const allTop = L.values.every((v) => v >= max);
   const anyBelow = L.values.some((v) => v < min);
   const largeJump = step !== null && w !== null && w > 0 && step / w > LARGE_JUMP_RATIO;
-  const mixedNote = L.mixed ? ' · משקלים שונים בין סטים' : '';
-  const base = { mixedWeights: L.mixed, basisWeight: w, lastDate: L.d, rirUnknown: false };
 
   if (allTop) {
     if (largeJump && !L.values.every((v) => v >= max + 2)) {
@@ -183,6 +207,19 @@ export const NO_HISTORY_HINT = 'אין היסטוריה — התחל קל, 2–3
  */
 export function alternateHint(s: Suggestion | null, swapped: boolean): string | null {
   return swapped && s === null ? NO_HISTORY_HINT : null;
+}
+
+/**
+ * שורת ההצעה המלאה, למסך ולסיכום השבועי: "17.5 ק״ג · 8 חזרות", ובמצב
+ * שימור "60 שנ׳ × 3 · שימור" (בלי משקל — היעד הוא משקל גוף).
+ */
+export function suggestionText(s: Suggestion, spec: Pick<ProgressionSpec, 'isTimed' | 'sets'>): string {
+  if (s.rule === 'M') {
+    const times = spec.sets !== undefined ? ` × ${spec.sets}` : '';
+    return `${s.repTarget} ${unitWord(spec.isTimed)}${times} · ${MAINTAIN_LABEL}`;
+  }
+  const label = suggestionLabel(s, spec);
+  return `${label.weight} · ${label.reps}`;
 }
 
 /** הטקסט למסך: "17.5 ק״ג" / "דרגה אחת למעלה" / "אותו משקל" / "משקל גוף", ו-"8 חזרות". */
