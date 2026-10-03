@@ -160,6 +160,10 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
     const c2 = PROGRAM.C[1]!;
     expect(c2).toMatchObject({ id: 'machine-row', name: 'חתירה- מכונה ייעודית', sets: 3, repRangeMin: 10, repRangeMax: 12, effort: 'RIR 2', step: null, unilateral: false, mode: 'progress' });
     expect(c2.reps).toBe('10-12');
+    // סרטון — אותו שדה ואותו מבנה כמו בשאר התרגילים (קישור Drive, בלי מזהה נפרד)
+    expect(c2.videoUrl).toBe('https://drive.google.com/file/d/1NCYrfcRlUn67BIusBODNTh7TMFrtaYnn/view?usp=share_link');
+    expect(c2.videoUrl).toMatch(/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]+\/view/);
+    expect(c2.note).toMatch(/הסרטון מראה מכונה דומה, לא אותו דגם\.$/);
     expect(exerciseIn('C', 'machine-row')).toBe(c2);
     expect(exerciseIn('C', 'db-single-arm-row')).toBeUndefined();
     expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-torso-rotation']);
