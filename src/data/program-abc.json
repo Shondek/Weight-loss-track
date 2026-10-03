@@ -1,5 +1,5 @@
 {
-  "$comment": "תוכנית האימונים. שדות התרגיל: name, sets, reps, effort, note, videoUrl, muscle (כפי שהתקבלו) + id, short, machine, muscles, type, repRangeMin, repRangeMax, unilateral, isTimed, bodyweightOnly, assisted, step שהאפליקציה צריכה. `step` = קפיצת המשקל בק\"ג להצעת האימון הבא (משקולות יד 2.5, לג-פרס וכבלים 5, פלאנק 2.5 לפלטה); null = מכונה עם מדרגות לא ידועות — ההצעה אומרת \"דרגה אחת\". `id` הוא המפתח להיסטוריה — לעולם לא לשנות אותו. `retired` = תרגילים שירדו מהתוכנית ונשארים כזהות בלבד כדי שרשומות ישנות יוצגו נכון. `alternates` (בשורש) = מאגר תרגילים חלופיים להחלפה חד-פעמית באימון (שלב 4.1); `alternates` בתרגיל = המזהים המותרים לאותו תא, בסדר. חלופה יורשת סטים וטווח מהתא (חלופת זמן: 30–45 שנ׳). מזהה פרוש שתאם בשם עבר לכאן כדי שההיסטוריה תתחבר. `mode: \"maintain\"` = מצב שימור (A7 פלאנק מ-3/10/2026): יעד קבוע repRangeMax × sets, ההצעה היא תמיד \"שימור\" בלי R1–R6 ובלי תלות ב-RIR; חסר = התקדמות רגילה.",
+  "$comment": "תוכנית האימונים. שדות התרגיל: name, sets, reps, effort, note, videoUrl, muscle (כפי שהתקבלו) + id, short, machine, muscles, type, repRangeMin, repRangeMax, unilateral, isTimed, bodyweightOnly, assisted, step שהאפליקציה צריכה. `step` = קפיצת המשקל בק\"ג להצעת האימון הבא (משקולות יד 2.5, לג-פרס וכבלים 5, פלאנק 2.5 לפלטה); null = מכונה עם מדרגות לא ידועות — ההצעה אומרת \"דרגה אחת\". `id` הוא המפתח להיסטוריה — לעולם לא לשנות אותו. `retired` = תרגילים שירדו מהתוכנית ונשארים כזהות בלבד כדי שרשומות ישנות יוצגו נכון. `alternates` (בשורש) = מאגר תרגילים חלופיים להחלפה חד-פעמית באימון (שלב 4.1); `alternates` בתרגיל = המזהים המותרים לאותו תא, בסדר. חלופה יורשת סטים וטווח מהתא (חלופת זמן: 30–45 שנ׳). מזהה פרוש שתאם בשם עבר לכאן כדי שההיסטוריה תתחבר. `mode: \"maintain\"` = מצב שימור (A7 פלאנק מ-3/10/2026): יעד קבוע repRangeMax × sets, ההצעה היא תמיד \"שימור\" בלי R1–R6 ובלי תלות ב-RIR; חסר = התקדמות רגילה. C2 מ-3/10/2026: `machine-row` (חתירה- מכונה ייעודית) עבר מהמאגר לתוכנית, ו-`db-single-arm-row` (חתירה- הטיית גו עם מ.יד) עבר מהתוכנית למאגר כחלופה הראשונה של C2 — אותם מזהים, ההיסטוריה של שניהם ממשיכה.",
   "workouts": [
     {
       "code": "A",
@@ -381,26 +381,27 @@
           ]
         },
         {
-          "id": "db-single-arm-row",
-          "name": "חתירה- הטיית גו עם מ.יד",
-          "short": "חתירה מ.יד",
-          "machine": "Dumbbell",
+          "id": "machine-row",
+          "name": "חתירה- מכונה ייעודית",
+          "short": "חתירה מכונה",
+          "machine": "Row Machine",
           "muscle": "back",
           "muscles": [
-            "גב אמצעי",
-            "ביצפס"
+            "גב רחב",
+            "טרפז",
+            "מעוינים"
           ],
           "type": "compound",
           "sets": 3,
-          "step": 2.5,
-          "reps": "10-12 לכל צד",
+          "step": null,
+          "reps": "10-12",
           "repRangeMin": 10,
           "repRangeMax": 12,
-          "unilateral": true,
           "effort": "RIR 2",
-          "note": "רק עם תמיכה על ספסל — ברך ויד על הספסל, גב ניטרלי",
-          "videoUrl": "https://drive.google.com/file/d/1RMpa6qIXov2uR-z1Yc_lzOEp41qtxKfZ/view?usp=share_link",
+          "note": "מכונה בישיבה עם כרית חזה (SHUA). כשהמכונה תפוסה — \"החלף\" לחתירה עם משקולת יד",
+          "videoUrl": null,
           "alternates": [
+            "db-single-arm-row",
             "single-arm-cable-row",
             "t-bar-row"
           ]
@@ -566,7 +567,7 @@
     {"id": "smith-hip-hinge", "name": "היפ הינג'- סמית משין", "short": "הינג' סמית", "machine": "Smith Machine", "muscle": "legs", "muscles": ["ירך אחורית", "ישבן", "זוקפי גב"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 10, "step": 2.5, "note": null},
     {"id": "barbell-rdl", "name": "דד-ליפט רומניין", "short": "RDL מוט", "machine": "Barbell", "muscle": "legs", "muscles": ["ירך אחורית", "ישבן", "זוקפי גב"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 10, "step": 2.5, "note": "מהמתקן, לא מהרצפה"},
     {"id": "back-extension", "name": "פשיטת ירך בספסל רומי", "short": "ספסל רומי", "machine": "Roman Chair", "muscle": "legs", "muscles": ["ירך אחורית", "ישבן", "זוקפי גב"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 10, "step": null, "note": null, "bodyweightOnly": true},
-    {"id": "machine-row", "name": "חתירה- מכונה ייעודית", "short": "חתירה מכונה", "machine": "Row Machine", "muscle": "back", "muscles": ["גב רחב", "טרפז", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": null, "note": null},
+    {"id": "db-single-arm-row", "name": "חתירה- הטיית גו עם מ.יד", "short": "חתירה מ.יד", "machine": "Dumbbell", "muscle": "back", "muscles": ["גב אמצעי", "ביצפס"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 2.5, "note": "רק עם תמיכה על ספסל — ברך ויד על הספסל, גב ניטרלי", "unilateral": true, "videoUrl": "https://drive.google.com/file/d/1RMpa6qIXov2uR-z1Yc_lzOEp41qtxKfZ/view?usp=share_link"},
     {"id": "t-bar-row", "name": "חתירה- מכונה ייעודית T-bar", "short": "חתירה T-bar", "machine": "T-Bar Row", "muscle": "back", "muscles": ["גב רחב", "טרפז", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 2.5, "note": null},
     {"id": "single-arm-cable-row", "name": "חתירה- כייבל קרוס יד אחת", "short": "חתירת יד אחת", "machine": "Cable Cross", "muscle": "back", "muscles": ["גב רחב", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 5, "note": null, "unilateral": true},
     {"id": "cable-fly", "name": "פרפר- כייבל קרוס", "short": "פרפר כבל", "machine": "Cable Cross", "muscle": "chest", "muscles": ["חזה"], "type": "isolation", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 5, "note": null},
