@@ -346,7 +346,7 @@ describe('בניית אימון', () => {
   it('תרגיל שלא נרשם מעולם נשאר בלי משקל', () => {
     expect(
       prefilledExercises(PREFILL_SOURCE, 'A')
-        .find((r) => r.exerciseId === 'db-bench-press')
+        .find((r) => r.exerciseId === 'smith-bench-press')
         ?.sets.every((s) => s.weight === null),
     ).toBe(true);
   });

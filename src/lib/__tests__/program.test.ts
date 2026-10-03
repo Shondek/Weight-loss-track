@@ -183,6 +183,28 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
   });
 });
 
+describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
+  it('A2 הוא בנץ׳ פרס- סמית משין: 3×8–12, RIR 2, step 2.5 (מוט/סמית), הערה, בלי סרטון; שני ב-A', () => {
+    const a2 = PROGRAM.A[1]!;
+    expect(a2).toMatchObject({ id: 'smith-bench-press', name: "בנץ' פרס- סמית משין", machine: 'Smith Machine', sets: 3, repRangeMin: 8, repRangeMax: 12, effort: 'RIR 2', step: 2.5, videoUrl: null, mode: 'progress', unilateral: false, bodyweightOnly: false });
+    expect(a2.note).toBe('ספסל שטוח. המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט.');
+    expect(exerciseIn('A', 'smith-bench-press')).toBe(a2);
+    expect(exerciseIn('A', 'db-bench-press')).toBeUndefined();
+    expect(PROGRAM.A.map((e) => e.id)).toEqual(['leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'db-lateral-raise-seated', 'plank']);
+    // C3 (בנץ׳ עליון עם משקולות יד) לא השתנה
+    expect(exerciseIn('C', 'db-incline-bench-press')).toMatchObject({ name: "בנץ' פרס עליון- משקולות יד", sets: 3, repRangeMin: 8, repRangeMax: 12, step: 2.5 });
+  });
+
+  it('הבנץ׳ עם משקולות יד: אותו מזהה, שם, מפרט וסרטון, במאגר, וחלופה ראשונה של A2', () => {
+    const db = exerciseById('db-bench-press')!;
+    expect(db).toMatchObject({ id: 'db-bench-press', name: "בנץ' פרס- משקולות יד", short: "בנץ' פרס", machine: 'Dumbbell Bench Press', sets: 3, repRangeMin: 8, repRangeMax: 12, step: 2.5, note: 'מרפקים ב-45°, לא 90°', videoUrl: 'https://drive.google.com/file/d/1ZZh27DIsd8Dckf39JYOxqfhUEZa2dqbR/view?usp=drive_link' });
+    expect(ALTERNATES.some((a) => a.id === 'db-bench-press')).toBe(true);
+    expect(RETIRED.some((r) => r.id === 'db-bench-press')).toBe(false);
+    expect(resolveExerciseId("בנץ' פרס- משקולות יד")).toBe('db-bench-press');
+    expect(alternatesFor('smith-bench-press').map((a) => a.id)).toEqual(['db-bench-press', 'machine-chest-press', 'barbell-bench-press']);
+  });
+});
+
 describe('program-abc.json — step (שלב 4)', () => {
   it('לכל תרגיל בתוכנית step מספרי חיובי או null; ברירות המחדל לפי סוג הציוד', () => {
     for (const { e } of ALL) {
@@ -208,7 +230,7 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
   /** הרשימה מהמפרט: תא → שמות החלופות, בסדר. */
   const EXPECTED: Record<string, string[]> = {
     'leg-press': ['הק סקוואט', 'סקוואט- מכונה', 'גובלט סקוואט עם משקולת'],
-    'db-bench-press': ["בנץ' פרס- מכונה", "בנץ' פרס"],
+    'smith-bench-press': ["בנץ' פרס- משקולות יד", "בנץ' פרס- מכונה", "בנץ' פרס"],
     'lat-pulldown': ['משיכה מפולי עליון- אחיזה צרה בישיבה', 'משיכה מפולי עליון- אחיזה רחבה בישיבה (סטודיו)', 'מתח- גרוויטון'],
     'leg-extension': ['סקוואט- סטטי נגד קיר'],
     'leg-curl': ['כפיפת ברכיים במכונה על הבטן', 'כפיפת ברכיים במכונה רגל-רגל'],
@@ -237,7 +259,7 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
 
   it('A/B/C לא השתנו: אותם מזהים, סטים וטווחים', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
-    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'db-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
+    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
     expect(snapshot('B')).toEqual(['db-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15']);
     expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
   });

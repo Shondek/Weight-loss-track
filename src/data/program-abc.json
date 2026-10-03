@@ -1,5 +1,5 @@
 {
-  "$comment": "תוכנית האימונים. שדות התרגיל: name, sets, reps, effort, note, videoUrl, muscle (כפי שהתקבלו) + id, short, machine, muscles, type, repRangeMin, repRangeMax, unilateral, isTimed, bodyweightOnly, assisted, step שהאפליקציה צריכה. `step` = קפיצת המשקל בק\"ג להצעת האימון הבא (משקולות יד 2.5, לג-פרס וכבלים 5, פלאנק 2.5 לפלטה); null = מכונה עם מדרגות לא ידועות — ההצעה אומרת \"דרגה אחת\". `id` הוא המפתח להיסטוריה — לעולם לא לשנות אותו. `retired` = תרגילים שירדו מהתוכנית ונשארים כזהות בלבד כדי שרשומות ישנות יוצגו נכון. `alternates` (בשורש) = מאגר תרגילים חלופיים להחלפה חד-פעמית באימון (שלב 4.1); `alternates` בתרגיל = המזהים המותרים לאותו תא, בסדר. חלופה יורשת סטים וטווח מהתא (חלופת זמן: 30–45 שנ׳). מזהה פרוש שתאם בשם עבר לכאן כדי שההיסטוריה תתחבר. `mode: \"maintain\"` = מצב שימור (A7 פלאנק מ-3/10/2026): יעד קבוע repRangeMax × sets, ההצעה היא תמיד \"שימור\" בלי R1–R6 ובלי תלות ב-RIR; חסר = התקדמות רגילה. C2 מ-3/10/2026: `machine-row` (חתירה- מכונה ייעודית) עבר מהמאגר לתוכנית, ו-`db-single-arm-row` (חתירה- הטיית גו עם מ.יד) עבר מהתוכנית למאגר כחלופה הראשונה של C2 — אותם מזהים, ההיסטוריה של שניהם ממשיכה.",
+  "$comment": "תוכנית האימונים. שדות התרגיל: name, sets, reps, effort, note, videoUrl, muscle (כפי שהתקבלו) + id, short, machine, muscles, type, repRangeMin, repRangeMax, unilateral, isTimed, bodyweightOnly, assisted, step שהאפליקציה צריכה. `step` = קפיצת המשקל בק\"ג להצעת האימון הבא (משקולות יד 2.5, לג-פרס וכבלים 5, פלאנק 2.5 לפלטה); null = מכונה עם מדרגות לא ידועות — ההצעה אומרת \"דרגה אחת\". `id` הוא המפתח להיסטוריה — לעולם לא לשנות אותו. `retired` = תרגילים שירדו מהתוכנית ונשארים כזהות בלבד כדי שרשומות ישנות יוצגו נכון. `alternates` (בשורש) = מאגר תרגילים חלופיים להחלפה חד-פעמית באימון (שלב 4.1); `alternates` בתרגיל = המזהים המותרים לאותו תא, בסדר. חלופה יורשת סטים וטווח מהתא (חלופת זמן: 30–45 שנ׳). מזהה פרוש שתאם בשם עבר לכאן כדי שההיסטוריה תתחבר. `mode: \"maintain\"` = מצב שימור (A7 פלאנק מ-3/10/2026): יעד קבוע repRangeMax × sets, ההצעה היא תמיד \"שימור\" בלי R1–R6 ובלי תלות ב-RIR; חסר = התקדמות רגילה. C2 מ-3/10/2026: `machine-row` (חתירה- מכונה ייעודית) עבר מהמאגר לתוכנית, ו-`db-single-arm-row` (חתירה- הטיית גו עם מ.יד) עבר מהתוכנית למאגר כחלופה הראשונה של C2 — אותם מזהים, ההיסטוריה של שניהם ממשיכה. A2 מ-3/10/2026 (2): `smith-bench-press` (בנץ' פרס- סמית משין) חדש בתוכנית, ו-`db-bench-press` (בנץ' פרס- משקולות יד) עבר מהתוכנית למאגר כחלופה הראשונה של A2 — אותו מזהה, ההיסטוריה ממשיכה.",
   "workouts": [
     {
       "code": "A",
@@ -31,10 +31,10 @@
           ]
         },
         {
-          "id": "db-bench-press",
-          "name": "בנץ' פרס- משקולות יד",
-          "short": "בנץ' פרס",
-          "machine": "Dumbbell Bench Press",
+          "id": "smith-bench-press",
+          "name": "בנץ' פרס- סמית משין",
+          "short": "בנץ' סמית",
+          "machine": "Smith Machine",
           "muscle": "chest",
           "muscles": [
             "חזה",
@@ -48,9 +48,10 @@
           "repRangeMin": 8,
           "repRangeMax": 12,
           "effort": "RIR 2",
-          "note": "מרפקים ב-45°, לא 90°",
-          "videoUrl": "https://drive.google.com/file/d/1ZZh27DIsd8Dckf39JYOxqfhUEZa2dqbR/view?usp=drive_link",
+          "note": "ספסל שטוח. המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט.",
+          "videoUrl": null,
           "alternates": [
+            "db-bench-press",
             "machine-chest-press",
             "barbell-bench-press"
           ]
@@ -553,6 +554,7 @@
     {"id": "hack-squat", "name": "הק סקוואט", "short": "הק סקוואט", "machine": "Hack Squat", "muscle": "legs", "muscles": ["ארבע ראשי", "ישבן"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": null, "note": "עומק עד מקביל"},
     {"id": "machine-squat", "name": "סקוואט- מכונה", "short": "סקוואט מכונה", "machine": "Squat Machine", "muscle": "legs", "muscles": ["ארבע ראשי", "ישבן"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": null, "note": "עומק עד מקביל"},
     {"id": "goblet-squat", "name": "גובלט סקוואט עם משקולת", "short": "גובלט", "machine": "Dumbbell", "muscle": "legs", "muscles": ["ארבע ראשי", "ישבן"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 2.5, "note": "עומק עד מקביל"},
+    {"id": "db-bench-press", "name": "בנץ' פרס- משקולות יד", "short": "בנץ' פרס", "machine": "Dumbbell Bench Press", "muscle": "chest", "muscles": ["חזה", "טרייספס", "כתף קדמית"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 12, "step": 2.5, "note": "מרפקים ב-45°, לא 90°", "videoUrl": "https://drive.google.com/file/d/1ZZh27DIsd8Dckf39JYOxqfhUEZa2dqbR/view?usp=drive_link"},
     {"id": "machine-chest-press", "name": "בנץ' פרס- מכונה", "short": "בנץ' מכונה", "machine": "Chest Press", "muscle": "chest", "muscles": ["חזה", "טרייספס", "כתף קדמית"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 12, "step": null, "note": "מרפקים ב-45°"},
     {"id": "barbell-bench-press", "name": "בנץ' פרס", "short": "בנץ' מוט", "machine": "Barbell Bench Press", "muscle": "chest", "muscles": ["חזה", "טרייספס", "כתף קדמית"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 12, "step": 2.5, "note": "מרפקים ב-45°"},
     {"id": "lat-pulldown-close", "name": "משיכה מפולי עליון- אחיזה צרה בישיבה", "short": "פולי צר", "machine": "Lat Pulldown", "muscle": "back", "muscles": ["גב רחב", "בייספס"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 5, "note": null},

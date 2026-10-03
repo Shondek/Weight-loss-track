@@ -4,7 +4,7 @@ import { emptyDb, type DB, type DayMeta, type FoodEntry, type ISODate, type Meal
 import { PROGRAM, WORKOUT_TYPES } from '../../data/program';
 import { fridayEntryName } from '../nutrition/friday';
 import { swapExercise } from '../workouts';
-import { exerciseById, exerciseIn } from '../../data/program';
+import { exerciseById } from '../../data/program';
 import {
   buildWeeklySummary,
   buildWeeklySummaryData,
@@ -62,7 +62,8 @@ function fixture(): DB {
     { d: '2026-09-09', cm: 95.5 }, // רביעי
     { d: '2026-09-13', cm: 93 }, // ראשון
   ];
-  const bench = exerciseIn('A', 'db-bench-press')!;
+  // רשומה היסטורית: ב-06/09 A2 היה הבנץ׳ עם משקולות יד (מ-3/10/2026 הוא במאגר, A2 = סמית)
+  const bench = exerciseById('db-bench-press')!;
   const machineSwap = {
     ...swapExercise(bench, exerciseById('machine-chest-press')!, null),
     sets: [40, 40, 40].map((w) => ({ weight: w, reps: 10, seconds: null })),

@@ -4557,6 +4557,99 @@ exports[`snapshot — ההצעות לכל התרגילים פרט לפלאנק >
 }
 `;
 
+exports[`snapshot — ההצעות לכל התרגילים פרט לפלאנק > smith-bench-press 1`] = `
+{
+  "אמצע הטווח": {
+    "action": "same",
+    "basisWeight": 15,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "אותו משקל, +1 בסט הנמוך (10 → 11)",
+    "repTarget": 11,
+    "rirUnknown": false,
+    "rule": "R6",
+    "weight": 15,
+  },
+  "משקל קטן, שיא, RIR 3": {
+    "action": "same",
+    "basisWeight": 5,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "קפיצה גדולה (2.5 מתוך 5 ק״ג) — קודם 14 חזרות בכל הסטים, ואז לקפוץ",
+    "repTarget": 14,
+    "rirUnknown": false,
+    "rule": "R4",
+    "weight": 5,
+  },
+  "סט אחד מתחת למינימום": {
+    "action": "same",
+    "basisWeight": 15,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "סט מתחת ל-8 פעם אחת — אותו משקל, +1 בסט הנמוך (7 → 8)",
+    "repTarget": 8,
+    "rirUnknown": false,
+    "rule": "R6",
+    "weight": 15,
+  },
+  "שיא+2, RIR 2": {
+    "action": "up",
+    "basisWeight": 15,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "12 חזרות בכל הסטים עם RIR 2 → +2.5 ק״ג, היעד חוזר ל-8",
+    "repTarget": 8,
+    "rirUnknown": false,
+    "rule": "R1",
+    "weight": 17.5,
+  },
+  "שיא, RIR 0": {
+    "action": "same",
+    "basisWeight": 15,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "הגעת ל-12 בכל הסטים, אבל RIR 0 — עוד לא נקי. אותו משקל",
+    "repTarget": 12,
+    "rirUnknown": false,
+    "rule": "R5",
+    "weight": 15,
+  },
+  "שיא, RIR 2": {
+    "action": "up",
+    "basisWeight": 15,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "12 חזרות בכל הסטים עם RIR 2 → +2.5 ק״ג, היעד חוזר ל-8",
+    "repTarget": 8,
+    "rirUnknown": false,
+    "rule": "R1",
+    "weight": 17.5,
+  },
+  "שיא, בלי RIR": {
+    "action": "up",
+    "basisWeight": 15,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "12 חזרות בכל הסטים → +2.5 ק״ג, היעד חוזר ל-8",
+    "repTarget": 8,
+    "rirUnknown": true,
+    "rule": "R1",
+    "weight": 17.5,
+  },
+  "שני אימונים מתחת למינימום": {
+    "action": "down",
+    "basisWeight": 15,
+    "lastDate": "2026-09-24",
+    "mixedWeights": false,
+    "reason": "שני אימונים רצופים מתחת ל-8 חזרות ב-15 ק״ג → −10% מעוגל ל-12.5 ק״ג",
+    "repTarget": 8,
+    "rirUnknown": false,
+    "rule": "R3",
+    "weight": 12.5,
+  },
+}
+`;
+
 exports[`snapshot — ההצעות לכל התרגילים פרט לפלאנק > smith-hip-hinge 1`] = `
 {
   "אמצע הטווח": {
