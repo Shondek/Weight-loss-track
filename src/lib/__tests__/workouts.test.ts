@@ -346,7 +346,7 @@ describe('בניית אימון', () => {
   it('תרגיל שלא נרשם מעולם נשאר בלי משקל', () => {
     expect(
       prefilledExercises(PREFILL_SOURCE, 'A')
-        .find((r) => r.exerciseId === 'db-bench-press')
+        .find((r) => r.exerciseId === 'smith-bench-press')
         ?.sets.every((s) => s.weight === null),
     ).toBe(true);
   });
@@ -431,7 +431,7 @@ describe('התוכנית', () => {
   it('מספר התרגילים בכל אימון', () => {
     expect(PROGRAM.A).toHaveLength(7);
     expect(PROGRAM.B).toHaveLength(7);
-    expect(PROGRAM.C).toHaveLength(7);
+    expect(PROGRAM.C).toHaveLength(8); // מ-3/10/2026: C7 כפיפת מרפקים בפולי תחתון חבל;
   });
 
   it('כל תרגיל תקין: טווח, סטים, שם קצר', () => {

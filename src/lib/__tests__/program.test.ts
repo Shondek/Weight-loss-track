@@ -22,11 +22,11 @@ import {
 const ALL = WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => ({ t, e })));
 
 describe('program-abc.json — מבנה', () => {
-  it('שלושה אימונים, שבעה תרגילים בכל אחד, עם כותרת', () => {
-    for (const t of WORKOUT_TYPES) {
-      expect(PROGRAM[t]).toHaveLength(7);
-      expect(WORKOUT_TITLES[t].length).toBeGreaterThan(0);
-    }
+  it('שלושה אימונים — A ו-B עם שבעה תרגילים, C עם שמונה (מ-3/10/2026) — עם כותרת', () => {
+    expect(PROGRAM.A).toHaveLength(7);
+    expect(PROGRAM.B).toHaveLength(7);
+    expect(PROGRAM.C).toHaveLength(8);
+    for (const t of WORKOUT_TYPES) expect(WORKOUT_TITLES[t].length).toBeGreaterThan(0);
   });
 
   it('id ייחודי בתוך כל אימון', () => {
@@ -166,7 +166,7 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
     expect(c2.note).toMatch(/הסרטון מראה מכונה דומה, לא אותו דגם\.$/);
     expect(exerciseIn('C', 'machine-row')).toBe(c2);
     expect(exerciseIn('C', 'db-single-arm-row')).toBeUndefined();
-    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-torso-rotation']);
+    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-rope-curl', 'cable-torso-rotation']);
     // machine-row כבר לא במאגר — הוא תרגיל בתוכנית; הפולי התחתון ב-B עדיין מציע אותו כחלופה
     expect(ALTERNATES.some((a) => a.id === 'machine-row')).toBe(false);
     expect(alternatesFor('seated-cable-row').map((a) => a.id)).toContain('machine-row');
@@ -183,6 +183,47 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
   });
 });
 
+describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
+  it('A2 הוא בנץ׳ פרס- סמית משין: 3×8–12, RIR 2, step 2.5 (מוט/סמית), הערה, בלי סרטון; שני ב-A', () => {
+    const a2 = PROGRAM.A[1]!;
+    expect(a2).toMatchObject({ id: 'smith-bench-press', name: "בנץ' פרס- סמית משין", machine: 'Smith Machine', sets: 3, repRangeMin: 8, repRangeMax: 12, effort: 'RIR 2', step: 2.5, videoUrl: null, mode: 'progress', unilateral: false, bodyweightOnly: false });
+    expect(a2.note).toBe('ספסל שטוח. המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט.');
+    expect(exerciseIn('A', 'smith-bench-press')).toBe(a2);
+    expect(exerciseIn('A', 'db-bench-press')).toBeUndefined();
+    expect(PROGRAM.A.map((e) => e.id)).toEqual(['leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'db-lateral-raise-seated', 'plank']);
+    // C3 (בנץ׳ עליון עם משקולות יד) לא השתנה
+    expect(exerciseIn('C', 'db-incline-bench-press')).toMatchObject({ name: "בנץ' פרס עליון- משקולות יד", sets: 3, repRangeMin: 8, repRangeMax: 12, step: 2.5 });
+  });
+
+  it('הבנץ׳ עם משקולות יד: אותו מזהה, שם, מפרט וסרטון, במאגר, וחלופה ראשונה של A2', () => {
+    const db = exerciseById('db-bench-press')!;
+    expect(db).toMatchObject({ id: 'db-bench-press', name: "בנץ' פרס- משקולות יד", short: "בנץ' פרס", machine: 'Dumbbell Bench Press', sets: 3, repRangeMin: 8, repRangeMax: 12, step: 2.5, note: 'מרפקים ב-45°, לא 90°', videoUrl: 'https://drive.google.com/file/d/1ZZh27DIsd8Dckf39JYOxqfhUEZa2dqbR/view?usp=drive_link' });
+    expect(ALTERNATES.some((a) => a.id === 'db-bench-press')).toBe(true);
+    expect(RETIRED.some((r) => r.id === 'db-bench-press')).toBe(false);
+    expect(resolveExerciseId("בנץ' פרס- משקולות יד")).toBe('db-bench-press');
+    expect(alternatesFor('smith-bench-press').map((a) => a.id)).toEqual(['db-bench-press', 'machine-chest-press', 'barbell-bench-press']);
+  });
+});
+
+describe('program-abc.json — C7 כפיפת מרפקים בפולי תחתון חבל (3/10/2026, 2)', () => {
+  it('תא חדש שביעי ב-C: 2×12–15, RIR 1, step 5 (פולי), סרטון והערה; רוטציות הגו במקום 8 בלי שינוי', () => {
+    const c7 = PROGRAM.C[6]!;
+    expect(c7).toMatchObject({ id: 'cable-rope-curl', name: 'כפיפת מרפקים- פולי תחתון חבל', machine: 'Cable Rope', type: 'isolation', sets: 2, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 5, mode: 'progress' });
+    expect(c7.reps).toBe('12-15');
+    expect(c7.note).toBe('פולי תחתון, חבל, אחיזה ניטרלית. מרפקים צמודים לגוף.');
+    expect(c7.videoUrl).toBe('https://drive.google.com/file/d/1IlwfEWHhTiVN4BrimJNfPRc_ZUt-XsTI/view?usp=drive_link');
+    expect(exerciseIn('C', 'triceps-pushdown')).toBe(PROGRAM.C[5]);
+    expect(exerciseIn('C', 'cable-torso-rotation')).toBe(PROGRAM.C[7]);
+    expect(PROGRAM.C[7]).toMatchObject({ id: 'cable-torso-rotation', name: 'בטן- רוטציות גו פולי אמצעי', sets: 3, repRangeMin: 12, repRangeMax: 15, step: 5, unilateral: true });
+    // מזהה חדש — לא היה בשום מקום; החלופות קיימות במאגר ולא נוצרו בשבילו
+    expect(ALTERNATES.some((a) => a.id === 'cable-rope-curl')).toBe(false);
+    expect(RETIRED.some((r) => r.id === 'cable-rope-curl')).toBe(false);
+    expect(alternatesFor('cable-rope-curl').map((a) => a.id)).toEqual(['cable-bar-curl', 'db-hammer-curl']);
+    // B6 (כפיפת מרפקים עם משקולות יד) לא השתנה
+    expect(exerciseIn('B', 'db-supinated-curl')).toMatchObject({ sets: 2, repRangeMin: 10, repRangeMax: 12, step: 2.5 });
+  });
+});
+
 describe('program-abc.json — step (שלב 4)', () => {
   it('לכל תרגיל בתוכנית step מספרי חיובי או null; ברירות המחדל לפי סוג הציוד', () => {
     for (const { e } of ALL) {
@@ -192,7 +233,7 @@ describe('program-abc.json — step (שלב 4)', () => {
       expect(exerciseById(id)?.step, id).toBe(2.5);
     }
     expect(exerciseById('leg-press')?.step).toBe(5);
-    for (const id of ['lat-pulldown', 'seated-cable-row', 'face-pull', 'triceps-pushdown', 'cable-torso-rotation']) {
+    for (const id of ['lat-pulldown', 'seated-cable-row', 'face-pull', 'triceps-pushdown', 'cable-torso-rotation', 'cable-rope-curl']) {
       expect(exerciseById(id)?.step, id).toBe(5);
     }
     for (const id of ['pec-deck', 'machine-hip-abduction', 'leg-extension', 'leg-curl']) {
@@ -208,7 +249,7 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
   /** הרשימה מהמפרט: תא → שמות החלופות, בסדר. */
   const EXPECTED: Record<string, string[]> = {
     'leg-press': ['הק סקוואט', 'סקוואט- מכונה', 'גובלט סקוואט עם משקולת'],
-    'db-bench-press': ["בנץ' פרס- מכונה", "בנץ' פרס"],
+    'smith-bench-press': ["בנץ' פרס- משקולות יד", "בנץ' פרס- מכונה", "בנץ' פרס"],
     'lat-pulldown': ['משיכה מפולי עליון- אחיזה צרה בישיבה', 'משיכה מפולי עליון- אחיזה רחבה בישיבה (סטודיו)', 'מתח- גרוויטון'],
     'leg-extension': ['סקוואט- סטטי נגד קיר'],
     'leg-curl': ['כפיפת ברכיים במכונה על הבטן', 'כפיפת ברכיים במכונה רגל-רגל'],
@@ -224,6 +265,7 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     'machine-row': ['חתירה- הטיית גו עם מ.יד', 'חתירה- כייבל קרוס יד אחת', 'חתירה- מכונה ייעודית T-bar'],
     'db-incline-bench-press': ["בנץ' פרס עליון- מכונה", "בנץ' פרס עליון"],
     'db-lateral-raise-standing': ['הרחקת כתף- כייבל קרוס יד אחת', 'הרחקת כתפיים- ישיבה מ.יד'],
+    'cable-rope-curl': ['כפיפת מרפקים- פולי תחתון מוט', 'כפיפת מרפקים- מ.יד מיד פוזישן'],
     'cable-torso-rotation': ['בטן- פלאנק צידי סטטי', 'בטן- כפיפת מותן צידית'],
   };
 
@@ -237,9 +279,9 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
 
   it('A/B/C לא השתנו: אותם מזהים, סטים וטווחים', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
-    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'db-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
+    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
     expect(snapshot('B')).toEqual(['db-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15']);
-    expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
+    expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-rope-curl:2x12-15', 'cable-torso-rotation:3x12-15']);
   });
 
   it('אין חלופה שהיא הלג-פרס 45° — הוא alias של leg-press, לא תרגיל נפרד', () => {
