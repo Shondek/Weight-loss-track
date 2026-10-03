@@ -184,10 +184,14 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
 });
 
 describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
-  it('A2 הוא בנץ׳ פרס- סמית משין: 3×8–12, RIR 2, step 5 (מוט/סמית), הערה, בלי סרטון; שני ב-A', () => {
+  it('A2 הוא בנץ׳ פרס- סמית משין: 3×8–12, RIR 2, step 5 (מוט/סמית), הערה וסרטון; שני ב-A', () => {
     const a2 = PROGRAM.A[1]!;
-    expect(a2).toMatchObject({ id: 'smith-bench-press', name: "בנץ' פרס- סמית משין", machine: 'Smith Machine', sets: 3, repRangeMin: 8, repRangeMax: 12, effort: 'RIR 2', step: 5, videoUrl: null, mode: 'progress', unilateral: false, bodyweightOnly: false });
-    expect(a2.note).toBe('ספסל שטוח. המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט.');
+    expect(a2).toMatchObject({ id: 'smith-bench-press', name: "בנץ' פרס- סמית משין", machine: 'Smith Machine', sets: 3, repRangeMin: 8, repRangeMax: 12, effort: 'RIR 2', step: 5, mode: 'progress', unilateral: false, bodyweightOnly: false });
+    expect(a2.note).toBe("ספסל שטוח. המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט. הסרטון מראה בנץ' עם מוט חופשי, לא סמית.");
+    // סרטון — אותו שדה ואותו מבנה כמו בשאר התרגילים (קישור Drive מלא); בספרייה אין בנץ׳ בסמית, ולכן סרטון של מוט חופשי
+    expect(a2.videoUrl).toBe('https://drive.google.com/file/d/1veAvZoDJk28ZJdVUAOHaKAm9JCNMa_az/view?usp=drive_link');
+    expect(a2.videoUrl).toMatch(/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]+\/view/);
+    expect(a2.note).toMatch(/הסרטון מראה בנץ' עם מוט חופשי, לא סמית\.$/);
     expect(exerciseIn('A', 'smith-bench-press')).toBe(a2);
     expect(exerciseIn('A', 'db-bench-press')).toBeUndefined();
     expect(PROGRAM.A.map((e) => e.id)).toEqual(['leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'db-lateral-raise-seated', 'plank']);
