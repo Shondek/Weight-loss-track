@@ -184,9 +184,9 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
 });
 
 describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
-  it('A2 הוא בנץ׳ פרס- סמית משין: 3×8–12, RIR 2, step 2.5 (מוט/סמית), הערה, בלי סרטון; שני ב-A', () => {
+  it('A2 הוא בנץ׳ פרס- סמית משין: 3×8–12, RIR 2, step 5 (מוט/סמית), הערה, בלי סרטון; שני ב-A', () => {
     const a2 = PROGRAM.A[1]!;
-    expect(a2).toMatchObject({ id: 'smith-bench-press', name: "בנץ' פרס- סמית משין", machine: 'Smith Machine', sets: 3, repRangeMin: 8, repRangeMax: 12, effort: 'RIR 2', step: 2.5, videoUrl: null, mode: 'progress', unilateral: false, bodyweightOnly: false });
+    expect(a2).toMatchObject({ id: 'smith-bench-press', name: "בנץ' פרס- סמית משין", machine: 'Smith Machine', sets: 3, repRangeMin: 8, repRangeMax: 12, effort: 'RIR 2', step: 5, videoUrl: null, mode: 'progress', unilateral: false, bodyweightOnly: false });
     expect(a2.note).toBe('ספסל שטוח. המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט.');
     expect(exerciseIn('A', 'smith-bench-press')).toBe(a2);
     expect(exerciseIn('A', 'db-bench-press')).toBeUndefined();
@@ -221,6 +221,25 @@ describe('program-abc.json — C7 כפיפת מרפקים בפולי תחתון 
     expect(alternatesFor('cable-rope-curl').map((a) => a.id)).toEqual(['cable-bar-curl', 'db-hammer-curl']);
     // B6 (כפיפת מרפקים עם משקולות יד) לא השתנה
     expect(exerciseIn('B', 'db-supinated-curl')).toMatchObject({ sets: 2, repRangeMin: 10, repRangeMax: 12, step: 2.5 });
+  });
+});
+
+describe('program-abc.json — step למוט ולסמית משין: 5 (3/10/2026)', () => {
+  it('כל תרגיל על מוט או סמית — step 5 (הפלטה הקטנה 2.5 לכל צד); משקולות יד, פולי, לג-פרס ומכונות לא השתנו', () => {
+    for (const id of ['smith-bench-press', 'barbell-bench-press', 'smith-hip-hinge', 'barbell-rdl', 'barbell-incline-bench-press']) {
+      expect(exerciseById(id)?.step, id).toBe(5);
+    }
+    for (const id of ['db-bench-press', 'db-rdl', 'db-incline-bench-press', 'db-lateral-raise-seated', 'db-lateral-raise-standing', 'db-supinated-curl', 'db-single-arm-row', 'goblet-squat', 'db-hammer-curl', 'db-preacher-curl', 'plank']) {
+      expect(exerciseById(id)?.step, id).toBe(2.5);
+    }
+    for (const id of ['leg-press', 'lat-pulldown', 'seated-cable-row', 'cable-rope-curl', 'cable-bar-curl', 'cable-bar-pushdown', 'triceps-pushdown']) {
+      expect(exerciseById(id)?.step, id).toBe(5);
+    }
+    for (const id of ['machine-row', 'pec-deck', 'leg-extension', 'leg-curl', 'machine-hip-abduction', 'hack-squat']) {
+      expect(exerciseById(id)?.step, id).toBeNull();
+    }
+    // T-bar: טעינה חד-צדדית של פלטות — לא מוט דו-צדדי, נשאר 2.5 (לא הוכרע)
+    expect(exerciseById('t-bar-row')?.step).toBe(2.5);
   });
 });
 

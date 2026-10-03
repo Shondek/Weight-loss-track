@@ -148,6 +148,33 @@ describe('2. כללים ומקרי קצה', () => {
   });
 });
 
+describe('2ב. מוט וסמית משין — קפיצה של 5, לא 2.5 (3/10/2026)', () => {
+  it('smith-bench-press 40×12,12,12 עם RIR 2 → 45 (R1), לא 42.5; R3 מעגל למטה ל-5', () => {
+    const smith = specOf('smith-bench-press'); // 8–12, step 5
+    const s = suggestNext([session('2026-10-05', { ...le('smith-bench-press', 40, [12, 12, 12]), rir: 2 })], smith);
+    expect(s).toMatchObject({ action: 'up', weight: 45, repTarget: 8, rule: 'R1' });
+    expect(s?.reason).toContain('+5 ק״ג');
+    expect(suggestionLabel(s!, { isTimed: false })).toEqual({ weight: '45 ק״ג', reps: '8 חזרות' });
+    // אותו תרחיש עם משקולות יד נשאר +2.5
+    const db = suggestNext([session('2026-10-05', { ...le('db-bench-press', 40, [12, 12, 12]), rir: 2 })], specOf('db-bench-press'));
+    expect(db).toMatchObject({ action: 'up', weight: 42.5, rule: 'R1' });
+    // R3: 40 × 0.9 = 36 → מעוגל למטה ל-35
+    const down = suggestNext(
+      [session('2026-09-28', le('smith-bench-press', 40, [7, 7, 7])), session('2026-10-05', le('smith-bench-press', 40, [7, 6, 6]))],
+      smith,
+    );
+    expect(down).toMatchObject({ action: 'down', weight: 35, rule: 'R3' });
+  });
+
+  it('כל תרגילי המוט/סמית: בשיא עם RIR 2 ב-40 ק״ג → 45', () => {
+    for (const id of ['smith-bench-press', 'barbell-bench-press', 'smith-hip-hinge', 'barbell-rdl', 'barbell-incline-bench-press']) {
+      const spec = specOf(id);
+      const s = suggestNext([session('2026-10-05', { ...le(id, 40, Array.from({ length: 3 }, () => spec.repRangeMax)), rir: 2 })], spec);
+      expect(s, id).toMatchObject({ action: 'up', weight: 45, rule: 'R1' });
+    }
+  });
+});
+
 describe('3. מצב שימור (M) — A7 פלאנק מ-3/10/2026', () => {
   const plank = specOf('plank'); // 60–60, step 2.5, timed, mode maintain, 3 sets
   const MAINTAIN = '60 שנ׳ × 3 · שימור';
