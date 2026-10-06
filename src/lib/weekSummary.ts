@@ -5,7 +5,7 @@
  */
 
 import type { DB, ISODate, LoggedExercise, WeeklyCheckin, WorkoutEntry, WorkoutType } from '../types';
-import { shortName, WORKOUTS_PER_WEEK } from '../data/program';
+import { exerciseById, shortName, WORKOUTS_PER_WEEK } from '../data/program';
 import { addDays, compareISO, formatDM, weekEnd, weekNumber } from './date';
 import { programStartWeek } from './db';
 import { clean, DASH } from './format';
@@ -106,7 +106,10 @@ export function exerciseText(e: LoggedExercise): string {
   }
   // תרגיל משקל גוף לא מקבל אסימון משקל — "—×10,10,10" הוא רעש, לא מידע.
   if (e.bodyweightOnly) return `${name} ${values}`;
-  return `${name} ${weightText(e)}×${values}`;
+  // משקל גוף כפתיחה (A6): בלי משקל (ריק או 0) = משקל גוף — כמו תרגיל משקל גוף, בלי "—×".
+  const w = weightText(e);
+  if (exerciseById(e.exerciseId)?.bodyweightStart === true && (w === DASH || w === '0')) return `${name} ${values}`;
+  return `${name} ${w}×${values}`;
 }
 
 /**

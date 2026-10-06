@@ -3,6 +3,11 @@
  * ה-snapshot נוצר לפני עדכון 3/10/2026 (A7 לשימור, C2 למכונת חתירה), ומוכיח
  * שההצעות לכל שאר התרגילים לא זזו. הפלאנק מוחרג בכוונה — ההצעה שלו השתנתה
  * במתכוון (מצב שימור), ונבדקת ב-progression.test.ts.
+ *
+ * 6/10/2026: `back-extension` עבר מהמאגר ל-A6 עם מפרט חדש (3×12–15, step 2.5,
+ * מתחיל במשקל גוף) — השורה שלו ב-snapshot השתנתה במתכוון, וזו השורה הקיימת
+ * היחידה שהשתנתה; `floor-leg-raise` (B8, חזרות בלבד) נוסף. שניהם נבדקים
+ * ב-programUpdate20261006.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import type { LoggedExercise, Rir } from '../../types';
@@ -14,9 +19,14 @@ const IDS = [...new Set([...WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => e
   (id) => id !== 'plank',
 );
 
+/**
+ * המפרט כפי שהמסך והסיכום השבועי מעבירים אותו: כולל `mode` ו-`bodyweightStart`
+ * (6/10/2026 — B8 בחזרות בלבד, A6 מתחיל במשקל גוף). לכל שאר התרגילים שניהם
+ * ברירת המחדל (`progress`, false), ולכן הפלט שלהם זהה לזה שלפני השדות.
+ */
 function specOf(id: string): ProgressionSpec {
   const e = exerciseById(id)!;
-  return { step: e.step, repRangeMin: e.repRangeMin, repRangeMax: e.repRangeMax, isTimed: e.isTimed, bodyweightOnly: e.bodyweightOnly };
+  return { step: e.step, repRangeMin: e.repRangeMin, repRangeMax: e.repRangeMax, isTimed: e.isTimed, bodyweightOnly: e.bodyweightOnly, mode: e.mode, bodyweightStart: e.bodyweightStart };
 }
 
 /** משקל "רגיל" לתרגיל לפי סוג הציוד; משקל גוף/זמן → null. */

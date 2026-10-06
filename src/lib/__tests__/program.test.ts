@@ -22,9 +22,9 @@ import {
 const ALL = WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => ({ t, e })));
 
 describe('program-abc.json — מבנה', () => {
-  it('שלושה אימונים — A ו-B עם שבעה תרגילים, C עם שמונה (מ-3/10/2026) — עם כותרת', () => {
-    expect(PROGRAM.A).toHaveLength(7);
-    expect(PROGRAM.B).toHaveLength(7);
+  it('שלושה אימונים — שמונה תרגילים בכל אחד (A6 ו-B8 מ-6/10/2026, C7 מ-3/10/2026) — עם כותרת', () => {
+    expect(PROGRAM.A).toHaveLength(8);
+    expect(PROGRAM.B).toHaveLength(8);
     expect(PROGRAM.C).toHaveLength(8);
     for (const t of WORKOUT_TYPES) expect(WORKOUT_TITLES[t].length).toBeGreaterThan(0);
   });
@@ -148,10 +148,16 @@ describe('program-abc.json — mode (3/10/2026)', () => {
     // הזהות לא השתנתה — המפתח להיסטוריה
     expect(plank.id).toBe('plank');
     expect(plank.name).toBe('בטן- פלאנק סטטי');
+    // מ-6/10/2026: B8 (הרמת רגליים) בחזרות בלבד; A6 (פשיטת ירך) בהתקדמות רגילה עם משקל גוף כפתיחה.
     for (const { e } of ALL) {
-      if (e.id !== 'plank') expect(e.mode, e.id).toBe('progress');
+      if (e.id === 'plank') continue;
+      expect(e.mode, e.id).toBe(e.id === 'floor-leg-raise' ? 'reps' : 'progress');
+      expect(e.bodyweightStart, e.id).toBe(e.id === 'back-extension');
     }
-    for (const e of [...ALTERNATES, ...RETIRED]) expect(e.mode, e.id).toBe('progress');
+    for (const e of [...ALTERNATES, ...RETIRED]) {
+      expect(e.mode, e.id).toBe('progress');
+      expect(e.bodyweightStart, e.id).toBe(false);
+    }
   });
 });
 
@@ -194,7 +200,7 @@ describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
     expect(a2.note).toMatch(/הסרטון מראה בנץ' עם מוט חופשי, לא סמית\.$/);
     expect(exerciseIn('A', 'smith-bench-press')).toBe(a2);
     expect(exerciseIn('A', 'db-bench-press')).toBeUndefined();
-    expect(PROGRAM.A.map((e) => e.id)).toEqual(['leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'db-lateral-raise-seated', 'plank']);
+    expect(PROGRAM.A.map((e) => e.id)).toEqual(['leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'back-extension', 'db-lateral-raise-seated', 'plank']);
     // C3 (בנץ׳ עליון עם משקולות יד) לא השתנה
     expect(exerciseIn('C', 'db-incline-bench-press')).toMatchObject({ name: "בנץ' פרס עליון- משקולות יד", sets: 3, repRangeMin: 8, repRangeMax: 12, step: 2.5 });
   });
@@ -290,6 +296,9 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     'db-lateral-raise-standing': ['הרחקת כתף- כייבל קרוס יד אחת', 'הרחקת כתפיים- ישיבה מ.יד'],
     'cable-rope-curl': ['כפיפת מרפקים- פולי תחתון מוט', 'כפיפת מרפקים- מ.יד מיד פוזישן'],
     'cable-torso-rotation': ['בטן- פלאנק צידי סטטי', 'בטן- כפיפת מותן צידית'],
+    // 6/10/2026: בלי חלופות — ספסל תפוס → "דלג ואחזור" בלבד.
+    'back-extension': [],
+    'floor-leg-raise': [],
   };
 
   it('לכל תא החלופות מהמפרט, בשמות ובסדר; כל מזהה נפתר', () => {
@@ -300,10 +309,10 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     expect(alternatesFor('hack-squat')).toEqual([]);
   });
 
-  it('A/B/C לא השתנו: אותם מזהים, סטים וטווחים', () => {
+  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, השאר לא זז)', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
-    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
-    expect(snapshot('B')).toEqual(['db-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15']);
+    expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'back-extension:3x12-15', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
+    expect(snapshot('B')).toEqual(['db-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
     expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-rope-curl:2x12-15', 'cable-torso-rotation:3x12-15']);
   });
 
