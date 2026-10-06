@@ -35,7 +35,8 @@ const ALL = [A_SEP24, C_OCT3];
 describe('A2 סמית — אימון A חדש ו"החלף"', () => {
   it('A חדש: A2 הוא הסמית, 3 סטים ריקים, בלי משקל פותח ובלי הצעה (אין היסטוריה)', () => {
     const rows = prefilledExercises(ALL, 'A');
-    expect(ids(rows)).toEqual([WARMUP_ID, 'leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'db-lateral-raise-seated', 'plank', FINISHER_ID]);
+    // מ-6/10/2026 A6 (פשיטת ירך) נכנס בין כפיפת הברכיים להרחקת הכתפיים.
+    expect(ids(rows)).toEqual([WARMUP_ID, 'leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'back-extension', 'db-lateral-raise-seated', 'plank', FINISHER_ID]);
     const a2 = rows[2]!;
     expect(a2).toMatchObject({ n: "בנץ' פרס- סמית משין", targetRepMin: 8, targetRepMax: 12 });
     expect(a2.sets).toHaveLength(3);

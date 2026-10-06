@@ -52,9 +52,23 @@ export interface Exercise {
    * מצב ההתקדמות (3/10/2026). `maintain` = מצב שימור: היעד קבוע
    * (repRangeMax × sets), וההצעה לאימון הבא היא תמיד "שימור" — בלי R1–R6
    * ובלי תלות ב-RIR (lib/progression.ts). `progress` (ברירת המחדל כשהשדה
-   * חסר ב-JSON) = כללי ההתקדמות הרגילים. A7 (פלאנק) הוא היחיד בשימור.
+   * חסר ב-JSON) = כללי ההתקדמות הרגילים. A8 (פלאנק) הוא היחיד בשימור.
+   * `reps` (6/10/2026) = התקדמות בחזרות בלבד, לתרגיל משקל גוף בלי step:
+   * R6 כרגיל, תקרה נקייה → "תקרה — נשארים" בלי הצעת משקל, שני אימונים
+   * מתחת לרצפה → אותן חזרות בלי −10% עם סימון "לבדוק". B8 (הרמת רגליים)
+   * הוא היחיד בחזרות בלבד.
    */
-  mode: 'progress' | 'maintain';
+  mode: 'progress' | 'maintain' | 'reps';
+  /**
+   * מתחיל במשקל גוף (6/10/2026, A6 פשיטת ירך): שדה משקל ריק (או 0) הוא
+   * עומס 0 ק"ג — משקל גוף — ולא "לא ידוע". ההצעה מתייחסת ל-0 כמשקל
+   * אמיתי: הקפיצה הראשונה (step מתוך 0) היא תמיד קפיצה גדולה (R4 —
+   * קודם תקרה +2 בכל הסטים, ואז step), ואין לאן לרדת מתחת למשקל גוף
+   * (R3 נשאר במשקל גוף). מעל 0 — R1–R6 כרגיל. false (ברירת המחדל) =
+   * שדה ריק הוא משקל לא ידוע, כמו תמיד. לא נוגע ב-`bodyweightOnly`
+   * (שם אין שדה משקל בכלל) ולא בתרגילי זמן (הפלאנק נשאר כפי שהיה).
+   */
+  bodyweightStart: boolean;
   /**
    * חלופות מותרות לתא הזה (שלב 4.1) — מזהים במאגר `alternates` או תרגילים
    * בתוכנית. ריק לתרגיל שאינו בתוכנית. החלפה היא לאימון אחד בלבד.
@@ -78,6 +92,7 @@ type OptionalKeys =
   | 'isTimed'
   | 'bodyweightOnly'
   | 'assisted'
+  | 'bodyweightStart'
   | 'note'
   | 'videoUrl';
 
@@ -95,8 +110,15 @@ function ex(e: ExerciseInput): Exercise {
   if (!(type in REST_SECONDS) || type === 'cardio') {
     throw new Error(`program-abc.json: סוג תרגיל לא מוכר "${e.type}" ב-${e.id}`);
   }
-  if (e.mode !== undefined && e.mode !== 'progress' && e.mode !== 'maintain') {
+  if (e.mode !== undefined && e.mode !== 'progress' && e.mode !== 'maintain' && e.mode !== 'reps') {
     throw new Error(`program-abc.json: mode לא מוכר "${e.mode}" ב-${e.id}`);
+  }
+  // חזרות בלבד = אין משקל ואין step; משקל גוף כפתיחה = יש שדה משקל ויש step.
+  if (e.mode === 'reps' && (e.bodyweightOnly !== true || (typeof e.step === 'number' && e.step > 0))) {
+    throw new Error(`program-abc.json: mode "reps" דורש bodyweightOnly: true בלי step ב-${e.id}`);
+  }
+  if (e.bodyweightStart === true && (e.bodyweightOnly === true || !(typeof e.step === 'number' && e.step > 0))) {
+    throw new Error(`program-abc.json: bodyweightStart דורש step חיובי ולא bodyweightOnly ב-${e.id}`);
   }
   const effort = e.effort?.trim();
   return {
@@ -116,10 +138,11 @@ function ex(e: ExerciseInput): Exercise {
     isTimed: e.isTimed ?? false,
     bodyweightOnly: e.bodyweightOnly ?? false,
     assisted: e.assisted ?? false,
+    bodyweightStart: e.bodyweightStart ?? false,
     note: e.note ?? null,
     videoUrl: e.videoUrl ?? null,
     step: typeof e.step === 'number' && e.step > 0 ? e.step : null,
-    mode: e.mode === 'maintain' ? 'maintain' : 'progress',
+    mode: e.mode === 'maintain' ? 'maintain' : e.mode === 'reps' ? 'reps' : 'progress',
     alternates: Array.isArray(e.alternates) ? e.alternates.filter((x): x is string => typeof x === 'string') : [],
   };
 }

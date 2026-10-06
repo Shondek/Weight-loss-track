@@ -149,9 +149,11 @@ function progressionSpecFor(t: WorkoutType, row: LoggedExercise): ProgressionSpe
       bodyweightOnly: spec.bodyweightOnly,
       mode: spec.mode,
       sets: spec.sets,
+      bodyweightStart: spec.bodyweightStart,
     };
   }
   // שורה שהוחלפה: הכללים של החלופה (התקדמות רגילה), לא מצב השימור של התא.
+  // משקל גוף כפתיחה הוא תכונה של החלופה עצמה (A6 כחלופה של B1), ולכן נשמר.
   return {
     step: spec?.step ?? null,
     repRangeMin: row.targetRepMin,
@@ -160,6 +162,7 @@ function progressionSpecFor(t: WorkoutType, row: LoggedExercise): ProgressionSpe
     bodyweightOnly: spec?.bodyweightOnly ?? row.bodyweightOnly,
     mode: 'progress',
     sets: row.sets.length,
+    bodyweightStart: spec?.bodyweightStart ?? false,
   };
 }
 
@@ -186,7 +189,10 @@ function exerciseText(e: LoggedExercise): string {
     return w === DASH ? `${name} ${values} שנ׳` : `${name} ${w}×${values} שנ׳`;
   }
   if (e.bodyweightOnly) return `${name} ${values}`;
-  return `${name} ${weightText(e)}×${values}`;
+  // משקל גוף כפתיחה (A6): בלי משקל (ריק או 0) = משקל גוף — כמו תרגיל משקל גוף, בלי "—×".
+  const w = weightText(e);
+  if (exerciseById(e.exerciseId)?.bodyweightStart === true && (w === DASH || w === '0')) return `${name} ${values}`;
+  return `${name} ${w}×${values}`;
 }
 
 /** ההצעה לאימון הבא אחרי האימון הזה: ההיסטוריה לפי מזהה עד האימון הזה ועד בכלל. */

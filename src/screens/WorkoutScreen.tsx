@@ -437,6 +437,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       isTimed: isTimedExercise(log),
       bodyweightOnly: log.bodyweightOnly,
       assisted: log.assisted,
+      bodyweightStart: false,
       note: null,
       videoUrl: null,
       step: null,

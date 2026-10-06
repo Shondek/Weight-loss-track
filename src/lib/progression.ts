@@ -14,9 +14,23 @@
  *      targetRepMax + 2 בכל הסטים, ואז קופצים.
  *  R5  ב-targetRepMax עם RIR 0–1 → נשארים (עוד לא נקי).
  *  R6  אחרת → אותו משקל, +1 חזרה בסט הנמוך.
- *  M   מצב שימור (`mode: "maintain"` בתוכנית, A7 פלאנק מ-3/10/2026): יעד
+ *  M   מצב שימור (`mode: "maintain"` בתוכנית, A8 פלאנק מ-3/10/2026): יעד
  *      קבוע — ההצעה היא תמיד "repRangeMax × sets · שימור", בלי R1–R6,
  *      בלי תלות ב-RIR ובלי תלות בזמנים שנרשמו (מעל או מתחת ליעד).
+ *
+ * שני סייגים לתרגיל בודד (6/10/2026), שלא נוגעים בשום תרגיל אחר:
+ *
+ *  חזרות בלבד (`mode: "reps"`, B8 הרמת רגליים): אין משקל ואין step. R6 ו-R5
+ *      כרגיל; תנאי R1 (תקרה נקייה) → "תקרה — נשארים" בלי הצעת משקל (rule R1,
+ *      action same); תנאי R3 (שני אימונים מתחת לרצפה) → אותן חזרות (הרצפה),
+ *      בלי −10%, עם סימון "מתחת לרצפה פעמיים — לבדוק" (rule R3, action same —
+ *      הסיכום השבועי מסמן R3 כירידה בביצועים). R4 לא רלוונטי (אין step).
+ *  משקל גוף כפתיחה (`bodyweightStart`, A6 פשיטת ירך): שדה משקל ריק או 0
+ *      הוא עומס 0 ק״ג, לא "לא ידוע". הקפיצה הראשונה (step מתוך 0 — אינסוף
+ *      אחוז) היא תמיד קפיצה גדולה: R4 — קודם targetRepMax + 2 בכל הסטים
+ *      במשקל גוף, ואז R1 מציע את step (2.5) והיעד חוזר ל-targetRepMin.
+ *      R3 במשקל גוף לא יורד (אין לאן) — נשארים במשקל גוף. מעל 0 — R1–R6
+ *      כרגיל, כולל R4 לפי היחס step/משקל. אין חלוקה ב-0 בשום מסלול.
  *
  * תרגיל זמן: השניות הן "החזרות" (פלאנק: 60 × 3 בשימור; חלופות זמן: 30–45).
  */
@@ -35,10 +49,15 @@ export type ProgressionSpec = {
   repRangeMax: number;
   isTimed: boolean;
   bodyweightOnly: boolean;
-  /** `maintain` = מצב שימור (M). חסר = `progress` (R1–R6). `Exercise` מתאים כמו שהוא. */
-  mode?: 'progress' | 'maintain';
+  /**
+   * `maintain` = מצב שימור (M); `reps` = חזרות בלבד (B8). חסר = `progress`
+   * (R1–R6). `Exercise` מתאים כמו שהוא.
+   */
+  mode?: 'progress' | 'maintain' | 'reps';
   /** מספר הסטים — לטקסט "60 שנ׳ × 3" במצב שימור בלבד. חסר = בלי "× n". */
   sets?: number;
+  /** מתחיל במשקל גוף (A6): שדה משקל ריק או 0 = עומס 0 ק״ג. חסר = false. */
+  bodyweightStart?: boolean;
 };
 
 /** R1–R6 — כללי ההתקדמות; M — מצב שימור (בלי התקדמות). */
@@ -46,6 +65,12 @@ export type Rule = 'R1' | 'R3' | 'R4' | 'R5' | 'R6' | 'M';
 
 /** שימור: היעד הקבוע של התרגיל. */
 export const MAINTAIN_LABEL = 'שימור';
+
+/** חזרות בלבד: תקרה נקייה — אין משקל להוסיף, נשארים בתקרה. */
+export const CEILING_STAY_LABEL = 'תקרה — נשארים';
+
+/** חזרות בלבד: שני אימונים מתחת לרצפה — אין −10% להציע, רק סימון לבדיקה. */
+export const BELOW_FLOOR_REVIEW_LABEL = 'מתחת לרצפה פעמיים — לבדוק';
 
 export type Suggestion = {
   action: 'up' | 'down' | 'same';
@@ -116,7 +141,12 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
 
   const { repRangeMin: min, repRangeMax: max, step, isTimed: timed } = spec;
   const unit = unitWord(timed);
-  const w = L.weight;
+  const repsOnly = spec.mode === 'reps';
+  // משקל גוף כפתיחה: 0 שנרשם במפורש = משקל גוף, כמו שדה ריק. לכל תרגיל אחר
+  // העומס הוא בדיוק מה שנרשם (null = לא ידוע), כמו תמיד.
+  const loadOf = (a: Analysis): number | null => (spec.bodyweightStart === true && a.weight === 0 ? null : a.weight);
+  const w = loadOf(L);
+  const fromBodyweight = spec.bodyweightStart === true && w === null;
   const mixedNote = L.mixed ? ' · משקלים שונים בין סטים' : '';
   const base = { mixedWeights: L.mixed, basisWeight: w, lastDate: L.d, rirUnknown: false };
 
@@ -135,7 +165,8 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
   const lowest = Math.min(...L.values);
   const allTop = L.values.every((v) => v >= max);
   const anyBelow = L.values.some((v) => v < min);
-  const largeJump = step !== null && w !== null && w > 0 && step / w > LARGE_JUMP_RATIO;
+  // ממשקל גוף (bodyweightStart) כל step הוא קפיצה גדולה; אחרת היחס step/משקל, ורק כשיש משקל חיובי.
+  const largeJump = step !== null && (fromBodyweight || (w !== null && w > 0 && step / w > LARGE_JUMP_RATIO));
 
   if (allTop) {
     if (largeJump && !L.values.every((v) => v >= max + 2)) {
@@ -145,7 +176,9 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
         weight: w,
         repTarget: max + 2,
         rule: 'R4',
-        reason: `קפיצה גדולה (${clean(step!)} מתוך ${clean(w!)} ק״ג) — קודם ${max + 2} ${unit} בכל הסטים, ואז לקפוץ${mixedNote}`,
+        reason: fromBodyweight
+          ? `הקפיצה הראשונה ממשקל גוף (+${clean(step!)} ק״ג) היא קפיצה גדולה — קודם ${max + 2} ${unit} בכל הסטים במשקל גוף, ואז לקפוץ${mixedNote}`
+          : `קפיצה גדולה (${clean(step!)} מתוך ${clean(w!)} ק״ג) — קודם ${max + 2} ${unit} בכל הסטים, ואז לקפוץ${mixedNote}`,
       };
     }
     if (L.rir === 0 || L.rir === 1) {
@@ -156,6 +189,17 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
         repTarget: max,
         rule: 'R5',
         reason: `הגעת ל-${max} בכל הסטים, אבל RIR ${L.rir} — עוד לא נקי. אותו משקל${mixedNote}`,
+      };
+    }
+    if (repsOnly) {
+      // חזרות בלבד: אין משקל להוסיף — נשארים בתקרה. RIR לא נדרש לאישור (אין קפיצה).
+      return {
+        ...base,
+        action: 'same',
+        weight: null,
+        repTarget: max,
+        rule: 'R1',
+        reason: `${CEILING_STAY_LABEL} — ${max} ${unit} בכל הסטים${L.rir === undefined ? '' : ` עם RIR ${L.rir}`}; התקדמות בחזרות בלבד, בלי משקל${mixedNote}`,
       };
     }
     const rirUnknown = L.rir === undefined;
@@ -172,7 +216,29 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
     };
   }
 
-  if (anyBelow && P && P.weight === w && P.values.some((v) => v < min)) {
+  if (anyBelow && P && loadOf(P) === w && P.values.some((v) => v < min)) {
+    if (repsOnly) {
+      // חזרות בלבד: אין −10% להציע. אותן חזרות (הרצפה), וסימון לבדיקה.
+      return {
+        ...base,
+        action: 'same',
+        weight: null,
+        repTarget: min,
+        rule: 'R3',
+        reason: `${BELOW_FLOOR_REVIEW_LABEL}: שני אימונים רצופים מתחת ל-${min} ${unit} — אותן חזרות, בלי הורדה${mixedNote}`,
+      };
+    }
+    if (fromBodyweight) {
+      // משקל גוף כפתיחה: אין לאן לרדת. נשארים במשקל גוף, היעד הרצפה.
+      return {
+        ...base,
+        action: 'same',
+        weight: null,
+        repTarget: min,
+        rule: 'R3',
+        reason: `שני אימונים רצופים מתחת ל-${min} ${unit} במשקל גוף — אין לאן לרדת, נשארים במשקל גוף${mixedNote}`,
+      };
+    }
     const next = step === null || w === null ? null : roundDownToStep(w * DROP_RATIO, step);
     return {
       ...base,
@@ -222,9 +288,13 @@ export function suggestionText(s: Suggestion, spec: Pick<ProgressionSpec, 'isTim
   return `${label.weight} · ${label.reps}`;
 }
 
-/** הטקסט למסך: "17.5 ק״ג" / "דרגה אחת למעלה" / "אותו משקל" / "משקל גוף", ו-"8 חזרות". */
+/**
+ * הטקסט למסך: "17.5 ק״ג" / "דרגה אחת למעלה" / "אותו משקל" / "משקל גוף", ו-"8 חזרות".
+ * חזרות בלבד בתקרה (R1 עם action same — צירוף שקיים רק שם): "תקרה — נשארים".
+ */
 export function suggestionLabel(s: Suggestion, spec: Pick<ProgressionSpec, 'isTimed'>): { weight: string; reps: string } {
   const reps = `${s.repTarget} ${unitWord(spec.isTimed)}`;
+  if (s.rule === 'R1' && s.action === 'same') return { weight: CEILING_STAY_LABEL, reps };
   if (s.action === 'same') return { weight: s.weight === null ? 'משקל גוף' : `${clean(s.weight)} ק״ג`, reps };
   if (s.weight !== null) return { weight: `${clean(s.weight)} ק״ג`, reps };
   return { weight: s.action === 'up' ? 'דרגה אחת למעלה' : 'דרגה אחת למטה', reps };

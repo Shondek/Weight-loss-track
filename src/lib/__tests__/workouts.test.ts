@@ -358,12 +358,15 @@ describe('בניית אימון', () => {
     expect(blankLoggedExercise(exerciseById('plank')!).sets.every((s) => s.weight === null)).toBe(true);
     const pushUp = blankLoggedExercise(exerciseById('incline-push-up')!, 20);
     expect(pushUp.sets.every((s) => s.weight === null)).toBe(true);
+    // B8 (הרמת רגליים, מ-6/10/2026) הוא תרגיל משקל-גוף-בלבד בתוכנית: בלי שדה משקל בכלל.
+    const legRaise = blankLoggedExercise(exerciseById('floor-leg-raise')!, 20);
+    expect(legRaise.sets.every((s) => s.weight === null && s.reps === null)).toBe(true);
     // וכל שאר תרגילי התוכנית הם משקל + טווח חזרות מספרי
     for (const t of ['A', 'B', 'C'] as const) {
       for (const spec of PROGRAM[t]) {
         if (spec.id === 'plank') continue;
         expect(spec.isTimed, spec.id).toBe(false);
-        expect(spec.bodyweightOnly, spec.id).toBe(false);
+        expect(spec.bodyweightOnly, spec.id).toBe(spec.id === 'floor-leg-raise');
       }
     }
   });
@@ -429,8 +432,8 @@ describe('גרף התקדמות', () => {
 
 describe('התוכנית', () => {
   it('מספר התרגילים בכל אימון', () => {
-    expect(PROGRAM.A).toHaveLength(7);
-    expect(PROGRAM.B).toHaveLength(7);
+    expect(PROGRAM.A).toHaveLength(8); // מ-6/10/2026: A6 פשיטת ירך בספסל רומי
+    expect(PROGRAM.B).toHaveLength(8); // מ-6/10/2026: B8 הרמת רגליים על הרצפה
     expect(PROGRAM.C).toHaveLength(8); // מ-3/10/2026: C7 כפיפת מרפקים בפולי תחתון חבל;
   });
 

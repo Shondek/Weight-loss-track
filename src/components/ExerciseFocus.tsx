@@ -58,7 +58,7 @@ function sideLabel(spec: Exercise): string {
  * שורת היסטוריה: "03/09 · 40 ק״ג · 12,12,10". נתונים בלבד — בלי פרשנות.
  * רשומה ישנה עם משקל שונה בכל סט מציגה את כולם, כדי לא להסתיר דבר.
  */
-function historyText(h: ExerciseHistory, timed: boolean, usesWeight: boolean): string {
+function historyText(h: ExerciseHistory, timed: boolean, usesWeight: boolean, bodyweightStart = false): string {
   const performed = h.ex.sets.filter(setPerformed);
   const values = performed
     .map((s) => {
@@ -70,8 +70,10 @@ function historyText(h: ExerciseHistory, timed: boolean, usesWeight: boolean): s
   if (usesWeight) {
     const weights = performed.map((s) => (s.weight === null ? DASH : clean(s.weight)));
     const distinct = new Set(weights);
-    // תרגיל זמן שנרשם בלי משקל (פלאנק ישן) = משקל גוף, לא "—".
-    if (timed && performed.length > 0 && performed.every((s) => s.weight === null)) parts.push('משקל גוף');
+    // תרגיל זמן שנרשם בלי משקל (פלאנק ישן) = משקל גוף, לא "—". משקל גוף
+    // כפתיחה (A6): ריק או 0 = משקל גוף.
+    const bodyweight = (s: LoggedSet) => s.weight === null || (bodyweightStart && s.weight === 0);
+    if ((timed || bodyweightStart) && performed.length > 0 && performed.every(bodyweight)) parts.push('משקל גוף');
     else parts.push(`${distinct.size === 1 ? (weights[0] ?? DASH) : weights.join(',')} ק״ג`);
   }
   parts.push(timed ? `${values} שנ׳` : values);
@@ -212,7 +214,7 @@ export default function ExerciseFocus({
             <ul className="list list--block tiny muted">
               {history.map((h) => (
                 <li key={h.workoutId} className="num">
-                  {historyText(h, timed, usesWeight)}
+                  {historyText(h, timed, usesWeight, spec.bodyweightStart)}
                 </li>
               ))}
             </ul>
@@ -232,7 +234,7 @@ export default function ExerciseFocus({
                 <ul className="list list--block tiny muted" aria-label={`כל הביצועים — ${spec.name}`}>
                   {[...fullHistory].reverse().map((h) => (
                     <li key={h.workoutId} className="num">
-                      {historyText(h, timed, usesWeight)}
+                      {historyText(h, timed, usesWeight, spec.bodyweightStart)}
                     </li>
                   ))}
                 </ul>
@@ -292,7 +294,7 @@ export default function ExerciseFocus({
               max={MAX_WEIGHT}
               decimals={1}
               unit='ק"ג'
-              placeholder={timed ? 'משקל גוף' : 'ק"ג'}
+              placeholder={timed || spec.bodyweightStart ? 'משקל גוף' : 'ק"ג'}
             />
           </div>
         )}
@@ -371,7 +373,7 @@ export default function ExerciseFocus({
                 <span className="wk-alt__name">{a.spec.name}</span>
                 {a.spec.note && <span className="tiny muted">{a.spec.note}</span>}
                 <span className="tiny muted num">
-                  {a.last ? `אחרון: ${historyText(a.last, a.spec.isTimed, !a.spec.bodyweightOnly)}` : 'אין ביצוע קודם'}
+                  {a.last ? `אחרון: ${historyText(a.last, a.spec.isTimed, !a.spec.bodyweightOnly, a.spec.bodyweightStart)}` : 'אין ביצוע קודם'}
                 </span>
               </button>
             </li>
