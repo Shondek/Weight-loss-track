@@ -92,10 +92,11 @@ describe('A6 — פשיטת ירך בספסל רומי (back-extension, 6/10/202
     expect(RETIRED.some((r) => r.id === A6)).toBe(false);
     expect(resolveExerciseId('פשיטת ירך בספסל רומי')).toBe(A6);
     expect(alternatesFor(A6)).toEqual([]);
-    // B1: אותו מפרט; הספסל הרומי הוסר מהחלופות (אותו מזהה בשני תאים עם טווח שונה מערבב היסטוריה), השתיים האחרות בסדרן
-    expect(exerciseIn('B', 'db-rdl')).toMatchObject({ sets: 3, repRangeMin: 8, repRangeMax: 10, step: 2.5, effort: 'RIR 3', alternates: ['smith-hip-hinge', 'barbell-rdl'] });
-    expect(alternatesFor('db-rdl').map((a) => a.id)).toEqual(['smith-hip-hinge', 'barbell-rdl']);
-    expect(alternatesFor('db-rdl').map((a) => a.name)).toEqual(["היפ הינג'- סמית משין", 'דד-ליפט רומניין']);
+    // B1: הספסל הרומי הוסר מהחלופות (אותו מזהה בשני תאים עם טווח שונה מערבב היסטוריה).
+    // 13/10/2026: B1 הוא ה-RDL עם מוט (barbell-rdl); ה-RDL עם משקולות יד החלופה הראשונה, היפ הינג' סמית שני — programUpdate20261013.test.ts
+    expect(exerciseIn('B', 'barbell-rdl')).toMatchObject({ sets: 3, repRangeMin: 8, repRangeMax: 10, step: 5, effort: 'RIR 3', alternates: ['db-rdl', 'smith-hip-hinge'] });
+    expect(alternatesFor('barbell-rdl').map((a) => a.id)).toEqual(['db-rdl', 'smith-hip-hinge']);
+    expect(alternatesFor('barbell-rdl').map((a) => a.name)).toEqual(['דד-ליפט רומניין עם מ.יד', "היפ הינג'- סמית משין"]);
     // A6 אינו חלופה של אף תא
     for (const t of WORKOUT_TYPES) {
       for (const e of PROGRAM[t]) expect(e.alternates, e.id).not.toContain(A6);
@@ -232,7 +233,7 @@ describe('B8 — בטן- הרמת רגליים על הרצפה (floor-leg-raise,
     });
     expect(b8.reps).toBe('10-15');
     expect(exerciseIn('B', B8)).toBe(b8);
-    expect(PROGRAM.B.map((e) => e.id)).toEqual(['db-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8]);
+    expect(PROGRAM.B.map((e) => e.id)).toEqual(['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8]);
     expect(PROGRAM.B[6]).toMatchObject({ id: 'triceps-pushdown', sets: 2, repRangeMin: 12, repRangeMax: 15, step: 5 });
     expect(ALTERNATES.some((a) => a.id === B8)).toBe(false);
     expect(RETIRED.some((r) => r.id === B8)).toBe(false);
@@ -390,7 +391,7 @@ describe('אימון חדש, רשומות ישנות, דילוג והחלפה', 
     expect(a[6]!.sets).toHaveLength(3);
     expect(a[6]!.sets.every((s) => s.weight === null && s.reps === null && s.seconds === null)).toBe(true);
     const b = prefilledExercises([], 'B');
-    expect(ids(b)).toEqual([WARMUP_ID, 'db-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8, FINISHER_ID]);
+    expect(ids(b)).toEqual([WARMUP_ID, 'barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8, FINISHER_ID]);
     expect(b[8]).toMatchObject({ exerciseId: B8, n: 'בטן- הרמת רגליים על הרצפה', targetRepMin: 10, targetRepMax: 15, bodyweightOnly: true });
     expect(b[8]!.sets).toHaveLength(3);
     expect(suggestNext([], specOf(A6))).toBeNull();
@@ -424,26 +425,29 @@ describe('אימון חדש, רשומות ישנות, דילוג והחלפה', 
       le('triceps-pushdown', 25, [15, 15]),
     ]);
     const rowsB = exercisesFor(oldB, [oldB]);
-    expect(ids(rowsB)).toEqual([WARMUP_ID, 'db-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8, FINISHER_ID]);
-    expect(rowsB[8]).toMatchObject({ exerciseId: B8, bodyweightOnly: true });
-    expect(rowsB[8]!.sets.every((s) => s.reps === null)).toBe(true);
+    // 13/10/2026: ה-RDL עם משקולות יד נשאר במקומו עם הנתונים; B8 ו-B1 החדש (מוט) שורות ריקות אחרי השורות שנשמרו
+    expect(ids(rowsB)).toEqual([WARMUP_ID, 'db-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'barbell-rdl', B8, FINISHER_ID]);
+    expect(rowsB[9]).toMatchObject({ exerciseId: B8, bodyweightOnly: true });
+    expect(rowsB[9]!.sets.every((s) => s.reps === null)).toBe(true);
   });
 
   it('"דלג ואחזור" עם 8 תאים: A6 ו-B8 עוברים לסוף סדר הכוח, האירובי נשאר אחרון', () => {
     const a = moveToEnd(prefilledExercises([], 'A'), A6);
     expect(ids(a)).toEqual([WARMUP_ID, 'leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'db-lateral-raise-seated', 'plank', A6, FINISHER_ID]);
-    const b = moveToEnd(prefilledExercises([], 'B'), 'db-rdl');
-    expect(ids(b)).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8, 'db-rdl', FINISHER_ID]);
-    expect(ids(moveToEnd(b, B8))).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'db-rdl', B8, FINISHER_ID]);
+    const b = moveToEnd(prefilledExercises([], 'B'), 'barbell-rdl');
+    expect(ids(b)).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8, 'barbell-rdl', FINISHER_ID]);
+    expect(ids(moveToEnd(b, B8))).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'barbell-rdl', B8, FINISHER_ID]);
   });
 
   it('רשומה ישנה שבה B1 הוחלף לספסל הרומי עדיין נטענת ומוצגת בשמו; "החלף" ב-B1 מציע רק את שתי החלופות שנותרו', () => {
-    const old = { ...swapExercise({ ...exerciseIn('B', 'db-rdl')!, alternates: [A6] }, exerciseById(A6)!), sets: [{ weight: null, reps: 10, seconds: null }] };
+    // הרשומה נוצרה כש-B1 היה ה-RDL עם משקולות יד (db-rdl); מ-13/10/2026 db-rdl במאגר, ולכן המפרט נלקח מ-exerciseById
+    const old = { ...swapExercise({ ...exerciseById('db-rdl')!, alternates: [A6] }, exerciseById(A6)!), sets: [{ weight: null, reps: 10, seconds: null }] };
     const r = parseWorkouts([wk('b0', '2026-09-28', 'B', [old])]);
     expect(r.rejected).toEqual([]);
     expect(r.ok[0]?.ex[0]).toMatchObject({ exerciseId: A6, swappedFrom: 'db-rdl', targetRepMin: 8, targetRepMax: 10 });
     expect(exercisesFor(r.ok[0]!, r.ok).map((e) => e.exerciseId)).toContain(A6);
-    expect(alternatesFor('db-rdl').map((a) => a.id)).toEqual(['smith-hip-hinge', 'barbell-rdl']);
+    // 13/10/2026: B1 הוא ה-RDL עם מוט; החלופות — RDL משקולות יד ואז היפ הינג' סמית
+    expect(alternatesFor('barbell-rdl').map((a) => a.id)).toEqual(['db-rdl', 'smith-hip-hinge']);
   });
 
   it('אימון A/B ישן (7 תרגילים) אינו "לא שלם": נספר כאימון, בלי "דולגו" על התא החדש, ובלי "חסר" — אלא אם הרשומה נערכת ונשמרת מחדש', () => {

@@ -8,6 +8,10 @@
  * מתחיל במשקל גוף) — השורה שלו ב-snapshot השתנתה במתכוון, וזו השורה הקיימת
  * היחידה שהשתנתה; `floor-leg-raise` (B8, חזרות בלבד) נוסף. שניהם נבדקים
  * ב-programUpdate20261006.test.ts.
+ *
+ * 13/10/2026: B1 → `barbell-rdl` (מוט) ו-`db-rdl` (משקולות יד) למאגר — אותם שני
+ * מזהים עם אותו מפרט (3×8–10; step 5 / 2.5) כמו קודם, ולכן אפס שורות השתנו.
+ * נבדק ב-programUpdate20261013.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import type { LoggedExercise, Rir } from '../../types';
