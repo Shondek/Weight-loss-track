@@ -148,14 +148,14 @@ describe('exercisesFor — שורה שהוחלפה תופסת את התא', () =
     const slot = exerciseIn('B', 'db-supinated-curl')!;
     const swapped = swapExercise(slot, exerciseById('db-hammer-curl')!, 10);
     const entry = wk('w1', '2026-09-14', 'B', [
-      le('db-rdl', 25, [10, 10, 10]),
+      le('barbell-rdl', 40, [10, 10, 10]),
       swapped,
       le('seated-cable-row', 40, [12, 12, 12]),
     ]);
     const rows = exercisesFor(entry, [entry]);
     const strength = rows.filter((r) => r.exerciseId !== 'warmup' && r.exerciseId !== 'finisher-cardio');
     expect(strength.map((r) => r.exerciseId)).not.toContain('db-supinated-curl');
-    expect(strength.map((r) => r.exerciseId).slice(0, 3)).toEqual(['db-rdl', 'db-hammer-curl', 'seated-cable-row']);
+    expect(strength.map((r) => r.exerciseId).slice(0, 3)).toEqual(['barbell-rdl', 'db-hammer-curl', 'seated-cable-row']);
     expect(strength.filter((r) => r.exerciseId === 'db-hammer-curl')).toHaveLength(1);
     expect(strength.map(slotOf).sort()).toEqual(PROGRAM.B.map((e) => e.id).sort());
     expect(strength.find((r) => r.exerciseId === 'db-hammer-curl')?.swappedFrom).toBe('db-supinated-curl');

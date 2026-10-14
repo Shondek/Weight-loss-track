@@ -284,8 +284,9 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     'leg-curl': ['כפיפת ברכיים במכונה על הבטן', 'כפיפת ברכיים במכונה רגל-רגל'],
     'db-lateral-raise-seated': ['הרחקת כתף- כייבל קרוס יד אחת', 'הרחקת כתפיים- עמידה מ.יד'],
     plank: ['בטן- פלאנק צידי סטטי', 'בטן- כפיפות בטן עם חבל פולי עליון'],
-    // 6/10/2026: פשיטת ירך בספסל רומי עברה ל-A6 והוסרה מכאן (אותו מזהה בשני תאים עם טווח שונה)
-    'db-rdl': ["היפ הינג'- סמית משין", 'דד-ליפט רומניין'],
+    // 6/10/2026: פשיטת ירך בספסל רומי עברה ל-A6 והוסרה מכאן (אותו מזהה בשני תאים עם טווח שונה).
+    // 13/10/2026: B1 הוא ה-RDL עם מוט; ה-RDL עם משקולות יד הוא החלופה הראשונה, היפ הינג' סמית שני.
+    'barbell-rdl': ['דד-ליפט רומניין עם מ.יד', "היפ הינג'- סמית משין"],
     'seated-cable-row': ['חתירה- מכונה ייעודית', 'חתירה- מכונה ייעודית T-bar', 'חתירה- כייבל קרוס יד אחת'],
     'pec-deck': ['פרפר- כייבל קרוס', 'פרפר- תחתון כייבל קרוס'],
     'face-pull': ['הרחקה אופקית- מכונת פרפר', 'הרחקה אופקית- פולי גובה כתף', 'הרחקה אופקית עם משקולות יד'],
@@ -310,10 +311,10 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     expect(alternatesFor('hack-squat')).toEqual([]);
   });
 
-  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, השאר לא זז)', () => {
+  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, B1 למוט ב-13/10/2026, השאר לא זז)', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
     expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'back-extension:3x12-15', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
-    expect(snapshot('B')).toEqual(['db-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
+    expect(snapshot('B')).toEqual(['barbell-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
     expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-rope-curl:2x12-15', 'cable-torso-rotation:3x12-15']);
   });
 
@@ -353,7 +354,9 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     expect(byId('band-hip-abduction-seated').step).toBeNull();
     for (const id of ['hack-squat', 'machine-squat', 'goblet-squat', 'wall-sit']) expect(byId(id).note, id).toBe('עומק עד מקביל');
     for (const id of ['machine-chest-press', 'barbell-bench-press', 'machine-incline-chest-press', 'barbell-incline-bench-press']) expect(byId(id).note, id).toBe('מרפקים ב-45°');
-    expect(byId('barbell-rdl').note).toBe('מהמתקן, לא מהרצפה');
+    // 13/10/2026: ה-RDL עם משקולות יד במאגר עם ההערה והסרטון שלו כמו שהיו בתוכנית
+    expect(byId('db-rdl').note).toBe("הינג' בלבד, גב ניטרלי, בלי כיפוף ברך עמוק");
+    expect(byId('db-rdl').videoUrl).toBe('https://drive.google.com/file/d/1fJi2Ni_3VP3booTAJAx-gD4rG_oTZU76/view?usp=share_link');
     for (const a of ALTERNATES) {
       if (a.isTimed) {
         expect(a.repRangeMin, a.id).toBe(30);
