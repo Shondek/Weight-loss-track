@@ -12,6 +12,11 @@
  * 13/10/2026: B1 → `barbell-rdl` (מוט) ו-`db-rdl` (משקולות יד) למאגר — אותם שני
  * מזהים עם אותו מפרט (3×8–10; step 5 / 2.5) כמו קודם, ולכן אפס שורות השתנו.
  * נבדק ב-programUpdate20261013.test.ts.
+ *
+ * 16/10/2026: B5 → `reverse-pec-deck` (פרפר הפוך, מהמאגר לתוכנית) ו-`face-pull`
+ * (חתירה בחבל) למאגר — שני המזהים כבר היו ב-snapshot עם אותו מפרט (3×15–20;
+ * step null / 5), ולכן אפס שורות השתנו ואפס נוספו (56 → 56). נבדק
+ * ב-programUpdate20261016.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import type { LoggedExercise, Rir } from '../../types';
