@@ -172,7 +172,8 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
     expect(c2.note).toMatch(/הסרטון מראה מכונה דומה, לא אותו דגם\.$/);
     expect(exerciseIn('C', 'machine-row')).toBe(c2);
     expect(exerciseIn('C', 'db-single-arm-row')).toBeUndefined();
-    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-rope-curl', 'cable-torso-rotation']);
+    // 17/10/2026: C3 בסמית, C6 כיסא כומר, פשיטת המרפקים ל-C7
+    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'smith-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'ez-bar-preacher-curl', 'triceps-pushdown', 'cable-torso-rotation']);
     // machine-row כבר לא במאגר — הוא תרגיל בתוכנית; הפולי התחתון ב-B עדיין מציע אותו כחלופה
     expect(ALTERNATES.some((a) => a.id === 'machine-row')).toBe(false);
     expect(alternatesFor('seated-cable-row').map((a) => a.id)).toContain('machine-row');
@@ -193,7 +194,8 @@ describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
   it('A2 הוא בנץ׳ פרס- סמית משין: 3×8–12, RIR 2, step 5 (מוט/סמית), הערה וסרטון; שני ב-A', () => {
     const a2 = PROGRAM.A[1]!;
     expect(a2).toMatchObject({ id: 'smith-bench-press', name: "בנץ' פרס- סמית משין", machine: 'Smith Machine', sets: 3, repRangeMin: 8, repRangeMax: 12, effort: 'RIR 2', step: 5, mode: 'progress', unilateral: false, bodyweightOnly: false });
-    expect(a2.note).toBe("ספסל שטוח. המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט. הסרטון מראה בנץ' עם מוט חופשי, לא סמית.");
+    // 17/10/2026: ההערה פותחת ב-"ספסל ישר (שטוח)." — שום שינוי אחר ב-A2
+    expect(a2.note).toBe("ספסל ישר (שטוח). המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט. הסרטון מראה בנץ' עם מוט חופשי, לא סמית.");
     // סרטון — אותו שדה ואותו מבנה כמו בשאר התרגילים (קישור Drive מלא); בספרייה אין בנץ׳ בסמית, ולכן סרטון של מוט חופשי
     expect(a2.videoUrl).toBe('https://drive.google.com/file/d/1veAvZoDJk28ZJdVUAOHaKAm9JCNMa_az/view?usp=drive_link');
     expect(a2.videoUrl).toMatch(/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]+\/view/);
@@ -201,8 +203,8 @@ describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
     expect(exerciseIn('A', 'smith-bench-press')).toBe(a2);
     expect(exerciseIn('A', 'db-bench-press')).toBeUndefined();
     expect(PROGRAM.A.map((e) => e.id)).toEqual(['leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'back-extension', 'db-lateral-raise-seated', 'plank']);
-    // C3 (בנץ׳ עליון עם משקולות יד) לא השתנה
-    expect(exerciseIn('C', 'db-incline-bench-press')).toMatchObject({ name: "בנץ' פרס עליון- משקולות יד", sets: 3, repRangeMin: 8, repRangeMax: 12, step: 2.5 });
+    // הבנץ׳ העליון עם משקולות יד לא השתנה (מ-17/10/2026 במאגר, החלופה של C3)
+    expect(exerciseById('db-incline-bench-press')).toMatchObject({ name: "בנץ' פרס עליון- משקולות יד", sets: 3, repRangeMin: 8, repRangeMax: 12, step: 2.5 });
   });
 
   it('הבנץ׳ עם משקולות יד: אותו מזהה, שם, מפרט וסרטון, במאגר, וחלופה ראשונה של A2', () => {
@@ -215,20 +217,21 @@ describe('program-abc.json — A2 סמית משין (3/10/2026, 2)', () => {
   });
 });
 
-describe('program-abc.json — C7 כפיפת מרפקים בפולי תחתון חבל (3/10/2026, 2)', () => {
-  it('תא חדש שביעי ב-C: 2×12–15, RIR 1, step 5 (פולי), סרטון והערה; רוטציות הגו במקום 8 בלי שינוי', () => {
-    const c7 = PROGRAM.C[6]!;
-    expect(c7).toMatchObject({ id: 'cable-rope-curl', name: 'כפיפת מרפקים- פולי תחתון חבל', machine: 'Cable Rope', type: 'isolation', sets: 2, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 5, mode: 'progress' });
-    expect(c7.reps).toBe('12-15');
-    expect(c7.note).toBe('פולי תחתון, חבל, אחיזה ניטרלית. מרפקים צמודים לגוף.');
-    expect(c7.videoUrl).toBe('https://drive.google.com/file/d/1IlwfEWHhTiVN4BrimJNfPRc_ZUt-XsTI/view?usp=drive_link');
-    expect(exerciseIn('C', 'triceps-pushdown')).toBe(PROGRAM.C[5]);
+describe('program-abc.json — כפיפת מרפקים בפולי תחתון חבל (3/10/2026, 2; מ-17/10/2026 במאגר, החלופה של C6)', () => {
+  it('כפיפת מרפקים בחבל: אותו מזהה, 2×12–15, step 5 (פולי), סרטון והערה — במאגר; C7 פשיטת מרפקים, רוטציות הגו במקום 8 בלי שינוי', () => {
+    const rope = exerciseById('cable-rope-curl')!;
+    expect(rope).toMatchObject({ id: 'cable-rope-curl', name: 'כפיפת מרפקים- פולי תחתון חבל', machine: 'Cable Rope', type: 'isolation', sets: 2, repRangeMin: 12, repRangeMax: 15, step: 5, mode: 'progress' });
+    expect(rope.note).toBe('פולי תחתון, חבל, אחיזה ניטרלית. מרפקים צמודים לגוף.');
+    expect(rope.videoUrl).toBe('https://drive.google.com/file/d/1IlwfEWHhTiVN4BrimJNfPRc_ZUt-XsTI/view?usp=drive_link');
+    expect(exerciseIn('C', 'triceps-pushdown')).toBe(PROGRAM.C[6]);
     expect(exerciseIn('C', 'cable-torso-rotation')).toBe(PROGRAM.C[7]);
     expect(PROGRAM.C[7]).toMatchObject({ id: 'cable-torso-rotation', name: 'בטן- רוטציות גו פולי אמצעי', sets: 3, repRangeMin: 12, repRangeMax: 15, step: 5, unilateral: true });
-    // מזהה חדש — לא היה בשום מקום; החלופות קיימות במאגר ולא נוצרו בשבילו
-    expect(ALTERNATES.some((a) => a.id === 'cable-rope-curl')).toBe(false);
+    // 17/10/2026: במאגר, לא בתוכנית ולא בפרושים; חלופה יחידה של C6 (כיסא כומר מוט W)
+    expect(ALTERNATES.some((a) => a.id === 'cable-rope-curl')).toBe(true);
     expect(RETIRED.some((r) => r.id === 'cable-rope-curl')).toBe(false);
-    expect(alternatesFor('cable-rope-curl').map((a) => a.id)).toEqual(['cable-bar-curl', 'db-hammer-curl']);
+    expect(exerciseIn('C', 'cable-rope-curl')).toBeUndefined();
+    expect(alternatesFor('cable-rope-curl')).toEqual([]);
+    expect(alternatesFor('ez-bar-preacher-curl').map((a) => a.id)).toEqual(['cable-rope-curl']);
     // B6 (כפיפת מרפקים עם משקולות יד) לא השתנה
     expect(exerciseIn('B', 'db-supinated-curl')).toMatchObject({ sets: 2, repRangeMin: 10, repRangeMax: 12, step: 2.5 });
   });
@@ -236,7 +239,7 @@ describe('program-abc.json — C7 כפיפת מרפקים בפולי תחתון 
 
 describe('program-abc.json — step למוט ולסמית משין: 5 (3/10/2026)', () => {
   it('כל תרגיל על מוט או סמית — step 5 (הפלטה הקטנה 2.5 לכל צד); משקולות יד, פולי, לג-פרס ומכונות לא השתנו', () => {
-    for (const id of ['smith-bench-press', 'barbell-bench-press', 'smith-hip-hinge', 'barbell-rdl', 'barbell-incline-bench-press']) {
+    for (const id of ['smith-bench-press', 'barbell-bench-press', 'smith-hip-hinge', 'barbell-rdl', 'barbell-incline-bench-press', 'smith-incline-bench-press', 'ez-bar-preacher-curl']) {
       expect(exerciseById(id)?.step, id).toBe(5);
     }
     for (const id of ['db-bench-press', 'db-rdl', 'db-incline-bench-press', 'db-lateral-raise-seated', 'db-lateral-raise-standing', 'db-supinated-curl', 'db-single-arm-row', 'goblet-squat', 'db-hammer-curl', 'db-preacher-curl', 'plank']) {
@@ -298,9 +301,11 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     'triceps-pushdown': ['פשיטת מרפקים- פולי עליון מוט', 'פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד'],
     'machine-hip-abduction': ['בעמידה הרחקת ירך עם גומייה', 'בישיבה הרחקת ירך עם גומייה'],
     'machine-row': ['חתירה- הטיית גו עם מ.יד', 'חתירה- כייבל קרוס יד אחת', 'חתירה- מכונה ייעודית T-bar'],
-    'db-incline-bench-press': ["בנץ' פרס עליון- מכונה", "בנץ' פרס עליון"],
+    // 17/10/2026: C3 בסמית — חלופה יחידה הבנץ׳ העליון עם משקולות יד (הבנץ׳ העליון במכונה ועם מוט חופשי נשארו במאגר, לא חלופות)
+    'smith-incline-bench-press': ["בנץ' פרס עליון- משקולות יד"],
     'db-lateral-raise-standing': ['הרחקת כתף- כייבל קרוס יד אחת', 'הרחקת כתפיים- ישיבה מ.יד'],
-    'cable-rope-curl': ['כפיפת מרפקים- פולי תחתון מוט', 'כפיפת מרפקים- מ.יד מיד פוזישן'],
+    // 17/10/2026: C6 כיסא כומר מוט W — חלופה יחידה כפיפת המרפקים בחבל
+    'ez-bar-preacher-curl': ['כפיפת מרפקים- פולי תחתון חבל'],
     'cable-torso-rotation': ['בטן- פלאנק צידי סטטי', 'בטן- כפיפת מותן צידית'],
     // 6/10/2026: בלי חלופות — ספסל תפוס → "דלג ואחזור" בלבד.
     'back-extension': [],
@@ -315,11 +320,11 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     expect(alternatesFor('hack-squat')).toEqual([]);
   });
 
-  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, B1 למוט ב-13/10/2026, B5 לפרפר הפוך ב-16/10/2026, השאר לא זז)', () => {
+  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, B1 למוט ב-13/10/2026, B5 לפרפר הפוך ב-16/10/2026, C3/C6 ב-17/10/2026, השאר לא זז)', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
     expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'back-extension:3x12-15', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
     expect(snapshot('B')).toEqual(['barbell-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'reverse-pec-deck:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
-    expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'db-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'triceps-pushdown:2x12-15', 'cable-rope-curl:2x12-15', 'cable-torso-rotation:3x12-15']);
+    expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'smith-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'ez-bar-preacher-curl:2x12-15', 'triceps-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
   });
 
   it('אין חלופה שהיא הלג-פרס 45° — הוא alias של leg-press, לא תרגיל נפרד', () => {

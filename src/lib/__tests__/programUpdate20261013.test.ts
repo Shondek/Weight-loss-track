@@ -118,9 +118,10 @@ describe('B1 — דד-ליפט רומניין עם מוט (barbell-rdl, 13/10/20
     const unique = new Set(all);
     expect(unique.has(B1)).toBe(true);
     expect(unique.has(DB_RDL)).toBe(true);
-    expect(unique.size - 1).toBe(56);
-    expect(ALTERNATES).toHaveLength(36);
-    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(36);
+    // 17/10/2026: +2 מזהים חדשים בתוכנית (C3 סמית, C6 כיסא כומר) ו-+2 במאגר (בנץ׳ עליון מ.יד, כפיפת מרפקים בחבל)
+    expect(unique.size - 1).toBe(58);
+    expect(ALTERNATES).toHaveLength(38);
+    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(38);
   });
 });
 

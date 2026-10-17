@@ -30,7 +30,11 @@ export interface Exercise {
   reps: string;
   repRangeMin: number;
   repRangeMax: number;
-  /** הנחיית מאמץ להצגה בלבד ("RIR 2"). null כשאין. לא שדה קלט. */
+  /**
+   * הנחיית המאמץ כלשונה בתוכנית ("RIR 2", "RIR 1-2"), מוצגת ליד הטווח. לא
+   * שדה קלט. null כשאין. ממנה נגזר סף ה-RIR של התא לעלייה במשקל (17/10/2026):
+   * min(2, הגבול התחתון) — `rirThreshold` ב-lib/progression.ts.
+   */
   effort: string | null;
   /** מוצג כ"לרגל" / "ליד". */
   unilateral: boolean;

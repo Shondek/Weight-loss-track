@@ -6,14 +6,24 @@
  * השדה מתמלא רק בלחיצה על "השתמש".
  *
  *  R1  התקדמות כפולה: אותו משקל בכל הסטים; כשכל סט מגיע ל-targetRepMax
- *      ו-RIR בסט האחרון ≥ 2 → +step, היעד חוזר ל-targetRepMin.
+ *      ו-RIR בסט האחרון ≥ סף ה-RIR של התא → +step, היעד חוזר ל-targetRepMin.
  *  R2  לא משנים משקל בין סטים באותו אימון (ההצעה תמיד משקל אחד).
  *  R3  שני אימונים רצופים שבהם סט כלשהו מתחת ל-targetRepMin באותו משקל
  *      → −10%, מעוגל למטה ל-step.
  *  R4  קפיצה גדולה: step / משקל > 20% → לא קופצים ב-targetRepMax; קודם
  *      targetRepMax + 2 בכל הסטים, ואז קופצים.
- *  R5  ב-targetRepMax עם RIR 0–1 → נשארים (עוד לא נקי).
+ *  R5  ב-targetRepMax עם RIR מתחת לסף ה-RIR של התא → נשארים (עוד לא נקי).
  *  R6  אחרת → אותו משקל, +1 חזרה בסט הנמוך.
+ *  סף ה-RIR של התא (17/10/2026, `rirThreshold`): min(2, הגבול התחתון של
+ *      יעד ה-RIR של התא — `effort` בתוכנית). יעד "RIR 1" או "RIR 1-2" → סף 1
+ *      (תקרה ב-RIR ≥ 1 → R1, תקרה ב-RIR 0 → R5); יעד "RIR 2" → סף 2; יעד
+ *      "RIR 3" (B1) → סף 2; יעד חסר או לא ניתן לפענוח → 2 (ההתנהגות הקודמת,
+ *      שהייתה קבועה לכל התרגילים). R4 משתמש באותו סף לפני הקפיצה (דרך
+ *      R5/R1). הסף הוא של התא שבו ההצעה מוצגת: אותו מזהה בשני תאים (כפיפת
+ *      ברכיים — A5 יעד 1, B4 יעד 2) מקבל סף שונה בכל תא, ושורה שהוחלפה
+ *      מקבלת את הסף של התא שהוחלף (ראה `progressionSpecFor` בסיכום השבועי
+ *      ו-WorkoutScreen). חזרות בלבד (`mode: "reps"`, B8) לא משתנה: אין משקל
+ *      להוסיף, והסף נשאר 2 כמו קודם.
  *  M   מצב שימור (`mode: "maintain"` בתוכנית, A8 פלאנק מ-3/10/2026): יעד
  *      קבוע — ההצעה היא תמיד "repRangeMax × sets · שימור", בלי R1–R6,
  *      בלי תלות ב-RIR ובלי תלות בזמנים שנרשמו (מעל או מתחת ליעד).
@@ -58,7 +68,27 @@ export type ProgressionSpec = {
   sets?: number;
   /** מתחיל במשקל גוף (A6): שדה משקל ריק או 0 = עומס 0 ק״ג. חסר = false. */
   bodyweightStart?: boolean;
+  /**
+   * יעד ה-RIR של התא כלשונו בתוכנית ("RIR 2", "RIR 1", "RIR 1-2"). ממנו
+   * נגזר סף ה-RIR של R1/R5/R4 — `rirThreshold`. חסר או null = סף 2.
+   * `Exercise` מתאים כמו שהוא; לשורה שהוחלפה מעבירים את ה-effort של התא.
+   */
+  effort?: string | null;
 };
+
+/** סף ה-RIR כשאין יעד בתוכנית, או כשהיעד אינו ניתן לפענוח. */
+export const DEFAULT_RIR_THRESHOLD = 2;
+
+/**
+ * סף ה-RIR של תא: min(2, הגבול התחתון של יעד ה-RIR). "RIR 1" → 1,
+ * "RIR 1-2" → 1, "RIR 2" → 2, "RIR 3" → 2, חסר / "—" / בלי מספר → 2.
+ * תקרה עם RIR ≥ סף → R1 (עלייה); תקרה עם RIR < סף → R5 (נשארים).
+ */
+export function rirThreshold(effort: string | null | undefined): number {
+  const m = effort?.match(/\d+/);
+  if (!m) return DEFAULT_RIR_THRESHOLD;
+  return Math.min(DEFAULT_RIR_THRESHOLD, Number(m[0]));
+}
 
 /** R1–R6 — כללי ההתקדמות; M — מצב שימור (בלי התקדמות). */
 export type Rule = 'R1' | 'R3' | 'R4' | 'R5' | 'R6' | 'M';
@@ -142,6 +172,9 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
   const { repRangeMin: min, repRangeMax: max, step, isTimed: timed } = spec;
   const unit = unitWord(timed);
   const repsOnly = spec.mode === 'reps';
+  // חזרות בלבד (B8): אין משקל להוסיף ואין קפיצה לאשר — הסף נשאר 2 כמו קודם
+  // (תקרה ב-RIR 0–1 → R5, ב-RIR 2+ → "תקרה — נשארים"); ההתנהגות לא השתנתה.
+  const threshold = repsOnly ? DEFAULT_RIR_THRESHOLD : rirThreshold(spec.effort);
   // משקל גוף כפתיחה: 0 שנרשם במפורש = משקל גוף, כמו שדה ריק. לכל תרגיל אחר
   // העומס הוא בדיוק מה שנרשם (null = לא ידוע), כמו תמיד.
   const loadOf = (a: Analysis): number | null => (spec.bodyweightStart === true && a.weight === 0 ? null : a.weight);
@@ -181,7 +214,8 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
           : `קפיצה גדולה (${clean(step!)} מתוך ${clean(w!)} ק״ג) — קודם ${max + 2} ${unit} בכל הסטים, ואז לקפוץ${mixedNote}`,
       };
     }
-    if (L.rir === 0 || L.rir === 1) {
+    // R5 — תקרה עם RIR מתחת לסף התא (בלי RIR רשום → R1 עם "אשר בעצמך").
+    if (L.rir !== undefined && L.rir < threshold) {
       return {
         ...base,
         action: 'same',

@@ -445,6 +445,18 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       alternates: [],
     };
 
+  /**
+   * המפרט לכללי ההתקדמות: כמו `specOf`, אבל שורה שהוחלפה מקבלת את יעד ה-RIR
+   * (`effort`) של התא שהוחלף — סף ה-RIR הוא של התא שבו ההצעה מוצגת, לא של
+   * החלופה. התצוגה (`specOf`) לא משתנה.
+   */
+  const progressionSpecOf = (log: LoggedExercise): Exercise => {
+    const spec = specOf(log);
+    if (log.swappedFrom === undefined || !open) return spec;
+    const slot = exerciseIn(open.t, log.swappedFrom);
+    return slot ? { ...spec, effort: slot.effort } : spec;
+  };
+
   /** פותח אימון חדש כטיוטה. לחיצה בטעות לא יוצרת אימון ריק בהיסטוריה. */
   const startWorkout = (t: WorkoutType) => {
     const d = defaultDate;
@@ -980,7 +992,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               )}
               suggestion={suggestNext(
                 exerciseHistory(db.workouts, current.exerciseId).filter((h) => h.workoutId !== open.id),
-                specOf(current),
+                progressionSpecOf(current),
               )}
               onChange={(next) => {
                 patch({

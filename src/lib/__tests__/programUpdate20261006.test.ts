@@ -84,7 +84,8 @@ describe('A6 — פשיטת ירך בספסל רומי (back-extension, 6/10/202
     // הרחקת הכתפיים והפלאנק זזו מקום אחד בלי שום שינוי אחר
     expect(PROGRAM.A[6]).toMatchObject({ id: 'db-lateral-raise-seated', sets: 3, repRangeMin: 12, repRangeMax: 15, step: 2.5 });
     expect(PROGRAM.A[7]).toMatchObject({ id: 'plank', mode: 'maintain', sets: 3, repRangeMin: 60, repRangeMax: 60 });
-    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-rope-curl', 'cable-torso-rotation']);
+    // 17/10/2026: C3 בסמית, C6 כיסא כומר, פשיטת המרפקים ל-C7
+    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'smith-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'ez-bar-preacher-curl', 'triceps-pushdown', 'cable-torso-rotation']);
   });
 
   it('המזהה הקיים: עבר מהמאגר לתוכנית (לא במאגר ולא בפרושים), הוסר מחלופות B1 (שאר החלופות כמו שהיו), ונפתר לפי שם', () => {
