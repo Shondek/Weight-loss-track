@@ -136,7 +136,11 @@ export function defaultSummaryWeek(today: ISODate): ISODate {
   return isSaturday(today) ? ws : addDays(ws, -7);
 }
 
-/** המפרט לכללי ההתקדמות: התא באימון הזה, ולשורה שהוחלפה — החלופה עם הטווח שנשמר. */
+/**
+ * המפרט לכללי ההתקדמות: התא באימון הזה (אותו מזהה ב-A וב-B — הטווח ויעד
+ * ה-RIR של התא הזה), ולשורה שהוחלפה — החלופה עם הטווח שנשמר ועם יעד ה-RIR
+ * של התא שהוחלף (סף ה-RIR הוא של התא שבו ההצעה מוצגת).
+ */
 function progressionSpecFor(t: WorkoutType, row: LoggedExercise): ProgressionSpec {
   const alt = row.swappedFrom !== undefined ? exerciseById(row.exerciseId) : undefined;
   const spec = alt ?? exerciseIn(t, row.exerciseId) ?? exerciseById(row.exerciseId);
@@ -150,10 +154,13 @@ function progressionSpecFor(t: WorkoutType, row: LoggedExercise): ProgressionSpe
       mode: spec.mode,
       sets: spec.sets,
       bodyweightStart: spec.bodyweightStart,
+      effort: spec.effort,
     };
   }
   // שורה שהוחלפה: הכללים של החלופה (התקדמות רגילה), לא מצב השימור של התא.
   // משקל גוף כפתיחה הוא תכונה של החלופה עצמה (A6 כחלופה של B1), ולכן נשמר.
+  // סף ה-RIR — של התא שהוחלף; כשהתא לא באימון הזה (רשומה ישנה) — של החלופה.
+  const slot = row.swappedFrom !== undefined ? exerciseIn(t, row.swappedFrom) : undefined;
   return {
     step: spec?.step ?? null,
     repRangeMin: row.targetRepMin,
@@ -163,6 +170,7 @@ function progressionSpecFor(t: WorkoutType, row: LoggedExercise): ProgressionSpe
     mode: 'progress',
     sets: row.sets.length,
     bodyweightStart: spec?.bodyweightStart ?? false,
+    effort: slot?.effort ?? spec?.effort ?? null,
   };
 }
 

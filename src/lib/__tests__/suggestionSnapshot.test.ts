@@ -17,6 +17,13 @@
  * (חתירה בחבל) למאגר — שני המזהים כבר היו ב-snapshot עם אותו מפרט (3×15–20;
  * step null / 5), ולכן אפס שורות השתנו ואפס נוספו (56 → 56). נבדק
  * ב-programUpdate20261016.test.ts.
+ *
+ * 17/10/2026 — סף RIR לכל תא: המפרט כולל עכשיו `effort` (יעד ה-RIR של התא —
+ * ולחלופה מהמאגר, של התא הראשון שמארח אותה, כמו בשורה שהוחלפה), ונוספו שני
+ * תרחישים ב-RIR 1 בדיוק ("שיא, RIR 1" ו-"משקל קטן, שיא+2, RIR 1"). התרחישים
+ * הקיימים (RIR 0 / 2 / 3 / בלי RIR) אינם תלויים בסף, ולכן אף שורה קיימת לא
+ * השתנתה; בתרחישים החדשים תא עם סף 1 מקבל R1 (עלייה) במקום R5, ותא עם סף 2
+ * מקבל R5 כמו קודם. נבדק ב-rirThreshold.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import type { LoggedExercise, Rir } from '../../types';
@@ -35,7 +42,19 @@ const IDS = [...new Set([...WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => e
  */
 function specOf(id: string): ProgressionSpec {
   const e = exerciseById(id)!;
-  return { step: e.step, repRangeMin: e.repRangeMin, repRangeMax: e.repRangeMax, isTimed: e.isTimed, bodyweightOnly: e.bodyweightOnly, mode: e.mode, bodyweightStart: e.bodyweightStart };
+  return { step: e.step, repRangeMin: e.repRangeMin, repRangeMax: e.repRangeMax, isTimed: e.isTimed, bodyweightOnly: e.bodyweightOnly, mode: e.mode, bodyweightStart: e.bodyweightStart, effort: effortFor(id) };
+}
+
+/**
+ * יעד ה-RIR שממנו נגזר הסף (17/10/2026): לתא בתוכנית — ה-effort שלו (המופע
+ * הראשון, כמו `exerciseById`); לחלופה מהמאגר — ה-effort של התא הראשון שמארח
+ * אותה (הסף של שורה שהוחלפה הוא של התא); בלי תא מארח — null (סף 2).
+ */
+function effortFor(id: string): string | null {
+  const cells = WORKOUT_TYPES.flatMap((t) => PROGRAM[t]);
+  const own = cells.find((e) => e.id === id);
+  if (own) return own.effort;
+  return cells.find((e) => e.alternates.includes(id))?.effort ?? null;
 }
 
 /** משקל "רגיל" לתרגיל לפי סוג הציוד; משקל גוף/זמן → null. */
@@ -62,6 +81,7 @@ function scenarios(id: string): Record<string, Session[]> {
   const small = w === null ? null : e.step === null ? 5 : e.step * 2;
   return {
     'שיא, RIR 2': [sess(id, '2026-09-24', w, fill(e.repRangeMax), 2)],
+    'שיא, RIR 1': [sess(id, '2026-09-24', w, fill(e.repRangeMax), 1)],
     'שיא, RIR 0': [sess(id, '2026-09-24', w, fill(e.repRangeMax), 0)],
     'שיא, בלי RIR': [sess(id, '2026-09-24', w, fill(e.repRangeMax))],
     'שיא+2, RIR 2': [sess(id, '2026-09-24', w, fill(e.repRangeMax + 2), 2)],
@@ -69,6 +89,7 @@ function scenarios(id: string): Record<string, Session[]> {
     'שני אימונים מתחת למינימום': [sess(id, '2026-09-14', w, below), sess(id, '2026-09-24', w, below)],
     'אמצע הטווח': [sess(id, '2026-09-24', w, mid)],
     'משקל קטן, שיא, RIR 3': [sess(id, '2026-09-24', small, fill(e.repRangeMax), 3)],
+    'משקל קטן, שיא+2, RIR 1': [sess(id, '2026-09-24', small, fill(e.repRangeMax + 2), 1)],
   };
 }
 
