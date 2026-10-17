@@ -77,11 +77,11 @@ describe('rirThreshold — הסף מיעד ה-RIR של התא', () => {
       'B8 floor-leg-raise RIR 1 reps → 1',
       'C1 machine-hip-abduction RIR 1-2 progress → 1',
       'C2 machine-row RIR 2 progress → 2',
-      'C3 db-incline-bench-press RIR 2 progress → 2',
+      'C3 smith-incline-bench-press RIR 2 progress → 2',
       'C4 leg-press RIR 2 progress → 2',
       'C5 db-lateral-raise-standing RIR 1 progress → 1',
-      'C6 triceps-pushdown RIR 1 progress → 1',
-      'C7 cable-rope-curl RIR 1 progress → 1',
+      'C6 ez-bar-preacher-curl RIR 1 progress → 1',
+      'C7 triceps-pushdown RIR 1 progress → 1',
       'C8 cable-torso-rotation RIR 1 progress → 1',
     ]);
   });

@@ -65,34 +65,39 @@ describe('A2 סמית — אימון A חדש ו"החלף"', () => {
 });
 
 describe('C עם 8 תרגילים — אימונים ישנים עם 7', () => {
-  it('C חדש: 8 תרגילים בסדר הנכון, C7 חבל ו-C8 רוטציות; C7 בלי היסטוריה → בלי הצעה', () => {
+  it('C חדש: 8 תרגילים בסדר הנכון (מ-17/10/2026: C6 כיסא כומר, C7 פשיטת מרפקים) ו-C8 רוטציות; תא בלי היסטוריה → בלי הצעה', () => {
     const rows = prefilledExercises(ALL, 'C');
-    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'machine-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-rope-curl', 'cable-torso-rotation', FINISHER_ID]);
-    expect(rows[7]).toMatchObject({ exerciseId: 'cable-rope-curl', targetRepMin: 12, targetRepMax: 15 });
-    expect(rows[7]!.sets).toHaveLength(2);
+    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'machine-row', 'smith-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'ez-bar-preacher-curl', 'triceps-pushdown', 'cable-torso-rotation', FINISHER_ID]);
+    expect(rows[6]).toMatchObject({ exerciseId: 'ez-bar-preacher-curl', targetRepMin: 12, targetRepMax: 15 });
+    expect(rows[6]!.sets).toHaveLength(2);
+    expect(rows[7]).toMatchObject({ exerciseId: 'triceps-pushdown', targetRepMin: 12, targetRepMax: 15 });
     expect(rows[8]!.sets.map((s) => s.weight)).toEqual([20, 20, 20]); // רוטציות — המשקל האחרון מההיסטוריה
-    expect(suggestNext(exerciseHistory(ALL, 'cable-rope-curl'), exerciseIn('C', 'cable-rope-curl')!)).toBeNull();
+    expect(suggestNext(exerciseHistory(ALL, 'cable-rope-curl'), exerciseById('cable-rope-curl')!)).toBeNull();
+    expect(suggestNext(exerciseHistory(ALL, 'ez-bar-preacher-curl'), exerciseIn('C', 'ez-bar-preacher-curl')!)).toBeNull();
     expect(suggestNext(exerciseHistory(ALL, 'cable-torso-rotation'), exerciseIn('C', 'cable-torso-rotation')!)).toMatchObject({ rule: 'R4', weight: 20 }); // 5 מתוך 20 ק״ג = קפיצה גדולה
   });
 
-  it('אימון C ישן עם 7 תרגילים נטען בלי שינוי, ומוצג בסדר שנשמר; התא החדש נוסף כשורה ריקה אחרי', () => {
+  it('אימון C ישן עם 7 תרגילים נטען בלי שינוי, ומוצג בסדר שנשמר; התאים החדשים (C2, ומ-17/10/2026 גם C3 ו-C6) נוספים כשורות ריקות אחרי', () => {
     const r = parseWorkouts([C_OCT3]);
     expect(r.rejected).toEqual([]);
     expect(r.ok[0]).toEqual(C_OCT3);
     const rows = exercisesFor(C_OCT3, ALL);
-    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'db-single-arm-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-torso-rotation', 'machine-row', 'cable-rope-curl', FINISHER_ID]);
-    for (const id of ['triceps-pushdown', 'cable-torso-rotation', 'db-single-arm-row']) {
+    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'db-single-arm-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-torso-rotation', 'machine-row', 'smith-incline-bench-press', 'ez-bar-preacher-curl', FINISHER_ID]);
+    for (const id of ['triceps-pushdown', 'cable-torso-rotation', 'db-single-arm-row', 'db-incline-bench-press']) {
       expect(hasData(rows.find((x) => x.exerciseId === id)!), id).toBe(true);
     }
-    expect(hasData(rows.find((x) => x.exerciseId === 'cable-rope-curl')!)).toBe(false);
+    for (const id of ['machine-row', 'smith-incline-bench-press', 'ez-bar-preacher-curl']) {
+      expect(hasData(rows.find((x) => x.exerciseId === id)!), id).toBe(false);
+    }
+    expect(ids(rows)).not.toContain('cable-rope-curl');
     expect(exerciseHistory(ALL, 'triceps-pushdown').map((h) => h.ex.sets.map((s) => s.reps))).toEqual([[15, 15]]);
     expect(exerciseHistory(ALL, 'cable-torso-rotation').map((h) => h.ex.sets.map((s) => s.weight))).toEqual([[20, 20, 20]]);
   });
 
   it('"דלג ואחזור" וההיסטוריה לפי מזהה, לא לפי מיקום — גם עם 8 תאים', () => {
     const rows = prefilledExercises(ALL, 'C');
-    const moved = moveToEnd(rows, 'cable-rope-curl');
-    expect(ids(moved).slice(-3)).toEqual(['cable-torso-rotation', 'cable-rope-curl', FINISHER_ID]);
+    const moved = moveToEnd(rows, 'ez-bar-preacher-curl');
+    expect(ids(moved).slice(-3)).toEqual(['cable-torso-rotation', 'ez-bar-preacher-curl', FINISHER_ID]);
     expect(PROGRAM.C.findIndex((e) => e.id === 'cable-torso-rotation')).toBe(7);
   });
 
