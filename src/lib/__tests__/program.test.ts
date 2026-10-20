@@ -295,8 +295,8 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     'barbell-rdl': ['דד-ליפט רומניין עם מ.יד', "היפ הינג'- סמית משין"],
     'seated-cable-row': ['חתירה- מכונה ייעודית', 'חתירה- מכונה ייעודית T-bar', 'חתירה- כייבל קרוס יד אחת'],
     'pec-deck': ['פרפר- כייבל קרוס', 'פרפר- תחתון כייבל קרוס'],
-    // 16/10/2026: B5 הוא הפרפר ההפוך (reverse-pec-deck); חלופה יחידה — הרחקה אופקית בפולי. החתירה בחבל במאגר ואינה חלופה.
-    'reverse-pec-deck': ['הרחקה אופקית- פולי גובה כתף'],
+    // 16/10/2026: B5 היה הפרפר ההפוך (reverse-pec-deck). 20/10/2026: B5 חזר לחתירה בחבל (face-pull); חלופה יחידה — הרחקה אופקית בפולי. הפרפר ההפוך במאגר ואינו חלופה.
+    'face-pull': ['הרחקה אופקית- פולי גובה כתף'],
     'db-supinated-curl': ['כפיפת מרפקים- פולי תחתון מוט', 'כפיפת מרפקים- מ.יד מיד פוזישן', 'כפיפת מרפק- כיסא כומר מ.יד סופינציה'],
     'triceps-pushdown': ['פשיטת מרפקים- פולי עליון מוט', 'פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד'],
     'machine-hip-abduction': ['בעמידה הרחקת ירך עם גומייה', 'בישיבה הרחקת ירך עם גומייה'],
@@ -320,10 +320,10 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     expect(alternatesFor('hack-squat')).toEqual([]);
   });
 
-  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, B1 למוט ב-13/10/2026, B5 לפרפר הפוך ב-16/10/2026, C3/C6 ב-17/10/2026, השאר לא זז)', () => {
+  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, B1 למוט ב-13/10/2026, B5 לפרפר הפוך ב-16/10/2026 וחזרה לחתירה בחבל ב-20/10/2026, C3/C6 ב-17/10/2026, השאר לא זז)', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
     expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'back-extension:3x12-15', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
-    expect(snapshot('B')).toEqual(['barbell-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'reverse-pec-deck:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
+    expect(snapshot('B')).toEqual(['barbell-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
     expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'smith-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'ez-bar-preacher-curl:2x12-15', 'triceps-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
   });
 
@@ -366,9 +366,9 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     // 13/10/2026: ה-RDL עם משקולות יד במאגר עם ההערה והסרטון שלו כמו שהיו בתוכנית
     expect(byId('db-rdl').note).toBe("הינג' בלבד, גב ניטרלי, בלי כיפוף ברך עמוק");
     expect(byId('db-rdl').videoUrl).toBe('https://drive.google.com/file/d/1fJi2Ni_3VP3booTAJAx-gD4rG_oTZU76/view?usp=share_link');
-    // 16/10/2026: החתירה בחבל במאגר עם הסרטון שלה כמו שהיה בתוכנית (בלי הערה, כמו קודם); ההרחקה בפולי קיבלה הערה וסרטון
-    expect(byId('face-pull').note).toBeNull();
-    expect(byId('face-pull').videoUrl).toBe('https://drive.google.com/file/d/1FIt-HIDn_y2lMc-UjVUR0BDZiHHStjg1/view?usp=drive_link');
+    // 16/10/2026: ההרחקה בפולי קיבלה הערה וסרטון. 20/10/2026: הפרפר ההפוך במאגר עם ההערה והסרטון שלו כמו שהיו בתוכנית (החתירה בחבל חזרה לתוכנית)
+    expect(byId('reverse-pec-deck').note).toBe('פרפר הפוך. פנים לכרית, החזה צמוד אליה · ידיות בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף, בלי למשוך עם הידיים ובלי להרים כתפיים · חזרה איטית.');
+    expect(byId('reverse-pec-deck').videoUrl).toBe('https://drive.google.com/file/d/1Oyyswtd8u3qB4fsimpsinv3V0dqr4H3U/view?usp=drive_link');
     expect(byId('cable-reverse-fly').note).toBe('כבלים בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף.');
     expect(byId('cable-reverse-fly').videoUrl).toBe('https://drive.google.com/file/d/1-fJHu5tp9fL4o9Trs-KTPSQQsD4Z0cW3/view?usp=drive_link');
     for (const a of ALTERNATES) {

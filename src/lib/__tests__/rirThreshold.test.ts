@@ -71,7 +71,7 @@ describe('rirThreshold — הסף מיעד ה-RIR של התא', () => {
       'B2 seated-cable-row RIR 2 progress → 2',
       'B3 pec-deck RIR 2 progress → 2',
       'B4 leg-curl RIR 2 progress → 2',
-      'B5 reverse-pec-deck RIR 1 progress → 1',
+      'B5 face-pull RIR 1 progress → 1',
       'B6 db-supinated-curl RIR 1 progress → 1',
       'B7 triceps-pushdown RIR 1 progress → 1',
       'B8 floor-leg-raise RIR 1 reps → 1',
@@ -257,8 +257,8 @@ describe('שורה שהוחלפה — הסף של התא שהוחלף', () => {
     const dbA = { ...emptyDb(), workouts: [wk('a', '2026-10-13', 'A', [swappedA])] };
     const lineA = buildWeeklySummaryData(dbA, '2026-10-11').workouts.items[0]!.lines[0]!;
     expect(lineA.suggestion).toMatchObject({ rule: 'R5', action: 'same', weight: 40, repTarget: 12 });
-    // התא שהוחלף לא באימון הזה (רשומה ישנה) → הסף של החלופה עצמה (בלי effort → 2)
-    const swappedOld = le(ALT, 40, [15, 15, 15], { rir: 1, swappedFrom: 'face-pull' });
+    // התא שהוחלף לא באימון הזה (רשומה ישנה; מ-20/10/2026 הפרפר ההפוך במאגר) → הסף של החלופה עצמה (בלי effort → 2)
+    const swappedOld = le(ALT, 40, [15, 15, 15], { rir: 1, swappedFrom: 'reverse-pec-deck' });
     const dbOld = { ...emptyDb(), workouts: [wk('b', '2026-10-13', 'B', [swappedOld])] };
     expect(buildWeeklySummaryData(dbOld, '2026-10-11').workouts.items[0]!.lines[0]!.suggestion).toMatchObject({ rule: 'R5' });
   });
