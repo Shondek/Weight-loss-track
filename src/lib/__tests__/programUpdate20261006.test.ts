@@ -234,8 +234,8 @@ describe('B8 — בטן- הרמת רגליים על הרצפה (floor-leg-raise,
     });
     expect(b8.reps).toBe('10-15');
     expect(exerciseIn('B', B8)).toBe(b8);
-    // 16/10/2026: B5 הוא הפרפר ההפוך (reverse-pec-deck) — programUpdate20261016.test.ts
-    expect(PROGRAM.B.map((e) => e.id)).toEqual(['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'reverse-pec-deck', 'db-supinated-curl', 'triceps-pushdown', B8]);
+    // 16/10/2026: B5 היה הפרפר ההפוך (reverse-pec-deck); 20/10/2026: חזר לחתירה בחבל (face-pull) — programUpdate20261020.test.ts
+    expect(PROGRAM.B.map((e) => e.id)).toEqual(['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8]);
     expect(PROGRAM.B[6]).toMatchObject({ id: 'triceps-pushdown', sets: 2, repRangeMin: 12, repRangeMax: 15, step: 5 });
     expect(ALTERNATES.some((a) => a.id === B8)).toBe(false);
     expect(RETIRED.some((r) => r.id === B8)).toBe(false);
@@ -393,7 +393,7 @@ describe('אימון חדש, רשומות ישנות, דילוג והחלפה', 
     expect(a[6]!.sets).toHaveLength(3);
     expect(a[6]!.sets.every((s) => s.weight === null && s.reps === null && s.seconds === null)).toBe(true);
     const b = prefilledExercises([], 'B');
-    expect(ids(b)).toEqual([WARMUP_ID, 'barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'reverse-pec-deck', 'db-supinated-curl', 'triceps-pushdown', B8, FINISHER_ID]);
+    expect(ids(b)).toEqual([WARMUP_ID, 'barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8, FINISHER_ID]);
     expect(b[8]).toMatchObject({ exerciseId: B8, n: 'בטן- הרמת רגליים על הרצפה', targetRepMin: 10, targetRepMax: 15, bodyweightOnly: true });
     expect(b[8]!.sets).toHaveLength(3);
     expect(suggestNext([], specOf(A6))).toBeNull();
@@ -428,18 +428,18 @@ describe('אימון חדש, רשומות ישנות, דילוג והחלפה', 
     ]);
     const rowsB = exercisesFor(oldB, [oldB]);
     // 13/10/2026: ה-RDL עם משקולות יד נשאר במקומו עם הנתונים; B8 ו-B1 החדש (מוט) שורות ריקות אחרי השורות שנשמרו.
-    // 16/10/2026: גם החתירה בחבל נשארת במקומה עם הנתונים, ו-B5 החדש (פרפר הפוך) שורה ריקה — לפי סדר התוכנית (B1, B5, B8)
-    expect(ids(rowsB)).toEqual([WARMUP_ID, 'db-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'barbell-rdl', 'reverse-pec-deck', B8, FINISHER_ID]);
-    expect(rowsB[10]).toMatchObject({ exerciseId: B8, bodyweightOnly: true });
-    expect(rowsB[10]!.sets.every((s) => s.reps === null)).toBe(true);
+    // 20/10/2026: B5 חזר לחתירה בחבל — השורה שלה ברשומה הישנה היא התא עצמו, ואין שורה ריקה לפרפר ההפוך (B1, B8 ריקות לפי סדר התוכנית)
+    expect(ids(rowsB)).toEqual([WARMUP_ID, 'db-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'barbell-rdl', B8, FINISHER_ID]);
+    expect(rowsB[9]).toMatchObject({ exerciseId: B8, bodyweightOnly: true });
+    expect(rowsB[9]!.sets.every((s) => s.reps === null)).toBe(true);
   });
 
   it('"דלג ואחזור" עם 8 תאים: A6 ו-B8 עוברים לסוף סדר הכוח, האירובי נשאר אחרון', () => {
     const a = moveToEnd(prefilledExercises([], 'A'), A6);
     expect(ids(a)).toEqual([WARMUP_ID, 'leg-press', 'smith-bench-press', 'lat-pulldown', 'leg-extension', 'leg-curl', 'db-lateral-raise-seated', 'plank', A6, FINISHER_ID]);
     const b = moveToEnd(prefilledExercises([], 'B'), 'barbell-rdl');
-    expect(ids(b)).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'reverse-pec-deck', 'db-supinated-curl', 'triceps-pushdown', B8, 'barbell-rdl', FINISHER_ID]);
-    expect(ids(moveToEnd(b, B8))).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'reverse-pec-deck', 'db-supinated-curl', 'triceps-pushdown', 'barbell-rdl', B8, FINISHER_ID]);
+    expect(ids(b)).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', B8, 'barbell-rdl', FINISHER_ID]);
+    expect(ids(moveToEnd(b, B8))).toEqual([WARMUP_ID, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'barbell-rdl', B8, FINISHER_ID]);
   });
 
   it('רשומה ישנה שבה B1 הוחלף לספסל הרומי עדיין נטענת ומוצגת בשמו; "החלף" ב-B1 מציע רק את שתי החלופות שנותרו', () => {

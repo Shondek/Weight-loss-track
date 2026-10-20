@@ -70,8 +70,8 @@ describe('B1 — דד-ליפט רומניין עם מוט (barbell-rdl, 13/10/20
     });
     expect(PROGRAM.B[0]).toBe(b1);
     expect(exerciseById(B1)).toBe(b1);
-    // 16/10/2026: B5 הוא הפרפר ההפוך (reverse-pec-deck) — programUpdate20261016.test.ts
-    expect(PROGRAM.B.map((e) => e.id)).toEqual([B1, 'seated-cable-row', 'pec-deck', 'leg-curl', 'reverse-pec-deck', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise']);
+    // 16/10/2026: B5 היה הפרפר ההפוך (reverse-pec-deck); 20/10/2026: חזר לחתירה בחבל (face-pull) — programUpdate20261020.test.ts
+    expect(PROGRAM.B.map((e) => e.id)).toEqual([B1, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise']);
     expect(ALTERNATES.some((a) => a.id === B1)).toBe(false);
     expect(RETIRED.some((r) => r.id === B1)).toBe(false);
     expect(resolveExerciseId('דד-ליפט רומניין')).toBe(B1);
@@ -143,8 +143,8 @@ describe('ההיסטוריה של ה-RDL עם משקולות יד — שלמה',
 
   it('אימון B ישן נפתח לעריכה עם ה-RDL במשקולות יד במקומו ועם הנתונים; המוט מופיע כשורה ריקה אחרי השורות שנשמרו', () => {
     const rows = exercisesFor(B_OCT06, ALL);
-    // 16/10/2026: הרשומה הישנה כוללת גם חתירה בחבל (B5 דאז) — נשארת במקומה; הפרפר ההפוך שורה ריקה אחרי המוט (סדר התוכנית)
-    expect(ids(rows)).toEqual([WARMUP_ID, DB_RDL, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise', B1, 'reverse-pec-deck', FINISHER_ID]);
+    // 20/10/2026: הרשומה הישנה כוללת חתירה בחבל — שוב התא B5 עצמו, נשארת במקומה עם הנתונים; רק המוט שורה ריקה
+    expect(ids(rows)).toEqual([WARMUP_ID, DB_RDL, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise', B1, FINISHER_ID]);
     const dbRdl = rows.find((x) => x.exerciseId === DB_RDL)!;
     expect(dbRdl).toMatchObject({ n: 'דד-ליפט רומניין עם מ.יד', targetRepMin: 8, targetRepMax: 10 });
     expect(dbRdl.sets).toEqual([{ weight: 25, reps: 10, seconds: null }, { weight: 25, reps: 10, seconds: null }, { weight: 25, reps: 10, seconds: null }]);
@@ -172,7 +172,7 @@ describe('ההיסטוריה של ה-RDL עם משקולות יד — שלמה',
 describe('אימון B חדש ו"החלף"', () => {
   it('B חדש: B1 הוא המוט, 3 סטים ריקים, בלי משקל פותח; לסשן הראשון אין הצעה (אין היסטוריה למזהה)', () => {
     const rows = prefilledExercises(ALL, 'B');
-    expect(ids(rows)).toEqual([WARMUP_ID, B1, 'seated-cable-row', 'pec-deck', 'leg-curl', 'reverse-pec-deck', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise', FINISHER_ID]);
+    expect(ids(rows)).toEqual([WARMUP_ID, B1, 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise', FINISHER_ID]);
     const b1 = rows[1]!;
     expect(b1).toMatchObject({ exerciseId: B1, n: 'דד-ליפט רומניין', targetRepMin: 8, targetRepMax: 10, type: 'compound', bodyweightOnly: false });
     expect(b1.sets).toHaveLength(3);

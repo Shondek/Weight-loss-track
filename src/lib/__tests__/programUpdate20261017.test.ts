@@ -41,7 +41,8 @@ const A2_NOTE_BEFORE = "ספסל שטוח. המוט יורד לחזה התחתו
 const A2_NOTE_AFTER = "ספסל ישר (שטוח). המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט. הסרטון מראה בנץ' עם מוט חופשי, לא סמית.";
 
 const A_ORDER = ['leg-press', A2, 'lat-pulldown', 'leg-extension', 'leg-curl', 'back-extension', 'db-lateral-raise-seated', 'plank'];
-const B_ORDER = ['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'reverse-pec-deck', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise'];
+// 20/10/2026: B5 חזר לחתירה בחבל (face-pull) — programUpdate20261020.test.ts
+const B_ORDER = ['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise'];
 const C_ORDER = ['machine-hip-abduction', 'machine-row', C3, 'leg-press', 'db-lateral-raise-standing', C6, C7, 'cable-torso-rotation'];
 
 const ids = (list: { exerciseId: string }[]) => list.map((e) => e.exerciseId);
@@ -266,7 +267,7 @@ describe('11. התוכנית כולה: C בסדר החדש; A ו-B כמו קוד
       'seated-cable-row:3x10-12:RIR 2:5:progress:machine-row,t-bar-row,single-arm-cable-row',
       'pec-deck:3x10-12:RIR 2:null:progress:cable-fly,cable-low-fly',
       'leg-curl:3x10-12:RIR 2:null:progress:lying-leg-curl,single-leg-curl',
-      'reverse-pec-deck:3x15-20:RIR 1:null:progress:cable-reverse-fly',
+      'face-pull:3x15-20:RIR 1:5:progress:cable-reverse-fly',
       'db-supinated-curl:2x10-12:RIR 1:2.5:progress:cable-bar-curl,db-hammer-curl,db-preacher-curl',
       'triceps-pushdown:2x12-15:RIR 1:5:progress:cable-bar-pushdown,cable-kickback,db-kickback',
       'floor-leg-raise:3x10-15:RIR 1:null:reps:',
