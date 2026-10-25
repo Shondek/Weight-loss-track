@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ניווט — snapshot > בלי פרופיל: חמש הלשוניות, באותו סדר כמו היום; הפתיחה במשקל 1`] = `
+[
+  "weight",
+  "nutrition",
+  "workout",
+  "checkin",
+  "data",
+]
+`;

@@ -123,7 +123,8 @@ export function readCardioSession(): CardioSession | null {
   if (!t || typeof t !== 'object') return null;
   if (t.kind === 'finisher') {
     if (typeof t.workoutId !== 'string' || typeof t.d !== 'string') return null;
-    if (t.t !== 'A' && t.t !== 'B' && t.t !== 'C') return null;
+    // D (25/10/2026): האירובי אצל שון בא גם אחרי D, והאפליקציה עלולה להיסגר באמצע.
+    if (t.t !== 'A' && t.t !== 'B' && t.t !== 'C' && t.t !== 'D') return null;
   } else if (t.kind === 'standalone') {
     if (typeof t.id !== 'string' || typeof t.d !== 'string') return null;
   } else return null;
