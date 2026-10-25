@@ -8,18 +8,19 @@
  * אותו דפוס כמו סמן המיגרציה: הערך נכתב לשני המקומות ונקרא מהראשון
  * שיש בו ערך. אם אחד מהם נמחק (לחץ אחסון) — השני עדיין קובע, והעותק
  * החסר משוחזר. בלי זה מכשיר של בת הזוג היה נופל בשקט לתוכנית של שון.
+ *
+ * ההחלטה עצמה (סדר, timeout, כישלון = ברירת מחדל) ב-lib/profileBoot.ts,
+ * טהור ונבדק; כאן רק החיבור לאחסון האמיתי.
  */
 
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
-import { PROFILE_STORAGE_KEY, parseProfile, setActiveProfile, type Profile } from '../data/profile';
+import { PROFILE_STORAGE_KEY, setActiveProfile, type Profile } from '../data/profile';
+import { resolveProfile } from '../lib/profileBoot';
 
-function readLocal(): Profile | null {
-  try {
-    const raw = window.localStorage.getItem(PROFILE_STORAGE_KEY);
-    return raw === null ? null : parseProfile(JSON.parse(raw) as unknown);
-  } catch {
-    return null;
-  }
+/** ערך גולמי מ-localStorage; זורק כשהאחסון חסום (resolveProfile בולע). */
+function readLocal(): unknown {
+  const raw = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+  return raw === null ? null : (JSON.parse(raw) as unknown);
 }
 
 function writeLocal(p: Profile | null): void {
@@ -31,13 +32,10 @@ function writeLocal(p: Profile | null): void {
   }
 }
 
-async function readIdb(): Promise<Profile | null | undefined> {
-  try {
-    if (typeof indexedDB === 'undefined') return undefined;
-    return parseProfile(await idbGet(PROFILE_STORAGE_KEY));
-  } catch {
-    return undefined;
-  }
+/** `null` = ענה ואין מפתח; זורק כשאין IndexedDB או שהקריאה נכשלה. */
+async function readIdb(): Promise<unknown> {
+  if (typeof indexedDB === 'undefined') throw new Error('no indexedDB');
+  return (await idbGet(PROFILE_STORAGE_KEY)) ?? null;
 }
 
 async function writeIdb(p: Profile | null): Promise<void> {
@@ -51,16 +49,16 @@ async function writeIdb(p: Profile | null): Promise<void> {
 }
 
 /**
- * טוען את הפרופיל וקובע אותו כפעיל. IndexedDB קודם; אם אין בו — localStorage.
- * עותק שחסר באחד המקומות משוחזר מהשני (best-effort). כישלון בכל מקום =
- * אין פרופיל = ההתנהגות של היום.
+ * טוען את הפרופיל וקובע אותו כפעיל. כל כישלון — שגיאה, אחסון חסום, קריאה
+ * שלא חוזרת תוך כשנייה, ערך לא מוכר — נותן `null`: ההתנהגות של היום.
  */
 export async function loadProfile(): Promise<Profile | null> {
-  const fromIdb = await readIdb();
-  const fromLocal = readLocal();
-  const profile = fromIdb ?? fromLocal;
-  if (profile !== null && fromLocal === null) writeLocal(profile);
-  if (profile !== null && fromIdb === null) await writeIdb(profile);
+  const profile = await resolveProfile({
+    idb: readIdb,
+    local: readLocal,
+    healIdb: (p) => writeIdb(p),
+    healLocal: (p) => writeLocal(p),
+  });
   setActiveProfile(profile);
   return profile;
 }
