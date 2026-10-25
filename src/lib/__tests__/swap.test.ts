@@ -138,7 +138,8 @@ describe('swapExercise — השורה שנוצרת', () => {
   });
 
   it('החלופות לתא מגיעות מהתוכנית לפי המזהה של התרגיל המקורי', () => {
-    expect(alternatesFor('db-supinated-curl').map((a) => a.id)).toEqual(['cable-bar-curl', 'db-hammer-curl', 'db-preacher-curl']);
+    // 25/10/2026: כפיפת הפטיש עברה ל-D2 (בלי חלופות) והוסרה מחלופות B6
+    expect(alternatesFor('db-supinated-curl').map((a) => a.id)).toEqual(['cable-bar-curl', 'db-preacher-curl']);
     expect(alternatesFor('db-hammer-curl')).toEqual([]);
   });
 });

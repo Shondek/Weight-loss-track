@@ -127,6 +127,24 @@ export default function WeekSummary({ report, today }: Props) {
             ))}
           </ul>
         )}
+        {/* אימון D (אופציונלי, 25/10/2026): לא ב-n/3 — רשימה משלו. */}
+        {workouts.optional.length > 0 && (
+          <ul className="list list--block small" style={{ marginTop: 'var(--sp-2)' }}>
+            {workouts.optional.map((w) => (
+              <li key={w.id}>
+                <div>
+                  <span className="muted">אימון D</span> · <span className="num">{formatDM(w.d)}</span>{' '}
+                  <span className="muted tiny">{dayLetter(w.d)}</span> — {w.text}
+                </div>
+                {w.skipped.length > 0 && (
+                  <p className="tiny muted" style={{ margin: 0 }}>
+                    דולגו: {w.skipped.join(', ')}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="tiny muted" style={{ margin: 'var(--sp-1) 0 0' }}>
           כאב: ברך <span className="num">{workouts.knee ?? DASH}</span> · כתף{' '}
           <span className="num">{workouts.shoulder ?? DASH}</span>

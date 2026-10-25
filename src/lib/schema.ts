@@ -154,7 +154,8 @@ export function parseWaist(input: unknown): ParseResult<WaistEntry> {
 
 // ---------- אימונים ----------
 
-const TYPES: readonly WorkoutType[] = ['A', 'B', 'C'];
+/** D מ-25/10/2026 — רשומה עם D נשמרת ונטענת כמו A/B/C; סוג אחר נדחה להסגר כמו קודם. */
+const TYPES: readonly WorkoutType[] = ['A', 'B', 'C', 'D'];
 
 const MAX_SETS = 10;
 const EXERCISE_TYPES: readonly ExerciseType[] = ['compound', 'isolation', 'core', 'cardio'];
@@ -427,7 +428,7 @@ export function parseWorkouts(input: unknown): WorkoutsParseResult {
     }
     const t = TYPES.find((x) => x === raw.t);
     if (!t) {
-      reject(raw, 'סוג אימון שאינו A/B/C');
+      reject(raw, 'סוג אימון שאינו A/B/C/D');
       continue;
     }
 

@@ -52,6 +52,7 @@ import {
   makeWorkoutId,
   nextType,
   prefilledExercises,
+  rotationWorkouts,
   recentExercises,
   setPerformed,
   setValue,
@@ -723,7 +724,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           weekNo={start ? weekNumber(start, week) : null}
         />
         <p className="sub" style={{ margin: 'var(--sp-4) 0 0' }}>
-          <span className="num">{inWeek.length}</span> /{' '}
+          {/* n/3 סופר את הסבב בלבד; אימון D (אופציונלי) מופיע ברשימה אבל לא במונה. */}
+          <span className="num">{rotationWorkouts(inWeek).length}</span> /{' '}
           <span className="num">{WORKOUTS_PER_WEEK}</span> אימונים השבוע · הבא בתור:{' '}
           <span className="strong">{upNext}</span>
         </p>
@@ -824,6 +826,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               >
                 {t}
                 {t === upNext && <span className="choice__hint">הבא בתור</span>}
+                {/* D (25/10/2026): מחוץ לסבב — לעולם לא "הבא בתור" ולא נספר ב-n/3. */}
+                {t === 'D' && <span className="choice__hint">אופציונלי</span>}
               </button>
             ))}
             {/* לא אימון: שורה משלו, מקווקו, בלי "הבא בתור". */}

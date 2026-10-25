@@ -1,5 +1,5 @@
 {
-  "$comment": "תוכנית האימונים. שדות התרגיל: name, sets, reps, effort, note, videoUrl, muscle (כפי שהתקבלו) + id, short, machine, muscles, type, repRangeMin, repRangeMax, unilateral, isTimed, bodyweightOnly, assisted, step שהאפליקציה צריכה. `step` = קפיצת המשקל בק\"ג להצעת האימון הבא (משקולות יד 2.5, מוט וסמית משין 5 — הפלטה הקטנה 2.5 לכל צד, לג-פרס וכבלים 5, פלאנק 2.5 לפלטה); null = מכונה עם מדרגות לא ידועות — ההצעה אומרת \"דרגה אחת\". `id` הוא המפתח להיסטוריה — לעולם לא לשנות אותו. `retired` = תרגילים שירדו מהתוכנית ונשארים כזהות בלבד כדי שרשומות ישנות יוצגו נכון. `alternates` (בשורש) = מאגר תרגילים חלופיים להחלפה חד-פעמית באימון (שלב 4.1); `alternates` בתרגיל = המזהים המותרים לאותו תא, בסדר. חלופה יורשת סטים וטווח מהתא (חלופת זמן: 30–45 שנ׳). מזהה פרוש שתאם בשם עבר לכאן כדי שההיסטוריה תתחבר. `mode: \"maintain\"` = מצב שימור (A7 פלאנק מ-3/10/2026): יעד קבוע repRangeMax × sets, ההצעה היא תמיד \"שימור\" בלי R1–R6 ובלי תלות ב-RIR; חסר = התקדמות רגילה. C2 מ-3/10/2026: `machine-row` (חתירה- מכונה ייעודית) עבר מהמאגר לתוכנית, ו-`db-single-arm-row` (חתירה- הטיית גו עם מ.יד) עבר מהתוכנית למאגר כחלופה הראשונה של C2 — אותם מזהים, ההיסטוריה של שניהם ממשיכה. A2 מ-3/10/2026 (2): `smith-bench-press` (בנץ' פרס- סמית משין) חדש בתוכנית, ו-`db-bench-press` (בנץ' פרס- משקולות יד) עבר מהתוכנית למאגר כחלופה הראשונה של A2 — אותו מזהה, ההיסטוריה ממשיכה. C7 מ-3/10/2026 (2): `cable-rope-curl` (כפיפת מרפקים- פולי תחתון חבל) תא חדש אחרי פשיטת המרפקים; רוטציות הגו עברו למקום 8 בלי שינוי. אימון C ישן עם 7 תרגילים נטען כמו שהוא — התא החדש מופיע בו כשורה ריקה אחרי השורות שנשמרו. A6 מ-6/10/2026: `back-extension` (פשיטת ירך בספסל רומי) עבר מהמאגר לתוכנית — אותו מזהה (היה החלופה השלישית של B1 והוסר משם: אותו מזהה בשני תאים עם טווח שונה היה מערבב היסטוריה, וההצעה מחושבת מכל הסשנים של אותו מזהה; שאר החלופות של B1 לא השתנו), עכשיו 3×12–15, RIR 2, step 2.5 (משקולת יד מול החזה) ו-`bodyweightStart: true` = מתחיל במשקל גוף: שדה משקל ריק (או 0) הוא עומס 0 ק\"ג ולא \"לא ידוע\", ולכן הקפיצה הראשונה היא תמיד קפיצה גדולה (R4: קודם תקרה +2, ואז step); מעל 0 — R1–R6 כרגיל. B8 מ-6/10/2026: `floor-leg-raise` (בטן- הרמת רגליים על הרצפה) תא חדש אחרי פשיטת המרפקים, משקל גוף בלבד, `mode: \"reps\"` = התקדמות בחזרות בלבד: R6 כרגיל (+1 בסט הנמוך), תקרה נקייה (R1) → \"תקרה — נשארים\" בלי הצעת משקל, שני אימונים מתחת לרצפה (R3) → אותן חזרות בלי −10% עם סימון \"לבדוק\"; R4 לא רלוונטי (אין step). אימון A/B ישן עם 7 תרגילים נטען כמו שהוא — התא החדש מופיע בו כשורה ריקה אחרי השורות שנשמרו. B1 מ-13/10/2026: `barbell-rdl` (דד-ליפט רומניין, מוט) עבר מהמאגר לתוכנית — אותו מזהה, 3×8–10, RIR 3, step 5, הערת ביצוע וסרטון; ו-`db-rdl` (דד-ליפט רומניין עם מ.יד) עבר מהתוכנית למאגר כחלופה הראשונה של B1 (אחריו היפ הינג' סמית) — אותם מזהים, שמות, סרטונים והיסטוריה; אין מיגרציה. אימון B ישן עם ה-RDL במשקולות יד נטען כמו שהוא — השורה נשארת במקומה ו-B1 החדש מופיע כשורה ריקה אחריה. B5 מ-16/10/2026: `reverse-pec-deck` (הרחקה אופקית- מכונת פרפר, פרפר הפוך) עבר מהמאגר לתוכנית — אותו מזהה, 3×15–20, RIR 1, step null כמו B3 (`pec-deck`, אותה מכונה), הערת ביצוע וסרטון; החלופה היחידה שלו `cable-reverse-fly` (הרחקה אופקית- פולי גובה כתף, קיבל הערה וסרטון). `face-pull` (חתירה אופקית- חבל) עבר מהתוכנית למאגר — אותו מזהה, step 5, סרטון והיסטוריה — ואינו חלופה של B5 (החלטה קבועה); `db-reverse-fly` נשאר במאגר בלי תא. אין מיגרציה. אימון B ישן עם חתירה בחבל נטען כמו שהוא — השורה נשארת במקומה ו-B5 החדש מופיע כשורה ריקה אחריה. 17/10/2026: `effort` (יעד ה-RIR של התא) קובע גם את סף ה-RIR לעלייה — min(2, הגבול התחתון): יעד 1 או \"1-2\" → תקרה ב-RIR ≥ 1 מעלה (R1), RIR 0 עוצר (R5); יעד 2 / 3 → סף 2 כמו קודם; הסף הוא של התא שבו ההצעה מוצגת (כפיפת ברכיים: A5 יעד 1, B4 יעד 2). C3 מ-17/10/2026: `smith-incline-bench-press` (בנץ' פרס עליון- סמית משין, ספסל בשיפוע) מזהה חדש בתוכנית — 3×8–12, RIR 2, step 5, הערה וסרטון (בנץ' עליון עם מוט חופשי); `db-incline-bench-press` (בנץ' פרס עליון- משקולות יד) עבר מהתוכנית למאגר כחלופה היחידה של C3 — אותו מזהה, מפרט, הערה, סרטון והיסטוריה. `barbell-incline-bench-press` (מוט חופשי) נשאר במאגר כמו שהיה ואינו חלופה של C3. C6 מ-17/10/2026: `ez-bar-preacher-curl` (כפיפת מרפקים- כיסא כומר מוט W) מזהה חדש בתוכנית — 2×12–15, RIR 1, step 5 (2.5 לכל צד), הערה וסרטון; `cable-rope-curl` (כפיפת מרפקים- פולי תחתון חבל) עבר מהתוכנית למאגר כחלופה היחידה של C6 — אותו מזהה, מפרט, הערה, סרטון והיסטוריה. פשיטת המרפקים (`triceps-pushdown`) עברה מ-C6 ל-C7 בלי שינוי, כך שתרגילי הפולי רצופים; רוטציות הגו נשארו C8. A2: ההערה פותחת ב-\"ספסל ישר (שטוח).\" — שום שינוי אחר. אין מיגרציה. אימון C ישן (בנץ' עליון מ.יד ב-C3, כפיפת מרפקים בחבל ב-C7) נטען כמו שהוא — השורות נשארות במקומן, ושני התאים החדשים מופיעים כשורות ריקות אחריהן. B5 מ-20/10/2026 (היפוך של 16/10): `face-pull` (חתירה אופקית- חבל) חזר מהמאגר לתוכנית — אותו מזהה, 3×15–20, RIR 1, step 5, סרטון כמו שהיה, והערת ביצוע חדשה; חלופה יחידה `cable-reverse-fly` (ללא שינוי). `reverse-pec-deck` (פרפר הפוך) עבר מהתוכנית למאגר — אותו מזהה, מפרט, הערה, סרטון והיסטוריה — ואינו חלופה של אף תא; `db-reverse-fly` נשאר במאגר בלי תא. אין מיגרציה. אימון B ישן עם הפרפר ההפוך נטען כמו שהוא — השורה נשארת במקומה ו-B5 (חתירה בחבל) מופיע כשורה ריקה אחריה.",
+  "$comment": "תוכנית האימונים. שדות התרגיל: name, sets, reps, effort, note, videoUrl, muscle (כפי שהתקבלו) + id, short, machine, muscles, type, repRangeMin, repRangeMax, unilateral, isTimed, bodyweightOnly, assisted, step שהאפליקציה צריכה. `step` = קפיצת המשקל בק\"ג להצעת האימון הבא (משקולות יד 2.5, מוט וסמית משין 5 — הפלטה הקטנה 2.5 לכל צד, לג-פרס וכבלים 5, פלאנק 2.5 לפלטה); null = מכונה עם מדרגות לא ידועות — ההצעה אומרת \"דרגה אחת\". `id` הוא המפתח להיסטוריה — לעולם לא לשנות אותו. `retired` = תרגילים שירדו מהתוכנית ונשארים כזהות בלבד כדי שרשומות ישנות יוצגו נכון. `alternates` (בשורש) = מאגר תרגילים חלופיים להחלפה חד-פעמית באימון (שלב 4.1); `alternates` בתרגיל = המזהים המותרים לאותו תא, בסדר. חלופה יורשת סטים וטווח מהתא (חלופת זמן: 30–45 שנ׳). מזהה פרוש שתאם בשם עבר לכאן כדי שההיסטוריה תתחבר. `mode: \"maintain\"` = מצב שימור (A7 פלאנק מ-3/10/2026): יעד קבוע repRangeMax × sets, ההצעה היא תמיד \"שימור\" בלי R1–R6 ובלי תלות ב-RIR; חסר = התקדמות רגילה. C2 מ-3/10/2026: `machine-row` (חתירה- מכונה ייעודית) עבר מהמאגר לתוכנית, ו-`db-single-arm-row` (חתירה- הטיית גו עם מ.יד) עבר מהתוכנית למאגר כחלופה הראשונה של C2 — אותם מזהים, ההיסטוריה של שניהם ממשיכה. A2 מ-3/10/2026 (2): `smith-bench-press` (בנץ' פרס- סמית משין) חדש בתוכנית, ו-`db-bench-press` (בנץ' פרס- משקולות יד) עבר מהתוכנית למאגר כחלופה הראשונה של A2 — אותו מזהה, ההיסטוריה ממשיכה. C7 מ-3/10/2026 (2): `cable-rope-curl` (כפיפת מרפקים- פולי תחתון חבל) תא חדש אחרי פשיטת המרפקים; רוטציות הגו עברו למקום 8 בלי שינוי. אימון C ישן עם 7 תרגילים נטען כמו שהוא — התא החדש מופיע בו כשורה ריקה אחרי השורות שנשמרו. A6 מ-6/10/2026: `back-extension` (פשיטת ירך בספסל רומי) עבר מהמאגר לתוכנית — אותו מזהה (היה החלופה השלישית של B1 והוסר משם: אותו מזהה בשני תאים עם טווח שונה היה מערבב היסטוריה, וההצעה מחושבת מכל הסשנים של אותו מזהה; שאר החלופות של B1 לא השתנו), עכשיו 3×12–15, RIR 2, step 2.5 (משקולת יד מול החזה) ו-`bodyweightStart: true` = מתחיל במשקל גוף: שדה משקל ריק (או 0) הוא עומס 0 ק\"ג ולא \"לא ידוע\", ולכן הקפיצה הראשונה היא תמיד קפיצה גדולה (R4: קודם תקרה +2, ואז step); מעל 0 — R1–R6 כרגיל. B8 מ-6/10/2026: `floor-leg-raise` (בטן- הרמת רגליים על הרצפה) תא חדש אחרי פשיטת המרפקים, משקל גוף בלבד, `mode: \"reps\"` = התקדמות בחזרות בלבד: R6 כרגיל (+1 בסט הנמוך), תקרה נקייה (R1) → \"תקרה — נשארים\" בלי הצעת משקל, שני אימונים מתחת לרצפה (R3) → אותן חזרות בלי −10% עם סימון \"לבדוק\"; R4 לא רלוונטי (אין step). אימון A/B ישן עם 7 תרגילים נטען כמו שהוא — התא החדש מופיע בו כשורה ריקה אחרי השורות שנשמרו. B1 מ-13/10/2026: `barbell-rdl` (דד-ליפט רומניין, מוט) עבר מהמאגר לתוכנית — אותו מזהה, 3×8–10, RIR 3, step 5, הערת ביצוע וסרטון; ו-`db-rdl` (דד-ליפט רומניין עם מ.יד) עבר מהתוכנית למאגר כחלופה הראשונה של B1 (אחריו היפ הינג' סמית) — אותם מזהים, שמות, סרטונים והיסטוריה; אין מיגרציה. אימון B ישן עם ה-RDL במשקולות יד נטען כמו שהוא — השורה נשארת במקומה ו-B1 החדש מופיע כשורה ריקה אחריה. B5 מ-16/10/2026: `reverse-pec-deck` (הרחקה אופקית- מכונת פרפר, פרפר הפוך) עבר מהמאגר לתוכנית — אותו מזהה, 3×15–20, RIR 1, step null כמו B3 (`pec-deck`, אותה מכונה), הערת ביצוע וסרטון; החלופה היחידה שלו `cable-reverse-fly` (הרחקה אופקית- פולי גובה כתף, קיבל הערה וסרטון). `face-pull` (חתירה אופקית- חבל) עבר מהתוכנית למאגר — אותו מזהה, step 5, סרטון והיסטוריה — ואינו חלופה של B5 (החלטה קבועה); `db-reverse-fly` נשאר במאגר בלי תא. אין מיגרציה. אימון B ישן עם חתירה בחבל נטען כמו שהוא — השורה נשארת במקומה ו-B5 החדש מופיע כשורה ריקה אחריה. 17/10/2026: `effort` (יעד ה-RIR של התא) קובע גם את סף ה-RIR לעלייה — min(2, הגבול התחתון): יעד 1 או \"1-2\" → תקרה ב-RIR ≥ 1 מעלה (R1), RIR 0 עוצר (R5); יעד 2 / 3 → סף 2 כמו קודם; הסף הוא של התא שבו ההצעה מוצגת (כפיפת ברכיים: A5 יעד 1, B4 יעד 2). C3 מ-17/10/2026: `smith-incline-bench-press` (בנץ' פרס עליון- סמית משין, ספסל בשיפוע) מזהה חדש בתוכנית — 3×8–12, RIR 2, step 5, הערה וסרטון (בנץ' עליון עם מוט חופשי); `db-incline-bench-press` (בנץ' פרס עליון- משקולות יד) עבר מהתוכנית למאגר כחלופה היחידה של C3 — אותו מזהה, מפרט, הערה, סרטון והיסטוריה. `barbell-incline-bench-press` (מוט חופשי) נשאר במאגר כמו שהיה ואינו חלופה של C3. C6 מ-17/10/2026: `ez-bar-preacher-curl` (כפיפת מרפקים- כיסא כומר מוט W) מזהה חדש בתוכנית — 2×12–15, RIR 1, step 5 (2.5 לכל צד), הערה וסרטון; `cable-rope-curl` (כפיפת מרפקים- פולי תחתון חבל) עבר מהתוכנית למאגר כחלופה היחידה של C6 — אותו מזהה, מפרט, הערה, סרטון והיסטוריה. פשיטת המרפקים (`triceps-pushdown`) עברה מ-C6 ל-C7 בלי שינוי, כך שתרגילי הפולי רצופים; רוטציות הגו נשארו C8. A2: ההערה פותחת ב-\"ספסל ישר (שטוח).\" — שום שינוי אחר. אין מיגרציה. אימון C ישן (בנץ' עליון מ.יד ב-C3, כפיפת מרפקים בחבל ב-C7) נטען כמו שהוא — השורות נשארות במקומן, ושני התאים החדשים מופיעים כשורות ריקות אחריהן. B5 מ-20/10/2026 (היפוך של 16/10): `face-pull` (חתירה אופקית- חבל) חזר מהמאגר לתוכנית — אותו מזהה, 3×15–20, RIR 1, step 5, סרטון כמו שהיה, והערת ביצוע חדשה; חלופה יחידה `cable-reverse-fly` (ללא שינוי). `reverse-pec-deck` (פרפר הפוך) עבר מהתוכנית למאגר — אותו מזהה, מפרט, הערה, סרטון והיסטוריה — ואינו חלופה של אף תא; `db-reverse-fly` נשאר במאגר בלי תא. אין מיגרציה. אימון B ישן עם הפרפר ההפוך נטען כמו שהוא — השורה נשארת במקומה ו-B5 (חתירה בחבל) מופיע כשורה ריקה אחריה. D מ-25/10/2026 (אופציונלי): אימון רביעי \"D — חזה, ידיים, בטן (אופציונלי)\", מחוץ לסבב A→B→C — `nextType` ממשיך את הסבב מהאימון האחרון שאינו D, ו-D נבחר רק ידנית — ולא נספר ב-\"אימונים n/3\" (`WORKOUTS_PER_WEEK` נשאר 3; בסיכום השבועי ובדוח יש לו שורה נפרדת \"אימון D: dd/mm\"). בלי חלופות לאף תא (תפוס = דלג ואחזור). ארבעה מזהים עברו מהמאגר לתוכנית כמו `back-extension` ב-6/10 — תרגיל אחד = מזהה אחד = היסטוריה אחת — והוסרו מרשימות החלופות: `cable-low-fly` (פרפר- תחתון כייבל קרוס, D1, היה חלופה של B3), `db-hammer-curl` (D2, של B6), `cable-bar-pushdown` (D3, של B7 ו-C7), `cable-single-arm-lateral-raise` (D5, של A7 ו-C5); שאר החלופות של ששת התאים לא השתנו. `bench-reverse-crunch` (D4, כפיפות בטן לאחור על ספסל) חדש — חזרות בלבד כמו B8. כל תאי D ב-RIR 1 (סף 1). אין מיגרציה: רשומת אימון עם `t: \"D\"` נשמרת כמו A/B/C, ורשומות A/B/C קיימות נטענות כמו שהן.",
   "workouts": [
     {
       "code": "A",
@@ -168,7 +168,6 @@
           "note": "לא מעל גובה הכתף",
           "videoUrl": "https://drive.google.com/file/d/1y9vcT0NOaktUtm9L7UJICLSpjZpJX-OZ/view?usp=share_link",
           "alternates": [
-            "cable-single-arm-lateral-raise",
             "db-lateral-raise-standing"
           ]
         },
@@ -274,8 +273,7 @@
           "note": null,
           "videoUrl": "https://drive.google.com/file/d/1uc_McblkYxvCV35DVU7Qm07N8XQhPe7u/view?usp=drive_link",
           "alternates": [
-            "cable-fly",
-            "cable-low-fly"
+            "cable-fly"
           ]
         },
         {
@@ -344,7 +342,6 @@
           "videoUrl": "https://drive.google.com/file/d/1_Wl5PHKc4vXP9L22EzeC7ZGJwxFKqYhM/view?usp=share_link",
           "alternates": [
             "cable-bar-curl",
-            "db-hammer-curl",
             "db-preacher-curl"
           ]
         },
@@ -367,7 +364,6 @@
           "note": null,
           "videoUrl": "https://drive.google.com/file/d/1SQCZVCe3hSpqMZHGTp9fIsE0ZJvZ0R3p/view?usp=drive_link",
           "alternates": [
-            "cable-bar-pushdown",
             "cable-kickback",
             "db-kickback"
           ]
@@ -518,7 +514,6 @@
           "note": "לא מעל גובה הכתף",
           "videoUrl": "https://drive.google.com/file/d/19ejixaBc4u96BYF4-BfmTWSmyws11K4P/view?usp=share_link",
           "alternates": [
-            "cable-single-arm-lateral-raise",
             "db-lateral-raise-seated"
           ]
         },
@@ -563,7 +558,6 @@
           "note": null,
           "videoUrl": "https://drive.google.com/file/d/1SQCZVCe3hSpqMZHGTp9fIsE0ZJvZ0R3p/view?usp=drive_link",
           "alternates": [
-            "cable-bar-pushdown",
             "cable-kickback",
             "db-kickback"
           ]
@@ -591,6 +585,117 @@
             "side-plank-static",
             "side-bend"
           ]
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "title": "D — חזה, ידיים, בטן (אופציונלי)",
+      "exercises": [
+        {
+          "id": "cable-low-fly",
+          "name": "פרפר- תחתון כייבל קרוס",
+          "short": "פרפר תחתון",
+          "machine": "Cable Cross",
+          "muscle": "chest",
+          "muscles": [
+            "חזה עליון"
+          ],
+          "type": "isolation",
+          "sets": 3,
+          "step": 5,
+          "reps": "12-15",
+          "repRangeMin": 12,
+          "repRangeMax": 15,
+          "effort": "RIR 1",
+          "note": "הגלגלות בתחתית. הידיים עולות בקשת מגובה הירכיים עד גובה החזה העליון — לא מעל הכתפיים. מרפקים מעט כפופים וקבועים. בתחתית לא נותנים לכבלים למשוך את הכתפיים לאחור.",
+          "videoUrl": "https://drive.google.com/file/d/1-bwuoyTpJgJI_HAOOg1bCo9klKloVDO8/view?usp=share_link",
+          "alternates": []
+        },
+        {
+          "id": "db-hammer-curl",
+          "name": "כפיפת מרפקים- מ.יד מיד פוזישן",
+          "short": "כפיפת פטיש",
+          "machine": "Dumbbells",
+          "muscle": "biceps",
+          "muscles": [
+            "בייספס",
+            "אמה"
+          ],
+          "type": "isolation",
+          "sets": 3,
+          "step": 2.5,
+          "reps": "10-12",
+          "repRangeMin": 10,
+          "repRangeMax": 12,
+          "effort": "RIR 1",
+          "note": "אחיזה ניטרלית — אגודלים למעלה לכל אורך התנועה. מרפקים צמודים לגוף, בלי תנופה.",
+          "videoUrl": "https://drive.google.com/file/d/1ZjA8roLieYIoncvQhdoeXGePROvkzpBh/view?usp=share_link",
+          "alternates": []
+        },
+        {
+          "id": "cable-bar-pushdown",
+          "name": "פשיטת מרפקים- פולי עליון מוט",
+          "short": "פשיטת מרפקים מוט",
+          "machine": "Cable Bar",
+          "muscle": "triceps",
+          "muscles": [
+            "טרייספס"
+          ],
+          "type": "isolation",
+          "sets": 3,
+          "step": 5,
+          "reps": "10-15",
+          "repRangeMin": 10,
+          "repRangeMax": 15,
+          "effort": "RIR 1",
+          "note": "מוט ישר. מרפקים צמודים לגוף ולא זזים קדימה. נעילה למטה בלי להישען מעל המוט.",
+          "videoUrl": "https://drive.google.com/file/d/1DkANomsaOj1PYVMH5gIiQ0dp2irQ5XbS/view?usp=drive_link",
+          "alternates": []
+        },
+        {
+          "id": "bench-reverse-crunch",
+          "name": "בטן- כפיפות בטן לאחור על ספסל",
+          "short": "כפיפות לאחור",
+          "machine": null,
+          "muscle": "core",
+          "muscles": [
+            "ישרי הבטן",
+            "כופפי ירך"
+          ],
+          "type": "core",
+          "sets": 3,
+          "step": null,
+          "reps": "10-15",
+          "repRangeMin": 10,
+          "repRangeMax": 15,
+          "effort": "RIR 1",
+          "bodyweightOnly": true,
+          "mode": "reps",
+          "note": "שוכבים על הספסל ואוחזים בקצה מאחורי הראש. מרימים את האגן ומקרבים ברכיים לחזה — הגו נשאר על הספסל. ירידה איטית. מציק לכתף? אוחזים בצדי הספסל ליד הירכיים. משקל גוף, חזרות בלבד.",
+          "videoUrl": "https://drive.google.com/file/d/1vvcUd7u02YAWbDN6cYGHXI6zPIuJuYDq/view?usp=share_link",
+          "alternates": []
+        },
+        {
+          "id": "cable-single-arm-lateral-raise",
+          "name": "הרחקת כתף- כייבל קרוס יד אחת",
+          "short": "הרחקה בכבל",
+          "machine": "Cable Cross",
+          "muscle": "shoulders",
+          "muscles": [
+            "כתף אמצעית"
+          ],
+          "type": "isolation",
+          "sets": 2,
+          "step": 5,
+          "reps": "12-15 לכל צד",
+          "repRangeMin": 12,
+          "repRangeMax": 15,
+          "unilateral": true,
+          "effort": "RIR 1",
+          "note": "לכל צד. הכבל נמוך ועובר לפני הגוף. מרימים עד גובה הכתף, לא מעל. בלי תנופה מהגוף.",
+          "videoUrl": "https://drive.google.com/file/d/1EGlSug5_egOq4cjPvFoS1Eqo5ALjJfsq/view?usp=share_link",
+          "alternates": []
         }
       ]
     }
@@ -627,7 +732,6 @@
     {"id": "wall-sit", "name": "סקוואט- סטטי נגד קיר", "short": "סקוואט קיר", "machine": null, "muscle": "legs", "muscles": ["ארבע ראשי"], "type": "isolation", "sets": 2, "repRangeMin": 30, "repRangeMax": 45, "step": null, "note": "עומק עד מקביל", "isTimed": true, "bodyweightOnly": true},
     {"id": "lying-leg-curl", "name": "כפיפת ברכיים במכונה על הבטן", "short": "כפיפת ברכיים שכיבה", "machine": "Lying Leg Curl", "muscle": "legs", "muscles": ["ירך אחורית"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12, "step": null, "note": null},
     {"id": "single-leg-curl", "name": "כפיפת ברכיים במכונה רגל-רגל", "short": "כפיפת ברכיים רגל-רגל", "machine": "Leg Curl", "muscle": "legs", "muscles": ["ירך אחורית"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12, "step": null, "note": null, "unilateral": true},
-    {"id": "cable-single-arm-lateral-raise", "name": "הרחקת כתף- כייבל קרוס יד אחת", "short": "הרחקה בכבל", "machine": "Cable Cross", "muscle": "shoulders", "muscles": ["כתף אמצעית"], "type": "isolation", "sets": 3, "repRangeMin": 12, "repRangeMax": 15, "step": 5, "note": null, "unilateral": true},
     {"id": "side-plank-static", "name": "בטן- פלאנק צידי סטטי", "short": "פלאנק צידי", "machine": null, "muscle": "core", "muscles": ["אלכסונים"], "type": "core", "sets": 3, "repRangeMin": 30, "repRangeMax": 45, "step": null, "note": null, "isTimed": true, "bodyweightOnly": true, "unilateral": true},
     {"id": "cable-crunch", "name": "בטן- כפיפות בטן עם חבל פולי עליון", "short": "כפיפות בטן", "machine": "Cable Rope", "muscle": "core", "muscles": ["ישרי הבטן"], "type": "isolation", "sets": 3, "repRangeMin": 12, "repRangeMax": 15, "step": 5, "note": null},
     {"id": "db-rdl", "name": "דד-ליפט רומניין עם מ.יד", "short": "RDL", "machine": "Dumbbells", "muscle": "legs", "muscles": ["ירך אחורית", "ישבן", "זוקפי גב"], "type": "compound", "sets": 3, "repRangeMin": 8, "repRangeMax": 10, "step": 2.5, "note": "הינג' בלבד, גב ניטרלי, בלי כיפוף ברך עמוק", "videoUrl": "https://drive.google.com/file/d/1fJi2Ni_3VP3booTAJAx-gD4rG_oTZU76/view?usp=share_link"},
@@ -636,15 +740,12 @@
     {"id": "t-bar-row", "name": "חתירה- מכונה ייעודית T-bar", "short": "חתירה T-bar", "machine": "T-Bar Row", "muscle": "back", "muscles": ["גב רחב", "טרפז", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 2.5, "note": null},
     {"id": "single-arm-cable-row", "name": "חתירה- כייבל קרוס יד אחת", "short": "חתירת יד אחת", "machine": "Cable Cross", "muscle": "back", "muscles": ["גב רחב", "מעוינים"], "type": "compound", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 5, "note": null, "unilateral": true},
     {"id": "cable-fly", "name": "פרפר- כייבל קרוס", "short": "פרפר כבל", "machine": "Cable Cross", "muscle": "chest", "muscles": ["חזה"], "type": "isolation", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 5, "note": null},
-    {"id": "cable-low-fly", "name": "פרפר- תחתון כייבל קרוס", "short": "פרפר תחתון", "machine": "Cable Cross", "muscle": "chest", "muscles": ["חזה עליון"], "type": "isolation", "sets": 3, "repRangeMin": 10, "repRangeMax": 12, "step": 5, "note": null},
     {"id": "reverse-pec-deck", "name": "הרחקה אופקית- מכונת פרפר", "short": "פרפר הפוך", "machine": "Reverse Pec Deck", "muscle": "shoulders", "muscles": ["כתף אחורית", "סובבי כתף"], "type": "isolation", "sets": 3, "repRangeMin": 15, "repRangeMax": 20, "step": null, "note": "פרפר הפוך. פנים לכרית, החזה צמוד אליה · ידיות בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף, בלי למשוך עם הידיים ובלי להרים כתפיים · חזרה איטית.", "videoUrl": "https://drive.google.com/file/d/1Oyyswtd8u3qB4fsimpsinv3V0dqr4H3U/view?usp=drive_link"},
     {"id": "cable-reverse-fly", "name": "הרחקה אופקית- פולי גובה כתף", "short": "הרחקה בפולי", "machine": "Cable", "muscle": "shoulders", "muscles": ["כתף אחורית"], "type": "isolation", "sets": 3, "repRangeMin": 15, "repRangeMax": 20, "step": 5, "note": "כבלים בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף.", "videoUrl": "https://drive.google.com/file/d/1-fJHu5tp9fL4o9Trs-KTPSQQsD4Z0cW3/view?usp=drive_link"},
     {"id": "db-reverse-fly", "name": "הרחקה אופקית עם משקולות יד", "short": "הרחקה מ.יד", "machine": "Dumbbells", "muscle": "shoulders", "muscles": ["כתף אחורית"], "type": "isolation", "sets": 3, "repRangeMin": 15, "repRangeMax": 20, "step": 2.5, "note": null},
     {"id": "cable-rope-curl", "name": "כפיפת מרפקים- פולי תחתון חבל", "short": "כפיפת מרפקים חבל", "machine": "Cable Rope", "muscle": "biceps", "muscles": ["בייספס", "אמה"], "type": "isolation", "sets": 2, "repRangeMin": 12, "repRangeMax": 15, "step": 5, "note": "פולי תחתון, חבל, אחיזה ניטרלית. מרפקים צמודים לגוף.", "videoUrl": "https://drive.google.com/file/d/1IlwfEWHhTiVN4BrimJNfPRc_ZUt-XsTI/view?usp=drive_link"},
     {"id": "cable-bar-curl", "name": "כפיפת מרפקים- פולי תחתון מוט", "short": "כפיפת מרפקים פולי", "machine": "Cable Bar", "muscle": "biceps", "muscles": ["בייספס"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12, "step": 5, "note": null},
-    {"id": "db-hammer-curl", "name": "כפיפת מרפקים- מ.יד מיד פוזישן", "short": "כפיפת פטיש", "machine": "Dumbbells", "muscle": "biceps", "muscles": ["בייספס", "אמה"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12, "step": 2.5, "note": null},
     {"id": "db-preacher-curl", "name": "כפיפת מרפק- כיסא כומר מ.יד סופינציה", "short": "כיסא כומר", "machine": "Preacher Bench", "muscle": "biceps", "muscles": ["בייספס"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12, "step": 2.5, "note": null},
-    {"id": "cable-bar-pushdown", "name": "פשיטת מרפקים- פולי עליון מוט", "short": "פשיטת מרפקים מוט", "machine": "Cable Bar", "muscle": "triceps", "muscles": ["טרייספס"], "type": "isolation", "sets": 2, "repRangeMin": 12, "repRangeMax": 15, "step": 5, "note": null},
     {"id": "cable-kickback", "name": "פשיטת מרפק- פולי עליון קיקבק", "short": "קיקבק פולי", "machine": "Cable", "muscle": "triceps", "muscles": ["טרייספס"], "type": "isolation", "sets": 2, "repRangeMin": 12, "repRangeMax": 15, "step": 5, "note": null, "unilateral": true},
     {"id": "db-kickback", "name": "קיק בק- משקולות יד", "short": "קיקבק מ.יד", "machine": "Dumbbells", "muscle": "triceps", "muscles": ["טרייספס"], "type": "isolation", "sets": 2, "repRangeMin": 12, "repRangeMax": 15, "step": 2.5, "note": null, "unilateral": true},
     {"id": "band-hip-abduction-standing", "name": "בעמידה הרחקת ירך עם גומייה", "short": "הרחקת ירך גומייה עמידה", "machine": null, "muscle": "legs", "muscles": ["ישבן אמצעי"], "type": "isolation", "sets": 3, "repRangeMin": 15, "repRangeMax": 20, "step": null, "note": null, "bodyweightOnly": true, "unilateral": true},

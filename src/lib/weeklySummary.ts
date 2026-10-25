@@ -40,6 +40,7 @@ import {
   peakPain,
   setPerformed,
   setValue,
+  rotationWorkouts,
   skippedExercises,
   workoutsInWeek,
 } from './workouts';
@@ -103,9 +104,13 @@ export type WeeklySummaryData = {
     previous: { d: ISODate; cm: number }[];
   };
   workouts: {
+    /** אימוני הסבב (A/B/C) בלבד — "אימונים n/3". */
     done: number;
     planned: number;
     items: { d: ISODate; t: WorkoutType; lines: ExerciseLine[]; skipped: string[] }[];
+    /** אימוני D (אופציונלי, 25/10/2026) — שורה נפרדת "אימון D: dd/mm", לא ב-n/3. */
+    optional: { d: ISODate; t: WorkoutType; lines: ExerciseLine[]; skipped: string[] }[];
+    /** כאב מרבי בכל אימוני השבוע, כולל D. */
     knee: number | null;
     shoulder: number | null;
     /** תרגילים שההצעה להם היא R3 (ירידה בביצועים). */
@@ -290,15 +295,18 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     .slice(0, PREVIOUS_WAIST)
     .map((e) => ({ d: e.d, cm: e.cm }));
 
-  // ---- אימונים ----
-  const all = workoutsInWeek(db.workouts, ws);
-  const items = all.map((w) => ({
+  // ---- אימונים: הסבב (A/B/C) נספר ב-n/3; D אופציונלי בשורה משלו ----
+  const inWeek = workoutsInWeek(db.workouts, ws);
+  const all = rotationWorkouts(inWeek);
+  const itemOf = (w: WorkoutEntry) => ({
     d: w.d,
     t: w.t,
     lines: w.ex.filter((e) => !isCardio(e) && hasData(e)).map((row) => exerciseLine(db, w, row)),
     skipped: skippedExercises(w).map((e) => shortName(e.exerciseId, e.n)),
-  }));
-  const drops = [...new Set(items.flatMap((it) => it.lines.filter((l) => l.suggestion?.rule === 'R3').map((l) => l.name)))];
+  });
+  const items = all.map(itemOf);
+  const optional = inWeek.filter((w) => !all.includes(w)).map(itemOf);
+  const drops = [...new Set([...items, ...optional].flatMap((it) => it.lines.filter((l) => l.suggestion?.rule === 'R3').map((l) => l.name)))];
 
   // ---- תזונה: ימים סגורים בלבד ----
   const loggedDays = new Set(db.entries.filter((e) => days.includes(e.d)).map((e) => e.d));
@@ -358,7 +366,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
       late: lateEntry ? { d: lateEntry.d, cm: lateEntry.cm } : null,
       previous: previousWaist,
     },
-    workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, knee: peakPain(all, 'knee'), shoulder: peakPain(all, 'shoulder'), drops },
+    workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, optional, knee: peakPain(inWeek, 'knee'), shoulder: peakPain(inWeek, 'shoulder'), drops },
     cardio,
     steps,
     stepsHigh,
@@ -428,8 +436,7 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
   // 4. אימונים
   const wk = data.workouts;
   L.push(`אימונים ${wk.done}/${wk.planned}${wk.items.length ? ' · ' + wk.items.map((it) => `${formatDM(it.d)} ${it.t}`).join(' · ') : ''}`);
-  for (const it of wk.items) {
-    L.push(`${formatDM(it.d)} ${it.t}`);
+  const pushLines = (it: WeeklySummaryData['workouts']['items'][number]) => {
     if (it.lines.length === 0) L.push('  לא נרשמו תרגילים');
     for (const line of it.lines) {
       const parts = [line.text];
@@ -445,6 +452,17 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
       L.push(`  ${parts.join(' · ')}`);
     }
     if (it.skipped.length) L.push(`  דולגו: ${it.skipped.join(', ')}`);
+  };
+  for (const it of wk.items) {
+    L.push(`${formatDM(it.d)} ${it.t}`);
+    pushLines(it);
+  }
+  // אימון D (אופציונלי, 25/10/2026): שורה נפרדת, לא ב-n/3; התרגילים באותו פורמט.
+  // יותר מאימון D אחד בשבוע — כותרת תאריך לכל אחד, כמו ב-A/B/C.
+  L.push(`אימון D: ${wk.optional.length ? wk.optional.map((it) => formatDM(it.d)).join(' · ') : DASH}`);
+  for (const it of wk.optional) {
+    if (wk.optional.length > 1) L.push(`${formatDM(it.d)} ${it.t}`);
+    pushLines(it);
   }
   L.push(`כאב: ברך ${num(wk.knee)} · כתף ${num(wk.shoulder)}`);
   L.push('');

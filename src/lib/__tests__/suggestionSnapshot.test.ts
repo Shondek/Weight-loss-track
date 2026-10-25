@@ -31,6 +31,13 @@
  * `face-pull` מקבל עכשיו R1 במקום R5, ו-`reverse-pec-deck` (בלי תא מארח → סף 2)
  * R5 במקום R1. שתי שורות (4 תרחישים) השתנו, אפס נוספו, אפס מחוץ לזוג של B5.
  * נבדק ב-programUpdate20261020.test.ts.
+ *
+ * 25/10/2026 — אימון D (אופציונלי): ארבעה מזהים עברו מהמאגר לתאי D עם מפרט
+ * חדש — `cable-low-fly` (D1: 10–12 → 12–15, הסף 2 → 1 עם התא) ו-`cable-bar-pushdown`
+ * (D3: 12–15 → 10–15) השתנו; `db-hammer-curl` (D2) ו-`cable-single-arm-lateral-raise`
+ * (D5) — אותו טווח ואותו סף (1), רק מספר הסטים, ולכן זהים. `bench-reverse-crunch`
+ * (D4, חזרות בלבד) נוסף. שתי שורות השתנו, אחת נוספה, אפס מחוץ לארבעת המזהים.
+ * נבדק ב-programUpdate20261025.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import type { LoggedExercise, Rir } from '../../types';

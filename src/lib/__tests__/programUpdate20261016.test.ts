@@ -194,9 +194,10 @@ describe('הפרפר ההפוך (reverse-pec-deck) — מ-16/10/2026 בתוכנ�
     expect(unique.has(FACE_PULL)).toBe(true);
     expect(unique.has(CABLE)).toBe(true);
     // 17/10/2026: +2 מזהים חדשים בתוכנית (C3 סמית, C6 כיסא כומר) ו-+2 במאגר (בנץ׳ עליון מ.יד, כפיפת מרפקים בחבל). 20/10/2026: החלפת מקום — אותו מספר.
-    expect(unique.size - 1).toBe(58);
-    expect(ALTERNATES).toHaveLength(38);
-    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(38);
+    // 25/10/2026: אימון D — +1 מזהה חדש (D4), וארבעה מזהים עברו מהמאגר לתוכנית (38 → 34).
+    expect(unique.size - 1).toBe(59);
+    expect(ALTERNATES).toHaveLength(34);
+    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(34);
   });
 });
 

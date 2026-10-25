@@ -14,7 +14,11 @@ export type WeightEntry = { d: ISODate; w: number };
 /** מדידת מותניים בס"מ, בוקר, בטבור. פעם בשבוע. */
 export type WaistEntry = { d: ISODate; cm: number };
 
-export type WorkoutType = 'A' | 'B' | 'C';
+/**
+ * A/B/C — הסבב. D (25/10/2026) — אימון אופציונלי מחוץ לסבב: נבחר ידנית, לא
+ * משפיע על "הבא בתור" ולא נספר ב-"אימונים n/3" (ראה `ROTATION` ב-data/program.ts).
+ */
+export type WorkoutType = 'A' | 'B' | 'C' | 'D';
 
 /**
  * סוג התנועה. קובע את משכי המנוחה בין סטים ובין תרגילים — הערכים עצמם

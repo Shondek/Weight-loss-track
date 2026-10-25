@@ -17,7 +17,7 @@ import { addDays, compareISO, dayLetter, formatDM, formatDMY, weekDays, weekEnd,
 import { programStartWeek } from './db';
 import { DASH } from './format';
 import { getCheckin } from './checkins';
-import { peakPain, workoutsInWeek } from './workouts';
+import { peakPain, rotationWorkouts, workoutsInWeek } from './workouts';
 import {
   summarizeWeek,
   waistBeforeWeek,
@@ -88,8 +88,10 @@ function build(db: DB, week: ISODate, today: ISODate, opts: Options): string {
   L.push(`מותניים: ${n(waistNow?.cm ?? null, 1)} (קודם ${n(waistPrev?.cm ?? null, 1)})`);
   L.push('');
 
-  // ---- אימונים ----
-  const all = workoutsInWeek(db.workouts, week);
+  // ---- אימונים: הסבב (A/B/C) ב-n/3; D (אופציונלי, 25/10/2026) בשורה נפרדת ----
+  const inWeek = workoutsInWeek(db.workouts, week);
+  const all = rotationWorkouts(inWeek);
+  const optional = inWeek.filter((w) => !all.includes(w));
   const shown = all.slice(-opts.maxWorkouts);
   L.push(`אימונים: ${all.length}/${WORKOUTS_PER_WEEK}`);
   if (shown.length < all.length) {
@@ -102,7 +104,11 @@ function build(db: DB, week: ISODate, today: ISODate, opts: Options): string {
       L.push(`${formatDM(w.d)} ${w.t} — ${workoutText(w)}`);
     }
   }
-  L.push(`כאב: ברך ${n(peakPain(all, 'knee'))} · כתף ${n(peakPain(all, 'shoulder'))}`);
+  L.push(`אימון D: ${optional.length ? optional.map((w) => formatDM(w.d)).join(' · ') : DASH}`);
+  for (const w of optional) {
+    L.push(`${formatDM(w.d)} ${w.t} — ${workoutText(w)}`);
+  }
+  L.push(`כאב: ברך ${n(peakPain(inWeek, 'knee'))} · כתף ${n(peakPain(inWeek, 'shoulder'))}`);
   // אירובי: סיום (מתוך האימונים) + עצמאי, מול התקציב. העצמאי מפורט בשורות
   // משלו כי הוא אינו אימון ולא נספר ב-"אימונים: n/3".
   L.push(cardioLineText(cardioWeek(db, week)));

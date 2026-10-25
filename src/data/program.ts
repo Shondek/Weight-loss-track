@@ -151,7 +151,20 @@ function ex(e: ExerciseInput): Exercise {
   };
 }
 
-export const WORKOUT_TYPES: WorkoutType[] = ['A', 'B', 'C'];
+/** כל האימונים בתוכנית, בסדר ההצגה. D (25/10/2026) אופציונלי — ראה `ROTATION`. */
+export const WORKOUT_TYPES: WorkoutType[] = ['A', 'B', 'C', 'D'];
+
+/**
+ * הסבב: "הבא בתור" (`nextType`) ממשיך A→B→C מהאימון האחרון שבסבב, ו-"אימונים
+ * n/3" (`WORKOUTS_PER_WEEK`) סופר רק אותם. D נבחר ידנית בלבד ולא משפיע על
+ * אף אחד מהשניים.
+ */
+export const ROTATION: readonly WorkoutType[] = ['A', 'B', 'C'];
+
+/** האם האימון בסבב ונספר ב-"אימונים n/3". D → false. */
+export function isRotationType(t: WorkoutType): boolean {
+  return ROTATION.includes(t);
+}
 
 function isWorkoutType(code: string): code is WorkoutType {
   return (WORKOUT_TYPES as string[]).includes(code);
@@ -176,6 +189,7 @@ export const PROGRAM: Record<WorkoutType, Exercise[]> = {
   A: workoutsByCode.get('A')!.exercises,
   B: workoutsByCode.get('B')!.exercises,
   C: workoutsByCode.get('C')!.exercises,
+  D: workoutsByCode.get('D')!.exercises,
 };
 
 /** כותרת האימון להצגה ("דחיפה + ארבע-ראשי"). */
@@ -183,6 +197,7 @@ export const WORKOUT_TITLES: Record<WorkoutType, string> = {
   A: workoutsByCode.get('A')!.title,
   B: workoutsByCode.get('B')!.title,
   C: workoutsByCode.get('C')!.title,
+  D: workoutsByCode.get('D')!.title,
 };
 
 /**
@@ -199,7 +214,7 @@ export const RETIRED: Exercise[] = programJson.retired.map((e) => ex(e as Exerci
  */
 export const ALTERNATES: Exercise[] = programJson.alternates.map((e) => ex(e as ExerciseInput));
 
-/** כמה אימונים בשבוע התוכנית מצפה להם. משמש לספירה "n/3" ולסעיף "חסר". */
+/** כמה אימוני סבב (A/B/C) בשבוע התוכנית מצפה להם. משמש לספירה "n/3" ולסעיף "חסר". D לא נספר. */
 export const WORKOUTS_PER_WEEK = 3;
 
 /** תזכורת קבועה בראש מסך האימונים. תזכורת, לא הגדרה — אין לה השפעה על הלוגיקה. */
