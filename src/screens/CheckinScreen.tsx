@@ -3,7 +3,8 @@ import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
 import type { WeeklyCheckin } from '../types';
 import { NOTE_MAX } from '../types';
-import { emptyCheckin, getCheckin, isFilled, upsertCheckin } from '../lib/checkins';
+import { emptyCheckin, getCheckin, isFilled, upsertCheckin, withHomeLunchDays } from '../lib/checkins';
+import { HOME_LUNCH_MAX } from '../data/config';
 import { backupJson, buildChatReport } from '../lib/exportText';
 import { buildWeekSummary } from '../lib/weekSummary';
 import { buildWeeklySummary, defaultSummaryWeek } from '../lib/weeklySummary';
@@ -18,6 +19,7 @@ import WeekSummary from '../components/WeekSummary';
 
 const SCALE_1_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const DAYS_0_7 = [0, 1, 2, 3, 4, 5, 6, 7];
+const DAYS_0_5 = Array.from({ length: HOME_LUNCH_MAX + 1 }, (_, i) => i);
 
 export default function CheckinScreen({ store, today }: ScreenProps) {
   const { db } = store;
@@ -98,6 +100,16 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
             options={DAYS_0_7}
             value={value.unplannedSnackDays}
             onChange={(unplannedSnackDays) => patch({ unplannedSnackDays })}
+          />
+          {/* שלב 2 (1/11/2026): אופציונלי. ניקוי מסיר את השדה מהרשומה — לא כותב null. */}
+          <Choice
+            label={`צהריים מהבית (0–${HOME_LUNCH_MAX})`}
+            scale
+            options={DAYS_0_5}
+            value={value.homeLunchDays ?? null}
+            onChange={(homeLunchDays) =>
+              void store.update('checkins', upsertCheckin(db.checkins, withHomeLunchDays(value, homeLunchDays)))
+            }
           />
 
           <div>

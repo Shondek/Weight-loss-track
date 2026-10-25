@@ -39,8 +39,19 @@ export function isFilled(c: WeeklyCheckin | null): boolean {
     c.energy !== null ||
     c.sleepHours !== null ||
     c.unplannedSnackDays !== null ||
+    c.homeLunchDays !== undefined ||
     c.note.trim() !== ''
   );
+}
+
+/**
+ * קובע או מסיר (null) את "צהריים מהבית" (שלב 2). השדה אופציונלי — הסרה
+ * מוחקת אותו מהרשומה במקום לכתוב null. שאר השדות לא משתנים.
+ */
+export function withHomeLunchDays(c: WeeklyCheckin, days: number | null): WeeklyCheckin {
+  const { homeLunchDays: _drop, ...rest } = c;
+  void _drop;
+  return days === null ? rest : { ...rest, homeLunchDays: days };
 }
 
 /**

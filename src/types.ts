@@ -168,6 +168,13 @@ export type WeeklyCheckin = {
   unplannedSnackDays: number | null;
   /** שדה הטקסט החופשי היחיד באפליקציה, עד 280 תווים */
   note: string;
+  /**
+   * צהריים מהבית (שלב 2 של התוכנית, 1/11/2026): בכמה מימי א׳–ה׳ (0–5)
+   * הצהריים הגיעו מהבית. אופציונלי ובתוספת בלבד — רשומה ישנה בלי השדה
+   * נטענת ועובדת כמו שהייתה; חסר = לא הוזן (אין null). מוצג בסיכום השבועי
+   * רק משבועות שמתחילים ב-`HOME_LUNCH_FROM` (src/data/config.ts).
+   */
+  homeLunchDays?: number;
 };
 
 export const NOTE_MAX = 280;

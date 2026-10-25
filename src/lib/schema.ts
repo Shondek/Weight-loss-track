@@ -48,7 +48,7 @@ import { compareISO, isValidISO, toLocalISO, weekStart } from './date';
 import { isCardioId } from './workouts';
 import { sortStandalone } from './cardio';
 import { dominantSegment, totalMinutes } from './cardioSession';
-import { CARDIO_INCLINE_MAX, CARDIO_SPEED_MAX } from '../data/config';
+import { CARDIO_INCLINE_MAX, CARDIO_SPEED_MAX, HOME_LUNCH_MAX } from '../data/config';
 import { isCustomFoodId, isMohFoodId } from './nutrition/foods';
 import { fingerprint, mergeQuarantine, quarantineFromRejections } from './quarantine';
 
@@ -482,6 +482,8 @@ export function parseCheckins(input: unknown): ParseResult<WeeklyCheckin> {
       sleepRaw === null || sleepRaw < 0 || sleepRaw > 24
         ? null
         : Math.round(sleepRaw * 2) / 2;
+    // צהריים מהבית (שלב 2): אופציונלי. חסר, null או מחוץ ל-0–5 → השדה לא נכתב.
+    const homeLunchDays = intInRange(raw.homeLunchDays, 0, HOME_LUNCH_MAX);
 
     byWeek.set(ws, {
       weekStart: ws,
@@ -491,6 +493,7 @@ export function parseCheckins(input: unknown): ParseResult<WeeklyCheckin> {
       sleepHours: sleep,
       unplannedSnackDays: intInRange(raw.unplannedSnackDays, 0, 7),
       note: typeof raw.note === 'string' ? raw.note.slice(0, NOTE_MAX) : '',
+      ...(homeLunchDays !== null ? { homeLunchDays } : {}),
     });
   }
 
