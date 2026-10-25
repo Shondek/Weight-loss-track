@@ -83,6 +83,12 @@ describe('rirThreshold — הסף מיעד ה-RIR של התא', () => {
       'C6 ez-bar-preacher-curl RIR 1 progress → 1',
       'C7 triceps-pushdown RIR 1 progress → 1',
       'C8 cable-torso-rotation RIR 1 progress → 1',
+      // 25/10/2026: אימון D (אופציונלי) — כל התאים RIR 1 → סף 1
+      'D1 cable-low-fly RIR 1 progress → 1',
+      'D2 db-hammer-curl RIR 1 progress → 1',
+      'D3 cable-bar-pushdown RIR 1 progress → 1',
+      'D4 bench-reverse-crunch RIR 1 reps → 1',
+      'D5 cable-single-arm-lateral-raise RIR 1 progress → 1',
     ]);
   });
 });
@@ -243,9 +249,11 @@ describe('R1 / R5 לפי הסף של התא', () => {
 });
 
 describe('שורה שהוחלפה — הסף של התא שהוחלף', () => {
-  it('"החלף" בתא עם יעד 1 (C5) לחלופה מהמאגר (בלי effort): תקרה ב-RIR 1 → R1 בסיכום השבועי; אותה חלופה בתא עם יעד 2 → R5', () => {
-    const ALT = 'cable-single-arm-lateral-raise'; // חלופה של A7 (יעד 1) ושל C5 (יעד 1); במאגר בלי effort
-    expect(exerciseById(ALT)!.effort).toBeNull();
+  it('"החלף" בתא עם יעד 1 (C5) לחלופה: תקרה ב-RIR 1 → R1 בסיכום השבועי; אותה חלופה בתא עם יעד 2 → R5', () => {
+    // עד 25/10/2026 חלופה של A7 ו-C5 במאגר בלי effort; מ-25/10 — D5 (יעד RIR 1). רשומה ישנה שהוחלפה
+    // עדיין מקבלת את הסף של התא שהוחלף.
+    const ALT = 'cable-single-arm-lateral-raise';
+    expect(exerciseById(ALT)!.effort).toBe('RIR 1');
     // ההיסטוריה של החלופה: 40×15,15,15 ב-RIR 1 — תקרה
     const swappedC = le(ALT, 40, [15, 15, 15], { rir: 1, swappedFrom: 'db-lateral-raise-standing' });
     const dbC = { ...emptyDb(), workouts: [wk('c', '2026-10-13', 'C', [swappedC])] };
@@ -257,10 +265,15 @@ describe('שורה שהוחלפה — הסף של התא שהוחלף', () => {
     const dbA = { ...emptyDb(), workouts: [wk('a', '2026-10-13', 'A', [swappedA])] };
     const lineA = buildWeeklySummaryData(dbA, '2026-10-11').workouts.items[0]!.lines[0]!;
     expect(lineA.suggestion).toMatchObject({ rule: 'R5', action: 'same', weight: 40, repTarget: 12 });
-    // התא שהוחלף לא באימון הזה (רשומה ישנה; מ-20/10/2026 הפרפר ההפוך במאגר) → הסף של החלופה עצמה (בלי effort → 2)
+    // התא שהוחלף לא באימון הזה (רשומה ישנה; מ-20/10/2026 הפרפר ההפוך במאגר) → הסף של החלופה עצמה.
+    // עד 25/10/2026 — במאגר בלי effort → 2 → R5; מ-25/10 החלופה היא D5 (RIR 1) → 1 → R1.
     const swappedOld = le(ALT, 40, [15, 15, 15], { rir: 1, swappedFrom: 'reverse-pec-deck' });
     const dbOld = { ...emptyDb(), workouts: [wk('b', '2026-10-13', 'B', [swappedOld])] };
-    expect(buildWeeklySummaryData(dbOld, '2026-10-11').workouts.items[0]!.lines[0]!.suggestion).toMatchObject({ rule: 'R5' });
+    expect(buildWeeklySummaryData(dbOld, '2026-10-11').workouts.items[0]!.lines[0]!.suggestion).toMatchObject({ rule: 'R1' });
+    // חלופה שעדיין במאגר בלי effort (הקיקבק בפולי, חלופה של B7/C7) — כמו קודם: בלי תא → סף 2 → R5
+    const swappedPool = le('cable-kickback', 40, [15, 15], { rir: 1, swappedFrom: 'reverse-pec-deck', targetRepMin: 12, targetRepMax: 15 });
+    const dbPool = { ...emptyDb(), workouts: [wk('b', '2026-10-13', 'B', [swappedPool])] };
+    expect(buildWeeklySummaryData(dbPool, '2026-10-11').workouts.items[0]!.lines[0]!.suggestion).toMatchObject({ rule: 'R5' });
   });
 
   it('"החלף" ל-db-bench-press בתא A2 (יעד 2): תקרה ב-RIR 1 → R5 כמו קודם; ב-RIR 2 → R1 כמו קודם', () => {

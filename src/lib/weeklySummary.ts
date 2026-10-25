@@ -7,7 +7,8 @@
  * הכללים שהטקסט צריך לשרת (וגם מסמן כשלא מתקיימים):
  *  - שבוע תקף = 7/7 שקילות. שבוע תקף מושווה לשבוע התקף האחרון שלפניו —
  *    לא בהכרח השבוע הקודם.
- *  - מותניים נמדדים ברביעי.
+ *  - מותניים נמדדים ברביעי. אין רביעי → חמישי נחשב מדידת השבוע ומוצג עם
+ *    הערך (25/10/2026). שישי/שבת מוצגים כ"לא תקף" ואינם מדידת השבוע.
  *  - החלטות קלוריות רק מימים סגורים; הרצפה מ-targets.ts; היעדים (קק״ל,
  *    חלבון) הם היעד שבתוקף בשבת של השבוע (`targetFor`).
  *
@@ -16,7 +17,8 @@
 
 import type { DB, FridayTier, ISODate, LoggedExercise, WorkoutEntry, WorkoutType } from '../types';
 import { exerciseById, exerciseIn, shortName, WORKOUTS_PER_WEEK } from '../data/program';
-import { addDays, compareISO, dayLetter, diffWeeks, formatDM, isSaturday, weekDays, weekEnd, weekNumber, weekStart } from './date';
+import { HOME_LUNCH_FROM, HOME_LUNCH_MAX } from '../data/config';
+import { addDays, compareISO, dayLetter, dayName, diffWeeks, formatDM, isSaturday, weekDays, weekEnd, weekNumber, weekStart } from './date';
 import { programStartWeek } from './db';
 import { clean, DASH, round2 } from './format';
 import { getCheckin, isFilled } from './checkins';
@@ -38,6 +40,7 @@ import {
   peakPain,
   setPerformed,
   setValue,
+  rotationWorkouts,
   skippedExercises,
   workoutsInWeek,
 } from './workouts';
@@ -87,13 +90,27 @@ export type WeeklySummaryData = {
   waist: {
     /** מדידת רביעי של השבוע, או null. */
     wednesday: { d: ISODate; cm: number } | null;
+    /**
+     * מדידת חמישי כשאין רביעי (25/10/2026) — נחשבת מדידת השבוע ומוצגת עם
+     * הערך. null כשיש רביעי, או כשאין חמישי.
+     */
+    thursday: { d: ISODate; cm: number } | null;
+    /**
+     * מדידה בשישי או בשבת כשאין רביעי וחמישי — מוצגת עם "לא תקף" ואינה
+     * מדידת השבוע (הדגל נשאר). המאוחרת מבין השתיים. null בכל מקרה אחר.
+     */
+    late: { d: ISODate; cm: number } | null;
     /** המדידות האחרונות שלפני רביעי של השבוע, בכל יום בשבוע, מהחדשה לישנה. */
     previous: { d: ISODate; cm: number }[];
   };
   workouts: {
+    /** אימוני הסבב (A/B/C) בלבד — "אימונים n/3". */
     done: number;
     planned: number;
     items: { d: ISODate; t: WorkoutType; lines: ExerciseLine[]; skipped: string[] }[];
+    /** אימוני D (אופציונלי, 25/10/2026) — שורה נפרדת "אימון D: dd/mm", לא ב-n/3. */
+    optional: { d: ISODate; t: WorkoutType; lines: ExerciseLine[]; skipped: string[] }[];
+    /** כאב מרבי בכל אימוני השבוע, כולל D. */
     knee: number | null;
     shoulder: number | null;
     /** תרגילים שההצעה להם היא R3 (ירידה בביצועים). */
@@ -127,6 +144,12 @@ export type WeeklySummaryData = {
     unplannedSnackDays: number | null;
     note: string;
   } | null;
+  /**
+   * צהריים מהבית (שלב 2): null בשבוע שמתחיל לפני `HOME_LUNCH_FROM` — השורה
+   * לא מודפסת וסיכומי שבועות קודמים לא משתנים. משבוע 1/11/2026: `days` =
+   * הערך מהצ'ק-אין (0–5) או null כשלא הוזן ("—").
+   */
+  homeLunch: { days: number | null; max: number } | null;
   flags: string[];
 };
 
@@ -252,21 +275,33 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
   // ---- מותניים: הערך של רביעי, וההיסטוריה שלפניו (כל יום) ----
   const wednesday = days[WAIST_DAY]!;
   const wedEntry = db.waist.find((e) => e.d === wednesday) ?? null;
+  // אין רביעי → חמישי הוא מדידת השבוע. אין גם חמישי → שישי/שבת מוצגים כ"לא תקף".
+  const thursday = days[WAIST_DAY + 1]!;
+  const thuEntry = wedEntry ? null : (db.waist.find((e) => e.d === thursday) ?? null);
+  const lateEntry =
+    wedEntry || thuEntry
+      ? null
+      : (db.waist
+          .filter((e) => e.d === days[5] || e.d === days[6])
+          .sort((a, b) => compareISO(b.d, a.d))[0] ?? null);
   const previousWaist = db.waist
     .filter((e) => compareISO(e.d, wednesday) < 0)
     .sort((a, b) => compareISO(b.d, a.d))
     .slice(0, PREVIOUS_WAIST)
     .map((e) => ({ d: e.d, cm: e.cm }));
 
-  // ---- אימונים ----
-  const all = workoutsInWeek(db.workouts, ws);
-  const items = all.map((w) => ({
+  // ---- אימונים: הסבב (A/B/C) נספר ב-n/3; D אופציונלי בשורה משלו ----
+  const inWeek = workoutsInWeek(db.workouts, ws);
+  const all = rotationWorkouts(inWeek);
+  const itemOf = (w: WorkoutEntry) => ({
     d: w.d,
     t: w.t,
     lines: w.ex.filter((e) => !isCardio(e) && hasData(e)).map((row) => exerciseLine(db, w, row)),
     skipped: skippedExercises(w).map((e) => shortName(e.exerciseId, e.n)),
-  }));
-  const drops = [...new Set(items.flatMap((it) => it.lines.filter((l) => l.suggestion?.rule === 'R3').map((l) => l.name)))];
+  });
+  const items = all.map(itemOf);
+  const optional = inWeek.filter((w) => !all.includes(w)).map(itemOf);
+  const drops = [...new Set([...items, ...optional].flatMap((it) => it.lines.filter((l) => l.suggestion?.rule === 'R3').map((l) => l.name)))];
 
   // ---- תזונה: ימים סגורים בלבד ----
   const loggedDays = new Set(db.entries.filter((e) => days.includes(e.d)).map((e) => e.d));
@@ -297,11 +332,13 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
 
   const cardio = cardioWeek(db, ws);
   const steps = stepsWeek(db.days, ws);
+  // צהריים מהבית — רק משבוע 1/11/2026; הערך נקרא מהצ'ק-אין גם כשהשאר ריק.
+  const homeLunch = compareISO(ws, HOME_LUNCH_FROM) >= 0 ? { days: c?.homeLunchDays ?? null, max: HOME_LUNCH_MAX } : null;
 
   // ---- דגלים ----
   const flags: string[] = [];
   if (!valid) flags.push(`שבוע לא תקף (${current.count}/${WEEK_LENGTH})`);
-  if (!wedEntry) flags.push('מותניים לא נמדדו ברביעי');
+  if (!wedEntry && !thuEntry) flags.push('מותניים לא נמדדו ברביעי');
   if (cardio.over) flags.push(`אירובי מעל התקציב (${cardio.total}/${cardio.budget} דק׳)`);
   if (steps.goal !== null) {
     if (steps.avg !== null && steps.avg < steps.goal) flags.push(`ממוצע צעדים מתחת ליעד (${thousands(steps.avg)}/${thousands(steps.goal)})`);
@@ -317,13 +354,19 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     saturday,
     weekNo: start ? weekNumber(start, ws) : null,
     weight: { current, valid, comparison },
-    waist: { wednesday: wedEntry ? { d: wedEntry.d, cm: wedEntry.cm } : null, previous: previousWaist },
-    workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, knee: peakPain(all, 'knee'), shoulder: peakPain(all, 'shoulder'), drops },
+    waist: {
+      wednesday: wedEntry ? { d: wedEntry.d, cm: wedEntry.cm } : null,
+      thursday: thuEntry ? { d: thuEntry.d, cm: thuEntry.cm } : null,
+      late: lateEntry ? { d: lateEntry.d, cm: lateEntry.cm } : null,
+      previous: previousWaist,
+    },
+    workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, optional, knee: peakPain(inWeek, 'knee'), shoulder: peakPain(inWeek, 'shoulder'), drops },
     cardio,
     steps,
     nutrition,
     creatine,
     checkin,
+    homeLunch,
     flags,
   };
 }
@@ -368,7 +411,16 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
 
   // 3. מותניים
   L.push('מותניים');
-  L.push(data.waist.wednesday ? `רביעי ${formatDM(data.waist.wednesday.d)}: ${num(data.waist.wednesday.cm, 1)} ס״מ` : 'לא נמדד ברביעי');
+  const wa = data.waist;
+  L.push(
+    wa.wednesday
+      ? `רביעי ${formatDM(wa.wednesday.d)}: ${num(wa.wednesday.cm, 1)} ס״מ`
+      : wa.thursday
+        ? `מותניים ${num(wa.thursday.cm, 1)} (חמישי ${formatDM(wa.thursday.d)})`
+        : wa.late
+          ? `מותניים ${num(wa.late.cm, 1)} (${dayName(wa.late.d)} — לא תקף)`
+          : 'לא נמדד ברביעי',
+  );
   L.push(
     `אחרונות לפני: ${data.waist.previous.length ? data.waist.previous.map((e) => `${formatDM(e.d)} ${num(e.cm, 1)}`).join(' · ') : DASH}`,
   );
@@ -377,8 +429,7 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
   // 4. אימונים
   const wk = data.workouts;
   L.push(`אימונים ${wk.done}/${wk.planned}${wk.items.length ? ' · ' + wk.items.map((it) => `${formatDM(it.d)} ${it.t}`).join(' · ') : ''}`);
-  for (const it of wk.items) {
-    L.push(`${formatDM(it.d)} ${it.t}`);
+  const pushLines = (it: WeeklySummaryData['workouts']['items'][number]) => {
     if (it.lines.length === 0) L.push('  לא נרשמו תרגילים');
     for (const line of it.lines) {
       const parts = [line.text];
@@ -394,6 +445,17 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
       L.push(`  ${parts.join(' · ')}`);
     }
     if (it.skipped.length) L.push(`  דולגו: ${it.skipped.join(', ')}`);
+  };
+  for (const it of wk.items) {
+    L.push(`${formatDM(it.d)} ${it.t}`);
+    pushLines(it);
+  }
+  // אימון D (אופציונלי, 25/10/2026): שורה נפרדת, לא ב-n/3; התרגילים באותו פורמט.
+  // יותר מאימון D אחד בשבוע — כותרת תאריך לכל אחד, כמו ב-A/B/C.
+  L.push(`אימון D: ${wk.optional.length ? wk.optional.map((it) => formatDM(it.d)).join(' · ') : DASH}`);
+  for (const it of wk.optional) {
+    if (wk.optional.length > 1) L.push(`${formatDM(it.d)} ${it.t}`);
+    pushLines(it);
   }
   L.push(`כאב: ברך ${num(wk.knee)} · כתף ${num(wk.shoulder)}`);
   L.push('');
@@ -443,6 +505,8 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
     );
     L.push(`הערה: ${c.note || DASH}`);
   }
+  // צהריים מהבית — רק משבוע 1/11/2026 (null לפני כן: שום שורה).
+  if (data.homeLunch) L.push(`צהריים מהבית: ${data.homeLunch.days === null ? DASH : `${data.homeLunch.days}/${data.homeLunch.max}`}`);
   L.push('');
 
   // 8. דגלים

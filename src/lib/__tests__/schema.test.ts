@@ -223,10 +223,11 @@ describe('parseWorkouts — פורמט הגרסה הישנה', () => {
     expect(r.ok[0]?.id).toBeTruthy();
   });
 
-  it('דוחה סוג אימון לא חוקי', () => {
-    const r = parseWorkouts([{ ...legacy, t: 'D' }]);
+  it('דוחה סוג אימון לא חוקי (מ-25/10/2026 D חוקי; E לא)', () => {
+    const r = parseWorkouts([{ ...legacy, t: 'E' }]);
     expect(r.ok).toHaveLength(0);
-    expect(r.rejected[0]?.reason).toContain('A/B/C');
+    expect(r.rejected[0]?.reason).toContain('A/B/C/D');
+    expect(parseWorkouts([{ ...legacy, t: 'D' }]).ok[0]?.t).toBe('D');
   });
 
   it('כאב מחוץ לטווח הופך ל-null', () => {

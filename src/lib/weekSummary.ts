@@ -26,6 +26,7 @@ import {
   isCardio,
   isTimedExercise,
   peakPain,
+  rotationWorkouts,
   setPerformed,
   setValue,
   skippedExercises,
@@ -143,7 +144,8 @@ export function weekGaps(db: DB, week: ISODate, today: ISODate): string[] {
   const saturday = weekEnd(week);
   // עד סוף השבוע, אבל לא אל תוך העתיד — יום שעוד לא הגיע אינו "חסר".
   const upto = compareISO(today, saturday) < 0 ? today : saturday;
-  const all = workoutsInWeek(db.workouts, week);
+  // "חסר" לפי אימוני הסבב בלבד — D אופציונלי ולא ממלא אימון חסר.
+  const all = rotationWorkouts(workoutsInWeek(db.workouts, week));
   const gaps: string[] = [...missingWorkoutText(all.length)];
   const missedDays = missingWeighDays(db.weights, week, upto);
   if (missedDays.length === 1) gaps.push(`שקילה של ${formatDM(missedDays[0]!)}`);
@@ -168,9 +170,13 @@ export type WeekReport = {
   };
   waist: { now: number | null; previous: number | null };
   workouts: {
+    /** אימוני הסבב (A/B/C) בלבד — "n/3". */
     done: number;
     planned: number;
     items: { id: string; d: ISODate; t: WorkoutType; text: string; skipped: string[] }[];
+    /** אימוני D (אופציונלי, 25/10/2026) — מוצגים בנפרד, לא ב-n/3. */
+    optional: { id: string; d: ISODate; t: WorkoutType; text: string; skipped: string[] }[];
+    /** כאב מרבי בכל אימוני השבוע, כולל D. */
     knee: number | null;
     shoulder: number | null;
   };
@@ -198,7 +204,9 @@ export function buildWeekSummary(db: DB, week: ISODate, today: ISODate): WeekRep
   const current = summarizeWeek(db.weights, week);
   const previous = summarizeWeek(db.weights, addDays(week, -7));
   const change = weekChange(current, previous);
-  const all = workoutsInWeek(db.workouts, week);
+  const inWeek = workoutsInWeek(db.workouts, week);
+  const all = rotationWorkouts(inWeek);
+  const itemOf = (w: WorkoutEntry) => ({ id: w.id, d: w.d, t: w.t, text: entryLine(w), skipped: skippedNames(w) });
 
   return {
     week,
@@ -221,15 +229,10 @@ export function buildWeekSummary(db: DB, week: ISODate, today: ISODate): WeekRep
     workouts: {
       done: all.length,
       planned: WORKOUTS_PER_WEEK,
-      items: all.map((w) => ({
-        id: w.id,
-        d: w.d,
-        t: w.t,
-        text: entryLine(w),
-        skipped: skippedNames(w),
-      })),
-      knee: peakPain(all, 'knee'),
-      shoulder: peakPain(all, 'shoulder'),
+      items: all.map(itemOf),
+      optional: inWeek.filter((w) => !all.includes(w)).map(itemOf),
+      knee: peakPain(inWeek, 'knee'),
+      shoulder: peakPain(inWeek, 'shoulder'),
     },
     cardio: {
       ...cardioWeek(db, week),

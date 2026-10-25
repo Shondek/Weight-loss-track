@@ -179,7 +179,8 @@ describe('C6 — כפיפת מרפקים בכיסא כומר עם מוט W (ez-b
     expect(alternatesFor(C6).map((a) => a.name)).toEqual(['כפיפת מרפקים- פולי תחתון חבל']);
     // כיסא הכומר עם משקולת יד (db-preacher-curl) נשאר במאגר כמו שהיה — תרגיל אחר, לא כפיל
     expect(exerciseById('db-preacher-curl')).toMatchObject({ id: 'db-preacher-curl', name: 'כפיפת מרפק- כיסא כומר מ.יד סופינציה', sets: 2, repRangeMin: 10, repRangeMax: 12, step: 2.5, note: null, videoUrl: null });
-    expect(alternatesFor('db-supinated-curl').map((a) => a.id)).toEqual(['cable-bar-curl', 'db-hammer-curl', 'db-preacher-curl']);
+    // 25/10/2026: כפיפת הפטיש (db-hammer-curl) עברה ל-D2 והוסרה מחלופות B6
+    expect(alternatesFor('db-supinated-curl').map((a) => a.id)).toEqual(['cable-bar-curl', 'db-preacher-curl']);
   });
 
   it('14. כפיפת המרפקים בחבל: אותו מזהה, שם, 2×12–15, step 5, הערה וסרטון — במאגר, לא תא, חלופה של C6 בלבד; השם נפתר', () => {
@@ -228,7 +229,8 @@ describe('C6 — כפיפת מרפקים בכיסא כומר עם מוט W (ez-b
       step: 5,
       note: null,
       videoUrl: C7_VIDEO,
-      alternates: ['cable-bar-pushdown', 'cable-kickback', 'db-kickback'],
+      // 25/10/2026: פשיטת המרפקים עם מוט (cable-bar-pushdown) עברה ל-D3 והוסרה מחלופות B7 ו-C7
+      alternates: ['cable-kickback', 'db-kickback'],
     });
     const b7 = exerciseIn('B', C7)!;
     const { alternates: _a, ...c7Rest } = c7;
@@ -259,24 +261,27 @@ describe('11. התוכנית כולה: C בסדר החדש; A ו-B כמו קוד
       'leg-extension:2x12-15:RIR 1:null:progress:wall-sit',
       'leg-curl:2x10-12:RIR 1:null:progress:lying-leg-curl,single-leg-curl',
       'back-extension:3x12-15:RIR 2:2.5:progress:',
-      'db-lateral-raise-seated:3x12-15:RIR 1:2.5:progress:cable-single-arm-lateral-raise,db-lateral-raise-standing',
+      // 25/10/2026: ההרחקה בכבל יד אחת → D5, הוסרה מחלופות A7 (ומ-C5)
+      'db-lateral-raise-seated:3x12-15:RIR 1:2.5:progress:db-lateral-raise-standing',
       'plank:3x60-60:null:2.5:maintain:side-plank-static,cable-crunch',
     ]);
     expect(snap('B')).toEqual([
       'barbell-rdl:3x8-10:RIR 3:5:progress:db-rdl,smith-hip-hinge',
       'seated-cable-row:3x10-12:RIR 2:5:progress:machine-row,t-bar-row,single-arm-cable-row',
-      'pec-deck:3x10-12:RIR 2:null:progress:cable-fly,cable-low-fly',
+      // 25/10/2026: הפרפר התחתון → D1, הוסר מחלופות B3
+      'pec-deck:3x10-12:RIR 2:null:progress:cable-fly',
       'leg-curl:3x10-12:RIR 2:null:progress:lying-leg-curl,single-leg-curl',
       'face-pull:3x15-20:RIR 1:5:progress:cable-reverse-fly',
-      'db-supinated-curl:2x10-12:RIR 1:2.5:progress:cable-bar-curl,db-hammer-curl,db-preacher-curl',
-      'triceps-pushdown:2x12-15:RIR 1:5:progress:cable-bar-pushdown,cable-kickback,db-kickback',
+      // 25/10/2026: כפיפת הפטיש → D2, פשיטת מרפקים עם מוט → D3 — הוסרו מחלופות B6, B7
+      'db-supinated-curl:2x10-12:RIR 1:2.5:progress:cable-bar-curl,db-preacher-curl',
+      'triceps-pushdown:2x12-15:RIR 1:5:progress:cable-kickback,db-kickback',
       'floor-leg-raise:3x10-15:RIR 1:null:reps:',
     ]);
     // C1, C2, C4, C5, C8 — ללא שינוי
     expect(PROGRAM.C[0]).toMatchObject({ id: 'machine-hip-abduction', sets: 3, repRangeMin: 15, repRangeMax: 20, effort: 'RIR 1-2', step: null, alternates: ['band-hip-abduction-standing', 'band-hip-abduction-seated'] });
     expect(PROGRAM.C[1]).toMatchObject({ id: 'machine-row', sets: 3, repRangeMin: 10, repRangeMax: 12, effort: 'RIR 2', step: null, alternates: ['db-single-arm-row', 'single-arm-cable-row', 't-bar-row'] });
     expect(PROGRAM.C[3]).toMatchObject({ id: 'leg-press', sets: 3, repRangeMin: 10, repRangeMax: 12, effort: 'RIR 2', step: 5, alternates: ['hack-squat', 'machine-squat', 'goblet-squat'] });
-    expect(PROGRAM.C[4]).toMatchObject({ id: 'db-lateral-raise-standing', sets: 3, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 2.5, alternates: ['cable-single-arm-lateral-raise', 'db-lateral-raise-seated'] });
+    expect(PROGRAM.C[4]).toMatchObject({ id: 'db-lateral-raise-standing', sets: 3, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 2.5, alternates: ['db-lateral-raise-seated'] });
   });
 
   it('18. A2: ההערה פותחת ב-"ספסל ישר (שטוח)." — אותו תוכן אחריה; שם, מזהה, מפרט, step, סרטון וחלופות ללא שינוי', () => {
@@ -315,10 +320,11 @@ describe('11. התוכנית כולה: C בסדר החדש; A ו-B כמו קוד
     const all = [...WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => e.id)), ...ALTERNATES.map((a) => a.id)];
     const unique = new Set(all);
     for (const id of [C3, C6, DB_INCLINE, ROPE, C7]) expect(unique.has(id), id).toBe(true);
-    expect(unique.size - 1).toBe(58);
-    expect(ALTERNATES).toHaveLength(38);
-    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(38);
-    expect(new Set(ALTERNATES.map((a) => a.name)).size).toBe(38);
+    // 25/10/2026: אימון D — +1 מזהה חדש (D4), וארבעה מזהים עברו מהמאגר לתוכנית (38 → 34)
+    expect(unique.size - 1).toBe(59);
+    expect(ALTERNATES).toHaveLength(34);
+    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(34);
+    expect(new Set(ALTERNATES.map((a) => a.name)).size).toBe(34);
   });
 });
 

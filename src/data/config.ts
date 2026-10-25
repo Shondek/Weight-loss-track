@@ -83,6 +83,14 @@ export const STEPS_GOAL_SCHEDULE: readonly { from: ISODate; steps: number }[] = 
   { from: '2026-11-01', steps: 8000 },
 ];
 
+/**
+ * "צהריים מהבית" (שלב 2 של התוכנית): שדה אופציונלי בצ'ק-אין של שבת, 0–5
+ * ימים (א׳–ה׳). מופיע בסיכום השבועי לצ'אט רק משבועות שמתחילים ב-`HOME_LUNCH_FROM`
+ * (ראשון 1/11/2026) — סיכומים של שבועות קודמים לא משתנים.
+ */
+export const HOME_LUNCH_FROM: ISODate = '2026-11-01';
+export const HOME_LUNCH_MAX = 5;
+
 /** קפיצת כפתורי ה-± בשדה המשקל, בק"ג. */
 export const WEIGHT_STEP = 0.5;
 

@@ -14,7 +14,11 @@ export type WeightEntry = { d: ISODate; w: number };
 /** מדידת מותניים בס"מ, בוקר, בטבור. פעם בשבוע. */
 export type WaistEntry = { d: ISODate; cm: number };
 
-export type WorkoutType = 'A' | 'B' | 'C';
+/**
+ * A/B/C — הסבב. D (25/10/2026) — אימון אופציונלי מחוץ לסבב: נבחר ידנית, לא
+ * משפיע על "הבא בתור" ולא נספר ב-"אימונים n/3" (ראה `ROTATION` ב-data/program.ts).
+ */
+export type WorkoutType = 'A' | 'B' | 'C' | 'D';
 
 /**
  * סוג התנועה. קובע את משכי המנוחה בין סטים ובין תרגילים — הערכים עצמם
@@ -168,6 +172,13 @@ export type WeeklyCheckin = {
   unplannedSnackDays: number | null;
   /** שדה הטקסט החופשי היחיד באפליקציה, עד 280 תווים */
   note: string;
+  /**
+   * צהריים מהבית (שלב 2 של התוכנית, 1/11/2026): בכמה מימי א׳–ה׳ (0–5)
+   * הצהריים הגיעו מהבית. אופציונלי ובתוספת בלבד — רשומה ישנה בלי השדה
+   * נטענת ועובדת כמו שהייתה; חסר = לא הוזן (אין null). מוצג בסיכום השבועי
+   * רק משבועות שמתחילים ב-`HOME_LUNCH_FROM` (src/data/config.ts).
+   */
+  homeLunchDays?: number;
 };
 
 export const NOTE_MAX = 280;

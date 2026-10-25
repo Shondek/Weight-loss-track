@@ -180,8 +180,9 @@ describe('B5 — חתירה אופקית בחבל, פייס פול (face-pull, 2
     expect(new Set(pool).size).toBe(pool.length);
     for (const id of pool) expect(program, id).not.toContain(id);
     for (const id of pool) expect(RETIRED.some((r) => r.id === id), id).toBe(false);
-    expect(pool).toHaveLength(38);
-    expect(new Set([...program, ...pool]).size - 1).toBe(58);
+    // 25/10/2026: אימון D — ארבעה מזהים עברו מהמאגר לתוכנית (38 → 34) ו-D4 חדש (58 → 59)
+    expect(pool).toHaveLength(34);
+    expect(new Set([...program, ...pool]).size - 1).toBe(59);
   });
 });
 

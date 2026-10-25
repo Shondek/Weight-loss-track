@@ -12,9 +12,10 @@ import type {
 } from '../types';
 import {
   PROGRAM,
-  WORKOUT_TYPES,
+  ROTATION,
   type Exercise,
   exerciseById,
+  isRotationType,
 } from '../data/program';
 import { CARDIO_MODES, FINISHER_CARDIO, WARMUP } from '../data/config';
 import { compareISO, weekDays } from './date';
@@ -55,12 +56,20 @@ export function lastWorkout(list: readonly WorkoutEntry[]): WorkoutEntry | null 
   return sorted[sorted.length - 1] ?? null;
 }
 
-/** הבא בסבב A→B→C מהאימון האחרון שנרשם. בלי היסטוריה — A. */
+/** האימונים שבסבב (A/B/C) — מה שנספר ב-"אימונים n/3". D (אופציונלי) לא. */
+export function rotationWorkouts(list: readonly WorkoutEntry[]): WorkoutEntry[] {
+  return list.filter((w) => isRotationType(w.t));
+}
+
+/**
+ * הבא בסבב A→B→C מהאימון האחרון *בסבב* שנרשם. בלי היסטוריה — A. אימון D
+ * (25/10/2026) שקוף: אחרי A→D בא B, אחרי C→D בא A.
+ */
 export function nextType(list: readonly WorkoutEntry[]): WorkoutType {
-  const last = lastWorkout(list);
+  const last = lastWorkout(rotationWorkouts(list));
   if (!last) return 'A';
-  const i = WORKOUT_TYPES.indexOf(last.t);
-  return WORKOUT_TYPES[(i + 1) % WORKOUT_TYPES.length] ?? 'A';
+  const i = ROTATION.indexOf(last.t);
+  return ROTATION[(i + 1) % ROTATION.length] ?? 'A';
 }
 
 // ---------- סטים ----------

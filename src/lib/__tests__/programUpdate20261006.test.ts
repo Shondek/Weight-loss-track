@@ -247,9 +247,9 @@ describe('B8 — בטן- הרמת רגליים על הרצפה (floor-leg-raise,
       { weight: null, reps: null, seconds: null },
       { weight: null, reps: null, seconds: null },
     ]);
-    // חזרות בלבד הוא היחיד; שימור נשאר של הפלאנק בלבד
+    // חזרות בלבד: B8, ומ-25/10/2026 גם D4 (כפיפות בטן לאחור על ספסל); שימור נשאר של הפלאנק בלבד
     for (const t of WORKOUT_TYPES) {
-      for (const e of PROGRAM[t]) expect(e.mode, e.id).toBe(e.id === B8 ? 'reps' : e.id === 'plank' ? 'maintain' : 'progress');
+      for (const e of PROGRAM[t]) expect(e.mode, e.id).toBe(e.id === B8 || e.id === 'bench-reverse-crunch' ? 'reps' : e.id === 'plank' ? 'maintain' : 'progress');
     }
   });
 
