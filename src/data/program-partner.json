@@ -1,5 +1,5 @@
 {
-  "$comment": "התוכנית של בת הזוג (25/10/2026) — נטענת רק כשפרופיל המכשיר הוא `partner` (fatloss:profile; ראה src/data/profile.ts). אותה סכמה בדיוק כמו program-abc.json: workouts / retired / alternates, אותם שדות לתרגיל, אותו מנוע התקדמות (R1–R6, rirThreshold, bodyweightStart, mode). שני אימונים, A ו-B, לסירוגין — האימון הבא הוא זה שלא בוצע בפעם האחרונה (ROTATION = A/B), בלי ימים קבועים ובלי מונה n/3. **שבועיים ראשונים: `sets: 2` בכל תא.** המעבר ל-3 סטים יהיה PR נפרד של שורה אחת לכל תא (sets: 2 → 3) — בלי שינוי אחר. `effort: \"RIR 2-3\"` בכל התאים (הסף מ-17/10/2026: min(2, הגבול התחתון) = 2). שמות מילה במילה מהמאגר של program-abc.json (תוכנית, alternates, retired) ו-`videoUrl` לפי אותו שם; תרגיל שקיים שם → אותו `id`, כך שההיסטוריה של אותה מכונה היא אחת (ולכן הפרופיל מוחלף רק במכשיר ריק). מזהה חדש אחד: `machine-shoulder-press` (B4 \"פרס- מכונה\", לחיצת כתפיים במכונה — אינו במאגר של שון, אסור אצלו בגלל הכתף). `db-step-up` (B1 עליות קובייה) הוא מזהה פרוש אצל שון וכאן תא פעיל — אותו מזהה, בלי סרטון. `step`: משקולות יד 2.5, פולי 5, לג-פרס 5, מכונות פלטות null (\"דרגה אחת\"); R4 (קפיצה גדולה) שומר על משקולות קלות — step/משקל > 20% → קודם תקרה +2 ואז קופצים. A2 (ספסל רומי) ו-B1 (עליות קובייה): `bodyweightStart: true` — שדה משקל ריק = משקל גוף, הקפיצה הראשונה היא R4. A7 (פלאנק): `mode: \"reps\"` עם isTimed — התקדמות בשניות דרך הכללים הרגילים (R6: +1 שנ׳ בסט הנמוך; תקרה 40 → \"תקרה — נשארים\"; אין כלל שניות ייעודי במנוע). חלופה אחת בלבד, ב-B2 (דד-ליפט רומניין עם מ.יד → כפיפת ברכיים במכונה רגל-רגל); בכל תא אחר תפוס = \"דלג ואחזור\". `retired` ריק — אין היסטוריה קודמת.",
+  "$comment": "התוכנית של בת הזוג (25/10/2026) — נטענת רק כשפרופיל המכשיר הוא `partner` (fatloss:profile; ראה src/data/profile.ts). אותה סכמה בדיוק כמו program-abc.json: workouts / retired / alternates, אותם שדות לתרגיל, אותו מנוע התקדמות (R1–R6, rirThreshold, bodyweightStart, mode). שני אימונים, A ו-B, לסירוגין — האימון הבא הוא זה שלא בוצע בפעם האחרונה (ROTATION = A/B), בלי ימים קבועים ובלי מונה n/3. **שבועיים ראשונים: `sets: 2` בכל תא.** המעבר ל-3 סטים יהיה PR נפרד של שורה אחת לכל תא (sets: 2 → 3) — בלי שינוי אחר. `effort: \"RIR 2-3\"` בכל התאים (הסף מ-17/10/2026: min(2, הגבול התחתון) = 2). שמות מילה במילה מהמאגר של program-abc.json (תוכנית, alternates, retired) ו-`videoUrl` לפי אותו שם; תרגיל שקיים שם → אותו `id`, כך שההיסטוריה של אותה מכונה היא אחת (ולכן הפרופיל מוחלף רק במכשיר ריק). מזהה חדש אחד: `machine-shoulder-press` (B4 \"פרס- מכונה\", לחיצת כתפיים במכונה — אינו במאגר של שון, אסור אצלו בגלל הכתף). `db-step-up` (B1 עליות קובייה) הוא מזהה פרוש אצל שון וכאן תא פעיל — אותו מזהה. סרטונים ל-B1, ל-B4 ולחלופה של B2 נוספו כאן (אינם במאגר של שון). `step`: משקולות יד 2.5, פולי 5, לג-פרס 5, מכונות פלטות null (\"דרגה אחת\"); R4 (קפיצה גדולה) שומר על משקולות קלות — step/משקל > 20% → קודם תקרה +2 ואז קופצים. A2 (ספסל רומי) ו-B1 (עליות קובייה): `bodyweightStart: true` — שדה משקל ריק = משקל גוף, הקפיצה הראשונה היא R4. A7 (פלאנק): `mode: \"reps\"` עם isTimed — התקדמות בשניות דרך הכללים הרגילים (R6: +1 שנ׳ בסט הנמוך; תקרה 40 → \"תקרה — נשארים\"; אין כלל שניות ייעודי במנוע). חלופה אחת בלבד, ב-B2 (דד-ליפט רומניין עם מ.יד → כפיפת ברכיים במכונה רגל-רגל); בכל תא אחר תפוס = \"דלג ואחזור\". `retired` ריק — אין היסטוריה קודמת.",
   "workouts": [
     {
       "code": "A",
@@ -158,7 +158,7 @@
           "effort": "RIR 2-3",
           "bodyweightStart": true,
           "note": "קובייה נמוכה. מתחילים בלי משקולות. דוחפים דרך העקב של הרגל שעל הקובייה.",
-          "videoUrl": null,
+          "videoUrl": "https://drive.google.com/file/d/1_SKNXfyV4gQYNwDvHrAK7S4rjLKTOTUd/view?usp=share_link",
           "alternates": []
         },
         {
@@ -212,7 +212,7 @@
           "repRangeMax": 12,
           "effort": "RIR 2-3",
           "note": "הגב צמוד למשענת. למעלה לא נועלים את המרפקים.",
-          "videoUrl": null,
+          "videoUrl": "https://drive.google.com/file/d/1XvbVr7MVHsX-yDayXSS-IeAknj__Kr0d/view?usp=drive_link",
           "alternates": []
         },
         {
@@ -275,6 +275,6 @@
   ],
   "retired": [],
   "alternates": [
-    {"id": "single-leg-curl", "name": "כפיפת ברכיים במכונה רגל-רגל", "short": "כפיפת ברכיים רגל-רגל", "machine": "Leg Curl", "muscle": "legs", "muscles": ["ירך אחורית"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12, "step": null, "note": null, "unilateral": true}
+    {"id": "single-leg-curl", "name": "כפיפת ברכיים במכונה רגל-רגל", "short": "כפיפת ברכיים רגל-רגל", "machine": "Leg Curl", "muscle": "legs", "muscles": ["ירך אחורית"], "type": "isolation", "sets": 2, "repRangeMin": 10, "repRangeMax": 12, "step": null, "note": null, "unilateral": true, "videoUrl": "https://drive.google.com/file/d/1vDvmRMxuoyMxM7g9RDxUrtlDomCqnIem/view?usp=sharing"}
   ]
 }

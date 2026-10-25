@@ -42,10 +42,10 @@ const EXPECTED: { cell: string; id: string; name: string; inLibrary: boolean; vi
   { cell: 'A5', id: 'leg-curl', name: 'כפיפת ברכיים במכונה', inLibrary: true, video: true },
   { cell: 'A6', id: 'reverse-pec-deck', name: 'הרחקה אופקית- מכונת פרפר', inLibrary: true, video: true },
   { cell: 'A7', id: 'plank', name: 'בטן- פלאנק סטטי', inLibrary: true, video: true },
-  { cell: 'B1', id: 'db-step-up', name: 'עליות קובייה- מ.יד', inLibrary: true, video: false },
+  { cell: 'B1', id: 'db-step-up', name: 'עליות קובייה- מ.יד', inLibrary: true, video: true },
   { cell: 'B2', id: 'db-rdl', name: 'דד-ליפט רומניין עם מ.יד', inLibrary: true, video: true },
   { cell: 'B3', id: 'machine-row', name: 'חתירה- מכונה ייעודית', inLibrary: true, video: true },
-  { cell: 'B4', id: 'machine-shoulder-press', name: 'פרס- מכונה', inLibrary: false, video: false },
+  { cell: 'B4', id: 'machine-shoulder-press', name: 'פרס- מכונה', inLibrary: false, video: true },
   { cell: 'B5', id: 'machine-hip-abduction', name: 'הרחקת ירך במכונה', inLibrary: true, video: true },
   { cell: 'B6', id: 'triceps-pushdown', name: 'פשיטת מרפקים- פולי עליון חבל', inLibrary: true, video: true },
   { cell: 'B7', id: 'cable-torso-rotation', name: 'בטן- רוטציות גו פולי אמצעי', inLibrary: true, video: true },
@@ -116,7 +116,7 @@ describe('2. program-partner.json — מבנה', () => {
     expect(partner.retired).toEqual([]);
   });
 
-  it('14 התאים: מזהה, שם מילה במילה, ו-videoUrl מהמאגר של שון לפי השם; מזהה חדש אחד', () => {
+  it('14 התאים: מזהה, שם מילה במילה, ו-videoUrl מהמאגר של שון לפי השם; מזהה חדש אחד; סרטון בכל תא', () => {
     expect(CELLS.map((e) => e.id)).toEqual(EXPECTED.map((x) => x.id));
     for (const [i, x] of EXPECTED.entries()) {
       const cell = CELLS[i]!;
@@ -125,11 +125,13 @@ describe('2. program-partner.json — מבנה', () => {
       expect(lib !== undefined, `${x.cell} ${x.id} במאגר`).toBe(x.inLibrary);
       if (lib) {
         expect(cell.name, `${x.cell} שם כמו במאגר`).toBe(lib.name);
-        expect(cell.videoUrl, `${x.cell} סרטון כמו במאגר`).toBe(lib.videoUrl);
+        // סרטון כמו במאגר; תרגיל שבמאגר אין לו סרטון (db-step-up, פרוש) קיבל אחד כאן.
+        if (lib.videoUrl !== null) expect(cell.videoUrl, `${x.cell} סרטון כמו במאגר`).toBe(lib.videoUrl);
         expect(cell.machine, `${x.cell} מכונה`).toBe(lib.machine);
         expect(cell.type, `${x.cell} סוג`).toBe(lib.type);
       }
       expect(cell.videoUrl !== null, `${x.cell} יש סרטון`).toBe(x.video);
+      expect(cell.videoUrl, `${x.cell} https`).toMatch(/^https:\/\//);
     }
   });
 
@@ -209,7 +211,10 @@ describe('2. program-partner.json — מבנה', () => {
 
   it('חלופה אחת בלבד: B2 → כפיפת ברכיים במכונה רגל-רגל; בכל תא אחר אין', () => {
     expect(partner.alternates.map((e) => e.id)).toEqual(['single-leg-curl']);
-    expect(partner.byId.get('single-leg-curl')).toMatchObject({ name: 'כפיפת ברכיים במכונה רגל-רגל', unilateral: true, videoUrl: null });
+    expect(partner.byId.get('single-leg-curl')).toMatchObject({ name: 'כפיפת ברכיים במכונה רגל-רגל', unilateral: true });
+    expect(partner.byId.get('single-leg-curl')?.videoUrl).toMatch(/^https:\/\/drive\.google\.com\//);
+    // המאגר של שון לא השתנה — החלופה שם עדיין בלי סרטון.
+    expect(LIBRARY.get('single-leg-curl')?.videoUrl).toBeNull();
     expect(LIBRARY.get('single-leg-curl')?.name).toBe('כפיפת ברכיים במכונה רגל-רגל');
     for (const e of CELLS) expect(e.alternates, e.id).toEqual(e.id === 'db-rdl' ? ['single-leg-curl'] : []);
   });
