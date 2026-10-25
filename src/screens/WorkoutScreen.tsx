@@ -22,6 +22,8 @@ import {
   restSeconds,
 } from '../data/program';
 import { HISTORY_ROWS } from '../data/config';
+import { activeProfile } from '../data/profile';
+import { workoutFeatures } from '../lib/profile';
 import { suggestNext } from '../lib/progression';
 import {
   blankLoggedExercise,
@@ -111,6 +113,12 @@ import {
 } from '../platform/uiState';
 
 const HISTORY_COUNT = 12;
+/**
+ * מה המסך מציג לפי פרופיל המכשיר (lib/profile.ts). בלי פרופיל — הכול,
+ * כמו היום. בת הזוג: בלי תזכורת הברך/הכתף, בלי שדות הכאב, בלי אירובי
+ * (שורת הסיום, הכרטיס העצמאי, התקציב) ובלי המונה "n/3".
+ */
+const FEATURES = workoutFeatures(activeProfile());
 const PAIN_SCALE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 /** כל כמה זמן בודקים אם ריצה פעילה עברה את הדדליין (חיתוך אוטומטי). */
 const SESSION_CHECK_MS = 5000;
@@ -231,10 +239,12 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
               דולגו: {skipped.map((e) => e.n).join(', ')}
             </p>
           )}
-          <p className="tiny muted" style={{ margin: 0 }}>
-            כאב: ברך <span className="num">{w.knee ?? DASH}</span> · כתף{' '}
-            <span className="num">{w.shoulder ?? DASH}</span>
-          </p>
+          {FEATURES.pain && (
+            <p className="tiny muted" style={{ margin: 0 }}>
+              כאב: ברך <span className="num">{w.knee ?? DASH}</span> · כתף{' '}
+              <span className="num">{w.shoulder ?? DASH}</span>
+            </p>
+          )}
           <ConfirmButton
             ariaLabel={`מחק אימון ${w.t} של ${formatDMY(w.d)}`}
             onConfirm={onDelete}
@@ -292,7 +302,11 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
 
   const stored = openId ? (db.workouts.find((w) => w.id === openId) ?? null) : null;
   const open = draft ?? stored;
-  const rows = open ? exercisesFor(open, db.workouts) : [];
+  // בלי אירובי (בת הזוג): שורת אירובי הסיום לא מוצגת ולא נשמרת. היא ממילא
+  // ריקה עד "התחל" (לא נתון), ו-exercisesFor משלים אותה בכל קריאה.
+  const rows = open
+    ? exercisesFor(open, db.workouts).filter((r) => FEATURES.cardio || r.exerciseId !== FINISHER_ID)
+    : [];
   const current = rows[Math.min(focus, Math.max(0, rows.length - 1))] ?? null;
   /** מספור לתצוגה: חימום = 0, תרגילי הכוח 1..N, אירובי סיום = "א". */
   const strengthTotal = rows.filter((r) => !isCardio(r)).length;
@@ -712,9 +726,11 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
 
   return (
     <div className="stack--loose">
-      <p className="tiny muted" style={{ margin: 0 }}>
-        {CONSTRAINTS}
-      </p>
+      {FEATURES.constraints && (
+        <p className="tiny muted" style={{ margin: 0 }}>
+          {CONSTRAINTS}
+        </p>
+      )}
 
       <section className="section section--first">
         <WeekNav
@@ -724,21 +740,28 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           weekNo={start ? weekNumber(start, week) : null}
         />
         <p className="sub" style={{ margin: 'var(--sp-4) 0 0' }}>
-          {/* n/3 סופר את הסבב בלבד; אימון D (אופציונלי) מופיע ברשימה אבל לא במונה. */}
-          <span className="num">{rotationWorkouts(inWeek).length}</span> /{' '}
-          <span className="num">{WORKOUTS_PER_WEEK}</span> אימונים השבוע · הבא בתור:{' '}
-          <span className="strong">{upNext}</span>
+          {/* n/3 סופר את הסבב בלבד; אימון D (אופציונלי) מופיע ברשימה אבל לא במונה.
+              בת הזוג: בלי ימים קבועים — רק "הבא בתור". */}
+          {FEATURES.weeklyCounter && (
+            <>
+              <span className="num">{rotationWorkouts(inWeek).length}</span> /{' '}
+              <span className="num">{WORKOUTS_PER_WEEK}</span> אימונים השבוע ·{' '}
+            </>
+          )}
+          הבא בתור: <span className="strong">{upNext}</span>
         </p>
         {/* דקות, לא מפגשים. סיום מתוך האימונים, עצמאי מהמפתח שלו. */}
-        <p className={`sub${cardioSum.over ? ' wk-budget--over' : ''}`} style={{ margin: 'var(--sp-1) 0 0' }}>
-          אירובי <span className="num">{cardioSum.total}</span> /{' '}
-          <span className="num">{cardioSum.budget}</span> דק׳{' '}
-          {cardioSum.over && <span className="wk-budget__flag">· מעל התקציב השבועי</span>}
-          <span className="muted tiny">
-            · סיום: <span className="num">{cardioSum.finisher}</span> · עצמאי:{' '}
-            <span className="num">{cardioSum.standalone}</span>
-          </span>
-        </p>
+        {FEATURES.cardio && (
+          <p className={`sub${cardioSum.over ? ' wk-budget--over' : ''}`} style={{ margin: 'var(--sp-1) 0 0' }}>
+            אירובי <span className="num">{cardioSum.total}</span> /{' '}
+            <span className="num">{cardioSum.budget}</span> דק׳{' '}
+            {cardioSum.over && <span className="wk-budget__flag">· מעל התקציב השבועי</span>}
+            <span className="muted tiny">
+              · סיום: <span className="num">{cardioSum.finisher}</span> · עצמאי:{' '}
+              <span className="num">{cardioSum.standalone}</span>
+            </span>
+          </p>
+        )}
         {/* האימונים של השבוע שנבחר. ההיסטוריה למטה מציגה רק את האחרונים,
             וזו הדרך להגיע לאימון ישן יותר — לנווט לשבוע שלו. */}
         {inWeek.length > 0 && (
@@ -747,7 +770,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           </ul>
         )}
         {/* אירובי עצמאי של השבוע — רשימה נפרדת, כי הוא לא אימון. */}
-        {cardioInWeek.length > 0 && (
+        {FEATURES.cardio && cardioInWeek.length > 0 && (
           <ul className="list list--block small" style={{ marginTop: 'var(--sp-2)' }}>
             {[...cardioInWeek].reverse().map((e) => (
               <li key={e.id}>
@@ -831,15 +854,17 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
               </button>
             ))}
             {/* לא אימון: שורה משלו, מקווקו, בלי "הבא בתור". */}
-            <button
-              type="button"
-              className="choice__btn choice__btn--aside"
-              aria-pressed={false}
-              onClick={startStandalone}
-            >
-              אירובי — עצמאי
-              <span className="choice__hint">לא נספר כאימון</span>
-            </button>
+            {FEATURES.cardio && (
+              <button
+                type="button"
+                className="choice__btn choice__btn--aside"
+                aria-pressed={false}
+                onClick={startStandalone}
+              >
+                אירובי — עצמאי
+                <span className="choice__hint">לא נספר כאימון</span>
+              </button>
+            )}
           </div>
         </section>
       )}
@@ -1035,24 +1060,26 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
             </button>
           </div>
 
-          <div className="section" style={{ marginTop: 'var(--sp-5)' }}>
-            <div className="stack">
-              <Choice
-                label="כאב ברך"
-                scale
-                options={PAIN_SCALE}
-                value={open.knee}
-                onChange={(knee) => patch({ ...open, knee })}
-              />
-              <Choice
-                label="כאב כתף"
-                scale
-                options={PAIN_SCALE}
-                value={open.shoulder}
-                onChange={(shoulder) => patch({ ...open, shoulder })}
-              />
+          {FEATURES.pain && (
+            <div className="section" style={{ marginTop: 'var(--sp-5)' }}>
+              <div className="stack">
+                <Choice
+                  label="כאב ברך"
+                  scale
+                  options={PAIN_SCALE}
+                  value={open.knee}
+                  onChange={(knee) => patch({ ...open, knee })}
+                />
+                <Choice
+                  label="כאב כתף"
+                  scale
+                  options={PAIN_SCALE}
+                  value={open.shoulder}
+                  onChange={(shoulder) => patch({ ...open, shoulder })}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="row" style={{ marginTop: 'var(--sp-4)' }}>
             <button type="button" className="btn btn--primary btn--block" onClick={closeEditor}>

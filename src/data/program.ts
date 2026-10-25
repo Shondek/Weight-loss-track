@@ -4,81 +4,41 @@
  * ה-API היחיד שהקומפוננטות מכירות. הן לא יודעות דבר על תרגילים — הן
  * קוראות מכאן.
  *
+ * פרופיל המכשיר (25/10/2026, data/profile.ts): כשהפרופיל הוא `partner`
+ * נטען `program-partner.json` במקום — שני אימונים, A ו-B, לסירוגין. בלי
+ * פרופיל נטען `program-abc.json` בדיוק כמו קודם. הבנייה עצמה
+ * (data/programBuild.ts) זהה לשני הקבצים; הפרופיל נקבע ב-main.tsx לפני
+ * שהמודול הזה מיובא.
+ *
  * לשנות תרגיל, טווח, הערה או סרטון? ב-JSON. לשנות מנוחה לסוג תרגיל?
  * `REST_SECONDS` ב-src/data/config.ts.
  */
 
 import type { ExerciseType, WorkoutType } from '../types';
 import { REST_SECONDS } from './config';
-import programJson from './program-abc.json';
+import { activeProfile } from './profile';
+import { buildProgram, type BuiltProgram, type Exercise, type ProgramJson } from './programBuild';
+import abcJson from './program-abc.json';
+import partnerJson from './program-partner.json';
 
-export interface Exercise {
-  /** מזהה יציב. זה המפתח להיסטוריה — לעולם לא לשנות אותו. */
-  id: string;
-  /** השם בעברית, מוצג למשתמש. מותר לשנות בלי לנתק היסטוריה. */
-  name: string;
-  /** שם קצר לדוח הצ'אט, שבו יש תקרת תווים. */
-  short: string;
-  /** שם המכונה באנגלית, כפי שהוא מופיע בחדר הכושר. null בתרגילי משקל גוף. */
-  machine: string | null;
-  /** קבוצת שריר ראשית, כפי שהתקבלה בתוכנית (legs/chest/back/…). */
-  muscle: string;
-  muscles: string[];
-  type: ExerciseType;
-  sets: number;
-  /** טווח החזרות כטקסט להצגה, כלשונו בתוכנית ("10-12", "10 לרגל", "30-45 שנ'"). */
-  reps: string;
-  repRangeMin: number;
-  repRangeMax: number;
-  /**
-   * הנחיית המאמץ כלשונה בתוכנית ("RIR 2", "RIR 1-2"), מוצגת ליד הטווח. לא
-   * שדה קלט. null כשאין. ממנה נגזר סף ה-RIR של התא לעלייה במשקל (17/10/2026):
-   * min(2, הגבול התחתון) — `rirThreshold` ב-lib/progression.ts.
-   */
-  effort: string | null;
-  /** מוצג כ"לרגל" / "ליד". */
-  unilateral: boolean;
-  /** שניות במקום חזרות. */
-  isTimed: boolean;
-  /** אסור להוסיף משקל — ההתקדמות היא בחזרות. */
-  bodyweightOnly: boolean;
-  /** המשקל הוא *סיוע* (גרוויטון): פחות משקל = קשה יותר. */
-  assisted: boolean;
-  note: string | null;
-  /** סרטון הדגמה. null כשאין — ואז שום דבר לא מרונדר. */
-  videoUrl: string | null;
-  /**
-   * קפיצת המשקל בק"ג להצעת האימון הבא (שלב 4). null = מכונה עם מדרגות לא
-   * ידועות: ההצעה אומרת "דרגה אחת למעלה/למטה" וכלל הקפיצה הגדולה (R4) לא חל.
-   */
-  step: number | null;
-  /**
-   * מצב ההתקדמות (3/10/2026). `maintain` = מצב שימור: היעד קבוע
-   * (repRangeMax × sets), וההצעה לאימון הבא היא תמיד "שימור" — בלי R1–R6
-   * ובלי תלות ב-RIR (lib/progression.ts). `progress` (ברירת המחדל כשהשדה
-   * חסר ב-JSON) = כללי ההתקדמות הרגילים. A8 (פלאנק) הוא היחיד בשימור.
-   * `reps` (6/10/2026) = התקדמות בחזרות בלבד, לתרגיל משקל גוף בלי step:
-   * R6 כרגיל, תקרה נקייה → "תקרה — נשארים" בלי הצעת משקל, שני אימונים
-   * מתחת לרצפה → אותן חזרות בלי −10% עם סימון "לבדוק". B8 (הרמת רגליים)
-   * הוא היחיד בחזרות בלבד.
-   */
-  mode: 'progress' | 'maintain' | 'reps';
-  /**
-   * מתחיל במשקל גוף (6/10/2026, A6 פשיטת ירך): שדה משקל ריק (או 0) הוא
-   * עומס 0 ק"ג — משקל גוף — ולא "לא ידוע". ההצעה מתייחסת ל-0 כמשקל
-   * אמיתי: הקפיצה הראשונה (step מתוך 0) היא תמיד קפיצה גדולה (R4 —
-   * קודם תקרה +2 בכל הסטים, ואז step), ואין לאן לרדת מתחת למשקל גוף
-   * (R3 נשאר במשקל גוף). מעל 0 — R1–R6 כרגיל. false (ברירת המחדל) =
-   * שדה ריק הוא משקל לא ידוע, כמו תמיד. לא נוגע ב-`bodyweightOnly`
-   * (שם אין שדה משקל בכלל) ולא בתרגילי זמן (הפלאנק נשאר כפי שהיה).
-   */
-  bodyweightStart: boolean;
-  /**
-   * חלופות מותרות לתא הזה (שלב 4.1) — מזהים במאגר `alternates` או תרגילים
-   * בתוכנית. ריק לתרגיל שאינו בתוכנית. החלפה היא לאימון אחד בלבד.
-   */
-  alternates: string[];
+export type { Exercise };
+
+/** הסבב של שון: A→B→C; D (25/10/2026) אופציונלי, מחוץ לסבב. */
+export const ABC_ROTATION: readonly WorkoutType[] = ['A', 'B', 'C'];
+/** הסבב של בת הזוג: A↔B — הבא הוא זה שלא בוצע בפעם האחרונה. */
+export const PARTNER_ROTATION: readonly WorkoutType[] = ['A', 'B'];
+
+/** התוכנית של שון, כמו שהיא — בלי פרופיל זה מה שנטען. */
+export function buildAbcProgram(): BuiltProgram {
+  return buildProgram(abcJson as ProgramJson, 'program-abc.json', ABC_ROTATION);
 }
+
+/** התוכנית של בת הזוג (פרופיל `partner`). */
+export function buildPartnerProgram(): BuiltProgram {
+  return buildProgram(partnerJson as ProgramJson, 'program-partner.json', PARTNER_ROTATION);
+}
+
+const built: BuiltProgram = activeProfile() === 'partner' ? buildPartnerProgram() : buildAbcProgram();
 
 /**
  * `type` קובע את משכי המנוחה. הערכים חיים ב-src/data/config.ts בלבד
@@ -86,133 +46,40 @@ export interface Exercise {
  */
 export const TYPE_CONFIG = REST_SECONDS;
 
-type OptionalKeys =
-  | 'reps'
-  | 'step'
-  | 'mode'
-  | 'alternates'
-  | 'effort'
-  | 'unilateral'
-  | 'isTimed'
-  | 'bodyweightOnly'
-  | 'assisted'
-  | 'bodyweightStart'
-  | 'note'
-  | 'videoUrl';
-
-/** צורת התרגיל ב-JSON: הזהות חובה, השאר אופציונלי. `type` מגיע כמחרוזת. */
-type ExerciseInput = Omit<Exercise, OptionalKeys | 'type'> & {
-  type: string;
-} & Partial<{ [K in Exclude<OptionalKeys, 'mode'>]: Exercise[K] | undefined }> & { mode?: string | undefined };
+/** כל האימונים בתוכנית, בסדר ההצגה. שון: A/B/C/D (D אופציונלי — ראה `ROTATION`); בת הזוג: A/B. */
+export const WORKOUT_TYPES: WorkoutType[] = built.types;
 
 /**
- * ברירות מחדל לדגלים, כדי שרק החריגים יצוינו במפורש ב-JSON.
- * `effort: "—"` (כפי שהתקבל בתוכנית לתרגילי ליבה) הוא "אין הנחיה" → null.
+ * הסבב: "הבא בתור" (`nextType`) ממשיך מהאימון האחרון שבסבב, ו-"אימונים
+ * n/3" (`WORKOUTS_PER_WEEK`) סופר רק אותם. שון: A→B→C, ו-D נבחר ידנית בלבד
+ * ולא משפיע על אף אחד מהשניים. בת הזוג: A↔B.
  */
-function ex(e: ExerciseInput): Exercise {
-  const type = e.type as ExerciseType;
-  if (!(type in REST_SECONDS) || type === 'cardio') {
-    throw new Error(`program-abc.json: סוג תרגיל לא מוכר "${e.type}" ב-${e.id}`);
-  }
-  if (e.mode !== undefined && e.mode !== 'progress' && e.mode !== 'maintain' && e.mode !== 'reps') {
-    throw new Error(`program-abc.json: mode לא מוכר "${e.mode}" ב-${e.id}`);
-  }
-  // חזרות בלבד = אין משקל ואין step; משקל גוף כפתיחה = יש שדה משקל ויש step.
-  if (e.mode === 'reps' && (e.bodyweightOnly !== true || (typeof e.step === 'number' && e.step > 0))) {
-    throw new Error(`program-abc.json: mode "reps" דורש bodyweightOnly: true בלי step ב-${e.id}`);
-  }
-  if (e.bodyweightStart === true && (e.bodyweightOnly === true || !(typeof e.step === 'number' && e.step > 0))) {
-    throw new Error(`program-abc.json: bodyweightStart דורש step חיובי ולא bodyweightOnly ב-${e.id}`);
-  }
-  const effort = e.effort?.trim();
-  return {
-    id: e.id,
-    name: e.name,
-    short: e.short,
-    machine: e.machine,
-    muscle: e.muscle,
-    muscles: e.muscles,
-    type,
-    sets: e.sets,
-    reps: e.reps ?? `${e.repRangeMin}-${e.repRangeMax}`,
-    repRangeMin: e.repRangeMin,
-    repRangeMax: e.repRangeMax,
-    effort: effort && effort !== '—' ? effort : null,
-    unilateral: e.unilateral ?? false,
-    isTimed: e.isTimed ?? false,
-    bodyweightOnly: e.bodyweightOnly ?? false,
-    assisted: e.assisted ?? false,
-    bodyweightStart: e.bodyweightStart ?? false,
-    note: e.note ?? null,
-    videoUrl: e.videoUrl ?? null,
-    step: typeof e.step === 'number' && e.step > 0 ? e.step : null,
-    mode: e.mode === 'maintain' ? 'maintain' : e.mode === 'reps' ? 'reps' : 'progress',
-    alternates: Array.isArray(e.alternates) ? e.alternates.filter((x): x is string => typeof x === 'string') : [],
-  };
-}
-
-/** כל האימונים בתוכנית, בסדר ההצגה. D (25/10/2026) אופציונלי — ראה `ROTATION`. */
-export const WORKOUT_TYPES: WorkoutType[] = ['A', 'B', 'C', 'D'];
-
-/**
- * הסבב: "הבא בתור" (`nextType`) ממשיך A→B→C מהאימון האחרון שבסבב, ו-"אימונים
- * n/3" (`WORKOUTS_PER_WEEK`) סופר רק אותם. D נבחר ידנית בלבד ולא משפיע על
- * אף אחד מהשניים.
- */
-export const ROTATION: readonly WorkoutType[] = ['A', 'B', 'C'];
+export const ROTATION: readonly WorkoutType[] = built.rotation;
 
 /** האם האימון בסבב ונספר ב-"אימונים n/3". D → false. */
 export function isRotationType(t: WorkoutType): boolean {
   return ROTATION.includes(t);
 }
 
-function isWorkoutType(code: string): code is WorkoutType {
-  return (WORKOUT_TYPES as string[]).includes(code);
-}
-
-const workoutsByCode = new Map<WorkoutType, { title: string; exercises: Exercise[] }>();
-for (const w of programJson.workouts) {
-  if (!isWorkoutType(w.code)) {
-    throw new Error(`program-abc.json: קוד אימון לא מוכר "${w.code}"`);
-  }
-  workoutsByCode.set(w.code, {
-    title: w.title,
-    exercises: w.exercises.map((e) => ex(e as ExerciseInput)),
-  });
-}
-for (const t of WORKOUT_TYPES) {
-  if (!workoutsByCode.has(t)) throw new Error(`program-abc.json: חסר אימון ${t}`);
-}
-
 /** התרגילים של כל אימון, בסדר הביצוע. אותו id יכול להופיע בשני אימונים עם סטים/טווח שונים. */
-export const PROGRAM: Record<WorkoutType, Exercise[]> = {
-  A: workoutsByCode.get('A')!.exercises,
-  B: workoutsByCode.get('B')!.exercises,
-  C: workoutsByCode.get('C')!.exercises,
-  D: workoutsByCode.get('D')!.exercises,
-};
+export const PROGRAM: Record<WorkoutType, Exercise[]> = built.program;
 
 /** כותרת האימון להצגה ("דחיפה + ארבע-ראשי"). */
-export const WORKOUT_TITLES: Record<WorkoutType, string> = {
-  A: workoutsByCode.get('A')!.title,
-  B: workoutsByCode.get('B')!.title,
-  C: workoutsByCode.get('C')!.title,
-  D: workoutsByCode.get('D')!.title,
-};
+export const WORKOUT_TITLES: Record<WorkoutType, string> = built.titles;
 
 /**
  * תרגילים שירדו מהתוכנית. נשארים כזהות בלבד כדי שרשומה ישנה תמשיך להיות
  * מובנת: "פלאנק צד" עדיין יודע שהוא בשניות, ותרגיל שירד עדיין מוצג בשמו.
  * לא מופיעים באף אימון ולא ניתן לבחור אותם.
  */
-export const RETIRED: Exercise[] = programJson.retired.map((e) => ex(e as ExerciseInput));
+export const RETIRED: Exercise[] = built.retired;
 
 /**
  * מאגר החלופות (שלב 4.1): תרגילים שאפשר להחליף אליהם לאימון אחד כשמכונה
  * תפוסה. סטים וטווח יורשים מהתא בזמן ההחלפה; הערכים כאן הם ברירת מחדל.
  * מזהה פרוש שתאם בשם הועבר לכאן — ההיסטוריה שלו ממשיכה.
  */
-export const ALTERNATES: Exercise[] = programJson.alternates.map((e) => ex(e as ExerciseInput));
+export const ALTERNATES: Exercise[] = built.alternates;
 
 /** כמה אימוני סבב (A/B/C) בשבוע התוכנית מצפה להם. משמש לספירה "n/3" ולסעיף "חסר". D לא נספר. */
 export const WORKOUTS_PER_WEEK = 3;
@@ -226,20 +93,8 @@ export const CONSTRAINTS =
  * בשני אימונים, הזהות (שם, סוג, דגלים) זהה — רק סטים/טווח שונים, ולהם
  * יש `exerciseIn`.
  */
-const BY_ID: Map<string, Exercise> = new Map();
-for (const e of [...WORKOUT_TYPES.flatMap((t) => PROGRAM[t]), ...ALTERNATES, ...RETIRED]) {
-  if (!BY_ID.has(e.id)) BY_ID.set(e.id, e);
-}
-
-for (const e of WORKOUT_TYPES.flatMap((t) => PROGRAM[t])) {
-  for (const id of e.alternates) {
-    if (!BY_ID.has(id)) throw new Error(`program-abc.json: חלופה לא מוכרת "${id}" ב-${e.id}`);
-  }
-}
-
-const BY_NAME: Map<string, string> = new Map(
-  WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => [e.name, e.id] as const)),
-);
+const BY_ID: Map<string, Exercise> = built.byId;
+const BY_NAME: Map<string, string> = built.byName;
 
 /**
  * שם עברי ישן → מזהה, כשמדובר באותה תנועה.

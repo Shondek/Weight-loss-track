@@ -66,10 +66,19 @@ export function rotationWorkouts(list: readonly WorkoutEntry[]): WorkoutEntry[] 
  * (25/10/2026) שקוף: אחרי A→D בא B, אחרי C→D בא A.
  */
 export function nextType(list: readonly WorkoutEntry[]): WorkoutType {
-  const last = lastWorkout(rotationWorkouts(list));
-  if (!last) return 'A';
-  const i = ROTATION.indexOf(last.t);
-  return ROTATION[(i + 1) % ROTATION.length] ?? 'A';
+  return nextInRotation(list, ROTATION);
+}
+
+/**
+ * אותו חישוב עם סבב מפורש — רק אימונים שבסבב נספרים. הסבב של התוכנית
+ * הפעילה הוא `ROTATION` (A→B→C אצל שון, A↔B אצל בת הזוג); הפרמטר קיים
+ * כדי שהסבב של כל תוכנית ייבדק בלי להחליף את המודול.
+ */
+export function nextInRotation(list: readonly WorkoutEntry[], rotation: readonly WorkoutType[]): WorkoutType {
+  const last = lastWorkout(list.filter((w) => rotation.includes(w.t)));
+  if (!last) return rotation[0] ?? 'A';
+  const i = rotation.indexOf(last.t);
+  return rotation[(i + 1) % rotation.length] ?? rotation[0] ?? 'A';
 }
 
 // ---------- סטים ----------

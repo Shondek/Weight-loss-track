@@ -23,6 +23,9 @@ import { mergeQuarantine, quarantineCounts } from '../lib/quarantine';
 import { guardedRun, isConfirmed, nutritionErasure, REPLACE_WORD, WIPE_WORD, type NutritionErasure } from '../lib/guard';
 import { KEY_LABELS, type DbKey } from '../lib/store';
 import { PERSIST_LABEL, usePersistStatus } from '../platform/storagePersist';
+import { activeProfile, type Profile } from '../data/profile';
+import { writeProfile } from '../platform/profile';
+import { PROFILE_LABELS, SWITCH_BLOCKED_TEXT, canSwitchProfile, dataFeatures } from '../lib/profile';
 
 type Mode = 'merge' | 'replace';
 
@@ -61,6 +64,10 @@ const BACKEND_LABEL: Record<string, string> = {
 };
 
 const total = recordCount;
+
+/** פרופיל המכשיר (data/profile.ts) — נקבע באתחול, לפני שהמסך נטען. */
+const PROFILE = activeProfile();
+const FEATURES = dataFeatures(PROFILE);
 
 /** "לפני 3 ימים" / "היום" — לשורת הגיבוי האחרון. */
 function agoText(days: number): string {
@@ -101,6 +108,19 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const sinceBackup = daysSinceBackup(db.settings, today);
   const quarantineByKey = useMemo(() => quarantineCounts(db.quarantine), [db.quarantine]);
   const persist = usePersistStatus();
+  /**
+   * שומר הבטיחות (lib/profile.ts): החלפת פרופיל רק במכשיר ריק. הכתיבה
+   * היא לשני המקומות (platform/profile.ts), ואז רענון — התוכנית נבחרת
+   * בטעינת המודול.
+   */
+  const canSwitch = canSwitchProfile(db);
+  const [switching, setSwitching] = useState(false);
+  const switchProfile = async (p: Profile | null) => {
+    if (!canSwitch || switching || p === PROFILE) return;
+    setSwitching(true);
+    await writeProfile(p);
+    window.location.reload();
+  };
 
   /** גיבוי מלא יצא מהמכשיר — הורדה או העתקה שהצליחה. מזין את התזכורת. */
   const markBackedUp = () => {
@@ -262,27 +282,38 @@ export default function DataScreen({ store, today }: ScreenProps) {
             אחסון קבוע: {PERSIST_LABEL[persist]}
           </li>
           <li>
-            שקילות <span className="num">{db.weights.length}</span> · אימונים{' '}
-            <span className="num">{db.workouts.length}</span>
+            {FEATURES.nutrition && (
+              <>
+                שקילות <span className="num">{db.weights.length}</span> ·{' '}
+              </>
+            )}
+            אימונים <span className="num">{db.workouts.length}</span>
             {db.legacyWorkouts.length > 0 && (
               <>
                 {' '}
                 (+<span className="num">{db.legacyWorkouts.length}</span> ישנים)
               </>
-            )}{' '}
-            · מותניים{' '}
-            <span className="num">{db.waist.length}</span> · צ'ק-אין{' '}
-            <span className="num">{db.checkins.length}</span> · אירובי עצמאי{' '}
-            <span className="num">{db.standaloneCardio.length}</span>
+            )}
+            {FEATURES.nutrition && (
+              <>
+                {' '}
+                · מותניים{' '}
+                <span className="num">{db.waist.length}</span> · צ'ק-אין{' '}
+                <span className="num">{db.checkins.length}</span> · אירובי עצמאי{' '}
+                <span className="num">{db.standaloneCardio.length}</span>
+              </>
+            )}
           </li>
-          <li>
-            רישומי אכילה <span className="num">{db.entries.length}</span> · מזונות שלי{' '}
-            <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
-            <span className="num">{db.targets.length}</span> · מועדפים{' '}
-            <span className="num">{db.favorites.length}</span> · ימים סגורים{' '}
-            <span className="num">{db.days.filter((x) => x.closed).length}</span> · קריאטין{' '}
-            <span className="num">{db.creatine.length}</span>
-          </li>
+          {FEATURES.nutrition && (
+            <li>
+              רישומי אכילה <span className="num">{db.entries.length}</span> · מזונות שלי{' '}
+              <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
+              <span className="num">{db.targets.length}</span> · מועדפים{' '}
+              <span className="num">{db.favorites.length}</span> · ימים סגורים{' '}
+              <span className="num">{db.days.filter((x) => x.closed).length}</span> · קריאטין{' '}
+              <span className="num">{db.creatine.length}</span>
+            </li>
+          )}
           <li>
             {/* רשומות שנדחו בקריאה ונשמרו גולמיות במקום להיעלם. אין עריכה ואין מחיקה. */}
             רשומות בהסגר: <span className="num">{db.quarantine.length}</span>
@@ -509,6 +540,9 @@ export default function DataScreen({ store, today }: ScreenProps) {
         </div>
         </div>
       </section>
+      {/* ניהול התזונה — רק בלי פרופיל. בת הזוג לא רואה תזונה בשום מסך. */}
+      {FEATURES.nutrition && (
+      <>
       <section className="section">
         <div className="section__head">
           <h2>ספריית המנות</h2>
@@ -673,6 +707,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
           />
         )}
       </section>
+      </>
+      )}
       <section className="section">
         <div className="section__head">
           <h2>תחילת התוכנית</h2>
@@ -708,6 +744,43 @@ export default function DataScreen({ store, today }: ScreenProps) {
               חזרה לאוטומטי
               {firstData ? ` (${formatDM(weekStart(firstData))})` : ''}
             </button>
+          )}
+        </div>
+      </section>
+      <section className="section">
+        <div className="section__head">
+          <h2>פרופיל המכשיר</h2>
+          <span className="tiny muted">{PROFILE === null ? PROFILE_LABELS.default : PROFILE_LABELS[PROFILE]}</span>
+        </div>
+        <div className="stack">
+          <p className="small muted" style={{ margin: 0 }}>
+            קובע איזו תוכנית ואילו מסכים האפליקציה מציגה במכשיר הזה. ההגדרה נשמרת במכשיר בלבד,
+            לא בגיבוי.
+          </p>
+          <div className="choice" role="group" aria-label="פרופיל המכשיר">
+            <button
+              type="button"
+              className="choice__btn"
+              aria-pressed={PROFILE === null}
+              disabled={!canSwitch || switching}
+              onClick={() => void switchProfile(null)}
+            >
+              {PROFILE_LABELS.default}
+            </button>
+            <button
+              type="button"
+              className="choice__btn"
+              aria-pressed={PROFILE === 'partner'}
+              disabled={!canSwitch || switching}
+              onClick={() => void switchProfile('partner')}
+            >
+              {PROFILE_LABELS.partner}
+            </button>
+          </div>
+          {!canSwitch && (
+            <p className="tiny muted" style={{ margin: 0 }}>
+              {SWITCH_BLOCKED_TEXT}
+            </p>
           )}
         </div>
       </section>

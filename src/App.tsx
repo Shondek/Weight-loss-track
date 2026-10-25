@@ -5,6 +5,8 @@ import { weekStart } from './lib/date';
 import { needsCheckin } from './lib/checkins';
 import { firstDataDate } from './lib/db';
 import { KEY_LABELS } from './lib/store';
+import { activeProfile } from './data/profile';
+import { defaultTab, visibleTabs, type TabId } from './lib/profile';
 import { onAppUpdate } from './platform/appUpdate';
 import { requestPersistentStorage } from './platform/storagePersist';
 import { useRestTimer } from './hooks/useRestTimer';
@@ -15,20 +17,26 @@ import CheckinScreen from './screens/CheckinScreen';
 import DataScreen from './screens/DataScreen';
 import NutritionScreen from './screens/NutritionScreen';
 
-type TabId = 'weight' | 'nutrition' | 'workout' | 'checkin' | 'data';
+const TAB_LABELS: Record<TabId, string> = {
+  weight: 'משקל',
+  nutrition: 'תזונה',
+  workout: 'אימונים',
+  checkin: "צ'ק-אין",
+  data: 'נתונים',
+};
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'weight', label: 'משקל' },
-  { id: 'nutrition', label: 'תזונה' },
-  { id: 'workout', label: 'אימונים' },
-  { id: 'checkin', label: "צ'ק-אין" },
-  { id: 'data', label: 'נתונים' },
-];
+/**
+ * הלשוניות לפי פרופיל המכשיר (lib/profile.ts). בלי פרופיל — כל החמש, כמו
+ * היום. בת הזוג: אימונים ונתונים בלבד. אין ניתוב לפי כתובת — הלשונית היא
+ * מצב בזיכרון, ולכן מסך שאינו ברשימה אינו נגיש בשום דרך.
+ */
+const PROFILE = activeProfile();
+const TABS: { id: TabId; label: string }[] = visibleTabs(PROFILE).map((id) => ({ id, label: TAB_LABELS[id] }));
 
 export default function App() {
   const store = useDb();
   const today = useToday();
-  const [tab, setTab] = useState<TabId>('weight');
+  const [tab, setTab] = useState<TabId>(defaultTab(PROFILE));
   const [updateReady, setUpdateReady] = useState(false);
   useEffect(() => onAppUpdate(() => setUpdateReady(true)), []);
   // בקשה לאחסון קבוע בכל טעינה (סיכון #5). התוצאה מוצגת במסך "נתונים".
