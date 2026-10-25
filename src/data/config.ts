@@ -91,13 +91,6 @@ export const STEPS_GOAL_SCHEDULE: readonly { from: ISODate; steps: number }[] = 
 export const HOME_LUNCH_FROM: ISODate = '2026-11-01';
 export const HOME_LUNCH_MAX = 5;
 
-/**
- * סף יום צעדים לשורת "ימים מעל 8,000: X/7" בסיכום השבועי לצ'אט — בכל
- * השבועות, בלי תלות ביעד הצעדים (`STEPS_GOAL_SCHEDULE`). נספר מתוך הימים
- * שהוזנו, כמו הממוצע.
- */
-export const STEPS_HIGH_DAY = 8000;
-
 /** קפיצת כפתורי ה-± בשדה המשקל, בק"ג. */
 export const WEIGHT_STEP = 0.5;
 

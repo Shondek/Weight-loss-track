@@ -8,7 +8,7 @@
  */
 
 import type { DayMeta, DB, ISODate } from '../types';
-import { STEPS_GOAL_SCHEDULE, STEPS_HIGH_DAY } from '../data/config';
+import { STEPS_GOAL_SCHEDULE } from '../data/config';
 import { addDays, compareISO, weekDays } from './date';
 import { stepsOn } from './nutrition/days';
 import { cardioMinutesDone, FINISHER_ID } from './workouts';
@@ -79,15 +79,6 @@ export function stepsWeek(list: readonly DayMeta[], ws: ISODate): StepsWeek {
     goal,
     atGoal: goal === null ? null : present.filter((v) => v >= goal).length,
   };
-}
-
-/**
- * כמה מהימים שהוזנו הגיעו ל-`threshold` צעדים (8,000) — לשורת "ימים מעל
- * 8,000: X/7" בסיכום השבועי, בכל השבועות ובלי תלות ביעד. יום שלא הוזן לא
- * נספר לכאן ולא לכאן, כמו בממוצע.
- */
-export function highStepDays(days: readonly (number | null)[], threshold: number = STEPS_HIGH_DAY): number {
-  return days.filter((v): v is number => v !== null && v >= threshold).length;
 }
 
 /**

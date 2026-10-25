@@ -5,17 +5,15 @@
  *  2. תקציב אירובי 60 → 120 — כבר תלוי תאריך (`CARDIO_BUDGET_SCHEDULE`), נבדק
  *     ב-cardioBudget.test.ts.
  *  3. מותניים בסיכום: רביעי; אין רביעי → חמישי עם הערך; שישי/שבת "לא תקף".
- *  4. צעדים: "ימים מעל 8,000: X/7" בכל השבועות.
+ *  4. צעדים: שורת היעד הקיימת מ-1/11 ("ימים ≥ 8,000: X/הוזנו", steps.ts) — בלי שינוי.
  *  5. צהריים מהבית: שדה אופציונלי חדש בצ'ק-אין; בסיכום רק משבוע 1/11.
  */
 import { describe, expect, it } from 'vitest';
-import { emptyDb, type DayMeta, type ISODate, type WeeklyCheckin } from '../../types';
-import { HOME_LUNCH_FROM, HOME_LUNCH_MAX, STEPS_HIGH_DAY } from '../../data/config';
-import { addDays } from '../date';
+import { emptyDb, type ISODate, type WeeklyCheckin } from '../../types';
+import { HOME_LUNCH_FROM, HOME_LUNCH_MAX } from '../../data/config';
 import { emptyCheckin, isFilled, upsertCheckin, withHomeLunchDays } from '../checkins';
 import { cardioBudgetFor } from '../cardio';
 import { parseCheckins } from '../schema';
-import { highStepDays } from '../steps';
 import { targetFor } from '../nutrition/targets';
 import { buildWeeklySummaryData, weeklySummaryText } from '../weeklySummary';
 
@@ -122,39 +120,6 @@ describe('3. מותניים בסיכום — רביעי, אחרת חמישי ע�
     const d = withWaist([]);
     expect(section(weeklySummaryText(d))).toBe('לא נמדד ברביעי\nאחרונות לפני: —');
     expect(d.flags).toContain('מותניים לא נמדדו ברביעי');
-  });
-});
-
-describe('4. צעדים — "ימים מעל 8,000: X/7" בכל השבועות', () => {
-  const stepsDays = (ws: string, vals: (number | null)[]): DayMeta[] =>
-    vals.flatMap((v, i) => (v === null ? [] : [{ d: addDays(ws, i), closed: false, steps: v }]));
-
-  it('highStepDays: מתוך הימים שהוזנו, 8,000 בדיוק נספר, יום ריק לא', () => {
-    expect(STEPS_HIGH_DAY).toBe(8000);
-    expect(highStepDays([9812, null, 8100, 7000, null, 6500, 10200])).toBe(3);
-    expect(highStepDays([8000, 7999, null, null, null, null, null])).toBe(1);
-    expect(highStepDays([null, null, null, null, null, null, null])).toBe(0);
-  });
-
-  it('שבוע לפני 1/11 (בלי יעד) ושבוע מ-1/11 (עם יעד) — אותה שורה, המכנה 7', () => {
-    const vals = [9812, null, 8100, 7000, null, 6500, 10200];
-    const before = emptyDb();
-    before.days = stepsDays(LAST_STAGE1_WEEK, vals);
-    const dBefore = buildWeeklySummaryData(before, LAST_STAGE1_WEEK);
-    expect(dBefore.stepsHigh).toEqual({ threshold: 8000, days: 3 });
-    expect(weeklySummaryText(dBefore)).toContain('הוזנו 5/7 · ממוצע 8,322 (על ימים שהוזנו)\nימים מעל 8,000: 3/7\n');
-    expect(weeklySummaryText(dBefore)).not.toContain('ימים ≥');
-
-    const after = emptyDb();
-    after.days = stepsDays(FIRST_STAGE2_WEEK, vals);
-    const dAfter = buildWeeklySummaryData(after, FIRST_STAGE2_WEEK);
-    expect(dAfter.stepsHigh).toEqual({ threshold: 8000, days: 3 });
-    // שורת היעד הקיימת (X/הוזנו) נשארת, והשורה החדשה אחריה
-    expect(weeklySummaryText(dAfter)).toContain('הוזנו 5/7 · ממוצע 8,322 (על ימים שהוזנו) · ימים ≥ 8,000: 3/5\nימים מעל 8,000: 3/7\n');
-  });
-
-  it('בלי הזנות → 0/7', () => {
-    expect(weeklySummaryText(buildWeeklySummaryData(emptyDb(), LAST_STAGE1_WEEK))).toContain('ימים מעל 8,000: 0/7\n');
   });
 });
 

@@ -373,8 +373,7 @@ describe('6ב. צעדים (שלב 6)', () => {
     const d = buildWeeklySummaryData(db, WS);
     expect(d.steps).toEqual({ days: VALS, entered: 5, avg: 8322, goal: null, atGoal: null });
     const text = weeklySummaryText(d);
-    // 25/10/2026: שורת "ימים מעל 8,000: X/7" בכל השבועות — גם לפני 1/11 (3 מתוך 5 שהוזנו: 9,812 · 8,100 · 10,200)
-    expect(text).toContain('אירובי: 0/60 דק׳ · סיום 0 · עצמאי 0\n\nצעדים: א 9,812 · ב — · ג 8,100 · ד 7,000 · ה — · ו 6,500 · ש 10,200\nהוזנו 5/7 · ממוצע 8,322 (על ימים שהוזנו)\nימים מעל 8,000: 3/7\n\nתזונה');
+    expect(text).toContain('אירובי: 0/60 דק׳ · סיום 0 · עצמאי 0\n\nצעדים: א 9,812 · ב — · ג 8,100 · ד 7,000 · ה — · ו 6,500 · ש 10,200\nהוזנו 5/7 · ממוצע 8,322 (על ימים שהוזנו)\n\nתזונה');
     expect(text).not.toContain('ימים ≥');
     expect(d.flags.some((f) => f.includes('צעדים'))).toBe(false);
   });

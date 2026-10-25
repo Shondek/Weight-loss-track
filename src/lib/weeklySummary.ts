@@ -17,13 +17,13 @@
 
 import type { DB, FridayTier, ISODate, LoggedExercise, WorkoutEntry, WorkoutType } from '../types';
 import { exerciseById, exerciseIn, shortName, WORKOUTS_PER_WEEK } from '../data/program';
-import { HOME_LUNCH_FROM, HOME_LUNCH_MAX, STEPS_HIGH_DAY } from '../data/config';
+import { HOME_LUNCH_FROM, HOME_LUNCH_MAX } from '../data/config';
 import { addDays, compareISO, dayLetter, dayName, diffWeeks, formatDM, isSaturday, weekDays, weekEnd, weekNumber, weekStart } from './date';
 import { programStartWeek } from './db';
 import { clean, DASH, round2 } from './format';
 import { getCheckin, isFilled } from './checkins';
 import { cardioWeek, type CardioWeek } from './cardio';
-import { highStepDays, stepsWeek, type StepsWeek } from './steps';
+import { stepsWeek, type StepsWeek } from './steps';
 import { creatineWeek, type CreatineWeek } from './creatine';
 import { daySummary } from './nutrition/calc';
 import { isDayClosed } from './nutrition/days';
@@ -119,11 +119,6 @@ export type WeeklySummaryData = {
   cardio: CardioWeek;
   /** צעדים יומיים (שלב 6) — הזנה ידנית; צעדי הליכון מהאירובי לא נספרים. */
   steps: StepsWeek;
-  /**
-   * "ימים מעל 8,000: X/7" (25/10/2026) — בכל השבועות, בלי תלות ביעד: כמה
-   * מהימים שהוזנו הגיעו ל-`threshold` צעדים.
-   */
-  stepsHigh: { threshold: number; days: number };
   /** קריאטין X/7 — null כשכל השבוע לפני תאריך ההתחלה (27/9/2026). */
   creatine: CreatineWeek | null;
   nutrition: {
@@ -337,7 +332,6 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
 
   const cardio = cardioWeek(db, ws);
   const steps = stepsWeek(db.days, ws);
-  const stepsHigh = { threshold: STEPS_HIGH_DAY, days: highStepDays(steps.days) };
   // צהריים מהבית — רק משבוע 1/11/2026; הערך נקרא מהצ'ק-אין גם כשהשאר ריק.
   const homeLunch = compareISO(ws, HOME_LUNCH_FROM) >= 0 ? { days: c?.homeLunchDays ?? null, max: HOME_LUNCH_MAX } : null;
 
@@ -369,7 +363,6 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     workouts: { done: all.length, planned: WORKOUTS_PER_WEEK, items, optional, knee: peakPain(inWeek, 'knee'), shoulder: peakPain(inWeek, 'shoulder'), drops },
     cardio,
     steps,
-    stepsHigh,
     nutrition,
     creatine,
     checkin,
@@ -479,7 +472,6 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
       st.goal !== null ? ` · ימים ≥ ${thousands(st.goal)}: ${st.atGoal}/${st.entered}` : ''
     }`,
   );
-  L.push(`ימים מעל ${thousands(data.stepsHigh.threshold)}: ${data.stepsHigh.days}/${WEEK_LENGTH}`);
   L.push('');
 
   // 6. תזונה
