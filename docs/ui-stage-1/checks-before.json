@@ -1,0 +1,1428 @@
+[
+ {
+  "screen": "1-weight",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2217,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.89,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "משקל",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": true,
+    "ratio": 5.15,
+    "sample": "94.40",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(148, 101, 18)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.09,
+    "sample": "חלקי",
+    "cls": "confidence--mid"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "חסרות",
+    "cls": "muted"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 5.06,
+    "sample": "א",
+    "cls": "day__letter"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "94.3",
+    "cls": "day__value"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "עדכן שקילה",
+    "cls": "btn btn--primary btn--block"
+   },
+   {
+    "fg": "rgb(168, 90, 58)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.01,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   }
+  ]
+ },
+ {
+  "screen": "2-nutrition",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2684,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 24,
+  "smallTargetsList": [
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   }
+  ],
+  "contrastMin": 2.46,
+  "contrastFails": [
+   {
+    "text": "✓",
+    "cls": "nut-creatine__mark is-on",
+    "ratio": 2.46,
+    "size": 15
+   }
+  ],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "תזונה",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "‹",
+    "cls": "btn btn--quiet"
+   },
+   {
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(143, 174, 126)",
+    "large": false,
+    "ratio": 2.46,
+    "sample": "✓",
+    "cls": "nut-creatine__mark is-on"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "קריאטין",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "10:05",
+    "cls": "tiny muted num"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": true,
+    "ratio": 18.29,
+    "sample": "129",
+    "cls": "nut-hero__value num"
+   },
+   {
+    "fg": "rgb(148, 101, 18)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.09,
+    "sample": "חסרים",
+    "cls": "nut-hero__note nut-tone--mid"
+   },
+   {
+    "fg": "rgb(93, 106, 116)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.56,
+    "sample": "1100",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "סלט ירקות עם שמן זית",
+    "cls": "nut-quick__name"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 5.06,
+    "sample": "150",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "סיימתי לרשום",
+    "cls": "btn btn--primary btn--block"
+   }
+  ]
+ },
+ {
+  "screen": "2b-nutrition-search",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2713,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 24,
+  "smallTargetsList": [
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "−",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "btn btn--step",
+    "text": "+",
+    "w": 36,
+    "h": 36
+   },
+   {
+    "tag": "BUTTON",
+    "cls": "nut-qty__toggle",
+    "text": "ג׳",
+    "w": 25,
+    "h": 36
+   }
+  ],
+  "contrastMin": 2.46,
+  "contrastFails": [
+   {
+    "text": "✓",
+    "cls": "nut-creatine__mark is-on",
+    "ratio": 2.46,
+    "size": 15
+   }
+  ],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "תזונה",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "‹",
+    "cls": "btn btn--quiet"
+   },
+   {
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(143, 174, 126)",
+    "large": false,
+    "ratio": 2.46,
+    "sample": "✓",
+    "cls": "nut-creatine__mark is-on"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "קריאטין",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "10:05",
+    "cls": "tiny muted num"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": true,
+    "ratio": 18.29,
+    "sample": "129",
+    "cls": "nut-hero__value num"
+   },
+   {
+    "fg": "rgb(148, 101, 18)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.09,
+    "sample": "חסרים",
+    "cls": "nut-hero__note nut-tone--mid"
+   },
+   {
+    "fg": "rgb(93, 106, 116)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.56,
+    "sample": "1100",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "סלט ירקות עם שמן זית",
+    "cls": "nut-quick__name"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 5.06,
+    "sample": "150",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "סיימתי לרשום",
+    "cls": "btn btn--primary btn--block"
+   }
+  ]
+ },
+ {
+  "screen": "3-workout",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 1691,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.89,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(148, 101, 18)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.09,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "A",
+    "cls": "choice__btn"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "B",
+    "cls": "choice__btn"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(245, 243, 240)",
+    "large": false,
+    "ratio": 7.04,
+    "sample": "אירובי — עצמאי",
+    "cls": "choice__btn choice__btn--aside"
+   }
+  ]
+ },
+ {
+  "screen": "3b-workout-editor-warmup",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2613,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 2.46,
+  "contrastFails": [
+   {
+    "text": "אופניים",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   },
+   {
+    "text": "0",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   },
+   {
+    "text": "0",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   }
+  ],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(148, 101, 18)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.09,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "0",
+    "cls": "focusnav__dot is-current is-done"
+   },
+   {
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(143, 174, 126)",
+    "large": false,
+    "ratio": 2.46,
+    "sample": "אופניים",
+    "cls": "choice__btn"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 7.67,
+    "sample": "דקות — חימום",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 5.06,
+    "sample": "דק׳",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "התחל",
+    "cls": "btn btn--primary"
+   },
+   {
+    "fg": "rgb(168, 90, 58)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.01,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   }
+  ]
+ },
+ {
+  "screen": "3c-workout-exercise",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 3258,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 2.46,
+  "contrastFails": [
+   {
+    "text": "2",
+    "cls": "nut-chip",
+    "ratio": 2.46,
+    "size": 13
+   },
+   {
+    "text": "0",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   },
+   {
+    "text": "0",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   }
+  ],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(148, 101, 18)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.09,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "0",
+    "cls": "focusnav__dot is-done"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 7.67,
+    "sample": "▶",
+    "cls": "focus__video"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 5.06,
+    "sample": "Hip Abduction Machine",
+    "cls": "tiny muted grow"
+   },
+   {
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(143, 174, 126)",
+    "large": false,
+    "ratio": 2.46,
+    "sample": "2",
+    "cls": "nut-chip"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "סיים",
+    "cls": "btn btn--primary btn--block"
+   },
+   {
+    "fg": "rgb(168, 90, 58)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.01,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   }
+  ]
+ },
+ {
+  "screen": "3d-workout-set-timer",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 3302,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 2.46,
+  "contrastFails": [
+   {
+    "text": "2",
+    "cls": "nut-chip",
+    "ratio": 2.46,
+    "size": 13
+   },
+   {
+    "text": "0",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   },
+   {
+    "text": "0",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   }
+  ],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(148, 101, 18)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.09,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "0",
+    "cls": "focusnav__dot is-done"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 7.67,
+    "sample": "▶",
+    "cls": "focus__video"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 5.06,
+    "sample": "Hip Abduction Machine",
+    "cls": "tiny muted grow"
+   },
+   {
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(143, 174, 126)",
+    "large": false,
+    "ratio": 2.46,
+    "sample": "2",
+    "cls": "nut-chip"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "סיים",
+    "cls": "btn btn--primary btn--block"
+   },
+   {
+    "fg": "rgb(168, 90, 58)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.01,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": true,
+    "ratio": 18.29,
+    "sample": "1:00",
+    "cls": "resttimer__count num"
+   }
+  ]
+ },
+ {
+  "screen": "4-checkin",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2945,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.89,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "צ'ק-אין",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "ייצא",
+    "cls": "btn btn--quiet btn--outlined"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 5.06,
+    "sample": "ממוצע השבוע",
+    "cls": "stat__label"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 17.98,
+    "sample": "94.40",
+    "cls": "stat__value num"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 253, 247)",
+    "large": false,
+    "ratio": 7.67,
+    "sample": "5",
+    "cls": "stat__note num"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "א",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "העתק סיכום שבועי",
+    "cls": "btn btn--block btn--primary"
+   }
+  ]
+ },
+ {
+  "screen": "5-data",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2224,
+  "fontLoaded": true,
+  "font": "Heebo",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 2.46,
+  "contrastFails": [
+   {
+    "text": "מיזוג",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   },
+   {
+    "text": "שון",
+    "cls": "choice__btn",
+    "ratio": 2.46,
+    "size": 15
+   },
+   {
+    "text": "מחיקת הכול",
+    "cls": "tiny muted",
+    "ratio": 4.4,
+    "size": 12
+   }
+  ],
+  "pairs": [
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "נתונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 7.8,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(22, 21, 15)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 18.29,
+    "sample": "אחסון:",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "100380",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(250, 249, 247)",
+    "bg": "rgb(22, 21, 15)",
+    "large": false,
+    "ratio": 17.38,
+    "sample": "הורד קובץ גיבוי",
+    "cls": "btn btn--block btn--primary"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 7.41,
+    "sample": "הצג",
+    "cls": "btn btn--quiet"
+   },
+   {
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(143, 174, 126)",
+    "large": false,
+    "ratio": 2.46,
+    "sample": "מיזוג",
+    "cls": "choice__btn"
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(250, 249, 247)",
+    "large": false,
+    "ratio": 4.89,
+    "sample": "ייבא מהטקסט",
+    "cls": "btn btn--block"
+   },
+   {
+    "fg": "rgb(85, 82, 74)",
+    "bg": "rgb(246, 235, 229)",
+    "large": false,
+    "ratio": 6.66,
+    "sample": "אזור מסוכן",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(113, 109, 101)",
+    "bg": "rgb(246, 235, 229)",
+    "large": false,
+    "ratio": 4.4,
+    "sample": "מחיקת הכול",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(168, 90, 58)",
+    "bg": "rgb(255, 255, 255)",
+    "large": false,
+    "ratio": 5.01,
+    "sample": "מחק את כל הנתונים",
+    "cls": "btn btn--danger btn--block"
+   }
+  ]
+ }
+]

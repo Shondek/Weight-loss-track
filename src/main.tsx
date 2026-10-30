@@ -12,16 +12,35 @@ if (!el) throw new Error('#root missing');
  * קובץ התוכנית בזמן טעינת המודול, ולכן App נטען בייבוא דינמי רק אחרי
  * שהפרופיל ידוע. בלי פרופיל (או כשהקריאה נכשלת) — ההתנהגות של היום.
  */
-void loadProfile()
-  .catch(() => null)
-  .then(() => import('./App'))
-  .then(({ default: App }) => {
+/**
+ * דף הערכה (src/ui/Kit.tsx): פיתוח בלבד, ב-`#kit`. הענף כולו נמצא בתוך
+ * `import.meta.env.DEV`, ולכן ה-bundler משמיט אותו ואת הרכיבים שרק הוא
+ * משתמש בהם מ-build של הייצור.
+ */
+if (import.meta.env.DEV && window.location.hash === '#kit') {
+  void import('./ui/Kit').then(({ default: Kit }) => {
     createRoot(el).render(
       <StrictMode>
-        <App />
+        <div className="app">
+          <main className="app__main">
+            <Kit />
+          </main>
+        </div>
       </StrictMode>,
     );
   });
+} else {
+  void loadProfile()
+    .catch(() => null)
+    .then(() => import('./App'))
+    .then(({ default: App }) => {
+      createRoot(el).render(
+        <StrictMode>
+          <App />
+        </StrictMode>,
+      );
+    });
+}
 
 // ה-service worker נוצר רק בבנייה (scripts/sw-plugin.ts).
 if (import.meta.env.PROD) {

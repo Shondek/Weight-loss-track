@@ -40,8 +40,12 @@ import { MAX_DAY_STEPS, MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../
 import { programStartWeek } from '../lib/db';
 import { DASH } from '../lib/format';
 import { confidenceOf } from '../components/confidence';
+import { Notice, StatusChip } from '../ui';
+import { Ruler } from '../ui/icons';
 
 const RECENT_COUNT = 10;
+/** מלאות השבוע → טון הצ'יפ: 7/7 מלא, 4–6 חלקי, פחות — חסר. */
+const CHIP_TONE = { high: 'done', mid: 'partial', low: 'missing' } as const;
 const MIN_FULL_WEEKS_FOR_CHART = 3;
 /** כמה זמן הכפתור אומר "נשמר" — אותו דפוס כמו "הועתק" ב-CopyBlock. */
 const SAVED_MS = 2500;
@@ -144,7 +148,7 @@ export default function WeightScreen({ store, today }: ScreenProps) {
 
       {/* שלב 4: תזכורת מותניים ביום רביעי בבוקר, נעלמת כשיש מדידה לאותו רביעי. */}
       {waistDue && (
-        <p className="notice" style={{ margin: 0 }}>
+        <Notice icon={Ruler}>
           מותניים: יום רביעי — מדידת בוקר.
           {sinceWaist !== null && (
             <>
@@ -154,7 +158,7 @@ export default function WeightScreen({ store, today }: ScreenProps) {
               </span>
             </>
           )}
-        </p>
+        </Notice>
       )}
 
       <section className="section section--first">
@@ -181,9 +185,9 @@ export default function WeightScreen({ store, today }: ScreenProps) {
             <span className="num">{current.count}</span> מתוך{' '}
             <span className="num">{WEEK_LENGTH}</span> שקילות ·{' '}
             {/* הצבע מקודד מלאות בלבד, לא כיוון. */}
-            <span className={`confidence--${confidenceOf(current.count)}`}>
+            <StatusChip tone={CHIP_TONE[confidenceOf(current.count)]}>
               {current.complete ? 'שבוע מלא' : 'חלקי'}
-            </span>
+            </StatusChip>
           </p>
 
           <div className="stack--tight" style={{ marginTop: 'var(--sp-3)' }}>

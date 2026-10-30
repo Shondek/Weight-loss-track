@@ -1,7 +1,10 @@
 /**
- * פס התקדמות מול יעד. הצבע לפי אחוז מהיעד: ≥95% מרווה, 75–95% ענבר,
- * פחות — צפחה. `floor` — סימון רצפה (למשל 1,850 קק"ל) על הפס, כאחוז מהיעד.
+ * פס התקדמות מול יעד. הצבע לפי אחוז מהיעד: ≥95% מלא, 75–95% חלקי,
+ * פחות — חסר. `floor` — סימון רצפה (למשל 1,850 קק"ל) על הפס, כאחוז מהיעד.
+ * הציור עצמו ב-src/ui/ProgressBar.tsx; כאן רק החישוב של הטון.
  */
+
+import UiProgressBar, { type BarTone as UiTone } from '../ui/ProgressBar';
 
 export type BarTone = 'high' | 'mid' | 'low';
 
@@ -10,6 +13,8 @@ export function toneOf(pct: number): BarTone {
   if (pct >= 0.75) return 'mid';
   return 'low';
 }
+
+const UI_TONE: Record<BarTone, UiTone> = { high: 'done', mid: 'partial', low: 'missing' };
 
 type Props = {
   value: number;
@@ -20,19 +25,6 @@ type Props = {
 
 export default function ProgressBar({ value, target, floor, label }: Props) {
   const pct = target > 0 ? value / target : 0;
-  const width = Math.max(0, Math.min(1, pct)) * 100;
-  const floorPct = floor !== undefined && target > 0 ? Math.max(0, Math.min(1, floor / target)) * 100 : null;
-  return (
-    <div
-      className={`nut-bar nut-bar--${toneOf(pct)}`}
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={Math.round(target)}
-      aria-valuenow={Math.round(Math.min(value, target))}
-    >
-      <div className="nut-bar__fill" style={{ width: `${width}%` }} />
-      {floorPct !== null && <div className="nut-bar__floor" style={{ insetInlineStart: `${floorPct}%` }} aria-hidden="true" />}
-    </div>
-  );
+  const floorFraction = floor !== undefined && target > 0 ? floor / target : undefined;
+  return <UiProgressBar fraction={pct} tone={UI_TONE[toneOf(pct)]} floor={floorFraction} label={label} valueNow={value} valueMax={target} />;
 }

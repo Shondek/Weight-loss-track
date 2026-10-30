@@ -1,0 +1,1056 @@
+[
+ {
+  "screen": "1-weight",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2276,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "משקל",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "›",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": true,
+    "ratio": 5.47,
+    "sample": "94.40",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(227, 184, 116)",
+    "bg": "rgb(51, 42, 28)",
+    "large": false,
+    "ratio": 7.64,
+    "sample": "חלקי",
+    "cls": "chip chip--partial"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "חסרות",
+    "cls": "muted"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "עדכן שקילה",
+    "cls": "btn btn--primary btn--block"
+   },
+   {
+    "fg": "rgb(224, 138, 110)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 5.51,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "משקל",
+    "cls": "tab__label"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "שבוע נוכחי מתחיל ב-",
+    "cls": "visually-hidden"
+   }
+  ]
+ },
+ {
+  "screen": "2-nutrition",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2728,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "תזונה",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "›",
+    "cls": "btn btn--quiet"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(169, 201, 154)",
+    "large": false,
+    "ratio": 9.93,
+    "sample": "✓",
+    "cls": "nut-creatine__mark is-on"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "קריאטין",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "10:05",
+    "cls": "tiny muted num"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": true,
+    "ratio": 14.4,
+    "sample": "129",
+    "cls": "nut-hero__value num"
+   },
+   {
+    "fg": "rgb(227, 184, 116)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.95,
+    "sample": "חסרים",
+    "cls": "nut-hero__note nut-tone--mid"
+   },
+   {
+    "fg": "rgb(154, 164, 172)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 6.51,
+    "sample": "1100",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "סלט ירקות עם שמן זית",
+    "cls": "nut-quick__name"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "150",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 6,
+    "sample": "· שלי",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "סיימתי לרשום",
+    "cls": "btn btn--primary btn--block"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "תזונה",
+    "cls": "tab__label"
+   }
+  ]
+ },
+ {
+  "screen": "2b-nutrition-search",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2739,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "תזונה",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "›",
+    "cls": "btn btn--quiet"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(169, 201, 154)",
+    "large": false,
+    "ratio": 9.93,
+    "sample": "✓",
+    "cls": "nut-creatine__mark is-on"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "קריאטין",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "10:05",
+    "cls": "tiny muted num"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": true,
+    "ratio": 14.4,
+    "sample": "129",
+    "cls": "nut-hero__value num"
+   },
+   {
+    "fg": "rgb(227, 184, 116)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.95,
+    "sample": "חסרים",
+    "cls": "nut-hero__note nut-tone--mid"
+   },
+   {
+    "fg": "rgb(154, 164, 172)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 6.51,
+    "sample": "1100",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "סלט ירקות עם שמן זית",
+    "cls": "nut-quick__name"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "150",
+    "cls": "num"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 6,
+    "sample": "· שלי",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "סיימתי לרשום",
+    "cls": "btn btn--primary btn--block"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "תזונה",
+    "cls": "tab__label"
+   }
+  ]
+ },
+ {
+  "screen": "3-workout",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 1759,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 6,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "›",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(227, 184, 116)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.95,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "A",
+    "cls": "choice__btn"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "אימונים",
+    "cls": "tab__label"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "שבוע נוכחי מתחיל ב-",
+    "cls": "visually-hidden"
+   }
+  ]
+ },
+ {
+  "screen": "3b-workout-editor-warmup",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2726,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 6,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "›",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(227, 184, 116)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.95,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "0",
+    "cls": "focusnav__dot is-current is-done"
+   },
+   {
+    "fg": "rgb(169, 201, 154)",
+    "bg": "rgb(38, 49, 38)",
+    "large": false,
+    "ratio": 7.43,
+    "sample": "1",
+    "cls": "focusnav__dot is-done"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "חימום",
+    "cls": "focus__name"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 9.67,
+    "sample": "דקות — חימום",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(224, 138, 110)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 5.51,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "אימונים",
+    "cls": "tab__label"
+   }
+  ]
+ },
+ {
+  "screen": "3c-workout-exercise",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 3397,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 6,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "›",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(227, 184, 116)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.95,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(169, 201, 154)",
+    "bg": "rgb(38, 49, 38)",
+    "large": false,
+    "ratio": 7.43,
+    "sample": "0",
+    "cls": "focusnav__dot is-done"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "1",
+    "cls": "focusnav__dot is-current is-done"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "הרחקת ירך במכונה",
+    "cls": "focus__name"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 9.67,
+    "sample": "▶",
+    "cls": "focus__video"
+   },
+   {
+    "fg": "rgb(224, 138, 110)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 5.51,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "אימונים",
+    "cls": "tab__label"
+   }
+  ]
+ },
+ {
+  "screen": "3d-workout-set-timer",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 3465,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "אימונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 6,
+    "sample": "ברך — בלי כריעה מתחת ל-90",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "›",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(227, 184, 116)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.95,
+    "sample": "אירובי",
+    "cls": "sub wk-budget--over"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "· סיום:",
+    "cls": "muted tiny"
+   },
+   {
+    "fg": "rgb(169, 201, 154)",
+    "bg": "rgb(38, 49, 38)",
+    "large": false,
+    "ratio": 7.43,
+    "sample": "0",
+    "cls": "focusnav__dot is-done"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "1",
+    "cls": "focusnav__dot is-current is-done"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "הרחקת ירך במכונה",
+    "cls": "focus__name"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 9.67,
+    "sample": "▶",
+    "cls": "focus__video"
+   },
+   {
+    "fg": "rgb(224, 138, 110)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 5.51,
+    "sample": "מחק",
+    "cls": "btn btn--danger"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": true,
+    "ratio": 12.55,
+    "sample": "1:00",
+    "cls": "resttimer__count num"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "אימונים",
+    "cls": "tab__label"
+   }
+  ]
+ },
+ {
+  "screen": "4-checkin",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 3025,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "צ'ק-אין",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "›",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "שבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "‹",
+    "cls": "btn btn--step"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "סיכום השבוע",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 7.69,
+    "sample": "5",
+    "cls": "stat__note num"
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "העתק סיכום שבועי",
+    "cls": "btn btn--block btn--primary"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "צ'ק-אין",
+    "cls": "tab__label"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "שבוע נוכחי מתחיל ב-",
+    "cls": "visually-hidden"
+   }
+  ]
+ },
+ {
+  "screen": "5-data",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2284,
+  "fontLoaded": true,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "pairs": [
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": true,
+    "ratio": 15.79,
+    "sample": "נתונים",
+    "cls": "visually-hidden"
+   },
+   {
+    "fg": "rgb(194, 189, 177)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 8.82,
+    "sample": "גיבוי: עברו",
+    "cls": "grow"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 5.47,
+    "sample": "מצב",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 14.4,
+    "sample": "אחסון:",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(22, 22, 20)",
+    "bg": "rgb(143, 185, 216)",
+    "large": false,
+    "ratio": 8.71,
+    "sample": "הורד קובץ גיבוי",
+    "cls": "btn btn--block btn--primary"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 12.55,
+    "sample": "העתק JSON מלא",
+    "cls": "btn btn--block"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 4.77,
+    "sample": "ייבא מהטקסט",
+    "cls": "btn btn--block"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(46, 33, 28)",
+    "large": false,
+    "ratio": 5.15,
+    "sample": "אזור מסוכן",
+    "cls": ""
+   },
+   {
+    "fg": "rgb(224, 138, 110)",
+    "bg": "rgb(42, 42, 38)",
+    "large": false,
+    "ratio": 5.51,
+    "sample": "מחק את כל הנתונים",
+    "cls": "btn btn--danger btn--block"
+   },
+   {
+    "fg": "rgb(153, 148, 138)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 6,
+    "sample": "היום:",
+    "cls": "tiny muted"
+   },
+   {
+    "fg": "rgb(143, 185, 216)",
+    "bg": "rgb(31, 31, 28)",
+    "large": false,
+    "ratio": 7.95,
+    "sample": "נתונים",
+    "cls": "tab__label"
+   },
+   {
+    "fg": "rgb(243, 239, 230)",
+    "bg": "rgb(22, 22, 20)",
+    "large": false,
+    "ratio": 15.79,
+    "sample": "שבוע נוכחי מתחיל ב-",
+    "cls": "visually-hidden"
+   }
+  ]
+ }
+]
