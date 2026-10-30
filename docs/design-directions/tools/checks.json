@@ -1,0 +1,182 @@
+[
+ {
+  "id": "01-soft-minimalism",
+  "screen": "1-today",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 967,
+  "font": "Heebo, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "01-soft-minimalism",
+  "screen": "2-workout",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1088,
+  "font": "Heebo, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "01-soft-minimalism",
+  "screen": "3-nutrition",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1404,
+  "font": "Heebo, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "01-soft-minimalism",
+  "screen": "4-trend",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1099,
+  "font": "Heebo, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "01-soft-minimalism",
+  "screen": "5-nutrition-sheet",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1404,
+  "font": "Heebo, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "01-soft-minimalism",
+  "screen": "6-system",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 2800,
+  "font": "Heebo, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "02-ledger",
+  "screen": "1-today",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1170,
+  "font": "\"IBM Plex Sans Hebrew\", system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "02-ledger",
+  "screen": "2-workout",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1090,
+  "font": "\"IBM Plex Sans Hebrew\", system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "02-ledger",
+  "screen": "3-nutrition",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1462,
+  "font": "\"IBM Plex Sans Hebrew\", system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "02-ledger",
+  "screen": "4-trend",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1130,
+  "font": "\"IBM Plex Sans Hebrew\", system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "02-ledger",
+  "screen": "5-nutrition-sheet",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1462,
+  "font": "\"IBM Plex Sans Hebrew\", system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "02-ledger",
+  "screen": "6-system",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 2962,
+  "font": "\"IBM Plex Sans Hebrew\", system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "03-night",
+  "screen": "1-today",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 907,
+  "font": "Rubik, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "03-night",
+  "screen": "2-workout",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1024,
+  "font": "Rubik, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "03-night",
+  "screen": "3-nutrition",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1395,
+  "font": "Rubik, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "03-night",
+  "screen": "4-trend",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1173,
+  "font": "Rubik, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "03-night",
+  "screen": "5-nutrition-sheet",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 1395,
+  "font": "Rubik, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ },
+ {
+  "id": "03-night",
+  "screen": "6-system",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollH": 2970,
+  "font": "Rubik, system-ui, sans-serif",
+  "fontLoaded": true,
+  "small": 0
+ }
+]
