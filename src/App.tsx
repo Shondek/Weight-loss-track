@@ -5,6 +5,7 @@ import { weekStart } from './lib/date';
 import { needsCheckin } from './lib/checkins';
 import { firstDataDate } from './lib/db';
 import { KEY_LABELS } from './lib/store';
+import { daysSinceBackup, needsBackupReminder } from './lib/backup';
 import { activeProfile } from './data/profile';
 import { defaultTab, visibleTabs, type TabId } from './lib/profile';
 import { onAppUpdate } from './platform/appUpdate';
@@ -72,6 +73,13 @@ export default function App() {
     tabRefs.current[id]?.focus();
   };
 
+  /**
+   * תזכורת גיבוי (שלב 0): הנתונים קיימים רק במכשיר, ולכן היא מוצגת בכל
+   * טאב ובכל פרופיל — גם בת הזוג, שאין לה טאב "משקל". קומפקטית, לא חוסמת.
+   */
+  const backupDue = useMemo(() => needsBackupReminder(store.db, today), [store.db, today]);
+  const sinceBackup = daysSinceBackup(store.db.settings, today);
+
   const checkinDue = useMemo(
     () => needsCheckin(store.db.checkins, today, firstDataDate(store.db)),
     [store.db, today],
@@ -104,6 +112,25 @@ export default function App() {
           aria-labelledby={`tab-${tab}`}
           tabIndex={-1}
         >
+        {backupDue && (
+          <div className="notice notice--row" role="status">
+            <span className="grow">
+              {sinceBackup === null ? (
+                'גיבוי: אין עדיין. הנתונים קיימים רק במכשיר הזה.'
+              ) : (
+                <>
+                  גיבוי: עברו <span className="num">{sinceBackup}</span> ימים מהגיבוי האחרון.
+                </>
+              )}
+            </span>
+            {tab !== 'data' && (
+              <button type="button" className="btn btn--quiet btn--outlined" onClick={() => setTab('data')}>
+                ייצא
+              </button>
+            )}
+          </div>
+        )}
+
         {updateReady && (
           <div className="banner stack--tight" role="status">
             <p style={{ margin: 0 }}>גרסה חדשה של האפליקציה מוכנה.</p>

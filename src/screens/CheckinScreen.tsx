@@ -9,6 +9,10 @@ import { backupJson, buildChatReport } from '../lib/exportText';
 import { buildWeekSummary } from '../lib/weekSummary';
 import { buildWeeklySummary, defaultSummaryWeek } from '../lib/weeklySummary';
 import { downloadText } from '../platform/download';
+import { toLocalISO } from '../lib/date';
+import { verifyBackup } from '../lib/backup';
+import { activeProfile } from '../data/profile';
+import BackupSave from '../components/BackupSave';
 import { formatDMY, isSaturday, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import WeekNav from '../components/WeekNav';
@@ -30,7 +34,13 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
   const start = useMemo(() => programStartWeek(db), [db]);
   const report = useMemo(() => buildChatReport(db, week, today), [db, week, today]);
   const summary = useMemo(() => buildWeekSummary(db, week, today), [db, week, today]);
-  const json = useMemo(() => backupJson(db, new Date().toISOString()), [db]);
+  const json = useMemo(() => backupJson(db, new Date().toISOString(), activeProfile()), [db]);
+  const [copyNote, setCopyNote] = useState<string | null>(null);
+  /** הקובץ/הלוח נרשמים כגיבוי רק אחרי אימות (שלב 0). */
+  const markBackedUp = () => {
+    if (db.settings.lastBackup === today) return;
+    void store.update('settings', { ...db.settings, lastBackup: today });
+  };
   /** שבוע הסיכום לצ'אט (שלב 5): נפרד מהשבוע של הצ'ק-אין. בשבת — השבוע הזה; אחרת השבוע השלם האחרון. */
   const [summaryWeek, setSummaryWeek] = useState<string>(() => defaultSummaryWeek(today));
   const weekly = useMemo(() => buildWeeklySummary(db, summaryWeek), [db, summaryWeek]);
@@ -161,18 +171,29 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
         </div>
         <div className="stack">
           <CopyBlock text={report} label="העתק לצ'אט" boxLabel="דוח הצ'ק-אין" primary />
-          <div>
+          <div className="stack--tight">
+            <BackupSave json={json} db={db} filename={`fatloss-${toLocalISO(new Date())}.json`} onBackedUp={markBackedUp} />
             <CopyBlock
               text={json}
               label="העתק JSON מלא"
               boxLabel="גיבוי JSON"
               onCopied={() => {
-                if (db.settings.lastBackup === today) return;
-                void store.update('settings', { ...db.settings, lastBackup: today });
+                const v = verifyBackup(json, db);
+                if (v.ok) {
+                  markBackedUp();
+                  setCopyNote(null);
+                } else {
+                  setCopyNote(`הטקסט הועתק אבל לא עבר אימות: ${v.problems.join(' · ')}`);
+                }
               }}
             />
-            <p className="tiny muted" style={{ margin: '4px 0 0' }}>
-              לגיבוי, לא לצ'אט.
+            {copyNote && (
+              <p className="small err" role="alert" style={{ margin: 0 }}>
+                {copyNote}
+              </p>
+            )}
+            <p className="tiny muted" style={{ margin: 0 }}>
+              לגיבוי, לא לצ'אט. קובץ עדיף על הלוח.
             </p>
           </div>
         </div>

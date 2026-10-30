@@ -12,8 +12,9 @@ import { mergeDb } from '../lib/db';
 import { BACKUP_VERSION, backupJson } from '../lib/exportText';
 import { currentBackend } from '../lib/store';
 import { formatDM, formatDMY, toLocalISO, weekRangeLabel, weekStart } from '../lib/date';
-import { firstDataDate, programStartWeek, recordCount } from '../lib/db';
-import { daysSinceBackup } from '../lib/backup';
+import { firstDataDate, lastBackupAfterImport, programStartWeek, recordCount } from '../lib/db';
+import { daysSinceBackup, profileConflict, verifyBackup } from '../lib/backup';
+import BackupSave from '../components/BackupSave';
 import DateField from '../components/DateField';
 import CopyBlock from '../components/CopyBlock';
 import { downloadText, readFileAsText } from '../platform/download';
@@ -41,7 +42,18 @@ type ImportReport = {
   rejected: DbParseResult['rejected'];
   totalBefore: number;
   totalAfter: number;
+  /** "גיבוי אחרון" אחרי הייבוא — המוקדם מבין המכשיר והקובץ, או null (שלב 0). */
+  lastBackup: string | null;
 };
+
+/**
+ * ייבוא שנעצר כי הפרופיל בקובץ שונה מזה של המכשיר (שלב 0). שום דבר לא
+ * נכתב עד "ייבא בכל זאת"; "ביטול" משאיר את המסד כפי שהוא.
+ */
+type ProfileWarning = { result: DbParseResult; parsedJson: unknown };
+
+/** שם הפרופיל לאזהרה. `null` = אין פרופיל = שון. */
+const profileName = (p: Profile | null): string => (p === null ? PROFILE_LABELS.default : PROFILE_LABELS[p]);
 
 const DASH_TEXT = '—';
 
@@ -89,6 +101,9 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const [replaceText, setReplaceText] = useState('');
   const [pending, setPending] = useState<PendingReplace | null>(null);
   const [pendingText, setPendingText] = useState('');
+  const [profileWarning, setProfileWarning] = useState<ProfileWarning | null>(null);
+  /** תוצאת האימות של העתקת ה-JSON ללוח (שלב 0). */
+  const [copyNote, setCopyNote] = useState<string | null>(null);
   const replaceReady = mode === 'merge' || isConfirmed(replaceText, REPLACE_WORD);
   const fileInput = useRef<HTMLInputElement>(null);
   const [library, setLibrary] = useState<LibraryState>({ status: 'idle' });
@@ -102,7 +117,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const target = useMemo(() => targetFor(db.targets, today), [db.targets, today]);
   const libraryCount = db.customFoods.filter((f) => isLibraryFoodId(f.id)).length;
 
-  const json = useMemo(() => backupJson(db, new Date().toISOString()), [db]);
+  // קומפקטי, עם פרופיל המכשיר כשדה אחרון (שלב 0). התוכן זהה לפורמט הקודם.
+  const json = useMemo(() => backupJson(db, new Date().toISOString(), PROFILE), [db]);
   const start = useMemo(() => programStartWeek(db), [db]);
   const firstData = useMemo(() => firstDataDate(db), [db]);
   const sinceBackup = daysSinceBackup(db.settings, today);
@@ -143,6 +159,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
       rejected: result.rejected,
       totalBefore: before,
       totalAfter: total(next),
+      lastBackup: next.settings.lastBackup,
     });
     setRaw('');
     setReplaceText('');
@@ -157,7 +174,16 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const applyReplace = async (result: DbParseResult, typed: string) => {
     const before = total(db);
     // ההסגר מתמזג גם בהחלפה — הוא לעולם לא מתכווץ.
-    const next: DB = { ...result.db, quarantine: mergeQuarantine(db.quarantine, result.db.quarantine) };
+    // "גיבוי אחרון": המוקדם מבין המכשיר והקובץ (שלב 0). קודם הקובץ דרס את
+    // המכשיר, ותאריך מאוחר מהקובץ השתיק את התזכורת בלי שיצא גיבוי של המכשיר הזה.
+    const next: DB = {
+      ...result.db,
+      quarantine: mergeQuarantine(db.quarantine, result.db.quarantine),
+      settings: {
+        ...result.db.settings,
+        lastBackup: lastBackupAfterImport(db.settings.lastBackup, result.db.settings.lastBackup),
+      },
+    };
     const r = await guardedRun({
       typed,
       word: REPLACE_WORD,
@@ -175,6 +201,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
     setReport(null);
     setImportError(null);
     setPending(null);
+    setProfileWarning(null);
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(text);
@@ -184,6 +211,17 @@ export default function DataScreen({ store, today }: ScreenProps) {
     }
     const result = parseDb(parsedJson);
 
+    // שלב 0: הקובץ נוצר בפרופיל אחר — עוצרים לפני כל כתיבה. קובץ בלי השדה
+    // (גיבוי ישן) ממשיך כרגיל.
+    if (profileConflict(result.profile, PROFILE)) {
+      setProfileWarning({ result, parsedJson });
+      return;
+    }
+    continueImport(result, parsedJson);
+  };
+
+  /** המשך הייבוא אחרי בדיקת הפרופיל (או אחרי "ייבא בכל זאת"). */
+  const continueImport = (result: DbParseResult, parsedJson: unknown) => {
     if (mode === 'merge') {
       const before = total(db);
       const next = mergeDb(db, result.db);
@@ -338,23 +376,27 @@ export default function DataScreen({ store, today }: ScreenProps) {
           </span>
         </div>
         <div className="stack">
-          <button
-            type="button"
-            className="btn btn--primary btn--block"
-            onClick={() => {
-              const ok = downloadText(`fatloss-${toLocalISO(new Date())}.json`, json);
-              if (!ok) setImportError('ההורדה נחסמה. השתמש ב"העתק JSON מלא".');
-              else markBackedUp();
-            }}
-          >
-            הורד קובץ גיבוי
-          </button>
+          <BackupSave json={json} db={db} filename={`fatloss-${toLocalISO(new Date())}.json`} primary onBackedUp={markBackedUp} />
           <CopyBlock
             text={json}
             label="העתק JSON מלא"
             boxLabel="גיבוי JSON"
-            onCopied={markBackedUp}
+            onCopied={() => {
+              // גם הלוח עובר את אותו אימות: רק גיבוי שנקרא חזרה נכון נרשם.
+              const v = verifyBackup(json, db);
+              if (v.ok) {
+                markBackedUp();
+                setCopyNote(null);
+              } else {
+                setCopyNote(`הטקסט הועתק אבל לא עבר אימות: ${v.problems.join(' · ')}`);
+              }
+            }}
           />
+          {copyNote && (
+            <p className="small err" role="alert" style={{ margin: 0 }}>
+              {copyNote}
+            </p>
+          )}
           <p className={`small${sinceBackup === null && total(db) > 0 ? ' err' : ' muted'}`} style={{ margin: 0 }}>
             גיבוי אחרון:{' '}
             {db.settings.lastBackup ? (
@@ -450,6 +492,34 @@ export default function DataScreen({ store, today }: ScreenProps) {
             ייבא מהטקסט
           </button>
 
+          {profileWarning && (
+            <div className="banner banner--error stack--tight" role="alert">
+              <p className="strong" style={{ margin: 0 }}>
+                הקובץ נוצר בפרופיל "{profileName(profileWarning.result.profile ?? null)}", והמכשיר הזה בפרופיל "{profileName(PROFILE)}".
+              </p>
+              <p style={{ margin: 0 }}>
+                תרגילים משותפים לשתי התוכניות (לג-פרס, כפיפת ברכיים…) חולקים מזהה, ולכן ההיסטוריה והצעות המשקל
+                יתערבבו. שום דבר עדיין לא השתנה.
+              </p>
+              <div className="row">
+                <button
+                  type="button"
+                  className="btn btn--danger btn--block"
+                  onClick={() => {
+                    const w = profileWarning;
+                    setProfileWarning(null);
+                    continueImport(w.result, w.parsedJson);
+                  }}
+                >
+                  ייבא בכל זאת
+                </button>
+                <button type="button" className="btn" onClick={() => setProfileWarning(null)}>
+                  ביטול
+                </button>
+              </div>
+            </div>
+          )}
+
           {pending && (
             <div className="banner banner--error stack--tight" role="alert">
               <p className="strong" style={{ margin: 0 }}>
@@ -520,6 +590,15 @@ export default function DataScreen({ store, today }: ScreenProps) {
               <p style={{ margin: 0 }}>
                 סה"כ רשומות: <span className="num">{report.totalBefore}</span> →{' '}
                 <span className="num">{report.totalAfter}</span>
+              </p>
+              <p style={{ margin: 0 }}>
+                גיבוי אחרון אחרי הייבוא:{' '}
+                {report.lastBackup ? (
+                  <span className="num">{formatDMY(report.lastBackup)}</span>
+                ) : (
+                  'אין — ייצא גיבוי חדש של המצב המאוחד'
+                )}
+                .
               </p>
               {report.rejected.length === 0 ? (
                 <p style={{ margin: 0 }}>לא נדחתה אף רשומה.</p>
