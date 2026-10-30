@@ -93,7 +93,7 @@ describe('mergeDb', () => {
     expect(mergeDb(withStart, emptyDb()).settings.programStart).toBe('2026-08-02');
   });
 
-  it('הגדרות מתמזגות שדה-שדה: תחילת תוכנית מהקובץ, צליל מקומי, גיבוי המאוחר', () => {
+  it('הגדרות מתמזגות שדה-שדה: תחילת תוכנית מהקובץ, צליל מקומי, גיבוי המוקדם', () => {
     const local = {
       ...current,
       settings: { programStart: null, soundEnabled: false, lastBackup: '2026-08-20' },
@@ -104,14 +104,16 @@ describe('mergeDb', () => {
     expect(mergeDb(local, file).settings).toEqual({
       programStart: '2026-08-02',
       soundEnabled: false,
-      lastBackup: '2026-08-20',
+      lastBackup: '2026-08-10',
     });
-    // הקובץ חדש יותר — התאריך שלו גובר
+    // שלב 0 (אמינות גיבוי): הקובץ חדש יותר — ובכל זאת התאריך של המכשיר נשאר.
+    // אחרי מיזוג אף קובץ לא מכיל את כל מה שבמכשיר, ולכן תאריך מאוחר מהקובץ
+    // היה משתיק את התזכורת בלי שיצא גיבוי. קובץ בלי תאריך מאפס את השעון.
     const newerFile = db({
       settings: { programStart: null, soundEnabled: true, lastBackup: '2026-09-01' },
     });
-    expect(mergeDb(local, newerFile).settings.lastBackup).toBe('2026-09-01');
-    expect(mergeDb(local, emptyDb()).settings.lastBackup).toBe('2026-08-20');
+    expect(mergeDb(local, newerFile).settings.lastBackup).toBe('2026-08-20');
+    expect(mergeDb(local, emptyDb()).settings.lastBackup).toBeNull();
   });
 
   it('אימונים ישנים: הקיימים נשארים, מיובאים מתווספים, תוכן זהה לא מוכפל', () => {

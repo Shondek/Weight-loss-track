@@ -44,6 +44,7 @@ import {
   WORKOUT_SCHEMA_VERSION,
 } from '../types';
 import { canonicalExerciseId, exerciseById, resolveExerciseId } from '../data/program';
+import type { Profile } from '../data/profile';
 import { compareISO, isValidISO, toLocalISO, weekStart } from './date';
 import { isCardioId } from './workouts';
 import { sortStandalone } from './cardio';
@@ -981,6 +982,11 @@ export function parseQuarantine(input: unknown): QuarantineItem[] {
 
 export type DbParseResult = {
   db: DB;
+  /**
+   * פרופיל המכשיר שייצא את הקובץ (שלב 0). `undefined` = השדה חסר או לא
+   * מוכר — גיבוי ישן, ההתנהגות של היום. `null` = 'default' (שון).
+   */
+  profile: Profile | null | undefined;
   counts: Record<
     | 'weights'
     | 'workouts'
@@ -1004,6 +1010,17 @@ function tally(section: string, r: Rejection[]): { section: string; reason: stri
 }
 
 /** מקבל אובייקט ייצוא (v1 של ה-HTML הישן או של האפליקציה הזו) ומחזיר DB נקי. */
+/**
+ * השדה `profile` של קובץ הגיבוי. 'default' → null (אין פרופיל), 'partner' →
+ * 'partner', כל דבר אחר (כולל חסר) → undefined = לא ידוע. לעולם לא דוחה את
+ * הקובץ — הפרופיל הוא רמז לאזהרה, לא נתון.
+ */
+export function parseBackupProfile(raw: unknown): Profile | null | undefined {
+  if (raw === 'default') return null;
+  if (raw === 'partner') return 'partner';
+  return undefined;
+}
+
 export function parseDb(input: unknown): DbParseResult {
   const src = isRecord(input) ? input : {};
   const weights = parseWeights(src.weights);
@@ -1041,6 +1058,7 @@ export function parseDb(input: unknown): DbParseResult {
   ]);
 
   return {
+    profile: parseBackupProfile(src.profile),
     db: {
       weights: weights.ok,
       workouts: workouts.ok,

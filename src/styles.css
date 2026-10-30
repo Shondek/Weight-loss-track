@@ -667,6 +667,25 @@ button {
   padding: var(--sp-2) var(--sp-3);
 }
 
+/* תזכורת כשורה (גיבוי, שלב 0): טקסט + כפתור קטן בקצה, מעל כל טאב. */
+.notice--row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding-block: var(--sp-1);
+}
+
+.notice--row .btn {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+/* אימות גיבוי שעבר: מרווה כהה (AA), כמו תג המלאות. */
+.backup-save__ok {
+  color: var(--confidence-high);
+}
+
 /* ---------- רשתות ורשימות ---------- */
 
 .week-grid {

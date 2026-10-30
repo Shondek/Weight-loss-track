@@ -12,6 +12,7 @@
  */
 
 import type { DB, ISODate } from '../types';
+import type { Profile } from '../data/profile';
 import { WORKOUTS_PER_WEEK } from '../data/program';
 import { addDays, compareISO, dayLetter, formatDM, formatDMY, weekDays, weekEnd, weekNumber } from './date';
 import { programStartWeek } from './db';
@@ -178,6 +179,17 @@ export function buildChatReport(db: DB, week: ISODate, today: ISODate): string {
 /** גרסת קובץ הגיבוי. 2 = סטים באורך משתנה עם משקל לכל סט; 1 = הפורמט הישן, עדיין נקלט בייבוא. */
 export const BACKUP_VERSION = 2;
 
+/**
+ * הפרופיל כפי שהוא נכתב בקובץ הגיבוי (שלב 0 — אמינות גיבוי). `'default'` =
+ * אין פרופיל (שון). שדה אופציונלי ואדיטיבי: גיבוי מלפניו פשוט לא מכיל
+ * אותו, ובייבוא זה אומר "לא ידוע" — ההתנהגות של היום, בלי אזהרה.
+ */
+export type BackupProfile = 'default' | 'partner';
+
+export function toBackupProfile(p: Profile | null): BackupProfile {
+  return p ?? 'default';
+}
+
 export type BackupFile = {
   /** ראה `BACKUP_VERSION`. */
   v: typeof BACKUP_VERSION;
@@ -205,10 +217,19 @@ export type BackupFile = {
    * וגיבוי עם השדה מתמזג לפי טביעת אצבע.
    */
   quarantine?: DB['quarantine'];
+  /**
+   * פרופיל המכשיר שייצא את הקובץ. אופציונלי: נכתב רק כשהקורא מוסר אותו,
+   * ותמיד אחרון — המפתחות שלפניו לא זזים. בייבוא, פרופיל שונה מזה של
+   * המכשיר עוצר עם אזהרה (התרגילים המשותפים חולקים `id`).
+   */
+  profile?: BackupProfile;
 };
 
-/** גיבוי מלא. `exportedAt` מגיע מבחוץ כדי שהמודול יישאר טהור. */
-export function buildBackup(db: DB, exportedAt: string): BackupFile {
+/**
+ * גיבוי מלא. `exportedAt` ו-`profile` מגיעים מבחוץ כדי שהמודול יישאר טהור.
+ * `profile === undefined` = לא לכתוב את השדה (קוראים ישנים, בדיקות).
+ */
+export function buildBackup(db: DB, exportedAt: string, profile?: Profile | null): BackupFile {
   return {
     v: BACKUP_VERSION,
     exported: exportedAt,
@@ -226,9 +247,15 @@ export function buildBackup(db: DB, exportedAt: string): BackupFile {
     days: db.days,
     creatine: db.creatine,
     quarantine: db.quarantine,
+    ...(profile === undefined ? {} : { profile: toBackupProfile(profile) }),
   };
 }
 
-export function backupJson(db: DB, exportedAt: string): string {
-  return JSON.stringify(buildBackup(db, exportedAt), null, 2);
+/**
+ * ה-JSON של הגיבוי, קומפקטי (בלי רווחים והזחה). אותו תוכן בדיוק כמו קודם —
+ * רק הסריאליזציה השתנתה. שנה של רישומים יומיים היא מגה-בייטים, והעתקה
+ * ללוח ב-iOS של קובץ כזה נכשלת; קומפקטי קטן ב-~40%.
+ */
+export function backupJson(db: DB, exportedAt: string, profile?: Profile | null): string {
+  return JSON.stringify(buildBackup(db, exportedAt, profile));
 }

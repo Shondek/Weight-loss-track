@@ -27,3 +27,32 @@ export function readFileAsText(file: File): Promise<string> {
     fr.readAsText(file);
   });
 }
+
+/**
+ * שיתוף קובץ דרך Web Share (iOS: גיליון השיתוף → "שמור בקבצים"). ב-PWA
+ * שמותקן במסך הבית ב-iOS, `a[download]` לא תמיד מציע שמירה, ולכן זו דרך
+ * שנייה לקבל קובץ ולא רק לוח. `canShareFile` אומר אם הכפתור בכלל מוצג.
+ */
+export function canShareFile(filename: string, text: string, mime = 'application/json'): boolean {
+  try {
+    if (typeof navigator === 'undefined' || typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') return false;
+    const file = new File([text], filename, { type: mime });
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
+export type ShareResult = 'shared' | 'cancelled' | 'failed';
+
+export async function shareTextFile(filename: string, text: string, mime = 'application/json'): Promise<ShareResult> {
+  try {
+    const file = new File([text], filename, { type: mime });
+    await navigator.share({ files: [file], title: filename });
+    return 'shared';
+  } catch (err) {
+    // המשתמש סגר את הגיליון — לא שגיאה, אבל גם לא גיבוי.
+    if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
+    return 'failed';
+  }
+}

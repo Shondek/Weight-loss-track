@@ -56,11 +56,18 @@ export function recordCount(db: DB): number {
   );
 }
 
-/** המאוחר מבין שני תאריכים, או מה שקיים כשאחד מהם חסר. */
-function laterOf(a: ISODate | null, b: ISODate | null): ISODate | null {
-  if (a === null) return b;
-  if (b === null) return a;
-  return compareISO(a, b) >= 0 ? a : b;
+/**
+ * תאריך הגיבוי אחרי ייבוא (שלב 0 — אמינות גיבוי): **המוקדם** מבין השניים,
+ * ו-null אם אחד מהם null.
+ *
+ * העיקרון: התזכורת לעולם לא מציגה גיבוי כעדכני יותר ממה שהוא באמת. אחרי
+ * מיזוג יש במכשיר רשומות שאף קובץ לא מכיל יחד; אחרי החלפה הקובץ של האחר
+ * אינו גיבוי של *המכשיר הזה*. בשני המקרים תאריך מהקובץ שמאוחר מזה של
+ * המכשיר היה משתיק את התזכורת בלי שיצא גיבוי. הייצוא הבא מאפס את השעון.
+ */
+export function lastBackupAfterImport(device: ISODate | null, file: ISODate | null): ISODate | null {
+  if (device === null || file === null) return null;
+  return compareISO(device, file) <= 0 ? device : file;
 }
 
 /**
@@ -129,7 +136,8 @@ export function mergeDb(current: DB, incoming: DB): DB {
     settings: {
       programStart: incoming.settings.programStart ?? current.settings.programStart,
       soundEnabled: current.settings.soundEnabled,
-      lastBackup: laterOf(current.settings.lastBackup, incoming.settings.lastBackup),
+      // המוקדם, לא המאוחר — ראו lastBackupAfterImport.
+      lastBackup: lastBackupAfterImport(current.settings.lastBackup, incoming.settings.lastBackup),
     },
   };
 }
