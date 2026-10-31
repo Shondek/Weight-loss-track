@@ -937,10 +937,28 @@
   min-height: var(--tap-min);
 }
 
+/* סולם שממלאים בנחת (צ'ק-אין): 48 גם ברשת. */
+.chips--tall .chipbtn {
+  min-height: var(--tap);
+}
+
 .chipbtn[aria-pressed='true'] {
   background: var(--accent);
   color: var(--on-accent);
   font-weight: 500;
+}
+
+/* מושבת: צבעים מפורשים (שקט על משטח 3 = 4.8), לא שקיפות. */
+.chipbtn:disabled {
+  color: var(--text-quiet);
+  cursor: default;
+}
+
+.chipbtn:disabled[aria-pressed='true'] {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  outline: 1px solid var(--line-2);
+  outline-offset: -1px;
 }
 
 /* ---------- QtyStepper: −/+ 56px משני צידי מספר גדול שהוא שדה הקלדה ---------- */

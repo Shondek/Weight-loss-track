@@ -210,7 +210,8 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
             {strengthExercises(w).filter(hasData).length} תרגילים
           </span>
         </button>
-        <button type="button" className="btn btn--quiet btn--outlined" onClick={onEdit}>
+        {/* שלב 6 (F12): "ערוך" ×15 — רפאים בלי משטח, כדי שלא יתחרה בשורה עצמה. אותה פעולה. */}
+        <button type="button" className="btn btn--quiet" onClick={onEdit}>
           ערוך
         </button>
       </div>

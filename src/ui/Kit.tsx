@@ -313,6 +313,9 @@ export default function Kit() {
       <div className="stack--tight">
         <ChipSelect<number> label="חזרות ברזרבה בסט האחרון" options={[0, 1, 2, 3].map((v) => ({ value: v, label: String(v) })).concat({ value: 4, label: '4+' })} value={2} onChange={() => undefined} />
         <ChipSelect<number> label="כאב ברך" options={Array.from({ length: 11 }, (_, v) => ({ value: v, label: String(v) }))} value={null} onChange={() => undefined} columns={6} />
+        {/* שלב 6: סולם הצ'ק-אין (48 ברשת) ובחירה מושבתת (פרופיל במכשיר מלא). */}
+        <ChipSelect<number> label="היצמדות (צ'ק-אין)" options={Array.from({ length: 10 }, (_, v) => ({ value: v + 1, label: String(v + 1) }))} value={7} onChange={() => undefined} columns={5} tall />
+        <ChipSelect<string> label="פרופיל המכשיר (מושבת)" options={[{ value: 'default', label: 'שון' }, { value: 'partner', label: 'בת הזוג' }]} value="default" clearable={false} disabled onChange={() => undefined} />
       </div>
 
       <SectionHeader title="אייקונים" aside="Lucide · קו 2" />

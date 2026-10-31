@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { ScreenProps } from './types';
 import type { CustomFood, DB } from '../types';
 import { parseDb, type DbParseResult } from '../lib/schema';
@@ -13,7 +13,7 @@ import { BACKUP_VERSION, backupJson } from '../lib/exportText';
 import { currentBackend } from '../lib/store';
 import { formatDM, formatDMY, toLocalISO, weekRangeLabel, weekStart } from '../lib/date';
 import { firstDataDate, lastBackupAfterImport, programStartWeek, recordCount } from '../lib/db';
-import { daysSinceBackup, profileConflict, verifyBackup } from '../lib/backup';
+import { BACKUP_REMINDER_DAYS, daysSinceBackup, profileConflict, verifyBackup } from '../lib/backup';
 import BackupSave from '../components/BackupSave';
 import DateField from '../components/DateField';
 import CopyBlock from '../components/CopyBlock';
@@ -27,7 +27,8 @@ import { PERSIST_LABEL, usePersistStatus } from '../platform/storagePersist';
 import { activeProfile, type Profile } from '../data/profile';
 import { writeProfile } from '../platform/profile';
 import { PROFILE_LABELS, SWITCH_BLOCKED_TEXT, canSwitchProfile, dataFeatures } from '../lib/profile';
-import { useToast } from '../ui';
+import { Button, ChipSelect, Disclosure, Icon, ListRow, Num, SectionHeader, StatusChip, Surface, useToast, type ChipOption } from '../ui';
+import { Database, HardDrive, Info, Pencil, Plus, Settings, ShieldAlert, Upload, UserRound, Utensils } from '../ui/icons';
 
 type Mode = 'merge' | 'replace';
 
@@ -51,7 +52,7 @@ type ImportReport = {
  * ייבוא שנעצר כי הפרופיל בקובץ שונה מזה של המכשיר (שלב 0). שום דבר לא
  * נכתב עד "ייבא בכל זאת"; "ביטול" משאיר את המסד כפי שהוא.
  */
-type ProfileWarning = { result: DbParseResult; parsedJson: unknown };
+type ProfileWarning = { result: DbParseResult; parsedJson: unknown; mode: Mode };
 
 /** שם הפרופיל לאזהרה. `null` = אין פרופיל = שון. */
 const profileName = (p: Profile | null): string => (p === null ? PROFILE_LABELS.default : PROFILE_LABELS[p]);
@@ -82,6 +83,13 @@ const total = recordCount;
 const PROFILE = activeProfile();
 const FEATURES = dataFeatures(PROFILE);
 
+/** אפשרויות הפרופיל לצ'יפים. `null` (שון) מיוצג כ-'default' כי הצ'יפ צריך מפתח מחרוזת. */
+type ProfileKey = 'default' | Profile;
+const PROFILE_OPTIONS: readonly ChipOption<ProfileKey>[] = [
+  { value: 'default', label: PROFILE_LABELS.default },
+  { value: 'partner', label: PROFILE_LABELS.partner },
+];
+
 /** "לפני 3 ימים" / "היום" — לשורת הגיבוי האחרון. */
 function agoText(days: number): string {
   if (days <= 0) return 'היום';
@@ -89,10 +97,43 @@ function agoText(days: number): string {
   return `לפני ${days} ימים`;
 }
 
+/**
+ * בחירת קובץ: כפתור בעברית במקום הכיתוב של הדפדפן (F21). ה-input עצמו שקוף
+ * ומונח על הכפתור, כך שהנגיעה והמיקוד הם שלו — אותו `onChange` כמו קודם.
+ */
+function FilePick({ id, label, disabled, onFile }: { id: string; label: string; disabled: boolean; onFile: (f: File | undefined) => void }) {
+  return (
+    <div className={`filepick${disabled ? ' is-disabled' : ''}`}>
+      <input
+        id={id}
+        type="file"
+        className="filepick__input"
+        accept="application/json,.json,text/plain"
+        disabled={disabled}
+        aria-label={label}
+        onChange={(e) => {
+          onFile(e.target.files?.[0]);
+          e.target.value = '';
+        }}
+      />
+      <span className="btn btn--block filepick__btn" aria-hidden="true">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** שורת ספירה בכרטיס "מצב": תווית, ומספר מבודד בקצה. */
+function CountRow({ title, count, sub }: { title: string; count: number; sub?: ReactNode }) {
+  return <ListRow title={title} sub={sub} end={<Num className="count">{count}</Num>} />;
+}
+
 export default function DataScreen({ store, today }: ScreenProps) {
   const { db } = store;
   const [raw, setRaw] = useState('');
-  const [mode, setMode] = useState<Mode>('merge');
+  const [replaceRaw, setReplaceRaw] = useState('');
+  /** איפה מוצג המשוב של הייבוא האחרון: בשחזור (מיזוג) או באזור המסוכן (החלפה). */
+  const [feedbackMode, setFeedbackMode] = useState<Mode>('merge');
   const [report, setReport] = useState<ImportReport | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [wipeStep, setWipeStep] = useState(0);
@@ -107,8 +148,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const toast = useToast();
   /** תוצאת האימות של העתקת ה-JSON ללוח (שלב 0). */
   const [copyNote, setCopyNote] = useState<string | null>(null);
-  const replaceReady = mode === 'merge' || isConfirmed(replaceText, REPLACE_WORD);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const replaceReady = isConfirmed(replaceText, REPLACE_WORD);
   const [library, setLibrary] = useState<LibraryState>({ status: 'idle' });
   // ---------- ניהול תזונה (שלב 3: עבר לכאן ממסך התזונה) ----------
   const foodIndex = useFoodIndex(db.customFoods);
@@ -117,6 +157,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
   /** "פרטים" פר פריט: הערות טכניות (מזהי מאגר, גזירות) מוסתרות כברירת מחדל. */
   const [details, setDetails] = useState<Set<string>>(() => new Set());
   const [editingTarget, setEditingTarget] = useState(false);
+  const [countsOpen, setCountsOpen] = useState(false);
   const target = useMemo(() => targetFor(db.targets, today), [db.targets, today]);
   const libraryCount = db.customFoods.filter((f) => isLibraryFoodId(f.id)).length;
 
@@ -155,7 +196,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
     downloadText(`fatloss-before-${what}-${toLocalISO(new Date())}.json`, json);
 
   /** הדוח מוצג גם אם השמירה נכשלה — הנתונים בזיכרון ומסומנים "לא נשמרו" בבאנר. */
-  const finishImport = (result: DbParseResult, next: DB, before: number) => {
+  const finishImport = (result: DbParseResult, next: DB, before: number, mode: Mode) => {
     setReport({
       mode,
       counts: result.counts,
@@ -165,6 +206,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
       lastBackup: next.settings.lastBackup,
     });
     setRaw('');
+    setReplaceRaw('');
     setReplaceText('');
     setPending(null);
     setPendingText('');
@@ -197,10 +239,11 @@ export default function DataScreen({ store, today }: ScreenProps) {
       setImportError(r.reason === 'not-confirmed' ? `הקלד "${REPLACE_WORD}" כדי לאשר החלפה.` : BACKUP_FAILED);
       return;
     }
-    finishImport(result, next, before);
+    finishImport(result, next, before, 'replace');
   };
 
-  const runImport = (text: string) => {
+  const runImport = (text: string, mode: Mode) => {
+    setFeedbackMode(mode);
     setReport(null);
     setImportError(null);
     setPending(null);
@@ -217,19 +260,19 @@ export default function DataScreen({ store, today }: ScreenProps) {
     // שלב 0: הקובץ נוצר בפרופיל אחר — עוצרים לפני כל כתיבה. קובץ בלי השדה
     // (גיבוי ישן) ממשיך כרגיל.
     if (profileConflict(result.profile, PROFILE)) {
-      setProfileWarning({ result, parsedJson });
+      setProfileWarning({ result, parsedJson, mode });
       return;
     }
-    continueImport(result, parsedJson);
+    continueImport(result, parsedJson, mode);
   };
 
   /** המשך הייבוא אחרי בדיקת הפרופיל (או אחרי "ייבא בכל זאת"). */
-  const continueImport = (result: DbParseResult, parsedJson: unknown) => {
+  const continueImport = (result: DbParseResult, parsedJson: unknown, mode: Mode) => {
     if (mode === 'merge') {
       const before = total(db);
       const next = mergeDb(db, result.db);
       void store.replaceAll(next);
-      finishImport(result, next, before);
+      finishImport(result, next, before, 'merge');
       return;
     }
 
@@ -278,11 +321,12 @@ export default function DataScreen({ store, today }: ScreenProps) {
     }
   };
 
-  const pickFile = async (file: File | undefined) => {
+  const pickFile = async (file: File | undefined, mode: Mode) => {
     if (!file) return;
     try {
-      runImport(await readFileAsText(file));
+      runImport(await readFileAsText(file), mode);
     } catch (err) {
+      setFeedbackMode(mode);
       setImportError(err instanceof Error ? err.message : String(err));
     }
   };
@@ -314,75 +358,209 @@ export default function DataScreen({ store, today }: ScreenProps) {
     );
   }
 
-  return (
-    <div className="stack--loose">
-      <section className="section section--first">
-        <h2 style={{ marginBottom: 'var(--sp-3)' }}>מצב</h2>
-        <ul className="list list--block small">
-          <li>
-            אחסון: {BACKEND_LABEL[currentBackend()] ?? currentBackend()}
-          </li>
-          <li>
-            {/* navigator.storage.persisted() — האם הדפדפן התחייב לא לפנות את נתוני האתר. */}
-            אחסון קבוע: {PERSIST_LABEL[persist]}
-          </li>
-          <li>
-            {FEATURES.nutrition && (
-              <>
-                שקילות <span className="num">{db.weights.length}</span> ·{' '}
-              </>
-            )}
-            אימונים <span className="num">{db.workouts.length}</span>
-            {db.legacyWorkouts.length > 0 && (
-              <>
-                {' '}
-                (+<span className="num">{db.legacyWorkouts.length}</span> ישנים)
-              </>
-            )}
-            {FEATURES.nutrition && (
-              <>
-                {' '}
-                · מותניים{' '}
-                <span className="num">{db.waist.length}</span> · צ'ק-אין{' '}
-                <span className="num">{db.checkins.length}</span> · אירובי עצמאי{' '}
-                <span className="num">{db.standaloneCardio.length}</span>
-              </>
-            )}
-          </li>
-          {FEATURES.nutrition && (
-            <li>
-              רישומי אכילה <span className="num">{db.entries.length}</span> · מזונות שלי{' '}
-              <span className="num">{db.customFoods.length}</span> · יעדי תזונה{' '}
-              <span className="num">{db.targets.length}</span> · מועדפים{' '}
-              <span className="num">{db.favorites.length}</span> · ימים סגורים{' '}
-              <span className="num">{db.days.filter((x) => x.closed).length}</span> · קריאטין{' '}
-              <span className="num">{db.creatine.length}</span>
-            </li>
-          )}
-          <li>
-            {/* רשומות שנדחו בקריאה ונשמרו גולמיות במקום להיעלם. אין עריכה ואין מחיקה. */}
-            רשומות בהסגר: <span className="num">{db.quarantine.length}</span>
-            {db.quarantine.length > 0 && (
-              <span className="tiny muted">
-                {' '}
-                (
-                {Object.entries(quarantineByKey)
-                  .map(([k, n]) => `${KEY_LABELS[k as DbKey] ?? k} ${n}`)
-                  .join(' · ')}
-                )
-              </span>
-            )}
-          </li>
-        </ul>
-      </section>
-      <section className="section">
-        <div className="section__head">
-          <h2>גיבוי</h2>
-          <span className="tiny muted">
-            <span className="num">{json.length}</span> תווים
-          </span>
+  /** המשוב של הייבוא (אזהרת פרופיל, אישור שני, שגיאה, דוח) — מוצג ליד הפעולה שהפעילה אותו. */
+  const importFeedback = (mode: Mode) => (
+    <>
+      {profileWarning && profileWarning.mode === mode && (
+        <div className="banner banner--error stack--tight" role="alert">
+          <p className="strong" style={{ margin: 0 }}>
+            הקובץ נוצר בפרופיל "{profileName(profileWarning.result.profile ?? null)}", והמכשיר הזה בפרופיל "{profileName(PROFILE)}".
+          </p>
+          <p style={{ margin: 0 }}>
+            תרגילים משותפים לשתי התוכניות (לג-פרס, כפיפת ברכיים…) חולקים מזהה, ולכן ההיסטוריה והצעות המשקל
+            יתערבבו. שום דבר עדיין לא השתנה.
+          </p>
+          <div className="row">
+            <Button
+              variant="danger"
+              block
+              onClick={() => {
+                const w = profileWarning;
+                setProfileWarning(null);
+                continueImport(w.result, w.parsedJson, w.mode);
+              }}
+            >
+              ייבא בכל זאת
+            </Button>
+            <Button onClick={() => setProfileWarning(null)}>ביטול</Button>
+          </div>
         </div>
+      )}
+
+      {pending && mode === 'replace' && (
+        <div className="banner banner--error stack--tight" role="alert">
+          <p className="strong" style={{ margin: 0 }}>
+            הקובץ אינו מכיל נתוני תזונה. החלפה תמחק מהמכשיר:
+          </p>
+          <p style={{ margin: 0 }}>
+            {(Object.keys(NUTRITION_LABELS) as (keyof NutritionErasure)[])
+              .filter((k) => pending.erasure[k] > 0)
+              .map((k) => `${NUTRITION_LABELS[k]} ${pending.erasure[k]}`)
+              .join(' · ')}
+          </p>
+          <div>
+            <label htmlFor="replace-word-again">הקלד "{REPLACE_WORD}" שוב כדי למחוק אותם ולהחליף</label>
+            <input
+              id="replace-word-again"
+              type="text"
+              value={pendingText}
+              onChange={(e) => setPendingText(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <div className="row">
+            <Button variant="danger" block disabled={!isConfirmed(pendingText, REPLACE_WORD)} onClick={() => void applyReplace(pending.result, pendingText)}>
+              החלף ומחק תזונה
+            </Button>
+            <Button
+              onClick={() => {
+                setPending(null);
+                setPendingText('');
+              }}
+            >
+              ביטול
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {importError && feedbackMode === mode && (
+        <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
+          {importError}
+        </p>
+      )}
+
+      {report && report.mode === mode && (
+        <div className="banner stack--tight" role="status">
+          <p style={{ margin: 0 }}>
+            {report.mode === 'merge' ? 'מוזג' : 'הוחלף'}: שקילות <Num>{report.counts.weights}</Num> · אימונים{' '}
+            <Num>{report.counts.workouts}</Num> · מותניים <Num>{report.counts.waist}</Num> · צ'ק-אין{' '}
+            <Num>{report.counts.checkins}</Num> · אירובי עצמאי <Num>{report.counts.standaloneCardio}</Num>
+          </p>
+          <p style={{ margin: 0 }}>
+            רישומי אכילה <Num>{report.counts.entries}</Num> · מזונות שלי <Num>{report.counts.customFoods}</Num> · יעדי תזונה{' '}
+            <Num>{report.counts.targets}</Num> · מועדפים <Num>{report.counts.favorites}</Num> · קריאטין{' '}
+            <Num>{report.counts.creatine}</Num>
+          </p>
+          <p style={{ margin: 0 }}>
+            סה"כ רשומות: <Num>{report.totalBefore}</Num> → <Num>{report.totalAfter}</Num>
+          </p>
+          <p style={{ margin: 0 }}>
+            גיבוי אחרון אחרי הייבוא: {report.lastBackup ? <Num>{formatDMY(report.lastBackup)}</Num> : 'אין — ייצא גיבוי חדש של המצב המאוחד'}.
+          </p>
+          {report.rejected.length === 0 ? (
+            <p style={{ margin: 0 }}>לא נדחתה אף רשומה.</p>
+          ) : (
+            <>
+              <p style={{ margin: 0 }}>נדחו:</p>
+              <ul className="list list--block tiny">
+                {report.rejected.map((r) => (
+                  <li key={`${r.section}-${r.reason}`}>
+                    {r.section}: <Num>{r.count}</Num> — {r.reason}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const backupChip =
+    sinceBackup === null ? (
+      total(db) > 0 ? (
+        <StatusChip tone="missing">אין עדיין</StatusChip>
+      ) : (
+        <StatusChip tone="neutral">ריק</StatusChip>
+      )
+    ) : sinceBackup >= BACKUP_REMINDER_DAYS ? (
+      <StatusChip tone="partial">{agoText(sinceBackup)}</StatusChip>
+    ) : (
+      <StatusChip tone="done">{agoText(sinceBackup)}</StatusChip>
+    );
+
+  return (
+    <div className="stack--loose data">
+      {/* ---------- 1. מצב: שורות ברורות, מספרים מבודדים בקצה ---------- */}
+      <Surface aria-label="מצב">
+        <SectionHeader title="מצב" />
+        <div className="listrows">
+          <ListRow lead={HardDrive} title="אחסון" end={<span className="data-val">{BACKEND_LABEL[currentBackend()] ?? currentBackend()}</span>} />
+          {/* navigator.storage.persisted() — האם הדפדפן התחייב לא לפנות את נתוני האתר. */}
+          <ListRow title="אחסון קבוע" end={<span className="data-val">{PERSIST_LABEL[persist]}</span>} />
+          <Disclosure
+            title="רשומות"
+            summary={
+              FEATURES.nutrition ? (
+                <>
+                  שקילות <Num>{db.weights.length}</Num> · אימונים <Num>{db.workouts.length}</Num> · רישומי אכילה <Num>{db.entries.length}</Num>
+                </>
+              ) : (
+                <>
+                  אימונים <Num>{db.workouts.length}</Num>
+                </>
+              )
+            }
+            end={<Num className="count">{total(db)}</Num>}
+            open={countsOpen}
+            onToggle={() => setCountsOpen((v) => !v)}
+          >
+            <div className="listrows">
+              {FEATURES.nutrition && <CountRow title="שקילות" count={db.weights.length} />}
+              <CountRow
+                title="אימונים"
+                count={db.workouts.length}
+                sub={
+                  db.legacyWorkouts.length > 0 ? (
+                    <>
+                      +<Num>{db.legacyWorkouts.length}</Num> ישנים
+                    </>
+                  ) : undefined
+                }
+              />
+              {FEATURES.nutrition && (
+                <>
+                  <CountRow title="מותניים" count={db.waist.length} />
+                  <CountRow title="צ'ק-אין" count={db.checkins.length} />
+                  <CountRow title="אירובי עצמאי" count={db.standaloneCardio.length} />
+                  <CountRow title="רישומי אכילה" count={db.entries.length} />
+                  <CountRow title="מזונות שלי" count={db.customFoods.length} />
+                  <CountRow title="יעדי תזונה" count={db.targets.length} />
+                  <CountRow title="מועדפים" count={db.favorites.length} />
+                  <CountRow title="ימים סגורים" count={db.days.filter((x) => x.closed).length} />
+                  <CountRow title="קריאטין" count={db.creatine.length} />
+                </>
+              )}
+            </div>
+          </Disclosure>
+          {/* רשומות שנדחו בקריאה ונשמרו גולמיות במקום להיעלם. אין עריכה ואין מחיקה. */}
+          <CountRow
+            title="רשומות בהסגר"
+            count={db.quarantine.length}
+            sub={
+              db.quarantine.length > 0
+                ? Object.entries(quarantineByKey)
+                    .map(([k, n]) => `${KEY_LABELS[k as DbKey] ?? k} ${n}`)
+                    .join(' · ')
+                : undefined
+            }
+          />
+        </div>
+      </Surface>
+
+      {/* ---------- 2. גיבוי ושחזור ---------- */}
+      <Surface aria-label="גיבוי ושחזור">
+        <SectionHeader
+          title="גיבוי ושחזור"
+          aside={
+            <>
+              <Num>{json.length}</Num> תווים
+            </>
+          }
+        />
         <div className="stack">
+          <ListRow lead={Database} title="גיבוי אחרון" sub={db.settings.lastBackup ? <Num>{formatDMY(db.settings.lastBackup)}</Num> : 'הכול נשמר על המכשיר בלבד'} end={backupChip} />
           <BackupSave json={json} db={db} filename={`fatloss-${toLocalISO(new Date())}.json`} primary onBackedUp={markBackedUp} />
           <CopyBlock
             text={json}
@@ -404,510 +582,340 @@ export default function DataScreen({ store, today }: ScreenProps) {
               {copyNote}
             </p>
           )}
-          <p className={`small${sinceBackup === null && total(db) > 0 ? ' err' : ' muted'}`} style={{ margin: 0 }}>
-            גיבוי אחרון:{' '}
-            {db.settings.lastBackup ? (
-              <>
-                <span className="num">{formatDMY(db.settings.lastBackup)}</span>
-                {sinceBackup !== null ? ` (${agoText(sinceBackup)})` : ''}
-              </>
-            ) : (
-              'אין עדיין'
-            )}
-          </p>
           <p className="tiny muted" style={{ margin: 0 }}>
             הכול נשמר על המכשיר בלבד. אין חשבון ואין ענן — גיבוי הוא באחריותך.
           </p>
         </div>
 
         <div className="section">
-          <h3 style={{ marginBottom: 'var(--sp-3)' }}>ייבוא</h3>
-        <div className="stack">
-          <div role="group" aria-label="אופן הייבוא">
-            <span className="label">אופן הייבוא</span>
-            <div className="choice">
-              <button
-                type="button"
-                className="choice__btn"
-                aria-pressed={mode === 'merge'}
-                onClick={() => setMode('merge')}
-              >
-                מיזוג
-              </button>
-              <button
-                type="button"
-                className="choice__btn choice__btn--danger"
-                aria-pressed={mode === 'replace'}
-                onClick={() => setMode('replace')}
-              >
-                החלפה
-              </button>
-            </div>
-            <p className="tiny muted" style={{ margin: '4px 0 0' }}>
-              {mode === 'merge'
-                ? 'רשומה מיובאת גוברת על אותו תאריך/מזהה. שום דבר קיים לא נמחק.'
-                : 'כל הנתונים הקיימים יימחקו ויוחלפו בקובץ. לפני כן יורד אוטומטית גיבוי מלא של המצב הנוכחי.'}
+          <SectionHeader level={3} title="שחזור מגיבוי — מיזוג" aside="שום דבר קיים לא נמחק" />
+          <div className="stack">
+            <p className="tiny muted" style={{ margin: 0 }}>
+              רשומה מיובאת גוברת על אותו תאריך/מזהה. שום דבר קיים לא נמחק. החלפה מלאה — באזור המסוכן למטה.
             </p>
-          </div>
-
-          {mode === 'replace' && (
-            <div>
-              <label htmlFor="replace-word">הקלד "{REPLACE_WORD}" כדי לאפשר החלפה</label>
-              <input
-                id="replace-word"
-                type="text"
-                value={replaceText}
-                onChange={(e) => setReplaceText(e.target.value)}
-                autoComplete="off"
-              />
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="import-file">קובץ JSON</label>
-            <input
-              id="import-file"
-              ref={fileInput}
-              type="file"
-              accept="application/json,.json,text/plain"
-              disabled={!replaceReady}
-              onChange={(e) => {
-                void pickFile(e.target.files?.[0]);
-                e.target.value = '';
-              }}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="import-text">או הדבק JSON</label>
-            <textarea
-              id="import-text"
-              value={raw}
-              onChange={(e) => setRaw(e.target.value)}
-              placeholder='{"v":1,"weights":[...],"workouts":[...]}'
-              dir="ltr"
-              style={{ minHeight: 120 }}
-            />
-          </div>
-
-          <button
-            type="button"
-            className="btn btn--block"
-            disabled={raw.trim() === '' || !replaceReady}
-            onClick={() => runImport(raw)}
-          >
-            ייבא מהטקסט
-          </button>
-
-          {profileWarning && (
-            <div className="banner banner--error stack--tight" role="alert">
-              <p className="strong" style={{ margin: 0 }}>
-                הקובץ נוצר בפרופיל "{profileName(profileWarning.result.profile ?? null)}", והמכשיר הזה בפרופיל "{profileName(PROFILE)}".
-              </p>
-              <p style={{ margin: 0 }}>
-                תרגילים משותפים לשתי התוכניות (לג-פרס, כפיפת ברכיים…) חולקים מזהה, ולכן ההיסטוריה והצעות המשקל
-                יתערבבו. שום דבר עדיין לא השתנה.
-              </p>
-              <div className="row">
-                <button
-                  type="button"
-                  className="btn btn--danger btn--block"
-                  onClick={() => {
-                    const w = profileWarning;
-                    setProfileWarning(null);
-                    continueImport(w.result, w.parsedJson);
-                  }}
-                >
-                  ייבא בכל זאת
-                </button>
-                <button type="button" className="btn" onClick={() => setProfileWarning(null)}>
-                  ביטול
-                </button>
-              </div>
-            </div>
-          )}
-
-          {pending && (
-            <div className="banner banner--error stack--tight" role="alert">
-              <p className="strong" style={{ margin: 0 }}>
-                הקובץ אינו מכיל נתוני תזונה. החלפה תמחק מהמכשיר:
-              </p>
-              <p style={{ margin: 0 }}>
-                {(Object.keys(NUTRITION_LABELS) as (keyof NutritionErasure)[])
-                  .filter((k) => pending.erasure[k] > 0)
-                  .map((k) => `${NUTRITION_LABELS[k]} ${pending.erasure[k]}`)
-                  .join(' · ')}
-              </p>
-              <div>
-                <label htmlFor="replace-word-again">הקלד "{REPLACE_WORD}" שוב כדי למחוק אותם ולהחליף</label>
-                <input
-                  id="replace-word-again"
-                  type="text"
-                  value={pendingText}
-                  onChange={(e) => setPendingText(e.target.value)}
-                  autoComplete="off"
+            <FilePick id="import-file" label="בחר קובץ JSON" disabled={false} onFile={(f) => void pickFile(f, 'merge')} />
+            <Disclosure title="או הדבק JSON" lead={Upload} keepMounted>
+              <div className="stack--tight">
+                <label htmlFor="import-text" className="visually-hidden">
+                  JSON להדבקה
+                </label>
+                <textarea
+                  id="import-text"
+                  value={raw}
+                  onChange={(e) => setRaw(e.target.value)}
+                  placeholder='{"v":1,"weights":[...],"workouts":[...]}'
+                  dir="ltr"
+                  style={{ minHeight: 120 }}
                 />
+                <Button block disabled={raw.trim() === ''} onClick={() => runImport(raw, 'merge')}>
+                  ייבא מהטקסט
+                </Button>
               </div>
-              <div className="row">
-                <button
-                  type="button"
-                  className="btn btn--danger btn--block"
-                  disabled={!isConfirmed(pendingText, REPLACE_WORD)}
-                  onClick={() => void applyReplace(pending.result, pendingText)}
-                >
-                  החלף ומחק תזונה
-                </button>
-                <button
-                  type="button"
-                  className="btn"
+            </Disclosure>
+            {importFeedback('merge')}
+          </div>
+        </div>
+      </Surface>
+
+      {/* ---------- 3. יעדים והגדרות ---------- */}
+      <Surface aria-label="יעדים והגדרות">
+        <SectionHeader title="יעדים והגדרות" />
+        <div className="listrows">
+          {FEATURES.nutrition && (
+            <Disclosure
+              title="יעד יומי"
+              lead={Settings}
+              summary={
+                target ? (
+                  <>
+                    <Num>{kcalText(target.kcal)}</Num> קק"ל · <Num>{gramsWholeText(target.protein)}</Num> חלבון ·{' '}
+                    <Num>{gramsWholeText(target.carbs)}</Num> פחמימה · <Num>{gramsWholeText(target.fat)}</Num> שומן
+                  </>
+                ) : (
+                  'לא הוגדר'
+                )
+              }
+              open={editingTarget}
+              onToggle={() => setEditingTarget((v) => !v)}
+            >
+              <TargetForm
+                current={target}
+                today={today}
+                onCancel={() => setEditingTarget(false)}
+                onSave={(t) => {
+                  void store.update('targets', upsertTarget(db.targets, t));
+                  setEditingTarget(false);
+                  toast.saved();
+                }}
+              />
+            </Disclosure>
+          )}
+          <Disclosure
+            title="תחילת התוכנית"
+            summary={
+              <>
+                שבוע 1: <Num>{start ? weekRangeLabel(start) : DASH_TEXT}</Num>{' '}
+                {db.settings.programStart ? '(נקבע ידנית)' : '(אוטומטי — מהנתון הראשון)'}
+              </>
+            }
+          >
+            <div className="stack">
+              <p className="small muted" style={{ margin: 0 }}>
+                קובע רק את מספר השבוע בכותרת הדוח לצ'אט. אינו משפיע על שום חישוב.
+              </p>
+              <DateField
+                label="בחר תאריך בשבוע 1"
+                value={db.settings.programStart ?? start ?? today}
+                max={today}
+                onChange={(d) => {
+                  void store.update('settings', { ...db.settings, programStart: weekStart(d) });
+                  toast.saved();
+                }}
+              />
+              {db.settings.programStart && (
+                <Button
+                  variant="ghost"
                   onClick={() => {
-                    setPending(null);
-                    setPendingText('');
+                    void store.update('settings', { ...db.settings, programStart: null });
+                    toast.saved();
                   }}
                 >
-                  ביטול
-                </button>
-              </div>
-            </div>
-          )}
-
-          {importError && (
-            <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
-              {importError}
-            </p>
-          )}
-
-          {report && (
-            <div className="banner stack--tight" role="status">
-              <p style={{ margin: 0 }}>
-                {report.mode === 'merge' ? 'מוזג' : 'הוחלף'}: שקילות{' '}
-                <span className="num">{report.counts.weights}</span> · אימונים{' '}
-                <span className="num">{report.counts.workouts}</span> · מותניים{' '}
-                <span className="num">{report.counts.waist}</span> · צ'ק-אין{' '}
-                <span className="num">{report.counts.checkins}</span> · אירובי עצמאי{' '}
-                <span className="num">{report.counts.standaloneCardio}</span>
-              </p>
-              <p style={{ margin: 0 }}>
-                רישומי אכילה <span className="num">{report.counts.entries}</span> · מזונות שלי{' '}
-                <span className="num">{report.counts.customFoods}</span> · יעדי תזונה{' '}
-                <span className="num">{report.counts.targets}</span> · מועדפים{' '}
-                <span className="num">{report.counts.favorites}</span> · קריאטין{' '}
-                <span className="num">{report.counts.creatine}</span>
-              </p>
-              <p style={{ margin: 0 }}>
-                סה"כ רשומות: <span className="num">{report.totalBefore}</span> →{' '}
-                <span className="num">{report.totalAfter}</span>
-              </p>
-              <p style={{ margin: 0 }}>
-                גיבוי אחרון אחרי הייבוא:{' '}
-                {report.lastBackup ? (
-                  <span className="num">{formatDMY(report.lastBackup)}</span>
-                ) : (
-                  'אין — ייצא גיבוי חדש של המצב המאוחד'
-                )}
-                .
-              </p>
-              {report.rejected.length === 0 ? (
-                <p style={{ margin: 0 }}>לא נדחתה אף רשומה.</p>
-              ) : (
-                <>
-                  <p style={{ margin: 0 }}>נדחו:</p>
-                  <ul className="list list--block tiny">
-                    {report.rejected.map((r) => (
-                      <li key={`${r.section}-${r.reason}`}>
-                        {r.section}: <span className="num">{r.count}</span> — {r.reason}
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                  חזרה לאוטומטי
+                  {firstData ? ` (${formatDM(weekStart(firstData))})` : ''}
+                </Button>
               )}
             </div>
-          )}
+          </Disclosure>
         </div>
-        </div>
-      </section>
+      </Surface>
+
       {/* ניהול התזונה — רק בלי פרופיל. בת הזוג לא רואה תזונה בשום מסך. */}
       {FEATURES.nutrition && (
-      <>
-      <section className="section">
-        <div className="section__head">
-          <h2>ספריית המנות</h2>
-          <span className="tiny muted">
-            <span className="num">{libraryCount}</span> פריטים במכשיר
-          </span>
-        </div>
-        <div className="stack">
-          <p className="small muted" style={{ margin: 0 }}>
-            המנות, הבלוקים והתוספות של "התפריט שלי". מיזוג בלבד: פריט קיים מתעדכן, מזון שלי אחר לא נוגע,
-            רישומים קודמים לא משתנים.
-          </p>
-          <button
-            type="button"
-            className="btn btn--primary btn--block"
-            disabled={library.status === 'loading'}
-            onClick={() => void loadLibrary()}
-          >
-            {library.status === 'loading' ? 'טוען…' : 'טען את ספריית המנות'}
-          </button>
-          {library.status === 'error' && (
-            <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
-              {library.message}
-            </p>
-          )}
-          {library.status === 'done' && (
-            <div className="banner stack--tight" role="status">
-              <p style={{ margin: 0 }}>
-                נוספו <span className="num">{library.merge.added}</span> · עודכנו{' '}
-                <span className="num">{library.merge.updated}</span> · ללא שינוי{' '}
-                <span className="num">{library.merge.unchanged}</span> · בספרייה{' '}
-                <span className="num">{library.total}</span>
+        <>
+          {/* ---------- 4. המזונות שלי ---------- */}
+          <Surface aria-label="המזונות שלי">
+            <SectionHeader
+              title="המזונות שלי"
+              aside={
+                <>
+                  <Num>{db.customFoods.length}</Num> · מהספרייה <Num>{libraryCount}</Num>
+                </>
+              }
+            />
+            <div className="stack">
+              <div className="row">
+                <Button block icon={Plus} onClick={() => setEditor({ existing: null, mode: 'label' })}>
+                  מזון מהתווית
+                </Button>
+                <Button block icon={Plus} onClick={() => setEditor({ existing: null, mode: 'recipe' })}>
+                  מנה ממרכיבים
+                </Button>
+              </div>
+              {db.customFoods.length > 0 && (
+                <Disclosure
+                  title="הרשימה"
+                  lead={Utensils}
+                  summary="נגיעה בשורה פותחת לעריכה"
+                  end={<Num className="count">{db.customFoods.length}</Num>}
+                  open={foodsOpen}
+                  onToggle={() => setFoodsOpen((v) => !v)}
+                >
+                  <div className="listrows">
+                    {db.customFoods.map((f) => {
+                      const open = details.has(f.id);
+                      const dv = displayValues(fromCustom(f));
+                      return (
+                        <div key={f.id}>
+                          <ListRow
+                            title={f.name}
+                            wrap
+                            sub={
+                              <>
+                                <Num>{kcalText(dv.kcal)}</Num> קק"ל · <Num>{gramsWholeText(dv.protein)}</Num> חלבון {dv.per}
+                                {f.archived && ' · בארכיון'}
+                              </>
+                            }
+                            end={<span className="listrow__hint"><Icon icon={Pencil} size={16} /></span>}
+                            aria-label={`ערוך ${f.name}`}
+                            onTap={() => setEditor({ existing: f })}
+                            action={
+                              <button
+                                type="button"
+                                className="listrow__add"
+                                aria-expanded={open}
+                                aria-label={`פרטים — ${f.name}`}
+                                onClick={() =>
+                                  setDetails((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(f.id)) next.delete(f.id);
+                                    else next.add(f.id);
+                                    return next;
+                                  })
+                                }
+                              >
+                                <Icon icon={Info} size={18} />
+                              </button>
+                            }
+                          />
+                          {open && (
+                            <p className="tiny muted data-food__details" style={{ margin: 0 }}>
+                              {f.recipe ? 'מנה ממרכיבים' : 'מהתווית'}
+                              {f.unitFood && ' · יחידה = 1 ג׳'} · מזהה <Num>{f.id}</Num>
+                              {f.cat !== null && (
+                                <>
+                                  {' '}
+                                  · קטגוריה <Num>{f.cat}</Num>
+                                </>
+                              )}
+                              {f.note ? ` · ${f.note}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Disclosure>
+              )}
+              <p className="tiny muted" style={{ margin: 0 }}>
+                מזון שנשמר כאן מופיע בחיפוש במסך התזונה. מנה: בונים פעם אחת ממרכיבים ורושמים בגרמים.
+                {foodIndex.status === 'error' && <span className="err"> מאגר המזון לא נטען.</span>}
+                {foodIndex.status === 'offline' && <span className="err"> מאגר המזון עוד לא נשמר במכשיר — פתח את האפליקציה פעם אחת עם חיבור.</span>}
               </p>
-              {library.rejected.length > 0 && (
-                <ul className="list list--block tiny">
-                  {library.rejected.map((r) => (
-                    <li key={`${r.section}-${r.reason}`}>
-                      {r.section}: <span className="num">{r.count}</span> — {r.reason}
-                    </li>
-                  ))}
-                </ul>
+            </div>
+          </Surface>
+
+          {/* ---------- 5. ספריית המנות ---------- */}
+          <Surface aria-label="ספריית המנות">
+            <SectionHeader
+              title="ספריית המנות"
+              aside={
+                <>
+                  <Num>{libraryCount}</Num> פריטים במכשיר
+                </>
+              }
+            />
+            <div className="stack">
+              <p className="small muted" style={{ margin: 0 }}>
+                המנות, הבלוקים והתוספות של "התפריט שלי". מיזוג בלבד: פריט קיים מתעדכן, מזון שלי אחר לא נוגע,
+                רישומים קודמים לא משתנים.
+              </p>
+              <Button variant="accent" block disabled={library.status === 'loading'} onClick={() => void loadLibrary()}>
+                {library.status === 'loading' ? 'טוען…' : 'טען את ספריית המנות'}
+              </Button>
+              {library.status === 'error' && (
+                <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
+                  {library.message}
+                </p>
+              )}
+              {library.status === 'done' && (
+                <div className="banner stack--tight" role="status">
+                  <p style={{ margin: 0 }}>
+                    נוספו <Num>{library.merge.added}</Num> · עודכנו <Num>{library.merge.updated}</Num> · ללא שינוי{' '}
+                    <Num>{library.merge.unchanged}</Num> · בספרייה <Num>{library.total}</Num>
+                  </p>
+                  {library.rejected.length > 0 && (
+                    <ul className="list list--block tiny">
+                      {library.rejected.map((r) => (
+                        <li key={`${r.section}-${r.reason}`}>
+                          {r.section}: <Num>{r.count}</Num> — {r.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
-      </section>
-      <section className="section nut-manage">
-        <button
-          type="button"
-          className="btn btn--quiet disclosure"
-          aria-expanded={foodsOpen}
-          onClick={() => setFoodsOpen((v) => !v)}
-        >
-          <span className="grow">
-            מזונות שלי · <span className="num">{db.customFoods.length}</span>
-          </span>
-          <span className="muted" aria-hidden="true">
-            {foodsOpen ? '▾' : '▸'}
-          </span>
-        </button>
-        {foodsOpen && (
-          <div className="stack" style={{ marginTop: 'var(--sp-3)' }}>
-            {db.customFoods.length > 0 && (
-              <ul className="list nut-foods">
-                {db.customFoods.map((f) => {
-                  const open = details.has(f.id);
-                  const dv = displayValues(fromCustom(f));
-                  return (
-                    <li key={f.id} style={{ flexWrap: 'wrap' }}>
-                      <span className="grow">
-                        {f.name}
-                        <span className="tiny muted">
-                          {' '}
-                          · <span className="num">{kcalText(dv.kcal)}</span> קק"ל · <span className="num">{gramsWholeText(dv.protein)}</span> חלבון{' '}
-                          {dv.per}
-                          {f.archived && ' · בארכיון'}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn--quiet"
-                        aria-expanded={open}
-                        aria-label={`פרטים — ${f.name}`}
-                        onClick={() =>
-                          setDetails((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(f.id)) next.delete(f.id);
-                            else next.add(f.id);
-                            return next;
-                          })
-                        }
-                      >
-                        פרטים
-                      </button>
-                      <button type="button" className="btn btn--quiet" aria-label={`ערוך ${f.name}`} onClick={() => setEditor({ existing: f })}>
-                        ערוך
-                      </button>
-                      {open && (
-                        <p className="tiny muted nut-foods__details" style={{ width: '100%', margin: 0 }}>
-                          {f.recipe ? 'מנה ממרכיבים' : 'מהתווית'}
-                          {f.unitFood && ' · יחידה = 1 ג׳'} · מזהה <span className="num">{f.id}</span>
-                          {f.cat !== null && (
-                            <>
-                              {' '}· קטגוריה <span className="num">{f.cat}</span>
-                            </>
-                          )}
-                          {f.note ? ` · ${f.note}` : ''}
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <div className="row">
-              <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'label' })}>
-                מזון מהתווית
-              </button>
-              <button type="button" className="btn btn--block" onClick={() => setEditor({ existing: null, mode: 'recipe' })}>
-                מנה ממרכיבים
-              </button>
-            </div>
-            <p className="tiny muted" style={{ margin: 0 }}>
-              מזון שנשמר כאן מופיע בחיפוש במסך התזונה. מנה: בונים פעם אחת ממרכיבים ורושמים בגרמים.
-              {foodIndex.status === 'error' && <span className="err"> מאגר המזון לא נטען.</span>}
-              {foodIndex.status === 'offline' && <span className="err"> מאגר המזון עוד לא נשמר במכשיר — פתח את האפליקציה פעם אחת עם חיבור.</span>}
-            </p>
-          </div>
-        )}
-      </section>
-      <section className="section nut-manage">
-        <button
-          type="button"
-          className="btn btn--quiet disclosure"
-          aria-expanded={editingTarget}
-          onClick={() => setEditingTarget((v) => !v)}
-        >
-          <span className="grow">
-            {target ? (
-              <>
-                יעד יומי · <span className="num">{kcalText(target.kcal)}</span> קק"ל ·{' '}
-                <span className="num">{gramsWholeText(target.protein)}</span> חלבון ·{' '}
-                <span className="num">{gramsWholeText(target.carbs)}</span> פחמימה ·{' '}
-                <span className="num">{gramsWholeText(target.fat)}</span> שומן
-              </>
-            ) : (
-              'יעד יומי · לא הוגדר'
-            )}
-          </span>
-          <span className="muted" aria-hidden="true">
-            {editingTarget ? '▾' : '▸'}
-          </span>
-        </button>
-        {editingTarget && (
-          <TargetForm
-            current={target}
-            today={today}
-            onCancel={() => setEditingTarget(false)}
-            onSave={(t) => {
-              void store.update('targets', upsertTarget(db.targets, t));
-              setEditingTarget(false);
-              toast.saved();
-            }}
-          />
-        )}
-      </section>
-      </>
+          </Surface>
+        </>
       )}
-      <section className="section">
-        <div className="section__head">
-          <h2>תחילת התוכנית</h2>
-          <span className="tiny muted">שבוע 1</span>
-        </div>
-        <div className="stack">
-          <p className="small muted" style={{ margin: 0 }}>
-            קובע רק את מספר השבוע בכותרת הדוח לצ'אט. אינו משפיע על שום חישוב.
-          </p>
-          <p className="sub" style={{ margin: 0 }}>
-            כרגע:{' '}
-            <span className="num">
-              {start ? weekRangeLabel(start) : DASH_TEXT}
-            </span>{' '}
-            {db.settings.programStart ? '(נקבע ידנית)' : '(אוטומטי — מהנתון הראשון)'}
-          </p>
-          <DateField
-            label="בחר תאריך בשבוע 1"
-            value={db.settings.programStart ?? start ?? today}
-            max={today}
-            onChange={(d) => {
-              void store.update('settings', { ...db.settings, programStart: weekStart(d) });
-              toast.saved();
-            }}
-          />
-          {db.settings.programStart && (
-            <button
-              type="button"
-              className="btn btn--quiet"
-              onClick={() => {
-                void store.update('settings', { ...db.settings, programStart: null });
-                toast.saved();
-              }}
-            >
-              חזרה לאוטומטי
-              {firstData ? ` (${formatDM(weekStart(firstData))})` : ''}
-            </button>
-          )}
-        </div>
-      </section>
-      <section className="section">
-        <div className="section__head">
-          <h2>פרופיל המכשיר</h2>
-          <span className="tiny muted">{PROFILE === null ? PROFILE_LABELS.default : PROFILE_LABELS[PROFILE]}</span>
-        </div>
+
+      {/* ---------- 6. פרופיל המכשיר ---------- */}
+      <Surface aria-label="פרופיל המכשיר">
+        <SectionHeader title="פרופיל המכשיר" aside={PROFILE === null ? PROFILE_LABELS.default : PROFILE_LABELS[PROFILE]} />
         <div className="stack">
           <p className="small muted" style={{ margin: 0 }}>
             קובע איזו תוכנית ואילו מסכים האפליקציה מציגה במכשיר הזה. ההגדרה נשמרת במכשיר בלבד,
             לא בגיבוי.
           </p>
-          <div className="choice" role="group" aria-label="פרופיל המכשיר">
-            <button
-              type="button"
-              className="choice__btn"
-              aria-pressed={PROFILE === null}
-              disabled={!canSwitch || switching}
-              onClick={() => void switchProfile(null)}
-            >
-              {PROFILE_LABELS.default}
-            </button>
-            <button
-              type="button"
-              className="choice__btn"
-              aria-pressed={PROFILE === 'partner'}
-              disabled={!canSwitch || switching}
-              onClick={() => void switchProfile('partner')}
-            >
-              {PROFILE_LABELS.partner}
-            </button>
-          </div>
+          <ChipSelect<ProfileKey>
+            label="פרופיל המכשיר"
+            hideLabel
+            options={PROFILE_OPTIONS}
+            value={PROFILE === null ? 'default' : PROFILE}
+            clearable={false}
+            disabled={!canSwitch || switching}
+            onChange={(v) => {
+              if (v === null) return;
+              void switchProfile(v === 'default' ? null : v);
+            }}
+          />
           {!canSwitch && (
             <p className="tiny muted" style={{ margin: 0 }}>
-              {SWITCH_BLOCKED_TEXT}
+              <Icon icon={UserRound} size={14} /> {SWITCH_BLOCKED_TEXT}
             </p>
           )}
         </div>
-      </section>
-      {/* אזור מסוכן: בתחתית, מופרד, מסגרת טרקוטה מקווקוות. */}
-      <section className="section section--danger">
-        <div className="section__head">
-          <h2>אזור מסוכן</h2>
-          <span className="tiny muted">מחיקת הכול</span>
-        </div>
+      </Surface>
+
+      {/* ---------- 7. אזור מסוכן: בתחתית, מופרד, מסגרת טרקוטה מקווקוות ---------- */}
+      <Surface className="section--danger" aria-label="אזור מסוכן">
+        <SectionHeader
+          title={
+            <span className="data-danger__title">
+              <Icon icon={ShieldAlert} size={16} /> אזור מסוכן
+            </span>
+          }
+          aside="החלפה · מחיקה"
+        />
         <div className="stack">
+          <SectionHeader level={3} title="ייבוא בהחלפה" />
+          <p className="tiny muted" style={{ margin: 0 }}>
+            כל הנתונים הקיימים יימחקו ויוחלפו בקובץ. לפני כן יורד אוטומטית גיבוי מלא של המצב הנוכחי.
+          </p>
+          <div>
+            <label htmlFor="replace-word">הקלד "{REPLACE_WORD}" כדי לאפשר החלפה</label>
+            <input id="replace-word" type="text" value={replaceText} onChange={(e) => setReplaceText(e.target.value)} autoComplete="off" />
+          </div>
+          <FilePick id="replace-file" label="בחר קובץ JSON להחלפה" disabled={!replaceReady} onFile={(f) => void pickFile(f, 'replace')} />
+          <Disclosure title="או הדבק JSON" lead={Upload} keepMounted>
+            <div className="stack--tight">
+              <label htmlFor="replace-text" className="visually-hidden">
+                JSON להחלפה
+              </label>
+              <textarea
+                id="replace-text"
+                value={replaceRaw}
+                onChange={(e) => setReplaceRaw(e.target.value)}
+                placeholder='{"v":1,"weights":[...],"workouts":[...]}'
+                dir="ltr"
+                style={{ minHeight: 120 }}
+              />
+              <Button variant="danger" block disabled={replaceRaw.trim() === '' || !replaceReady} onClick={() => runImport(replaceRaw, 'replace')}>
+                החלף מהטקסט
+              </Button>
+            </div>
+          </Disclosure>
+          {importFeedback('replace')}
+        </div>
+
+        <div className="section stack">
+          <SectionHeader level={3} title="מחיקת הכול" />
           {wipeStep === 0 && (
-            <button
-              type="button"
-              className="btn btn--danger btn--block"
-              onClick={() => setWipeStep(1)}
-            >
+            <Button variant="danger" block onClick={() => setWipeStep(1)}>
               מחק את כל הנתונים
-            </button>
+            </Button>
           )}
 
           {wipeStep === 1 && (
             <>
               <p className="small err" style={{ margin: 0 }}>
-                פעולה בלתי הפיכה. <span className="num">{total(db)}</span> רשומות יימחקו
-                מהמכשיר. לפני המחיקה יורד אוטומטית גיבוי מלא; אם ההורדה נכשלת — לא נמחק דבר.
+                פעולה בלתי הפיכה. <Num>{total(db)}</Num> רשומות יימחקו מהמכשיר. לפני המחיקה יורד אוטומטית גיבוי מלא; אם ההורדה נכשלת — לא נמחק דבר.
               </p>
               <div className="row">
-                <button
-                  type="button"
-                  className="btn btn--danger btn--block"
-                  onClick={() => setWipeStep(2)}
-                >
+                <Button variant="danger" block onClick={() => setWipeStep(2)}>
                   הבנתי, המשך
-                </button>
-                <button type="button" className="btn" onClick={() => setWipeStep(0)}>
-                  ביטול
-                </button>
+                </Button>
+                <Button onClick={() => setWipeStep(0)}>ביטול</Button>
               </div>
             </>
           )}
@@ -916,26 +924,13 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <>
               <div>
                 <label htmlFor="wipe-word">הקלד "{WIPE_WORD}" כדי לאשר</label>
-                <input
-                  id="wipe-word"
-                  type="text"
-                  value={wipeText}
-                  onChange={(e) => setWipeText(e.target.value)}
-                  autoComplete="off"
-                />
+                <input id="wipe-word" type="text" value={wipeText} onChange={(e) => setWipeText(e.target.value)} autoComplete="off" />
               </div>
               <div className="row">
-                <button
-                  type="button"
-                  className="btn btn--danger btn--block"
-                  disabled={!isConfirmed(wipeText, WIPE_WORD)}
-                  onClick={() => void runWipe()}
-                >
+                <Button variant="danger" block disabled={!isConfirmed(wipeText, WIPE_WORD)} onClick={() => void runWipe()}>
                   מחק הכול
-                </button>
-                <button
-                  type="button"
-                  className="btn"
+                </Button>
+                <Button
                   onClick={() => {
                     setWipeStep(0);
                     setWipeText('');
@@ -943,7 +938,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
                   }}
                 >
                   ביטול
-                </button>
+                </Button>
               </div>
               {wipeError && (
                 <p className="banner banner--error" role="alert" style={{ margin: 0 }}>
@@ -953,11 +948,10 @@ export default function DataScreen({ store, today }: ScreenProps) {
             </>
           )}
         </div>
-      </section>
+      </Surface>
 
       <p className="tiny muted" style={{ margin: 0 }}>
-        היום: <span className="num">{today}</span> · גרסת נתונים{' '}
-        <span className="num">{BACKUP_VERSION}</span>
+        היום: <Num>{today}</Num> · גרסת נתונים <Num>{BACKUP_VERSION}</Num>
         {total(db) === 0 ? ' · ריק' : ''}
       </p>
     </div>

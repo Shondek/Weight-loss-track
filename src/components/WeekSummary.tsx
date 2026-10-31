@@ -3,6 +3,7 @@ import type { WeekReport } from '../lib/weekSummary';
 import { WEEK_LENGTH } from '../lib/weights';
 import { compareISO, dayLetter, formatDM, weekDays } from '../lib/date';
 import { DASH } from '../lib/format';
+import { ListRow, Num, SectionHeader, StatusChip } from '../ui';
 import { confidenceOf } from './confidence';
 
 type Props = { report: WeekReport; today: ISODate };
@@ -11,10 +12,22 @@ function fixed(v: number | null, digits: number): string {
   return v === null ? DASH : v.toFixed(digits);
 }
 
+/** מלאות השבוע כמילה + צבע (F20): "מלא 7/7", "חלקי 5/7", "אין שקילות". */
+function fullnessChip(count: number) {
+  const level = confidenceOf(count);
+  if (count === 0) return <StatusChip tone="missing">אין שקילות</StatusChip>;
+  return (
+    <StatusChip tone={level === 'high' ? 'done' : level === 'mid' ? 'partial' : 'missing'}>
+      {level === 'high' ? 'מלא' : 'חלקי'} <Num>{count}/{WEEK_LENGTH}</Num>
+    </StatusChip>
+  );
+}
+
 /**
  * סיכום השבוע במסך — אותם נתונים שהדוח לצ'אט מכיל, לקריאה בלי להעתיק.
- * אריחים לארבעת המספרים, ואחריהם הפירוט. שבוע חלקי נאמר במפורש, ושורת
- * "שינוי" פשוט לא מציגה מספר בו — אותם כללים של הדוח.
+ * אריחים לחמשת המספרים, ואחריהם מקטעים ברורים: שקילות השבוע, אימונים,
+ * אירובי עצמאי, חסר. שבוע חלקי נאמר במפורש (צ'יפ), ושורת "שינוי" פשוט לא
+ * מציגה מספר בו — אותם כללים של הדוח. הנתונים: `buildWeekSummary` בלבד.
  */
 export default function WeekSummary({ report, today }: Props) {
   const { weight, waist, workouts, cardio, gaps } = report;
@@ -39,12 +52,12 @@ export default function WeekSummary({ report, today }: Props) {
   return (
     <div className="stack">
       <div className="stats" role="list">
-        {/* המסגרת מקודדת מלאות (7/7, 4–6, פחות) — לא הצלחה ולא כיוון. */}
-        <div className={`stat stat--confidence-${confidenceOf(cur.count)}`} role="listitem">
+        {/* המלאות (7/7, 4–6, פחות) כמילה בצ'יפ — לא צבע מסגרת לבד. */}
+        <div className="stat stat--wide" role="listitem">
           <span className="stat__label">ממוצע השבוע</span>
-          <span className="stat__value num">{fixed(cur.avg, 2)}</span>
-          <span className="stat__note num">
-            {cur.count}/{WEEK_LENGTH} שקילות
+          <span className="stat__row">
+            <span className="stat__value num">{fixed(cur.avg, 2)}</span>
+            {fullnessChip(cur.count)}
           </span>
         </div>
         <div className="stat" role="listitem">
@@ -55,6 +68,11 @@ export default function WeekSummary({ report, today }: Props) {
           </span>
         </div>
         <div className="stat" role="listitem">
+          <span className="stat__label">מותניים</span>
+          <span className="stat__value num">{fixed(waist.now, 1)}</span>
+          <span className="stat__note num">קודם {fixed(waist.previous, 1)}</span>
+        </div>
+        <div className="stat" role="listitem">
           <span className="stat__label">אימונים</span>
           <span className="stat__value num">
             {workouts.done}/{workouts.planned}
@@ -62,11 +80,6 @@ export default function WeekSummary({ report, today }: Props) {
           <span className="stat__note">
             {workouts.items.length ? workouts.items.map((w) => w.t).join(' · ') : DASH}
           </span>
-        </div>
-        <div className="stat" role="listitem">
-          <span className="stat__label">מותניים</span>
-          <span className="stat__value num">{fixed(waist.now, 1)}</span>
-          <span className="stat__note num">קודם {fixed(waist.previous, 1)}</span>
         </div>
         {/* אירובי בדקות, לא במפגשים — ולא חלק מ"אימונים". */}
         <div className="stat" role="listitem">
@@ -81,101 +94,107 @@ export default function WeekSummary({ report, today }: Props) {
         </div>
       </div>
 
-      <div className="week-grid" aria-label="שקילות השבוע">
-        {weekDays(report.week).map((d, i) => {
-          const v = cur.days[i] ?? null;
-          const future = compareISO(d, today) > 0;
-          return (
-            <div
-              key={d}
-              className={`day${d === today ? ' day--today' : ''}${future ? ' day--future' : ''}`}
-            >
-              <span className="day__letter">{dayLetter(d)}</span>
-              {v === null ? (
-                <span className="day__empty">{formatDM(d)}</span>
-              ) : (
-                <span className="day__value">{v.toFixed(1)}</span>
-              )}
-            </div>
-          );
-        })}
+      <div>
+        <SectionHeader level={3} title="שקילות השבוע" aside={<Num>{cur.count}/{WEEK_LENGTH}</Num>} />
+        <div className="week-grid" aria-label="שקילות השבוע">
+          {weekDays(report.week).map((d, i) => {
+            const v = cur.days[i] ?? null;
+            const future = compareISO(d, today) > 0;
+            return (
+              <div
+                key={d}
+                className={`day${d === today ? ' day--today' : ''}${future ? ' day--future' : ''}`}
+              >
+                <span className="day__letter">{dayLetter(d)}</span>
+                {v === null ? (
+                  <span className="day__empty">{formatDM(d)}</span>
+                ) : (
+                  <span className="day__value">{v.toFixed(1)}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div>
-        <p className="label" style={{ marginBottom: 'var(--sp-1)' }}>
-          אימונים
-        </p>
+        <SectionHeader
+          level={3}
+          title="אימונים"
+          aside={
+            <>
+              כאב: ברך <Num>{workouts.knee ?? DASH}</Num> · כתף <Num>{workouts.shoulder ?? DASH}</Num>
+            </>
+          }
+        />
         {workouts.items.length === 0 ? (
           <p className="muted small" style={{ margin: 0 }}>
             לא נרשמו אימונים השבוע.
           </p>
         ) : (
-          <ul className="list list--block small">
+          <div className="listrows">
             {workouts.items.map((w) => (
-              <li key={w.id}>
-                <div>
-                  <span className="num">{formatDM(w.d)}</span>{' '}
-                  <span className="muted tiny">{dayLetter(w.d)}</span>{' '}
-                  <span className="strong">{w.t}</span> — {w.text}
-                </div>
-                {w.skipped.length > 0 && (
-                  <p className="tiny muted" style={{ margin: 0 }}>
-                    דולגו: {w.skipped.join(', ')}
-                  </p>
-                )}
-              </li>
+              <ListRow
+                key={w.id}
+                title={
+                  <>
+                    <span className="strong">{w.t}</span> · <Num>{formatDM(w.d)}</Num>{' '}
+                    <span className="muted tiny">{dayLetter(w.d)}</span>
+                  </>
+                }
+                sub={
+                  <>
+                    {w.text}
+                    {w.skipped.length > 0 && <> · דולגו: {w.skipped.join(', ')}</>}
+                  </>
+                }
+                wrap
+              />
             ))}
-          </ul>
+          </div>
         )}
         {/* אימון D (אופציונלי, 25/10/2026): לא ב-n/3 — רשימה משלו. */}
         {workouts.optional.length > 0 && (
-          <ul className="list list--block small" style={{ marginTop: 'var(--sp-2)' }}>
+          <div className="listrows" style={{ marginTop: 'var(--sp-2)' }}>
             {workouts.optional.map((w) => (
-              <li key={w.id}>
-                <div>
-                  <span className="muted">אימון D</span> · <span className="num">{formatDM(w.d)}</span>{' '}
-                  <span className="muted tiny">{dayLetter(w.d)}</span> — {w.text}
-                </div>
-                {w.skipped.length > 0 && (
-                  <p className="tiny muted" style={{ margin: 0 }}>
-                    דולגו: {w.skipped.join(', ')}
-                  </p>
-                )}
-              </li>
+              <ListRow
+                key={w.id}
+                title={
+                  <>
+                    <span className="muted">אימון D</span> · <Num>{formatDM(w.d)}</Num>{' '}
+                    <span className="muted tiny">{dayLetter(w.d)}</span>
+                  </>
+                }
+                sub={
+                  <>
+                    {w.text}
+                    {w.skipped.length > 0 && <> · דולגו: {w.skipped.join(', ')}</>}
+                  </>
+                }
+                wrap
+              />
             ))}
-          </ul>
+          </div>
         )}
-        <p className="tiny muted" style={{ margin: 'var(--sp-1) 0 0' }}>
-          כאב: ברך <span className="num">{workouts.knee ?? DASH}</span> · כתף{' '}
-          <span className="num">{workouts.shoulder ?? DASH}</span>
-        </p>
       </div>
 
       {cardio.standaloneItems.length > 0 && (
         <div>
-          <p className="label" style={{ marginBottom: 'var(--sp-1)' }}>
-            אירובי עצמאי
-          </p>
-          <ul className="list list--block small">
+          <SectionHeader level={3} title="אירובי עצמאי" />
+          <div className="listrows">
             {cardio.standaloneItems.map((e) => (
-              <li key={e.id}>
-                <div>
-                  <span className="num">{formatDM(e.d)}</span>{' '}
-                  <span className="muted tiny">{dayLetter(e.d)}</span> — {e.text}
-                </div>
-                {e.detail && (
-                  <p className="tiny muted" style={{ margin: 0 }}>
-                    {e.detail}
-                  </p>
-                )}
-                {e.note.trim() !== '' && (
-                  <p className="tiny muted" style={{ margin: 0 }}>
-                    {e.note}
-                  </p>
-                )}
-              </li>
+              <ListRow
+                key={e.id}
+                title={
+                  <>
+                    <Num>{formatDM(e.d)}</Num> <span className="muted tiny">{dayLetter(e.d)}</span> — {e.text}
+                  </>
+                }
+                sub={[e.detail, e.note.trim() !== '' ? e.note : null].filter(Boolean).join(' · ') || undefined}
+                wrap
+              />
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
