@@ -27,6 +27,7 @@ import { PERSIST_LABEL, usePersistStatus } from '../platform/storagePersist';
 import { activeProfile, type Profile } from '../data/profile';
 import { writeProfile } from '../platform/profile';
 import { PROFILE_LABELS, SWITCH_BLOCKED_TEXT, canSwitchProfile, dataFeatures } from '../lib/profile';
+import { useToast } from '../ui';
 
 type Mode = 'merge' | 'replace';
 
@@ -102,6 +103,8 @@ export default function DataScreen({ store, today }: ScreenProps) {
   const [pending, setPending] = useState<PendingReplace | null>(null);
   const [pendingText, setPendingText] = useState('');
   const [profileWarning, setProfileWarning] = useState<ProfileWarning | null>(null);
+  /** טוסט אחד לכל האפליקציה (שלב 5): "נשמר" להגדרות, "נמחק · בטל" למזון שלי. */
+  const toast = useToast();
   /** תוצאת האימות של העתקת ה-JSON ללוח (שלב 0). */
   const [copyNote, setCopyNote] = useState<string | null>(null);
   const replaceReady = mode === 'merge' || isConfirmed(replaceText, REPLACE_WORD);
@@ -298,8 +301,12 @@ export default function DataScreen({ store, today }: ScreenProps) {
         onDelete={
           editor.existing
             ? () => {
-                void store.update('customFoods', removeCustomFood(db.customFoods, editor.existing!.id));
+                // אחרי האישור בשני שלבים: המחיקה נכתבת, ו"בטל" מחזיר את אותו
+                // אובייקט בדיוק (אותו מזהה) — רישומים שמפנים אליו חוזרים להציג אותו.
+                const food = editor.existing!;
+                void store.update('customFoods', removeCustomFood(db.customFoods, food.id));
                 setEditor(null);
+                toast.undo(`נמחק · ${food.name}`, () => void store.update('customFoods', upsertCustomFood(store.latest().customFoods, food)));
               }
             : undefined
         }
@@ -783,6 +790,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
             onSave={(t) => {
               void store.update('targets', upsertTarget(db.targets, t));
               setEditingTarget(false);
+              toast.saved();
             }}
           />
         )}
@@ -809,17 +817,19 @@ export default function DataScreen({ store, today }: ScreenProps) {
             label="בחר תאריך בשבוע 1"
             value={db.settings.programStart ?? start ?? today}
             max={today}
-            onChange={(d) =>
-              void store.update('settings', { ...db.settings, programStart: weekStart(d) })
-            }
+            onChange={(d) => {
+              void store.update('settings', { ...db.settings, programStart: weekStart(d) });
+              toast.saved();
+            }}
           />
           {db.settings.programStart && (
             <button
               type="button"
               className="btn btn--quiet"
-              onClick={() =>
-                void store.update('settings', { ...db.settings, programStart: null })
-              }
+              onClick={() => {
+                void store.update('settings', { ...db.settings, programStart: null });
+                toast.saved();
+              }}
             >
               חזרה לאוטומטי
               {firstData ? ` (${formatDM(weekStart(firstData))})` : ''}

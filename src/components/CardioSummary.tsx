@@ -25,7 +25,7 @@ type Props = {
   onSave: (segments: CardioSegment[], steps: number | null) => void;
   /** תמיד גלוי, לצד "שמור". */
   onCancel: () => void;
-  /** רק לרשומה שכבר באחסון. */
+  /** רק לרשומה שכבר באחסון. נגיעה אחת — "בטל" בטוסט (שלב 5), לא אישור. */
   onDelete?: (() => void) | undefined;
 };
 
@@ -149,7 +149,9 @@ export default function CardioSummary({
           בטל
         </button>
         {onDelete && (
-          <ConfirmButton className="btn btn--danger" ariaLabel={`מחק — ${title}`} onConfirm={onDelete} />
+          <button type="button" className="btn btn--danger" aria-label={`מחק — ${title}`} onClick={onDelete}>
+            מחק
+          </button>
         )}
       </div>
       <p className="tiny muted" style={{ margin: 'var(--sp-2) 0 0' }}>

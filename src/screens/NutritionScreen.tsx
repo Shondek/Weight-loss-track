@@ -20,7 +20,7 @@ import { useFoodIndex } from '../useFoodIndex';
 import ProgressBar, { toneOf } from '../components/ProgressBar';
 import CustomFoodEditor from './CustomFoodEditor';
 import QtySheet, { type QtyPreset } from './QtySheet';
-import { Button, Disclosure, HeroValue, Icon, ListRow, Notice, Num, SectionHeader, StatusChip, Surface, Toast, QuickTile } from '../ui';
+import { Button, Disclosure, HeroValue, Icon, ListRow, Notice, Num, SectionHeader, StatusChip, Surface, QuickTile, useToast } from '../ui';
 import { ChevronLeft, ChevronRight, Circle, CircleCheck, Plus, Search, WifiOff, X } from '../ui/icons';
 import { addDays, compareISO, formatDM, dayName } from '../lib/date';
 import { fromCustom, upsertCustomFood, type Food } from '../lib/nutrition/foods';
@@ -69,8 +69,6 @@ import { gramsFor, quantityLabel, unitFor, type PortionSource } from '../lib/nut
 
 const SEARCH_LIMIT = 12;
 const RECENT_LIMIT = 6;
-/** כמה זמן טוסט הביטול ("נרשם · בטל", "נמחק · בטל", "היום נסגר · בטל") נשאר. */
-const UNDO_MS = 6000;
 /** כמה צ'יפי כמות לכל היותר בחלונית. */
 const PRESET_LIMIT = 5;
 
@@ -160,44 +158,26 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   const mealNow = () => mealForLogging(day, today, new Date());
 
   // ---------- טוסטים: ביטול רישום/מחיקה, "היום נסגר" ----------
-  type Pending =
-    | { kind: 'deleted'; entry: FoodEntry; text: string }
-    | { kind: 'added'; ids: string[]; text: string }
-    | { kind: 'closed'; text: string };
-  const [undo, setUndo] = useState<Pending | null>(null);
-  const undoTimer = useRef<number | undefined>(undefined);
-  const armUndo = (pending: Pending | null) => {
-    if (undoTimer.current !== undefined) window.clearTimeout(undoTimer.current);
-    setUndo(pending);
-    if (pending) undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS);
+  /**
+   * טוסט אחד לכל האפליקציה (שלב 5, ui/ToastHost): טוסט חדש מחליף את הקודם
+   * וסוגר את חלון ה"בטל" שלו. "בטל" פועל על ה-DB העדכני (`store.latest`),
+   * כי הוא נלחץ עד 6 שניות אחרי הפעולה — אולי אחרי רישום נוסף.
+   */
+  const toast = useToast();
+  /** "בטל" לרישום: מסיר את הרישומים האלה דרך `removeEntry`, כמו מחיקה. */
+  const undoAdded = (ids: readonly string[]) => () => {
+    let list = store.latest().entries;
+    for (const id of ids) list = removeEntry(list, id);
+    void store.update('entries', list);
   };
-  useEffect(
-    () => () => {
-      if (undoTimer.current !== undefined) window.clearTimeout(undoTimer.current);
-    },
-    [],
-  );
 
   // ---------- סגירת יום וארוחת שישי ----------
   /** "סגור יום" / "פתח מחדש" / "בטל" בטוסט — כולם אותה פונקציה, אותה כתיבה. */
   const toggleClosed = () => {
     void store.update('days', setDayClosed(db.days, day, !closed, new Date().toISOString()));
-    // הטוסט מופיע אחרי סגירה; פתיחה מחדש (גם דרך "בטל") מורידה אותו.
-    armUndo(closed ? null : { kind: 'closed', text: 'היום נסגר' });
-  };
-
-  const restore = () => {
-    if (!undo) return;
-    if (undo.kind === 'deleted') void store.update('entries', upsertEntry(db.entries, undo.entry));
-    else if (undo.kind === 'added') {
-      let list = db.entries;
-      for (const id of undo.ids) list = removeEntry(list, id);
-      void store.update('entries', list);
-    } else {
-      toggleClosed();
-      return;
-    }
-    armUndo(null);
+    // הטוסט מופיע אחרי סגירה; פתיחה מחדש מהכפתור מורידה אותו. "בטל" = פתיחה.
+    if (closed) toast.dismiss();
+    else toast.undo('היום נסגר', () => void store.update('days', setDayClosed(store.latest().days, day, false, new Date().toISOString())));
   };
 
   /**
@@ -208,12 +188,13 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   const commit = (entry: FoodEntry, label: string, quick = false) => {
     void store.update('entries', upsertEntry(db.entries, entry));
     const n = entryNutrition(entry, resolve(entry.foodId));
-    armUndo({ kind: 'added', ids: [entry.id], text: quick ? `נרשם · ${label}` : `נרשם · ${label} · ${int(n.kcal)} קק"ל · ${int(n.protein)} חלבון` });
+    toast.undo(quick ? `נרשם · ${label}` : `נרשם · ${label} · ${int(n.kcal)} קק"ל · ${int(n.protein)} חלבון`, undoAdded([entry.id]));
   };
 
+  /** מחיקת רישום: מיידית; "בטל" מחזיר את אותה רשומה בדיוק דרך `upsertEntry`. */
   const del = (entry: FoodEntry) => {
     void store.update('entries', removeEntry(db.entries, entry.id));
-    armUndo({ kind: 'deleted', entry, text: `נמחק: ${entryName(entry, resolve(entry.foodId)?.name ?? null)}` });
+    toast.undo(`נמחק · ${entryName(entry, resolve(entry.foodId)?.name ?? null)}`, () => void store.update('entries', upsertEntry(store.latest().entries, entry)));
   };
 
   const chooseTier = (tier: FridayTier) => {
@@ -370,11 +351,10 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     let list = db.entries;
     for (const e of entries) list = upsertEntry(list, e);
     void store.update('entries', list);
-    armUndo({
-      kind: 'added',
-      ids: entries.map((e) => e.id),
-      text: `${combo.shake.label} · ${combo.label} · ${int(combo.kcal)} קק"ל · ${int(combo.protein)} חלבון`,
-    });
+    toast.undo(
+      `${combo.shake.label} · ${combo.label} · ${int(combo.kcal)} קק"ל · ${int(combo.protein)} חלבון`,
+      undoAdded(entries.map((e) => e.id)),
+    );
   };
 
   // ---------- חיפוש ----------
@@ -1097,12 +1077,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
         </p>
       </Surface>
 
-      {/* ---------- טוסט: "נרשם · בטל", "נמחק · בטל", "היום נסגר · בטל" (6 שניות) ---------- */}
-      {undo && (undo.kind !== 'closed' || closed) && (
-        <Toast actionLabel="בטל" onAction={restore}>
-          {undo.text}
-        </Toast>
-      )}
+      {/* הטוסטים ("נרשם · בטל", "נמחק · בטל", "היום נסגר · בטל") מוצגים מ-App (ToastHost). */}
 
       {sheetNode}
     </div>

@@ -39,6 +39,12 @@ export type DbState = {
 export type DbApi = DbState & {
   /** מעדכן מפתח אחד ושומר. אם השמירה נכשלת — הערך נשאר במסך והמפתח מסומן. */
   update: <K extends DbKey>(key: K, next: DB[K]) => Promise<boolean>;
+  /**
+   * ה-DB העדכני ברגע הקריאה (שלב 5). ל"בטל" בטוסט: הסגירה נוצרת בזמן
+   * המחיקה, ו"בטל" נלחץ עד 6 שניות אחר כך — אולי אחרי שמירה נוספת באותו
+   * מפתח, ואולי ממסך אחר. פונקציה יציבה, לא משתנה בין רינדורים.
+   */
+  latest: () => DB;
   replaceAll: (next: DB) => Promise<boolean>;
   wipe: () => Promise<boolean>;
   /** מנסה לשמור שוב את מה שנכשל. שימושי אחרי שפינו מקום במכשיר. */
@@ -203,5 +209,9 @@ export function useDb(): DbApi {
   );
   const dismissErrors = useCallback(() => setState((s) => ({ ...s, errors: [] })), []);
 
-  return { ...state, update, replaceAll, wipe, retrySave, dismissNotices, dismissErrors };
+  const dbRef = useRef(state.db);
+  dbRef.current = state.db;
+  const latest = useCallback(() => dbRef.current, []);
+
+  return { ...state, update, replaceAll, wipe, retrySave, dismissNotices, dismissErrors, latest };
 }

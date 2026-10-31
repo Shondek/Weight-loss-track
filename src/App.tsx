@@ -12,7 +12,7 @@ import { onAppUpdate } from './platform/appUpdate';
 import { requestPersistentStorage } from './platform/storagePersist';
 import { useRestTimer } from './hooks/useRestTimer';
 import RestTimerBar from './components/RestTimerBar';
-import { Notice, TabBar, type IconComponent } from './ui';
+import { Notice, TabBar, ToastProvider, type IconComponent } from './ui';
 import { ClipboardCheck, Database, Dumbbell, House, Utensils } from './ui/icons';
 import WeightScreen from './screens/WeightScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
@@ -118,6 +118,9 @@ export default function App() {
   }
 
   return (
+    // טוסט אחד לכל האפליקציה (שלב 5): "נמחק · בטל", "נשמר", "היום נסגר · בטל".
+    // חי כאן ולא במסכים, כדי ש"בטל" ישרוד מעבר טאב ויעלה מעל פס הטיימר.
+    <ToastProvider lifted={timerVisible}>
     <div className="app">
       {/* main נשאר landmark; role="tabpanel" יושב על div פנימי, כי
           ARIA לא מרשה להחליף את התפקיד של <main>. */}
@@ -260,5 +263,6 @@ export default function App() {
         שבוע נוכחי מתחיל ב-{thisWeek}
       </span>
     </div>
+    </ToastProvider>
   );
 }

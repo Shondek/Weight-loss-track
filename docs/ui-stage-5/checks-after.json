@@ -1,0 +1,375 @@
+[
+ {
+  "id": "01-today-delete-weight",
+  "title": "היום: מחיקת שקילה → \"נמחק · שקילה · בטל\"",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נמחק · שקילה 27/10/2026 · 95.6 בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2673,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 156,
+  "flippedNums": 0
+ },
+ {
+  "id": "02-today-delete-steps",
+  "title": "היום: מחיקת צעדים → טוסט",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נמחק · צעדים 29/10/2026 · 7,800 בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2673,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 155,
+  "flippedNums": 0
+ },
+ {
+  "id": "03-nutrition-delete-entry",
+  "title": "תזונה: מחיקת רישום → טוסט",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נמחק · גבינת קוטג' 5% שומן, תנובה בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2012,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 162,
+  "flippedNums": 0
+ },
+ {
+  "id": "04-workout-delete-cardio",
+  "title": "אימונים: מחיקת אירובי עצמאי (נגיעה אחת) → טוסט",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נמחק · אירובי 28/10 · הליכון · 45 דק׳ · שיפוע 2.5% · 5.5 קמ״ש בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 1580,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 130,
+  "flippedNums": 0
+ },
+ {
+  "id": "05-data-delete-food",
+  "title": "נתונים: מחיקת מזון שלי (אחרי אישור) → טוסט",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נמחק · PRO 40 יטבתה בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2582,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 129,
+  "flippedNums": 0
+ },
+ {
+  "id": "06-saved-waist",
+  "title": "היום: \"עדכן מדידה\" → \"נשמר\"",
+  "toast": {
+   "toast": {
+    "top": 731,
+    "bottom": 768,
+    "height": 37,
+    "width": 358
+   },
+   "action": null,
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נשמר"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2673,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 156,
+  "flippedNums": 0
+ },
+ {
+  "id": "07-checkin-saved",
+  "title": "צ'ק-אין: נגיעה בסולם → \"נשמר\"",
+  "toast": {
+   "toast": {
+    "top": 731,
+    "bottom": 768,
+    "height": 37,
+    "width": 358
+   },
+   "action": null,
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נשמר"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2727,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 157,
+  "flippedNums": 0
+ },
+ {
+  "id": "08-toast-above-timer",
+  "title": "טוסט מעל פס הטיימר: סט נרשם באימון (טיימר רץ) → מחיקת שקילה בהיום",
+  "toast": {
+   "toast": {
+    "top": 640,
+    "bottom": 700,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": 712,
+   "timerBottom": 780,
+   "aboveNav": true,
+   "aboveTimer": true,
+   "text": "נמחק · שקילה 27/10/2026 · 95.6 בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2741,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 162,
+  "flippedNums": 0
+ },
+ {
+  "id": "09-workout-confirm",
+  "title": "אימונים: מחיקת אימון — נגיעה ראשונה: \"אישור מחיקה\" (האישור נשאר)",
+  "toast": null,
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2249,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 145,
+  "flippedNums": 0
+ },
+ {
+  "id": "10-workout-delete-toast",
+  "title": "אימונים: אחרי האישור — \"נמחק · אימון B 26/10 · בטל\"",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נמחק · אימון B 26/10 בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 1596,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 130,
+  "flippedNums": 0
+ },
+ {
+  "id": "11-nutrition-closed-toast",
+  "title": "תזונה: \"סגור יום\" → \"היום נסגר · בטל\" (אותו טוסט)",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "היום נסגר בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2063,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 176,
+  "flippedNums": 0
+ },
+ {
+  "id": "12-partner-delete-workout",
+  "title": "בת הזוג: מחיקת אימון → אותו טוסט",
+  "toast": {
+   "toast": {
+    "top": 708,
+    "bottom": 768,
+    "height": 60,
+    "width": 358
+   },
+   "action": {
+    "w": 74,
+    "h": 44
+   },
+   "navTop": 780,
+   "timerTop": null,
+   "timerBottom": null,
+   "aboveNav": true,
+   "aboveTimer": null,
+   "text": "נמחק · אימון A 28/10 בטל"
+  },
+  "errors": [],
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 1386,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 102,
+  "flippedNums": 0
+ }
+]

@@ -1,0 +1,163 @@
+{
+ "scenario": {
+  "today": "2026-10-30",
+  "time": "08:05:00"
+ },
+ "A": [
+  {
+   "type": "שקילה",
+   "label": "27/10/2026 (באמצע \"שקילות אחרונות\")",
+   "identical": true,
+   "diffs": [],
+   "toast": "נמחק · שקילה 27/10/2026 · 95.6 בטל",
+   "toastAfterUndo": null
+  },
+  {
+   "type": "מותניים",
+   "label": "21/10/2026 (האחרונה)",
+   "identical": true,
+   "diffs": [],
+   "toast": "נמחק · מותניים 21/10/2026 · 97.0 בטל",
+   "toastAfterUndo": null
+  },
+  {
+   "type": "צעדים",
+   "label": "אתמול 29/10/2026",
+   "identical": true,
+   "diffs": [],
+   "toast": "נמחק · צעדים 29/10/2026 · 7,800 בטל",
+   "toastAfterUndo": null
+  },
+  {
+   "type": "רישום מזון",
+   "label": "קוטג' של היום 07:10",
+   "identical": true,
+   "diffs": [],
+   "toast": "נמחק · גבינת קוטג' 5% שומן, תנובה בטל",
+   "toastAfterUndo": null
+  },
+  {
+   "type": "אירובי עצמאי",
+   "label": "28/10 הליכון 45 דק׳",
+   "identical": true,
+   "diffs": [],
+   "toast": "נמחק · אירובי 28/10 · הליכון · 45 דק׳ · שיפוע 2.5% · 5.5 קמ״ש בטל",
+   "toastAfterUndo": null
+  },
+  {
+   "type": "אימון שלם",
+   "label": "26/10 (באמצע ההיסטוריה)",
+   "identical": true,
+   "diffs": [],
+   "toast": "נמחק · אימון B 26/10 בטל",
+   "toastAfterUndo": null
+  },
+  {
+   "type": "מזון מותאם",
+   "label": "PRO 40 (מופיע ברישומים של 14 יום)",
+   "identical": true,
+   "diffs": [],
+   "toast": "נמחק · PRO 40 יטבתה בטל",
+   "toastAfterUndo": null
+  }
+ ],
+ "B": [
+  {
+   "type": "שקילה",
+   "label": "27/10/2026 (באמצע \"שקילות אחרונות\")",
+   "identical": true,
+   "diffs": [],
+   "toastBefore": null,
+   "toastAfter": "נמחק · שקילה 27/10/2026 · 95.6 בטל",
+   "toastGoneAfterExpiry": true,
+   "changedVsBaseline": true
+  },
+  {
+   "type": "מותניים",
+   "label": "21/10/2026 (האחרונה)",
+   "identical": true,
+   "diffs": [],
+   "toastBefore": null,
+   "toastAfter": "נמחק · מותניים 21/10/2026 · 97.0 בטל",
+   "toastGoneAfterExpiry": true,
+   "changedVsBaseline": true
+  },
+  {
+   "type": "צעדים",
+   "label": "אתמול 29/10/2026",
+   "identical": true,
+   "diffs": [],
+   "toastBefore": null,
+   "toastAfter": "נמחק · צעדים 29/10/2026 · 7,800 בטל",
+   "toastGoneAfterExpiry": true,
+   "changedVsBaseline": true
+  },
+  {
+   "type": "רישום מזון",
+   "label": "קוטג' של היום 07:10",
+   "identical": true,
+   "diffs": [],
+   "toastBefore": "נמחק: גבינת קוטג' 5% שומן, תנובה בטל",
+   "toastAfter": "נמחק · גבינת קוטג' 5% שומן, תנובה בטל",
+   "toastGoneAfterExpiry": true,
+   "changedVsBaseline": true
+  },
+  {
+   "type": "אירובי עצמאי",
+   "label": "28/10 הליכון 45 דק׳",
+   "identical": true,
+   "diffs": [],
+   "toastBefore": null,
+   "toastAfter": "נמחק · אירובי 28/10 · הליכון · 45 דק׳ · שיפוע 2.5% · 5.5 קמ״ש בטל",
+   "toastGoneAfterExpiry": true,
+   "changedVsBaseline": true
+  },
+  {
+   "type": "אימון שלם",
+   "label": "26/10 (באמצע ההיסטוריה)",
+   "identical": true,
+   "diffs": [],
+   "toastBefore": null,
+   "toastAfter": "נמחק · אימון B 26/10 בטל",
+   "toastGoneAfterExpiry": true,
+   "changedVsBaseline": true
+  },
+  {
+   "type": "מזון מותאם",
+   "label": "PRO 40 (מופיע ברישומים של 14 יום)",
+   "identical": true,
+   "diffs": [],
+   "toastBefore": null,
+   "toastAfter": "נמחק · PRO 40 יטבתה בטל",
+   "toastGoneAfterExpiry": true,
+   "changedVsBaseline": true
+  }
+ ],
+ "C": {
+  "screenChangedWhileDeleted": true,
+  "screenRestored": true,
+  "exportIdentical": true,
+  "diffs": [],
+  "mentionsPro40": {
+   "before": 2,
+   "deleted": 1,
+   "restored": 2
+  },
+  "errors": []
+ },
+ "D": {
+  "toast1": "נמחק · שקילה 29/10/2026 · 94.9 בטל",
+  "toast2": "נמחק · שקילה 27/10/2026 · 95.6 בטל",
+  "toastsVisibleAfterSecond": 1,
+  "firstStillDeleted": true,
+  "secondRestored": true,
+  "identicalToFirstOnly": true,
+  "diffs": [],
+  "errors": []
+ },
+ "baselineIdentical": true,
+ "errors": {
+  "before": [],
+  "after": []
+ }
+}

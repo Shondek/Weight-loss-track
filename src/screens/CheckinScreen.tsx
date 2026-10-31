@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
 import { useWeek } from '../useWeek';
 import type { WeeklyCheckin } from '../types';
@@ -20,6 +20,7 @@ import Choice from '../components/Choice';
 import Stepper from '../components/Stepper';
 import CopyBlock from '../components/CopyBlock';
 import WeekSummary from '../components/WeekSummary';
+import { useToast } from '../ui';
 
 const SCALE_1_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const DAYS_0_7 = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -46,8 +47,15 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
   const weekly = useMemo(() => buildWeeklySummary(db, summaryWeek), [db, summaryWeek]);
   const summaryWeekNo = start ? weekNumber(start, summaryWeek) : null;
 
-  const patch = (next: Partial<WeeklyCheckin>) => {
+  /**
+   * כל שינוי נשמר מיד, כמו קודם. חדש (שלב 5): טוסט "נשמר" קצר — לסולמות
+   * ולשינה בכל נגיעה; להערה פעם אחת ביציאה מהשדה, לא בכל תו.
+   */
+  const toast = useToast();
+  const noteDirty = useRef(false);
+  const patch = (next: Partial<WeeklyCheckin>, { quiet = false } = {}) => {
     void store.update('checkins', upsertCheckin(db.checkins, { ...value, ...next }));
+    if (!quiet) toast.saved();
   };
 
   return (
@@ -117,9 +125,10 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
             scale
             options={DAYS_0_5}
             value={value.homeLunchDays ?? null}
-            onChange={(homeLunchDays) =>
-              void store.update('checkins', upsertCheckin(db.checkins, withHomeLunchDays(value, homeLunchDays)))
-            }
+            onChange={(homeLunchDays) => {
+              void store.update('checkins', upsertCheckin(db.checkins, withHomeLunchDays(value, homeLunchDays)));
+              toast.saved();
+            }}
           />
 
           <div>
@@ -128,7 +137,15 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
               id="note"
               value={value.note}
               maxLength={NOTE_MAX}
-              onChange={(e) => patch({ note: e.target.value.slice(0, NOTE_MAX) })}
+              onChange={(e) => {
+                noteDirty.current = true;
+                patch({ note: e.target.value.slice(0, NOTE_MAX) }, { quiet: true });
+              }}
+              onBlur={() => {
+                if (!noteDirty.current) return;
+                noteDirty.current = false;
+                toast.saved();
+              }}
             />
             <p className="tiny muted" style={{ margin: '4px 0 0' }}>
               <span className="num">
