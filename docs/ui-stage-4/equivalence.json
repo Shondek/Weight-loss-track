@@ -1,0 +1,593 @@
+{
+ "day": {
+  "identical": true,
+  "diffs": [],
+  "stripped": {
+   "before": {
+    "exported": "2026-10-30T06:05:38.824Z",
+    "entryIds": [
+     {
+      "id": "0mvukigrt-8b240a22",
+      "ts": 1793340301673
+     },
+     {
+      "id": "0mvukih5q-c429cd35",
+      "ts": 1793340302174
+     },
+     {
+      "id": "0mvukihxy-67a917cf",
+      "ts": 1793340303190
+     },
+     {
+      "id": "0mvukj84j-7f3dce14",
+      "ts": 1793340337123
+     },
+     {
+      "id": "0mvukj8r8-f585afd1",
+      "ts": 1793340337940
+     },
+     {
+      "id": "0mvukj91d-2608b6b5",
+      "ts": 1793340338305
+     }
+    ],
+    "customIds": [
+     "c:a26a5b53-ea04-4b7d-b120-570e1792694b"
+    ],
+    "closedAt": [
+     "2026-10-30T06:05:38.589Z"
+    ],
+    "creatineAt": [
+     "2026-10-30T06:05:00.924Z"
+    ]
+   },
+   "after": {
+    "exported": "2026-10-30T06:05:09.170Z",
+    "entryIds": [
+     {
+      "id": "0mvukigvx-e6e5db34",
+      "ts": 1793340301821
+     },
+     {
+      "id": "0mvukihg8-b5ca202b",
+      "ts": 1793340302552
+     },
+     {
+      "id": "0mvukii80-825e11b5",
+      "ts": 1793340303552
+     },
+     {
+      "id": "0mvukil60-c78f1c3a",
+      "ts": 1793340307368
+     },
+     {
+      "id": "0mvukiluo-23728908",
+      "ts": 1793340308256
+     },
+     {
+      "id": "0mvukim5b-80889c42",
+      "ts": 1793340308639
+     }
+    ],
+    "customIds": [
+     "c:de0e5715-8fc1-44f5-9cbd-5d39f44af5cd"
+    ],
+    "closedAt": [
+     "2026-10-30T06:05:08.935Z"
+    ],
+    "creatineAt": [
+     "2026-10-30T06:05:00.935Z"
+    ]
+   }
+  },
+  "todayEntriesAfter": [
+   {
+    "foodId": "14201019",
+    "grams": 300,
+    "meal": "snack",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "c:seed-tahini",
+    "grams": 22.5,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "טחינה גולמית מלאה",
+     "kcal": 620,
+     "protein": 23,
+     "carbs": 10,
+     "fat": 55,
+     "fiber": 10
+    }
+   },
+   {
+    "foodId": "14201019",
+    "grams": 200,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "31101010",
+    "grams": 88,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "ביצה שלמה בלי קליפה",
+     "kcal": 143,
+     "protein": 12.6,
+     "carbs": 0.7,
+     "fat": 9.5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "c:de0e5715-8fc1-44f5-9cbd-5d39f44af5cd",
+    "grams": 100,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "חטיף חלבון ביתי",
+     "kcal": 350,
+     "protein": 30,
+     "carbs": null,
+     "fat": null,
+     "fiber": null
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": "פלאפל במנה",
+    "adhoc": true,
+    "ref": {
+     "name": "פלאפל במנה",
+     "kcal": 65000,
+     "protein": 2000,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "dinner",
+    "n": "ארוחת שישי — רגילה (הערכה)",
+    "adhoc": true,
+    "ref": {
+     "name": "ארוחת שישי — רגילה (הערכה)",
+     "kcal": 100000,
+     "protein": 5500,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   }
+  ],
+  "todayEntriesBefore": [
+   {
+    "foodId": "14201019",
+    "grams": 300,
+    "meal": "snack",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "c:seed-tahini",
+    "grams": 22.5,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "טחינה גולמית מלאה",
+     "kcal": 620,
+     "protein": 23,
+     "carbs": 10,
+     "fat": 55,
+     "fiber": 10
+    }
+   },
+   {
+    "foodId": "14201019",
+    "grams": 200,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "31101010",
+    "grams": 88,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "ביצה שלמה בלי קליפה",
+     "kcal": 143,
+     "protein": 12.6,
+     "carbs": 0.7,
+     "fat": 9.5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "c:a26a5b53-ea04-4b7d-b120-570e1792694b",
+    "grams": 100,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "חטיף חלבון ביתי",
+     "kcal": 350,
+     "protein": 30,
+     "carbs": null,
+     "fat": null,
+     "fiber": null
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": "פלאפל במנה",
+    "adhoc": true,
+    "ref": {
+     "name": "פלאפל במנה",
+     "kcal": 65000,
+     "protein": 2000,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "dinner",
+    "n": "ארוחת שישי — רגילה (הערכה)",
+    "adhoc": true,
+    "ref": {
+     "name": "ארוחת שישי — רגילה (הערכה)",
+     "kcal": 100000,
+     "protein": 5500,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   }
+  ],
+  "daysAfter": [
+   {
+    "d": "2026-10-30",
+    "closed": true,
+    "fridayTier": "regular",
+    "closedAt": "2026-10-30T06:05:08.935Z"
+   }
+  ],
+  "favoritesAfter": [
+   {
+    "foodId": "c:seed-pro40",
+    "grams": 1
+   },
+   {
+    "foodId": "14201019",
+    "grams": 250
+   }
+  ],
+  "favoritesBefore": [
+   {
+    "foodId": "c:seed-pro40",
+    "grams": 1
+   },
+   {
+    "foodId": "14201019",
+    "grams": 250
+   }
+  ],
+  "customFoodsAfter": [
+   {
+    "id": "c:de0e5715-8fc1-44f5-9cbd-5d39f44af5cd",
+    "name": "חטיף חלבון ביתי",
+    "cat": null,
+    "portions": [],
+    "barcode": null,
+    "kcal": 350,
+    "protein": 30,
+    "carbs": null,
+    "fat": null,
+    "fiber": null
+   }
+  ]
+ },
+ "quick": {
+  "identical": true,
+  "diffs": [],
+  "todayEntriesAfter": [
+   {
+    "foodId": "14201019",
+    "grams": 250,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "42101000",
+    "grams": 25,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "שקדים לא קלויים, ללא מלח",
+     "kcal": 579,
+     "protein": 21.1,
+     "carbs": 9.1,
+     "fat": 49.9,
+     "fiber": 12.5
+    }
+   },
+   {
+    "foodId": "c:seed-tahini",
+    "grams": 15,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "טחינה גולמית מלאה",
+     "kcal": 620,
+     "protein": 23,
+     "carbs": 10,
+     "fat": 55,
+     "fiber": 10
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": "המבורגר במסעדה",
+    "adhoc": true,
+    "ref": {
+     "name": "המבורגר במסעדה",
+     "kcal": 85000,
+     "protein": 4500,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   },
+   {
+    "foodId": "c:seed-pro40",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "PRO 40 יטבתה",
+     "kcal": 21000,
+     "protein": 4000,
+     "carbs": 1200,
+     "fat": 300,
+     "fiber": 0,
+     "unitFood": true
+    }
+   }
+  ],
+  "todayEntriesBefore": [
+   {
+    "foodId": "14201019",
+    "grams": 250,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "42101000",
+    "grams": 25,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "שקדים לא קלויים, ללא מלח",
+     "kcal": 579,
+     "protein": 21.1,
+     "carbs": 9.1,
+     "fat": 49.9,
+     "fiber": 12.5
+    }
+   },
+   {
+    "foodId": "c:seed-tahini",
+    "grams": 15,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "טחינה גולמית מלאה",
+     "kcal": 620,
+     "protein": 23,
+     "carbs": 10,
+     "fat": 55,
+     "fiber": 10
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": "המבורגר במסעדה",
+    "adhoc": true,
+    "ref": {
+     "name": "המבורגר במסעדה",
+     "kcal": 85000,
+     "protein": 4500,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   },
+   {
+    "foodId": "c:seed-pro40",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "PRO 40 יטבתה",
+     "kcal": 21000,
+     "protein": 4000,
+     "carbs": 1200,
+     "fat": 300,
+     "fiber": 0,
+     "unitFood": true
+    }
+   }
+  ]
+ },
+ "undo": {
+  "before": {
+   "identical": true,
+   "diffs": []
+  },
+  "after": {
+   "identical": true,
+   "diffs": []
+  },
+  "entriesTodayAfterUndo": 1,
+  "entriesTodayBaseline": 1
+ },
+ "taps": {
+  "before": {
+   "asIs": {
+    "clicks": 1,
+    "typed": 0
+   },
+   "differentQty": {
+    "clicks": 2,
+    "typed": 0
+   }
+  },
+  "after": {
+   "asIs": {
+    "clicks": 1,
+    "typed": 0
+   },
+   "differentQty": {
+    "clicks": 3,
+    "typed": 0
+   }
+  }
+ },
+ "favoriteRecord": {
+  "favorites": [
+   {
+    "foodId": "c:seed-pro40",
+    "grams": 1
+   },
+   {
+    "foodId": "14201019",
+    "grams": 250
+   },
+   {
+    "foodId": "42101000",
+    "grams": 25
+   }
+  ],
+  "keys": [
+   "favorites"
+  ]
+ },
+ "log": {
+  "before": [
+   "קריאטין סומן",
+   "PRO 40 ×1 מאחרונים",
+   "טחינה כף מפולסת ×1½ (+½)",
+   "קוטג׳ 200 ג׳ ממועדף (מעבר לגרמים + הקלדה)",
+   "ביצה שלמה בלי קליפה — יחידה קטנה ×2 מחיפוש",
+   "עריכה: קוטג׳ 07:10 → 300 ג׳, ביניים",
+   "מחיקה: PRO 40",
+   "מועדף: אין ממשק (דולג)",
+   "מזון שלי חדש: חטיף חלבון ביתי · 100 ג׳",
+   "בחוץ: פלאפל במנה",
+   "ארוחת שישי: רגילה",
+   "היום נסגר"
+  ],
+  "after": [
+   "קריאטין סומן",
+   "PRO 40 ×1 מאחרונים",
+   "טחינה כף מפולסת ×1½ (+½)",
+   "קוטג׳ 200 ג׳ ממועדף (מעבר לגרמים + הקלדה)",
+   "ביצה שלמה בלי קליפה — יחידה קטנה ×2 מחיפוש",
+   "עריכה: קוטג׳ 07:10 → 300 ג׳, ביניים",
+   "מחיקה: PRO 40",
+   "מועדף: שקדים סומן והוסר",
+   "מזון שלי חדש: חטיף חלבון ביתי · 100 ג׳",
+   "בחוץ: פלאפל במנה",
+   "ארוחת שישי: רגילה",
+   "היום נסגר"
+  ]
+ },
+ "errors": {
+  "before": [],
+  "after": []
+ }
+}

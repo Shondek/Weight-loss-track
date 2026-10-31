@@ -550,6 +550,60 @@
   white-space: nowrap;
 }
 
+/* שורה מפוצלת: גוף השורה כפתור, ופעולה ("+") כפתור נפרד לידו. */
+.listrow--split {
+  padding: 0;
+  gap: var(--sp-1);
+}
+
+.listrow__tap {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: var(--sp-2) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: start;
+}
+
+/* "+" שרושם בנגיעה אחת: 48×48, על משטח 3. */
+.listrow__add,
+.qtile__add {
+  appearance: none;
+  border: 0;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.listrow__add:active,
+.qtile__add:active {
+  background: var(--accent-soft);
+}
+
+/* שם ארוך: שתי שורות לכל היותר, ואז שלוש נקודות (שלב 4, סעיף 8.6 בדוח שלב 1). */
+.listrow__title--wrap {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.3;
+}
+
 .listrow__sub {
   font-size: var(--t-micro);
   color: var(--text-quiet);
@@ -882,4 +936,185 @@
   background: var(--accent);
   color: var(--on-accent);
   font-weight: 500;
+}
+
+/* ---------- QtyStepper: −/+ 56px משני צידי מספר גדול שהוא שדה הקלדה ---------- */
+
+.qty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  direction: ltr;
+}
+
+.qty__btn {
+  appearance: none;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.qty__btn:disabled {
+  color: var(--text-quiet);
+  cursor: default;
+}
+
+.qty__field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* המספר הגדול הוא השדה עצמו: 44px ב-300, בלי מסגרת, בלי חיצי דפדפן. */
+.qty__input,
+.qty input[type='number'] {
+  font: inherit;
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1.1;
+  width: 132px;
+  min-height: 56px;
+  text-align: center;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text-primary);
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.qty__input::-webkit-inner-spin-button,
+.qty__input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qty__unit {
+  font-size: 18px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ---------- QuickTile: אריח גישה מהירה, שלושה בשורה ---------- */
+
+.qtiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+
+.qtile {
+  appearance: none;
+  border: 0;
+  background: var(--surface-3);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  min-height: 96px;
+  text-align: start;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.qtile:active {
+  background: var(--surface-2);
+}
+
+/* אריח מפוצל: הגוף כפתור, "+" כפתור 48px בפינה (בקצה, משמאל ב-RTL). */
+.qtile--split {
+  position: relative;
+  padding: 0;
+  display: block;
+  cursor: default;
+}
+
+.qtile__tap {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  min-height: 96px;
+  padding: var(--sp-3);
+  padding-inline-end: var(--sp-3);
+  text-align: start;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+}
+
+.qtile__tap .qtile__top {
+  padding-inline-end: calc(var(--tap) - var(--sp-2));
+}
+
+.qtile--split .qtile__add {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  border-start-end-radius: var(--r-md);
+  border-end-start-radius: var(--r-md);
+  border-start-start-radius: 0;
+  border-end-end-radius: 0;
+  background: var(--surface-2);
+}
+
+.qtile__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-1);
+}
+
+.qtile__value {
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.qtile__unit {
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+  margin-inline-start: 2px;
+}
+
+.qtile__plus {
+  color: var(--text-quiet);
+  display: inline-flex;
+}
+
+/* השם: שתי שורות לכל היותר, ואז שלוש נקודות. */
+.qtile__title {
+  font-weight: 500;
+  font-size: var(--t-sub);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+.qtile__sub {
+  font-size: var(--t-micro);
+  color: var(--text-quiet);
 }

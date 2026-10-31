@@ -35,3 +35,6 @@ export { default as SkipForward } from 'lucide-react/icons/skip-forward';
 export { default as List } from 'lucide-react/icons/list';
 export { default as Flag } from 'lucide-react/icons/flag';
 export { default as History } from 'lucide-react/icons/history';
+export { default as Star } from 'lucide-react/icons/star';
+export { default as WifiOff } from 'lucide-react/icons/wifi-off';
+export { default as Trash2 } from 'lucide-react/icons/trash-2';

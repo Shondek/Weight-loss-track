@@ -17,6 +17,8 @@ export { default as TabBar } from './TabBar';
 export { default as SectionHeader } from './SectionHeader';
 export { default as ListRow } from './ListRow';
 export { default as Icon } from './Icon';
+export { default as QtyStepper } from './QtyStepper';
+export { default as QuickTile } from './QuickTile';
 export { default as ScreenHeader } from './ScreenHeader';
 export { default as HeroValue } from './HeroValue';
 export { default as DayDots } from './DayDots';

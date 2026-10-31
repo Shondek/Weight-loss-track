@@ -1,0 +1,70 @@
+{
+ "before": {
+  "label": "before",
+  "A": {
+   "foodsCachedAfterFirstLoad": true,
+   "offlineSearch": {
+    "results": 12,
+    "placeholder": "חיפוש במאגר או במזונות שלי",
+    "offlineMessage": false,
+    "genericError": false,
+    "retryButton": false
+   }
+  },
+  "B": {
+   "foodsCachedAfterCutInstall": false,
+   "foodsCachedAfterNextOnlineOpen": false,
+   "offlineSearch": {
+    "results": 1,
+    "placeholder": "חיפוש במאגר או במזונות שלי",
+    "offlineMessage": false,
+    "genericError": true,
+    "retryButton": false
+   }
+  },
+  "C": {
+   "foodsCached": false,
+   "offlineSearch": {
+    "results": 1,
+    "placeholder": "חיפוש במאגר או במזונות שלי",
+    "offlineMessage": false,
+    "genericError": true,
+    "retryButton": false
+   }
+  }
+ },
+ "after": {
+  "label": "after",
+  "A": {
+   "foodsCachedAfterFirstLoad": true,
+   "offlineSearch": {
+    "results": 12,
+    "placeholder": "חיפוש במאגר או במזונות שלי",
+    "offlineMessage": false,
+    "genericError": false,
+    "retryButton": false
+   }
+  },
+  "B": {
+   "foodsCachedAfterCutInstall": false,
+   "foodsCachedAfterNextOnlineOpen": true,
+   "offlineSearch": {
+    "results": 12,
+    "placeholder": "חיפוש במאגר או במזונות שלי",
+    "offlineMessage": false,
+    "genericError": false,
+    "retryButton": false
+   }
+  },
+  "C": {
+   "foodsCached": false,
+   "offlineSearch": {
+    "results": 1,
+    "placeholder": "חיפוש במזונות שלי",
+    "offlineMessage": true,
+    "genericError": false,
+    "retryButton": true
+   }
+  }
+ }
+}
