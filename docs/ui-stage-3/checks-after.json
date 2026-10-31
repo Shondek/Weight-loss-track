@@ -115,7 +115,7 @@
   "smallTargetsList": [],
   "contrastMin": 4.77,
   "contrastFails": [],
-  "textNodes": 91,
+  "textNodes": 92,
   "flippedNums": 0,
   "errors": []
  },
@@ -206,6 +206,21 @@
   "contrastMin": 4.77,
   "contrastFails": [],
   "textNodes": 104,
+  "flippedNums": 0,
+  "errors": []
+ },
+ {
+  "screen": "15-pain-rated",
+  "title": "כאב אחרי דירוג מלא (ברך 2 · כתף 0) בתצוגת המוקד",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 1140,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 64,
   "flippedNums": 0,
   "errors": []
  }

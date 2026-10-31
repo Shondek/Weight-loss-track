@@ -4,21 +4,21 @@
   "diffs": [],
   "stripped": {
    "before": {
-    "exported": "2026-10-30T06:25:17.381Z",
+    "exported": "2026-10-30T06:25:17.315Z",
     "newIds": [
-     "2026-10-30-0mvukig6x-75488609-A"
+     "2026-10-30-0mvukig6e-5eee3b04-A"
     ]
    },
    "after": {
-    "exported": "2026-10-30T06:25:19.726Z",
+    "exported": "2026-10-30T06:25:19.072Z",
     "newIds": [
-     "2026-10-30-0mvukig6q-53b205ce-A"
+     "2026-10-30-0mvukig6d-b49d08a2-A"
     ]
    }
   },
   "workoutAfter": {
    "schemaVersion": 2,
-   "id": "2026-10-30-0mvukig6q-53b205ce-A",
+   "id": "2026-10-30-0mvukig6d-b49d08a2-A",
    "d": "2026-10-30",
    "t": "A",
    "ex": [
@@ -283,7 +283,7 @@
   },
   "workoutBefore": {
    "schemaVersion": 2,
-   "id": "2026-10-30-0mvukig6x-75488609-A",
+   "id": "2026-10-30-0mvukig6e-5eee3b04-A",
    "d": "2026-10-30",
    "t": "A",
    "ex": [

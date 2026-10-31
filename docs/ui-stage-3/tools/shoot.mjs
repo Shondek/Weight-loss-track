@@ -49,6 +49,7 @@ const SCENARIOS = [
       await d.useSuggestion();
       await d.logSet(1, 10);
       await advance(page, 12_000);
+      await page.locator('.resttimer').screenshot({ path: path.join(outDir, '08-timer--crop.png') });
     },
   },
   { id: '09-swap', title: '"החלף"', act: async (d, page) => { await d.openTab(); await d.start('A'); await d.goTo(5); await page.getByRole('button', { name: 'החלף', exact: true }).click(); await settle(page, 300); } },
@@ -75,6 +76,20 @@ const SCENARIOS = [
   { id: '12-workout-d', title: 'אימון D', act: async (d) => { await d.openTab(); await d.start('D'); await d.goTo(1); } },
   { id: '13-partner', title: 'פרופיל בת הזוג', profile: 'partner', act: async (d) => { await d.openTab(); await d.start('A'); await d.goTo(1); } },
   { id: '14-partner-start', title: 'פרופיל בת הזוג — מסך פתיחה', profile: 'partner', act: async (d) => d.openTab() },
+  {
+    id: '15-pain-rated',
+    title: 'כאב אחרי דירוג מלא (ברך 2 · כתף 0) בתצוגת המוקד',
+    act: async (d, page) => {
+      await d.openTab();
+      await d.start('A');
+      await d.goTo(1);
+      await d.pain(2, 0);
+      const row = page.locator('.wk-pain').first();
+      await row.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      await settle(page, 200);
+      await row.screenshot({ path: path.join(outDir, '15-pain-rated--crop.png') });
+    },
+  },
 ];
 
 const browser = await launch();
@@ -100,7 +115,7 @@ try {
       await settle(page, 200);
     }
     // "אחרי": תצוגת המוקד מתחילה מראש המסך (הנהג גלל כדי ללחוץ).
-    if (label === 'after' && !s.id.startsWith('09')) {
+    if (label === 'after' && !s.id.startsWith('09') && !s.id.startsWith('15')) {
       await page.evaluate(() => window.scrollTo(0, 0));
       await settle(page, 200);
     }

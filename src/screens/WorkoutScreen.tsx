@@ -286,6 +286,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const [dateOpen, setDateOpen] = useState(false);
   /** רשימת התרגילים (מהכותרת) פתוחה. */
   const [listOpen, setListOpen] = useState(false);
+  /** "שנה" בשורת הכאב המכווצת: הסולמות פתוחים שוב גם אחרי דירוג מלא. במסך בלבד. */
+  const [painEditOpen, setPainEditOpen] = useState(false);
   /** תרגילים שדולגו בסשן הזה ("דלג ואחזור") — לסימון "ממתין". במסך בלבד. */
   const [skippedIds, setSkippedIds] = useState<readonly string[]>([]);
   /**
@@ -354,6 +356,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const openKey = open?.id ?? null;
   useEffect(() => {
     if (openKey) window.scrollTo({ top: 0 });
+    setPainEditOpen(false);
   }, [openKey, currentIndex]);
 
   useEffect(() => {
@@ -788,9 +791,31 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   })();
 
   const painRated = open ? open.knee !== null || open.shoulder !== null : false;
+  const painComplete = open ? open.knee !== null && open.shoulder !== null : false;
 
-  /** בלוק הכאב: שורה קומפקטית וגלויה, בלי ברירת מחדל (החלטה 2). */
-  const painBlock = open && FEATURES.pain && (
+  /**
+   * בלוק הכאב: שורה קומפקטית וגלויה, בלי ברירת מחדל (החלטה 2). בתצוגת
+   * המוקד, אחרי ששני הערכים דורגו, מתכווץ לשורה אחת עם "שנה" (תצוגה בלבד,
+   * אותם שדות). במסך הסיום תמיד מלא.
+   */
+  const painCollapsed = open && FEATURES.pain && !isFinish && painComplete && !painEditOpen && (
+    <Surface as="div" className="surface--row wk-pain" aria-label="כאב">
+      <ListRow
+        title={
+          <>
+            כאב · ברך <Num>{open.knee ?? DASH}</Num> · כתף <Num>{open.shoulder ?? DASH}</Num>
+          </>
+        }
+        end={
+          <Button variant="ghost" onClick={() => setPainEditOpen(true)}>
+            שנה
+          </Button>
+        }
+      />
+    </Surface>
+  );
+
+  const painBlock = painCollapsed || (open && FEATURES.pain && (
     <Surface aria-label="כאב" className="wk-pain">
       <SectionHeader
         level={3}
@@ -810,7 +835,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         <ChipSelect<number> label="כאב כתף" options={PAIN_SCALE} value={open.shoulder} onChange={(shoulder) => patch({ ...open, shoulder })} columns={6} />
       </div>
     </Surface>
-  );
+  ));
 
   const finisherFocus = open && finisherRow && FEATURES.cardio && (
     <CardioFocus

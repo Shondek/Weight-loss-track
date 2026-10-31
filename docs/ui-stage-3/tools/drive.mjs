@@ -65,6 +65,12 @@ async function runFinisher(page, minutesElapsed, scope = page) {
 }
 
 async function setPain(page, knee, shoulder) {
+  // גרסה חדשה: אחרי דירוג מלא הבלוק מכווץ — "שנה" פותח את הסולמות.
+  const change = page.locator('.wk-pain').getByRole('button', { name: 'שנה' });
+  if ((await change.count()) > 0) {
+    await change.click();
+    await settle(page, 150);
+  }
   if (knee !== null) await page.getByRole('group', { name: 'כאב ברך' }).getByRole('button', { name: String(knee), exact: true }).click();
   if (shoulder !== null) await page.getByRole('group', { name: 'כאב כתף' }).getByRole('button', { name: String(shoulder), exact: true }).click();
   await settle(page, 150);
