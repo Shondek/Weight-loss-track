@@ -97,3 +97,12 @@ Playwright 1.63 (Chromium המותקן), 390×844, DPR 2, `isMobile`, `he-IL`, `
 2. **שוויון "סגור יום → בטל" מול "לא נסגר"** (`tools/undo-equivalence.mjs`, `undo-equivalence.json`): **לא זהה.** אחרי סגירה וביטול נשארת ב-`days` רשומה `{ "d": "2026-10-28", "closed": false }` שלא קיימת כשהיום לא נסגר בכלל (14 → 15 רשומות). לא חותמת זמן — `setDayClosed(…, false)` משמיט את `closedAt`, אבל משאיר את הרשומה הריקה. זה ב-`src/lib/nutrition/days.ts`, מחוץ לגבולות השלב; **לא שונה דבר** — ממתין להחלטה.
 3. **0/7** — הצ'יפ מציג "אין שקילות" (טון "חסר") במקום "חלקי". צילום: `after/05-waist-sun-upcoming.png`.
 4. **תזכורת הרביעי** — הוסרה מהמסך. היא הציגה רק טקסט ("מותניים: יום רביעי — מדידת בוקר (האחרונה לפני N ימים)") בלי פעולה; האריח אומר "חסר — למדוד היום" + תאריך המדידה האחרונה, ונגיעה בו מובילה לטופס. `waistReminderDue`/`daysSinceWaist` ב-lib לא נגעו (הסיכום השבועי עדיין משתמש בכלל).
+
+## 9. שוויון ברמת החישובים ולטיפול עתידי
+
+**שוויון** (`src/lib/__tests__/daysEmptyRecord.test.ts`, 29 בדיקות): שני מסדים זהים, ההבדל היחיד רשומת `{ d, closed: false }` שנוצרת ב-"סגור יום → בטל" (דרך `setDayClosed` האמיתי), בשלושה מיקומים (היום, יום בשבוע המסוכם, יום בשבוע הנוכחי). פלט זהה ב: `buildWeekSummary`, `weekGaps`, `buildWeeklySummaryData` (כולל `closedDays`, ממוצעי קלוריות וחלבון, צעדים, שישי), `buildWeeklySummary`, `buildChatReport`, סטטוס היום במסך היום ובתזונה, `isDayClosed`, `daySummary`, `stepsOn`/`recentSteps`/`stepsWeek`, ספירת ימים סגורים במסך נתונים, `recordCount`, `firstDataDate`, `programStartWeek`, `mergeDb`, וסגירה חוזרת אחרי ביטול.
+
+**הבדל יחיד, מקובל:** `deviceHasRecords`/`canSwitchProfile` (`src/lib/profile.ts`) במכשיר שאין בו שום רשומה אחרת — הרשומה הריקה נספרת כ"יש נתונים" וחוסמת החלפת פרופיל (מסך נתונים). מקרה קצה, בכיוון הבטוח, וקיים כבר היום דרך "פתח מחדש" בתזונה.
+
+### לטיפול עתידי
+- **`setDayClosed` משאיר רשומת `{ d, closed: false }` ריקה אחרי פתיחה מחדש** (`src/lib/nutrition/days.ts`). עדיפות נמוכה. תיקון ב-lib בשלב נפרד: להסיר את הרשומה כשאין בה `closedAt`, `fridayTier` או `steps`, עם בדיקה ש-`deviceHasRecords` חוזר ל-false במכשיר ריק.
