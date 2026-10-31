@@ -692,7 +692,7 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
           <>
             <WeeklyChart weeks={weeks} />
             <p className="tiny muted" style={{ margin: '4px 0 0' }}>
-              נקודה חלולה = שבוע חלקי. הזמן זורם משמאל לימין.
+              נקודה חלולה = שבוע חלקי.
             </p>
           </>
         ) : (
