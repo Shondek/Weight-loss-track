@@ -31,7 +31,6 @@ import { targetFor } from '../lib/nutrition/targets';
 import { kcalText } from '../lib/nutrition/display';
 import { nextType } from '../lib/workouts';
 import {
-  daysSinceWaist,
   lastWaist,
   lastWeight,
   removeWaist,
@@ -44,14 +43,13 @@ import {
   waistInWeek,
   weekChange,
   weeklyAverages,
-  waistReminderDue,
   WEEK_LENGTH,
 } from '../lib/weights';
 import { MAX_DAY_STEPS, MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../lib/schema';
 import { programStartWeek } from '../lib/db';
 import { DASH } from '../lib/format';
 import { confidenceOf } from '../components/confidence';
-import { Button, DayDots, HeroValue, Icon, ListRow, MetricTile, Notice, Num, ScreenHeader, SectionHeader, StatusChip, Surface } from '../ui';
+import { Button, DayDots, HeroValue, Icon, ListRow, MetricTile, Num, ScreenHeader, SectionHeader, StatusChip, Surface, Toast } from '../ui';
 import { ChevronLeft, Circle, CircleCheck, Dumbbell, Pencil, Ruler, Utensils } from '../ui/icons';
 import { waistStatus, weekDots } from './todayView';
 
@@ -61,6 +59,8 @@ const CHIP_TONE = { high: 'done', mid: 'partial', low: 'missing' } as const;
 const MIN_FULL_WEEKS_FOR_CHART = 3;
 /** כמה זמן הכפתור אומר "נשמר" — אותו דפוס כמו "הועתק" ב-CopyBlock. */
 const SAVED_MS = 2500;
+/** כמה זמן טוסט "היום נסגר · בטל" נשאר — כמו טוסט הביטול במסך התזונה. */
+const UNDO_MS = 6000;
 
 type Props = ScreenProps & {
   /** מעבר לטאב אחר (אימונים, תזונה). אותו `setTab` של App. */
@@ -91,6 +91,9 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
   const [cardioAddedFor, setCardioAddedFor] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const savedTimer = useRef<number | undefined>(undefined);
+  /** טוסט אחרי "סגור יום": "היום נסגר · בטל" ל-6 שניות. */
+  const [closedToast, setClosedToast] = useState(false);
+  const toastTimer = useRef<number | undefined>(undefined);
   /** שורת שקילה פתוחה ב"שקילות אחרונות" — רק בה מוצג כפתור המחיקה. */
   const [openRecent, setOpenRecent] = useState<string | null>(null);
   /** טופס המותניים, יעד הנגיעה באריח. */
@@ -99,6 +102,7 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
   useEffect(() => {
     return () => {
       if (savedTimer.current !== undefined) window.clearTimeout(savedTimer.current);
+      if (toastTimer.current !== undefined) window.clearTimeout(toastTimer.current);
     };
   }, []);
 
@@ -149,8 +153,6 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
   const waistLast = useMemo(() => lastWaist(db.waist), [db.waist]);
   const waistExisting = db.waist.find((e) => e.d === waistDate) ?? null;
   const waistValue = waistDraft ?? waistExisting?.cm ?? waistLast?.cm ?? null;
-  const sinceWaist = useMemo(() => daysSinceWaist(db.waist, today), [db.waist, today]);
-  const waistDue = useMemo(() => waistReminderDue(db.waist, today), [db.waist, today]);
   const waistThisWeek = useMemo(() => waistInWeek(db.waist, week), [db.waist, week]);
   const waistPrev = useMemo(() => waistBeforeWeek(db.waist, week), [db.waist, week]);
   /** אריח המותניים: תמיד על השבוע של היום, לא על השבוע המנווט. */
@@ -168,6 +170,10 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
   const dayClosed = todayMeta?.closed === true;
   const toggleClosed = () => {
     void store.update('days', setDayClosed(db.days, today, !dayClosed, new Date().toISOString()));
+    // סגירה מציגה טוסט עם "בטל"; פתיחה (מהכפתור או מ"בטל") מסירה אותו.
+    if (toastTimer.current !== undefined) window.clearTimeout(toastTimer.current);
+    setClosedToast(!dayClosed);
+    if (!dayClosed) toastTimer.current = window.setTimeout(() => setClosedToast(false), UNDO_MS);
   };
 
   const upNext = useMemo(() => nextType(db.workouts), [db.workouts]);
@@ -372,7 +378,7 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
                   </Num>
                   {/* הצבע מקודד מלאות בלבד, לא כיוון. */}
                   <StatusChip tone={CHIP_TONE[confidenceOf(current.count)]}>
-                    {current.complete ? 'שבוע מלא' : 'חלקי'}
+                    {current.complete ? 'שבוע מלא' : current.count === 0 ? 'אין שקילות' : 'חלקי'}
                   </StatusChip>
                 </>
               }
@@ -494,13 +500,18 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
                 פתח מחדש
               </Button>
             ) : (
-              <Button variant="accent" onClick={toggleClosed}>
-                סגור יום
-              </Button>
+              <Button onClick={toggleClosed}>סגור יום</Button>
             )
           }
         />
       </Surface>
+
+      {/* "בטל" = אותה פונקציה של "פתח מחדש". צף מעל הניווט, 6 שניות. */}
+      {closedToast && dayClosed && (
+        <Toast actionLabel="בטל" onAction={toggleClosed}>
+          היום נסגר
+        </Toast>
+      )}
 
       {/* 6. אימון: הבא בסבב, כפי שמסך האימונים כבר מחשב. נגיעה מעבירה לשם. */}
       <Surface as="div" className="surface--row" aria-label="אימון">
@@ -609,22 +620,6 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
           </div>
         </div>
       </section>
-
-      {/* שלב 4: תזכורת מותניים ביום רביעי בבוקר, נעלמת כשיש מדידה לאותו רביעי.
-          צמודה לטופס שהיא מפנה אליו; האריח למעלה אומר את אותו דבר בקצרה. */}
-      {waistDue && (
-        <Notice icon={Ruler}>
-          מותניים: יום רביעי — מדידת בוקר.
-          {sinceWaist !== null && (
-            <>
-              {' '}
-              <span className="muted">
-                (האחרונה לפני <span className="num">{sinceWaist}</span> ימים)
-              </span>
-            </>
-          )}
-        </Notice>
-      )}
 
       <section className="section" ref={waistForm} tabIndex={-1} aria-label="מותניים — טופס">
         <div className="section__head">
