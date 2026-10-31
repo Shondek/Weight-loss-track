@@ -27,9 +27,20 @@ function walk(dir: string): string[] {
   return out;
 }
 
-const SW_TEMPLATE = (version: string, urls: string[]) => `/* נוצר אוטומטית ע"י scripts/sw-plugin.ts — אין לערוך ידנית. */
+/**
+ * קובץ המזון (1.3MB) מטופל בנפרד מרשימת ה-precache: הוא הקובץ הגדול
+ * והיחיד שהורדתו נקטעת בפועל (חיבור סלולרי איטי, PWA שנשלח לרקע באמצע
+ * ההתקנה). עד שלב 4 כישלון כזה נבלע ב-`catch` של ההתקנה ולא נוסה שוב
+ * לעולם — ראו `ensureFoods` בתבנית.
+ */
+const FOODS_URL = './nutrition/moh-foods.json';
+
+const SW_TEMPLATE = (version: string, urls: string[], foodsUrl: string | null) => `/* נוצר אוטומטית ע"י scripts/sw-plugin.ts — אין לערוך ידנית. */
 const CACHE = 'fatloss-${version}';
 const PRECACHE = ${JSON.stringify(urls, null, 2)};
+/** קובץ המזון: לא ברשימה שלמעלה, אלא ב-ensureFoods (ניסיונות חוזרים). null = אין קובץ בבנייה. */
+const FOODS = ${JSON.stringify(foodsUrl)};
+const FOODS_ATTEMPTS = 3;
 
 /**
  * ignoreVary הוא חובה, לא אופטימיזציה.
@@ -41,6 +52,31 @@ const PRECACHE = ${JSON.stringify(urls, null, 2)};
  */
 const MATCH = { ignoreVary: true };
 
+/**
+ * קובץ המזון נכנס למטמון באופן אמין, לא "בתקווה": עד שלוש הורדות רצופות
+ * בהתקנה; אם כולן נכשלו (או שה-service worker נהרג באמצע) — ניסיון נוסף
+ * בהפעלה ובכל פתיחה של האפליקציה (בקשת ניווט) כל עוד הקובץ חסר. כך אחרי
+ * הפתיחה הראשונה עם חיבור הקובץ נמצא במטמון, וכישלון חד-פעמי לא נשאר
+ * לצמיתות. כישלון עדיין לא מפיל את ההתקנה — המעטפת חשובה יותר.
+ */
+async function ensureFoods() {
+  if (!FOODS) return false;
+  const cache = await caches.open(CACHE);
+  if (await cache.match(FOODS, MATCH)) return true;
+  let lastErr = null;
+  for (let i = 0; i < FOODS_ATTEMPTS; i++) {
+    try {
+      const res = await fetch(new Request(FOODS, { cache: 'reload' }));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      await cache.put(FOODS, res);
+      return true;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -51,6 +87,7 @@ self.addEventListener('install', (event) => {
           cache.add(new Request(url, { cache: 'reload' })).catch(() => undefined),
         ),
       );
+      await ensureFoods().catch(() => undefined);
       await self.skipWaiting();
     })(),
   );
@@ -64,6 +101,7 @@ self.addEventListener('activate', (event) => {
         names.filter((n) => n.startsWith('fatloss-') && n !== CACHE).map((n) => caches.delete(n)),
       );
       await self.clients.claim();
+      await ensureFoods().catch(() => undefined);
     })(),
   );
 });
@@ -81,6 +119,8 @@ self.addEventListener('fetch', (event) => {
 
   // ניווט: תמיד מגישים את מעטפת האפליקציה. אין ראוטינג בצד שרת.
   if (req.mode === 'navigate') {
+    // כל פתיחה של האפליקציה: אם קובץ המזון עדיין לא במטמון — מורידים ברקע.
+    event.waitUntil(ensureFoods().catch(() => undefined));
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE);
@@ -140,7 +180,7 @@ export function serviceWorker(): Plugin {
       const hash = createHash('sha256');
       // גם הלוגיקה של ה-service worker נכנסת ל-hash, כדי ששינוי בה ייצור
       // דור cache חדש ולא ימוזג לתוך הישן.
-      hash.update(SW_TEMPLATE('', []));
+      hash.update(SW_TEMPLATE('', [], null));
       // index.html אינו חלק מה-bundle ב-Vite, לכן מוסיפים אותו במפורש
       // (וגם './' עבור שרתים שמגישים אותו מהתיקייה).
       const urls = new Set<string>(['./', './index.html']);
@@ -161,11 +201,14 @@ export function serviceWorker(): Plugin {
         else hash.update(Buffer.from(chunk.source));
       }
 
+      let foodsUrl: string | null = null;
       if (publicDir) {
         for (const full of walk(publicDir).sort()) {
           const rel = relative(publicDir, full).split(sep).join('/');
           if (rel === 'sw.js') continue;
-          urls.add(`./${rel}`);
+          // קובץ המזון: בתוך ה-hash (שינוי בו = דור cache חדש), אבל לא ברשימת ה-precache.
+          if (`./${rel}` === FOODS_URL) foodsUrl = FOODS_URL;
+          else urls.add(`./${rel}`);
           hash.update(rel);
           hash.update(readFileSync(full));
         }
@@ -174,7 +217,7 @@ export function serviceWorker(): Plugin {
       this.emitFile({
         type: 'asset',
         fileName: 'sw.js',
-        source: SW_TEMPLATE(hash.digest('hex').slice(0, 12), [...urls]),
+        source: SW_TEMPLATE(hash.digest('hex').slice(0, 12), [...urls], foodsUrl),
       });
     },
   };

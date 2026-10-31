@@ -42,7 +42,9 @@ npm run preview    # מגיש את dist/ לבדיקה
 ```
 
 הבנייה מייצרת גם `dist/sw.js` עם רשימת precache מדויקת של קבצי הבנייה
-(`scripts/sw-plugin.ts`). אין תלות ב-workbox.
+(`scripts/sw-plugin.ts`). אין תלות ב-workbox. קובץ המזון (`nutrition/moh-foods.json`,
+1.3MB) מטופל בנפרד: עד שלוש הורדות בהתקנה, ואם נכשלו — ניסיון נוסף בהפעלה
+ובכל פתיחה של האפליקציה עם חיבור, עד שהוא במטמון (שלב 4, `docs/ui-stage-4/REPORT.md`).
 
 ## פריסה — איך מגיעים לכתובת
 

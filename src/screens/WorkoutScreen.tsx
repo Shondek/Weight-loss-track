@@ -755,7 +755,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const onSetLogged = (ex: LoggedExercise, setIndex: number) => {
     const isLastSet = setIndex + 1 === ex.sets.length;
     const seconds = restSeconds(ex.type, isLastSet);
-    timer.start(seconds, isLastSet ? 'מנוחה לפני התרגיל הבא' : 'מנוחה בין סטים');
+    timer.start(seconds, isLastSet ? 'מנוחה לפני התרגיל הבא' : 'מנוחה');
   };
 
   /** חימום/אירובי: אותו טיימר, במשך שנקבע ידנית. אין מנוחה אחריו. */

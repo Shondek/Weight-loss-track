@@ -9,6 +9,8 @@ type Base = {
   lead?: IconComponent | undefined;
   /** בקצה: ערך, צ'יפ או פעולה. */
   end?: ReactNode;
+  /** הכותרת נשברת לשתי שורות לכל היותר (ואז שלוש נקודות) במקום להיחתך בשורה אחת. */
+  wrap?: boolean | undefined;
   className?: string | undefined;
 };
 
@@ -21,7 +23,7 @@ type Props =
  * עם `onTap` כל השורה היא כפתור.
  */
 export default function ListRow(props: Props) {
-  const { title, sub, lead, end, className } = props;
+  const { title, sub, lead, end, className, wrap } = props;
   const body = (
     <>
       {lead && (
@@ -30,21 +32,21 @@ export default function ListRow(props: Props) {
         </span>
       )}
       <span className="listrow__body">
-        <span className="listrow__title">{title}</span>
+        <span className={wrap ? 'listrow__title listrow__title--wrap' : 'listrow__title'}>{title}</span>
         {sub && <span className="listrow__sub">{sub}</span>}
       </span>
       {end && <span className="listrow__end">{end}</span>}
     </>
   );
   if (props.onTap) {
-    const { onTap, title: _t, sub: _s, lead: _l, end: _e, className: _c, ...rest } = props;
+    const { onTap, title: _t, sub: _s, lead: _l, end: _e, className: _c, wrap: _w, ...rest } = props;
     return (
       <button type="button" className={['listrow', 'listrow--tap', className ?? ''].filter(Boolean).join(' ')} onClick={onTap} {...rest}>
         {body}
       </button>
     );
   }
-  const { onTap: _o, title: _t, sub: _s, lead: _l, end: _e, className: _c, ...rest } = props;
+  const { onTap: _o, title: _t, sub: _s, lead: _l, end: _e, className: _c, wrap: _w, ...rest } = props;
   return (
     <div className={['listrow', className ?? ''].filter(Boolean).join(' ')} {...rest}>
       {body}

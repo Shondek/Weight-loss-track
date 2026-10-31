@@ -747,6 +747,7 @@ export default function DataScreen({ store, today }: ScreenProps) {
             <p className="tiny muted" style={{ margin: 0 }}>
               מזון שנשמר כאן מופיע בחיפוש במסך התזונה. מנה: בונים פעם אחת ממרכיבים ורושמים בגרמים.
               {foodIndex.status === 'error' && <span className="err"> מאגר המזון לא נטען.</span>}
+              {foodIndex.status === 'offline' && <span className="err"> מאגר המזון עוד לא נשמר במכשיר — פתח את האפליקציה פעם אחת עם חיבור.</span>}
             </p>
           </div>
         )}

@@ -1340,21 +1340,20 @@ input[type='file']::file-selector-button {
 }
 
 /* ============================================================
-   מסך התזונה — אותם tokens, אותה היררכיה: גיבור > פריטים מהירים > רישומים
+   מסך התזונה (שלב 4) — רישום מהיר ביד אחת: כותרת > גיבור > חיפוש >
+   מועדפים > אחרונים > רישומים. פאנלים מ-src/ui (Surface, ListRow…);
+   כאן רק מה שייחודי למסך. צבעים: tokens בלבד.
    ============================================================ */
 
 .nut {
   font-variant-numeric: tabular-nums;
 }
 
-.nut-card,
+/* מסך "נתונים": ניהול התזונה */
 .nut-manage {
   background: var(--surface-2);
   border-radius: var(--r-lg);
   padding: var(--sp-4);
-}
-
-.nut-manage {
   margin-top: var(--sp-4);
 }
 
@@ -1366,18 +1365,32 @@ input[type='file']::file-selector-button {
   margin: 0;
 }
 
-/* ---------- שורת תאריך ---------- */
+/* ---------- כותרת: "תזונה", תאריך, מצב היום עם הכפתור ---------- */
+
+.nut-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.nut-top__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+
+/* ---------- ניווט ימים (כמו היום): חץ · "היום · 30/10" · חץ ---------- */
 
 .nut-daybar {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding-top: var(--sp-2);
+  margin-top: calc(-1 * var(--sp-2));
 }
 
 .nut-daybar .btn--quiet {
   min-width: var(--tap);
-  font-size: 20px;
   color: var(--text-primary);
 }
 
@@ -1387,36 +1400,34 @@ input[type='file']::file-selector-button {
   font-size: 15px;
 }
 
-/* תג יום: צ'יפ סטטוס (מילה + צבע), בלי מסגרת */
-.nut-badge {
-  display: inline-block;
-  font-size: var(--t-micro);
-  font-weight: 500;
-  color: var(--status-missing);
-  background: var(--status-missing-soft);
-  border-radius: var(--r-chip);
-  padding: 0 var(--sp-2);
-  margin-inline-start: var(--sp-2);
-  line-height: 20px;
-  vertical-align: middle;
-}
-
-.nut-badge--closed {
-  color: var(--status-done);
-  background: var(--status-done-soft);
-}
-
-/* ---------- גיבור ---------- */
+/* ---------- גיבור: חלבון שנשאר (64px), פס, קלוריות מול היעד והרצפה ---------- */
 
 .nut-hero {
   display: grid;
-  gap: var(--sp-4);
-  padding: var(--sp-5) var(--sp-4);
+  gap: var(--sp-3);
 }
 
-.nut-hero__row {
+.nut-hero__label {
+  margin: 0;
+  font-size: var(--t-label);
+  font-weight: 500;
+  color: var(--text-quiet);
+}
+
+.nut-hero__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  font-size: var(--t-sub);
+  color: var(--text-secondary);
+}
+
+.nut-hero__kcal {
   display: grid;
   gap: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
 }
 
 .nut-hero__head {
@@ -1426,32 +1437,21 @@ input[type='file']::file-selector-button {
   gap: var(--sp-3);
 }
 
-.nut-hero__label {
-  font-size: var(--t-label);
-  font-weight: 500;
-  color: var(--text-quiet);
-}
-
-.nut-hero__value {
-  font-size: 36px;
-  font-weight: 300;
+.nut-hero__kcalval {
+  font-size: var(--t-num);
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
-.nut-hero__target,
 .nut-hero__unit {
-  font-size: 15px;
+  font-size: var(--t-sub);
   font-weight: 400;
   color: var(--text-secondary);
-  letter-spacing: 0;
 }
 
 .nut-hero__note {
   margin: 0;
-  font-size: var(--t-label);
-  color: var(--text-secondary);
 }
 
 .nut-tone--high {
@@ -1470,124 +1470,39 @@ input[type='file']::file-selector-button {
   border-top: 1px solid var(--line);
 }
 
-/* ---------- טוסט (ביטול / הצעה): בהיר על כהה, כמו .toast ---------- */
+/* ---------- קריאטין: שורה אחת, נגיעה = סימון ---------- */
 
-.nut-toast {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  background: var(--toast-bg);
-  color: var(--toast-text);
-  border-radius: var(--r-md);
-  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
-  font-size: var(--t-sub);
+.nut-creatine .listrow.is-on .listrow__lead {
+  color: var(--status-done);
 }
 
-.nut-toast .btn {
-  background: var(--toast-action-bg);
-  color: inherit;
-  border-radius: var(--r-sm);
-  min-height: var(--tap-min);
-  padding: 0 var(--sp-3);
-  font-weight: 500;
-}
+/* ---------- חיפוש: שדה 48px עם אייקון, "בחוץ" לידו ---------- */
 
-.nut-toast--offer {
-  background: var(--status-partial-soft);
-  color: var(--text-primary);
-}
-
-.nut-toast--offer .btn {
-  background: var(--surface-3);
-}
-
-/* ---------- מה שאני אוכל ---------- */
-
-.nut-quick {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.nut-searchcard {
   display: grid;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
 }
 
-.nut-quick__item {
+.nut-searchrow {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  border-radius: var(--r-md);
-  padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-3);
-  background: var(--surface-3);
 }
 
-.nut-quick__tap {
-  appearance: none;
-  border: 0;
-  background: none;
+.nut-search__wrap {
   flex: 1;
   min-width: 0;
-  min-height: var(--tap);
-  padding: var(--sp-1) 0;
-  text-align: start;
-  display: grid;
-  gap: 2px;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.nut-quick__tap:active {
-  opacity: 0.7;
-}
-
-.nut-quick__name {
-  font-size: 15px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ---------- בקרת כמות: −/+ בגודל מגע מלא (44), על המשטח ---------- */
-
-.nut-qty {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 0;
-  flex: 0 0 auto;
-  background: var(--surface-2);
-  border-radius: var(--r-md);
 }
 
-.nut-qty--grams {
-  background: none;
-  gap: var(--sp-1);
+.nut-search__icon {
+  position: absolute;
+  inset-inline-start: var(--sp-3);
+  color: var(--text-quiet);
+  pointer-events: none;
 }
-
-.nut-qty .btn--step {
-  width: var(--tap-min);
-  min-width: var(--tap-min);
-  height: var(--tap-min);
-  min-height: var(--tap-min);
-  flex-basis: var(--tap-min);
-  background: none;
-  border-radius: var(--r-md);
-}
-
-.nut-qty__value {
-  min-width: 40px;
-  text-align: center;
-  font-size: 15px;
-}
-
-.nut-qty__input {
-  width: 72px;
-  min-height: var(--tap-min);
-  padding: 4px var(--sp-2);
-  border-radius: var(--r-sm);
-}
-
-/* ---------- חיפוש ---------- */
 
 .nut-search,
 .nut input[type='search'] {
@@ -1598,38 +1513,45 @@ input[type='file']::file-selector-button {
   border: 0;
   border-radius: var(--r-md);
   padding: 10px var(--sp-3);
+  padding-inline-start: calc(var(--sp-3) + var(--icon) + var(--sp-2));
   min-height: var(--tap);
   width: 100%;
   appearance: none;
 }
 
-.nut .results {
-  max-height: 40vh;
+.nut-offline {
+  margin: 0;
+}
+
+.nut-offline .notice__icon {
+  align-self: flex-start;
+  padding-top: 2px;
+}
+
+.nut-results {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--sp-2);
+  background: var(--surface-1);
+  border-radius: var(--r-md);
+  max-height: 46vh;
+  overflow-y: auto;
 }
 
 .nut-results__title {
-  margin: var(--sp-2) 0 0;
+  margin: 0;
 }
 
-.nut-selected {
-  margin-top: var(--sp-3);
-  background: var(--surface-3);
-  border-radius: var(--r-md);
-  padding: var(--sp-2) var(--sp-3);
-  display: grid;
-  gap: var(--sp-2);
-}
-
-.nut-selected .nut-qty {
-  background: var(--surface-1);
-}
-
-.nut-selected__head,
-.nut-selected__row {
+.nut-noresults {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--sp-2);
   flex-wrap: wrap;
+}
+
+.nut-out {
+  padding-top: var(--sp-1);
 }
 
 .nut-two {
@@ -1638,14 +1560,62 @@ input[type='file']::file-selector-button {
   gap: var(--sp-2);
 }
 
-/* ---------- רישומים ---------- */
+/* ---------- רשימות: אחרונים, שייקים, רישומי היום — ListRow בלי כרטיס לכל שורה ---------- */
+
+.nut-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nut-list .listrow {
+  padding-inline: 0;
+}
+
+.nut-list > li + li .listrow {
+  border-top: 1px solid var(--line);
+}
+
+.nut-list .listrow__sub {
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.nut-plus {
+  color: var(--text-quiet);
+}
+
+.nut-protein {
+  font-size: var(--t-sub);
+  color: var(--text-primary);
+}
+
+.nut-rownums {
+  font-size: var(--t-sub);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.listrow.is-adhoc .listrow__title {
+  color: var(--text-secondary);
+}
+
+.nut-shakes {
+  display: grid;
+}
+
+.nut-shakes .disc + .disc {
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- רישומים לפי ארוחה ---------- */
 
 .nut-meal + .nut-meal {
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-3);
 }
 
 .nut-meal__title {
-  margin: 0 0 var(--sp-1);
+  margin: 0;
   font-size: var(--t-label);
   font-weight: 500;
   color: var(--text-secondary);
@@ -1654,72 +1624,7 @@ input[type='file']::file-selector-button {
   align-items: baseline;
 }
 
-.nut-log {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.nut-row {
-  border-top: 1px solid var(--line);
-}
-
-.nut-row:first-child {
-  border-top: 0;
-}
-
-.nut-row.is-open {
-  background: var(--surface-3);
-  margin-inline: calc(-1 * var(--sp-3));
-  padding-inline: var(--sp-3);
-  border-radius: var(--r-md);
-}
-
-.nut-row__tap {
-  appearance: none;
-  border: 0;
-  background: none;
-  width: 100%;
-  min-height: var(--tap);
-  padding: var(--sp-2) 0;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  text-align: start;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.nut-row__name {
-  flex: 1;
-  min-width: 0;
-  font-size: 15px;
-}
-
-.nut-row__nums {
-  flex: 0 0 auto;
-  font-size: var(--t-sub);
-  color: var(--text-primary);
-}
-
-.nut-row.is-adhoc .nut-row__name {
-  color: var(--text-secondary);
-}
-
-.nut-row__edit {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 0 0 var(--sp-3);
-}
-
-.nut-row__edit .nut-qty {
-  background: var(--surface-2);
-}
-
-/* ---------- צ'יפים (ארוחה, דרגת שישי, RIR): גובה מגע מלא ---------- */
+/* ---------- צ'יפים (דרגת שישי): גובה מגע מלא ---------- */
 
 .nut-chips {
   display: flex;
@@ -1739,10 +1644,6 @@ input[type='file']::file-selector-button {
   background: var(--surface-3);
   color: var(--text-primary);
   cursor: pointer;
-}
-
-.nut-row.is-open .nut-chip {
-  background: var(--surface-2);
 }
 
 .nut-chip[aria-pressed='true'] {
@@ -1782,38 +1683,6 @@ input[type='file']::file-selector-button {
   border-bottom: 1px solid var(--line);
 }
 
-/* ---------- יחידות מנה ---------- */
-
-.nut-qty__value--unit {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.1;
-  min-width: 56px;
-}
-
-.nut-qty__unit {
-  font-size: var(--t-chart);
-  color: var(--text-quiet);
-  white-space: nowrap;
-}
-
-/* מעבר גרמים ⇄ יחידה: קטן, שקט, בגובה מגע */
-.nut-qty__toggle {
-  appearance: none;
-  font: inherit;
-  font-size: var(--t-micro);
-  min-height: var(--tap-min);
-  min-width: var(--tap-min);
-  padding: 0 var(--sp-2);
-  border: 0;
-  border-radius: var(--r-sm);
-  background: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  text-decoration: underline dotted;
-}
-
 /* ---------- תכולת מנה ---------- */
 
 .nut-comp {
@@ -1827,19 +1696,36 @@ input[type='file']::file-selector-button {
   min-width: 0;
 }
 
-.nut-comp--full {
-  white-space: normal;
+/* ---------- חלונית הכמות ---------- */
+
+.sheet__note {
+  margin: calc(-1 * var(--sp-2)) 0 0;
 }
 
-.nut-result {
-  min-width: 0;
-}
-
-.nut-row__about {
-  width: 100%;
+.sheet__calc {
   margin: 0;
-  display: grid;
-  gap: 2px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--t-body);
+}
+
+.sheet__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.sheet__row .btn[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.chips--center {
+  justify-content: center;
+}
+
+.ic--filled {
+  fill: currentColor;
 }
 
 /* ---------- מסך נתונים: מזונות שלי ---------- */
@@ -1888,46 +1774,6 @@ input[type='file']::file-selector-button {
   color: var(--status-done);
   font-weight: 500;
   padding-inline: var(--sp-2);
-}
-
-/* קריאטין: שורה אחת, נגיעה = סימון. ○ / ✓ */
-.nut-creatine {
-  padding: var(--sp-1) var(--sp-3);
-}
-
-.nut-creatine__tap {
-  appearance: none;
-  border: 0;
-  background: none;
-  width: 100%;
-  min-height: var(--tap);
-  padding: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  font: inherit;
-  font-size: 15px;
-  color: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
-.nut-creatine__mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--surface-3);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-quiet);
-  font-size: 15px;
-  flex: 0 0 28px;
-}
-
-.nut-creatine__mark.is-on {
-  background: var(--status-done);
-  color: var(--on-accent);
 }
 
 /* ============================================================

@@ -6,6 +6,8 @@ import {
   Disclosure,
   ProgressSegments,
   HeroValue,
+  QtyStepper,
+  QuickTile,
   Icon,
   ListRow,
   MetricTile,
@@ -86,6 +88,7 @@ type KitTab = 'weight' | 'nutrition' | 'workout' | 'checkin' | 'data';
 export default function Kit() {
   const [val, setVal] = useState<number | null>(94.4);
   const [sheet, setSheet] = useState(false);
+  const [qty, setQty] = useState(150);
   const [tab, setTab] = useState<KitTab>('workout');
   const iconEntries = Object.entries(icons) as [string, IconComponent][];
 
@@ -219,6 +222,21 @@ export default function Kit() {
       <Toast placement="static" actionLabel="בטל" onAction={() => undefined}>
         יוגורט יווני · <Num>200</Num> ג׳ · נרשם
       </Toast>
+
+      <SectionHeader title="QtyStepper" aside="−/+ 56px · המספר הוא השדה" />
+      <Surface>
+        <QtyStepper label="כמות" value={qty} onChange={setQty} step={10} min={1} max={2000} decimals={0} unit="ג׳" inputMode="numeric" />
+      </Surface>
+
+      <SectionHeader title="QuickTile" aside="מועדפים · שם בשתי שורות" />
+      <div className="qtiles">
+        <QuickTile value={11} unit="ג׳" title="קוטג׳ 5%" sub="100 ג׳" onTap={() => undefined} />
+        <QuickTile value={26} unit="ג׳" title="טונה במים בשמן זית ללא מלח" sub="112 ג׳" onTap={() => undefined} />
+        <QuickTile value={40} unit="ג׳" title="PRO 40 יטבתה" sub="×1" onTap={() => undefined} />
+      </div>
+      <Surface variant="panel" className="surface--row">
+        <ListRow wrap title="סלט ירקות עם שמן זית, לימון ומלח — שם ארוך שלא נחתך בשורה אחת" sub="150 ג׳ · 120 קק״ל · 6 ימים" end={<Num>5</Num>} onTap={() => undefined} />
+      </Surface>
 
       <SectionHeader title="Sheet" />
       <Button onClick={() => setSheet(true)}>פתח חלונית</Button>

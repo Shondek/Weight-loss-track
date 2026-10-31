@@ -29,7 +29,7 @@ export type RestTimer = {
   running: boolean;
   paused: boolean;
   kind: TimerKind;
-  /** מה מחכה בסוף — "מנוחה בין סטים" / "מנוחה לפני התרגיל הבא" / "חימום". */
+  /** מה מחכה בסוף — "מנוחה" / "מנוחה לפני התרגיל הבא" / "חימום". */
   label: string;
   /** true בשלוש שניות שאחרי הסיום, לחיווי במסך. */
   justFinished: boolean;
