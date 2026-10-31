@@ -653,159 +653,331 @@ button {
   gap: var(--sp-2);
 }
 
-/* ---------- תרגיל במוקד ---------- */
+/* ---------- תרגיל במוקד (שלב 3: תרגיל אחד במוקד, רישום מהיר) ---------- */
 
-.focusnav {
+/* כותרת הסשן: חץ הקודם · "אימון C · תרגיל 3 מתוך 8" · חץ הבא. */
+.wk-head {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  flex-wrap: wrap;
-  margin-top: var(--sp-4);
-}
-
-.focusnav__dots {
-  display: flex;
   gap: var(--sp-1);
-  flex-wrap: wrap;
 }
 
-/* נקודות ניווט בגודל מגע מלא; נשברות לשורה שנייה כשצריך. */
-.focusnav__dot {
+.wk-head__title {
   appearance: none;
-  width: var(--tap);
-  height: var(--tap);
-  padding: 0;
   border: 0;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  color: var(--text-secondary);
-  font-size: var(--t-label);
-  font-variant-numeric: tabular-nums;
+  background: none;
+  font: inherit;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  text-align: center;
+  padding: var(--sp-1);
+  border-radius: var(--r-md);
+  cursor: pointer;
 }
 
-.focusnav__dot.is-done {
-  background: var(--status-done-soft);
-  color: var(--status-done);
-}
-
-.focusnav__dot.is-current {
-  background: var(--accent);
-  color: var(--on-accent);
+.wk-head__step {
+  font-size: 18px;
   font-weight: 500;
 }
 
-/* כרטיס התרגיל: שקוע לתוך הרקע בתוך פאנל האימון — המקום שבו מזינים. */
+/* תאריך · סגור: שורה שקטה מתחת לפס ההתקדמות. */
+.wk-meta .disc__head {
+  min-height: var(--tap-min);
+}
+
+/* חימום בתוך שורה מקופלת: הכותרת כבר בשורה, לא חוזרים עליה. */
+.disc__panel > .focus > .focus__name {
+  display: none;
+}
+
+/* כרטיס התרגיל יושב בתוך Surface; אין פאנל בתוך פאנל. */
 .focus {
-  margin-top: var(--sp-3);
-  background: var(--surface-1);
-  border-radius: var(--r-lg);
-  padding: var(--sp-4);
+  display: grid;
+  gap: var(--sp-3);
 }
 
 .focus__name {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 500;
+  line-height: 1.2;
   margin: 0;
 }
 
-/* ▶ לסרטון הדגמה. אזור מגע מלא בלי להגדיל את הכותרת. */
-.focus__video {
-  display: inline-flex;
+.focus__swapped {
+  margin: calc(-1 * var(--sp-2)) 0 0;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: var(--tap);
-  min-height: var(--tap);
-  margin-block: calc(-1 * var(--sp-2));
-  margin-inline-start: var(--sp-1);
-  vertical-align: middle;
+  gap: var(--sp-2);
+}
+
+/* "3×8–12 · RIR 2 · מנוחה 1:30 · Smith Machine" */
+.focus__spec {
+  margin: calc(-1 * var(--sp-2)) 0 0;
   font-size: var(--t-sub);
   color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: var(--r-sm);
-}
-
-.focus__video:hover,
-.focus__video:focus-visible {
-  color: var(--text-primary);
-  background: var(--surface-3);
-}
-
-.focus__meta {
-  margin-top: 2px;
 }
 
 .focus__muscles {
-  margin: 2px 0 0;
+  margin: calc(-1 * var(--sp-2)) 0 0;
+}
+
+.focus__notes {
+  margin-top: calc(-1 * var(--sp-2));
 }
 
 .focus__note {
-  margin: var(--sp-3) 0 0;
+  margin: 0 0 var(--sp-2);
   border-inline-start: 3px solid var(--status-missing);
   padding-inline-start: var(--sp-3);
 }
 
-.focus__history {
-  margin: var(--sp-3) 0 0;
-  border-inline-start: 3px solid var(--line-2);
-  padding-inline-start: var(--sp-3);
-}
-
-.focus__history ul {
-  margin: 0;
-}
-
-/* כותרת האקורדיון: שורה מלאה, אזור מגע מלא, בלי משטח. */
-.focus__history-toggle {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: var(--tap);
+/* קישור לסרטון: כפתור רפאים עם אייקון, אזור מגע מלא. */
+.focus__video {
+  text-decoration: none;
   padding-inline: 0;
-  font-size: var(--t-sub);
 }
 
-.focus__history-toggle + div {
-  margin-top: var(--sp-1);
-}
-
-/* הזנה: משקל (עמודה אחת לתרגיל) ליד חזרות לכל סט. */
-.focus__entry {
-  margin-top: var(--sp-4);
+/* משקל אחד לכל הסטים (R2). */
+.focus__weight {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
-  gap: var(--sp-3) var(--sp-2);
-  align-items: start;
+  gap: var(--sp-1);
 }
 
+.focus__weight-label {
+  font-size: var(--t-label);
+  color: var(--text-secondary);
+}
+
+.focus__weight .stepper input[type='number'] {
+  font-size: 22px;
+}
+
+.focus__bw {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-4);
+  background: var(--surface-3);
+  border-radius: var(--r-md);
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+/* שורות הסטים. */
 .focus__sets {
   display: grid;
   gap: var(--sp-2);
 }
 
-.focus__set {
+.set {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.set__row {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
 }
 
-.focus__setno {
-  min-width: 36px;
-  font-size: var(--t-label);
+.set__no {
+  min-width: 24px;
+  font-size: var(--t-sub);
+  color: var(--text-quiet);
+  text-align: center;
 }
 
-.focus__reps {
+.set__reps {
   flex: 1;
   min-width: 0;
 }
 
-/* שדות גדולים — הזנה באגודל אחד, בעמידה: 52px, מקלדת מספרים. */
-.focus__set input[type='number'] {
-  min-height: 52px;
-  font-size: 19px;
+/* סט שנרשם: "✓ 45 × 8" — שורה מלאה, נגיעה פותחת לעריכה. */
+.set__done {
+  appearance: none;
+  border: 0;
+  font: inherit;
+  flex: 1;
+  min-height: var(--tap);
+  border-radius: var(--r-md);
+  background: var(--status-done-soft);
+  color: var(--status-done);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.focus__weight .stepper input[type='number'] {
+/* "רשום סט 2 · 45 × 8": המבטא היחיד במסך. */
+.set__log {
+  justify-content: center;
+}
+
+.set__log-val {
+  opacity: 0.8;
+  font-weight: 400;
+  margin-inline-start: var(--sp-1);
+}
+
+/* פאנל ההצעה: משטח 3 עם פס סטטוס — מלא = עלייה, צפחה = אותו משקל, ענבר = ירידה / RIR חסר / כיול. */
+.wk-suggest {
+  border-inline-start: 3px solid var(--status-missing);
+  padding: var(--sp-3) var(--sp-3);
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.wk-suggest--done {
+  border-inline-start-color: var(--status-done);
+}
+
+.wk-suggest--partial {
+  border-inline-start-color: var(--status-partial);
+}
+
+.wk-suggest__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.wk-suggest__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-label);
+  font-weight: 500;
+  color: var(--text-quiet);
+}
+
+/* ההצעה עצמה — המספר השני בגודלו במסך, אחרי שם התרגיל. */
+.wk-suggest__value {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.wk-suggest__text {
   font-size: 22px;
+  font-weight: 400;
+}
+
+/* שורת היסטוריה: עברית עם מספרים — RTL רגיל, ספרות ברוחב אחיד. */
+.wk-hist {
+  font-variant-numeric: tabular-nums;
+}
+
+.wk-suggest__x,
+.wk-suggest__unit {
+  font-size: var(--t-sub);
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.wk-suggest__reason {
+  margin: 0;
+}
+
+/* "פעם קודמת": שורה אחת שנפתחת להיסטוריה ולגרף. */
+.wk-prev {
+  margin-top: var(--sp-1);
+  border-top: 1px solid var(--line);
+}
+
+/* RIR בסט האחרון: שקט עד הסט האחרון, ואז השלב הבא. */
+.wk-rir {
+  display: grid;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+.wk-rir .chipbtn {
+  flex: 1;
+}
+
+.wk-rir.is-due .chipsel__label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* דלג ואחזור / החלף: שקטים, ליד "התרגיל הבא". */
+.wk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+}
+
+/* כאב: שתי שורות קומפקטיות, גלויות, בלי ברירת מחדל. */
+.wk-pain .section__head {
+  margin-bottom: var(--sp-2);
+}
+
+/* סיכום הסיום. */
+.wk-summary {
+  margin: var(--sp-3) 0 0;
+}
+
+.wk-summary__warn {
+  color: var(--status-partial);
+}
+
+/* מסך הפתיחה: "התחל אימון X" גדול, ומתחתיו בחירה ידנית. */
+.wk-start {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.wk-start .top__eyebrow {
+  margin: 0;
+}
+
+.wk-start__title {
+  font-size: var(--t-sub);
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.wk-start__other {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.wk-start__other .btn {
+  min-width: 56px;
+}
+
+/* "הוחלף מ-…" — סימון עובדתי, בענבר */
+.wk-swapped {
+  color: var(--status-partial);
+}
+
+/* תקציב אירובי: מעל התקציב בענבר (נתון, לא אזהרה) */
+.wk-budget--over {
+  color: var(--status-partial);
+}
+
+.wk-budget__flag {
+  font-weight: 500;
 }
 
 /* ---------- חימום / אירובי סיום ---------- */
@@ -1674,107 +1846,6 @@ input[type='file']::file-selector-button {
 
 .nut-foods__details {
   padding-top: var(--sp-1);
-}
-
-/* ============================================================
-   מסך אימונים — RIR, הצעה, תקציב אירובי, החלפה/דילוג
-   ============================================================ */
-
-.wk-rir {
-  display: grid;
-  gap: var(--sp-1);
-  margin-top: var(--sp-3);
-}
-
-.wk-rir .nut-chip {
-  min-height: var(--tap);
-  min-width: var(--tap);
-}
-
-/* הצעה לאימון הבא: משטח 3 עם פס סטטוס — מלא = עלייה, צפחה = אותו משקל, ענבר = ירידה / RIR חסר */
-.wk-suggest {
-  margin-top: var(--sp-3);
-  background: var(--surface-3);
-  border-inline-start: 3px solid var(--status-missing);
-  border-radius: var(--r-md);
-  padding: var(--sp-2) var(--sp-3);
-  display: grid;
-  gap: var(--sp-1);
-}
-
-.wk-suggest--up {
-  border-inline-start-color: var(--status-done);
-}
-
-.wk-suggest--down,
-.wk-suggest--unknown {
-  border-inline-start-color: var(--status-partial);
-}
-
-.wk-suggest__head {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: 15px;
-}
-
-.wk-suggest .btn--outlined {
-  background: var(--surface-2);
-}
-
-.wk-suggest__warn {
-  color: var(--status-partial);
-}
-
-/* תקציב אירובי: מעל התקציב בענבר (נתון, לא אזהרה) */
-.wk-budget--over {
-  color: var(--status-partial);
-}
-
-.wk-budget__flag {
-  font-weight: 500;
-}
-
-/* דלג ואחזור / החלף: פעולות משניות, שקטות, בתחתית הכרטיס. */
-.wk-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  margin-top: var(--sp-4);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--line);
-}
-
-.wk-actions .btn {
-  font-size: var(--t-sub);
-}
-
-/* "הוחלף מ-…" — סימון עובדתי, בענבר */
-.wk-swapped {
-  color: var(--status-partial);
-}
-
-/* רשימת החלופות */
-.wk-alts {
-  margin-top: var(--sp-2);
-  background: var(--surface-3);
-  border-radius: var(--r-md);
-  padding: var(--sp-1) var(--sp-2);
-}
-
-.wk-alt {
-  width: 100%;
-  display: grid;
-  gap: 2px;
-  justify-items: start;
-  text-align: start;
-  padding: var(--sp-2) var(--sp-1);
-  color: var(--text-primary);
-}
-
-.wk-alt__name {
-  font-size: 15px;
-  font-weight: 500;
 }
 
 /* צעדים: שורת שבעת הימים האחרונים */

@@ -27,6 +27,8 @@ import { workoutFeatures } from '../lib/profile';
 import { suggestNext } from '../lib/progression';
 import {
   blankLoggedExercise,
+  cardioMinutesDone,
+  cardioModeLabel,
   lastExercise,
   moveToEnd,
   openingWeight,
@@ -95,7 +97,6 @@ import { programStartWeek } from '../lib/db';
 import { clean, DASH } from '../lib/format';
 import WeekNav from '../components/WeekNav';
 import DateField from '../components/DateField';
-import Choice from '../components/Choice';
 import ConfirmButton from '../components/ConfirmButton';
 import ExerciseFocus from '../components/ExerciseFocus';
 import CardioFocus from '../components/CardioFocus';
@@ -103,6 +104,9 @@ import StandaloneCardioEditor from '../components/StandaloneCardioEditor';
 import CardioSummary from '../components/CardioSummary';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
+import { useWakeLock } from '../hooks/useWakeLock';
+import { Button, ChipSelect, Disclosure, ListRow, Num, ProgressSegments, SectionHeader, Sheet, StatusChip, Surface, Toast, type Segment } from '../ui';
+import { ChevronLeft, ChevronRight, Timer } from '../ui/icons';
 import {
   readCardioSession,
   readEditor,
@@ -119,7 +123,8 @@ const HISTORY_COUNT = 12;
  * (שורת הסיום, הכרטיס העצמאי, התקציב) ובלי המונה "n/3".
  */
 const FEATURES = workoutFeatures(activeProfile());
-const PAIN_SCALE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+/** סולם הכאב 0–10 — אותו סולם ואותם שדות (`knee`, `shoulder`) כמו קודם. בלי ברירת מחדל. */
+const PAIN_SCALE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => ({ value: v, label: String(v) }));
 /** כל כמה זמן בודקים אם ריצה פעילה עברה את הדדליין (חיתוך אוטומטי). */
 const SESSION_CHECK_MS = 5000;
 
@@ -269,7 +274,20 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
    */
   const [openId, setOpenId] = useState<string | null>(() => readEditor()?.openId ?? null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  /**
+   * אותו מפתח ואותו מבנה כמו קודם: `focus` הוא אינדקס בשורות האימון
+   * (0 = חימום, 1..N כוח, האחרון = אירובי סיום). בתצוגת המוקד החימום הוא
+   * שורה מקופלת בראש, ולכן 0 שנשמר בגרסה הקודמת נפתח על התרגיל הראשון עם
+   * החימום פתוח — אותו מקום, אותו מידע.
+   */
   const [focus, setFocus] = useState(() => readEditor()?.focus ?? 0);
+  const [warmupOpen, setWarmupOpen] = useState(() => (readEditor()?.focus ?? 1) === 0);
+  /** שורת התאריך פתוחה לעריכה. */
+  const [dateOpen, setDateOpen] = useState(false);
+  /** רשימת התרגילים (מהכותרת) פתוחה. */
+  const [listOpen, setListOpen] = useState(false);
+  /** תרגילים שדולגו בסשן הזה ("דלג ואחזור") — לסימון "ממתין". במסך בלבד. */
+  const [skippedIds, setSkippedIds] = useState<readonly string[]>([]);
   /**
    * אירובי עצמאי פתוח לעריכה. טיוטה במסך עד "שמור" — הטופס נפתח ממולא,
    * ולכן "ריק = טיוטה" של האימון לא חל כאן. `existing` = כבר באחסון.
@@ -307,16 +325,20 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const rows = open
     ? exercisesFor(open, db.workouts).filter((r) => FEATURES.cardio || r.exerciseId !== FINISHER_ID)
     : [];
-  const current = rows[Math.min(focus, Math.max(0, rows.length - 1))] ?? null;
-  /** מספור לתצוגה: חימום = 0, תרגילי הכוח 1..N, אירובי סיום = "א". */
-  const strengthTotal = rows.filter((r) => !isCardio(r)).length;
-  const dotLabel = (i: number): string => {
-    const r = rows[i];
-    if (!r) return '';
-    if (r.exerciseId === WARMUP_ID) return '0';
-    if (isCardio(r)) return 'א';
-    return String(rows.slice(0, i + 1).filter((x) => !isCardio(x)).length);
-  };
+  const warmupRow = rows.find((r) => r.exerciseId === WARMUP_ID) ?? null;
+  const finisherRow = rows.find((r) => r.exerciseId === FINISHER_ID) ?? null;
+  /** תרגילי הכוח בסדר הביצוע (אינדקסים 1..N בשורות). */
+  const strengthRows = rows.filter((r) => !isCardio(r));
+  const strengthTotal = strengthRows.length;
+  /** שלב הסיום: שורת האירובי כשיש, אחרת אחרי התרגיל האחרון. */
+  const finishIndex = finisherRow ? rows.length - 1 : rows.length;
+  /** האינדקס שבמוקד: 1..N תרגיל, finishIndex = סיום. 0 (חימום) → התרגיל הראשון. */
+  const currentIndex = open ? Math.min(Math.max(focus, 1), finishIndex) : 0;
+  const isFinish = open !== null && currentIndex >= finishIndex;
+  const current = isFinish ? null : (rows[currentIndex] ?? null);
+  /** מספר התרגיל לתצוגה: "תרגיל 3 מתוך 8". */
+  const currentNo = current ? strengthRows.indexOf(current) + 1 : strengthTotal;
+  useWakeLock(open !== null);
 
   // אימון שנמחק מבחוץ (ייבוא, מחיקה גורפת) לא נשאר פתוח על ריק.
   // מטפל גם במזהה שהוחזר מהאחסון ושייך לאימון שכבר לא קיים.
@@ -327,6 +349,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   useEffect(() => {
     writeEditor(openId ? { openId, focus } : null);
   }, [openId, focus]);
+
+  /** מעבר תרגיל מתחיל מראש המסך — התרגיל החדש תמיד נראה מיד. */
+  const openKey = open?.id ?? null;
+  useEffect(() => {
+    if (openKey) window.scrollTo({ top: 0 });
+  }, [openKey, currentIndex]);
 
   useEffect(() => {
     writePrefs({ historyOpen });
@@ -477,7 +505,9 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     const d = defaultDate;
     setOpenId(null);
     setCardioOpen(null);
-    setFocus(0);
+    setFocus(1);
+    setWarmupOpen(false);
+    setSkippedIds([]);
     setDraft({
       schemaVersion: WORKOUT_SCHEMA_VERSION,
       id: makeWorkoutId(d, t, newId()),
@@ -629,6 +659,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     setDraft(null);
     setOpenId(null);
     setSkipUndo(null);
+    setSkippedIds([]);
+    setListOpen(false);
     skipRestTimer();
   };
 
@@ -639,12 +671,14 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const skipExercise = (ex: LoggedExercise) => {
     if (!open) return;
     setSkipUndo({ ids: orderOf(rows), name: ex.n });
+    setSkippedIds((ids) => (ids.includes(ex.exerciseId) ? ids : [...ids, ex.exerciseId]));
     patch({ ...open, ex: moveToEnd(rows, ex.exerciseId) });
   };
 
   const undoSkip = () => {
     if (!open || !skipUndo) return;
     patch({ ...open, ex: reorderLike(rows, skipUndo.ids) });
+    setSkippedIds((ids) => ids.filter((id) => !skipUndo.ids.includes(id) || rows.some((r) => r.exerciseId === id && hasData(r))));
     setSkipUndo(null);
   };
 
@@ -684,7 +718,9 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     setOpenId(w.id);
     setWeek(weekStart(w.d));
     setExpanded(null);
-    setFocus(0);
+    setFocus(1);
+    setWarmupOpen(false);
+    setSkippedIds([]);
   };
 
   /**
@@ -724,15 +760,418 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     timer.start(minutes * 60, ex.n, 'countdown');
   };
 
+  // ---------- תצוגה ----------
+
+  /** מצב כל תרגיל לפס ההתקדמות ולרשימת התרגילים. */
+  const segmentState = (r: LoggedExercise, i: number): Segment['state'] => {
+    if (hasData(r)) return 'done';
+    if (i === currentIndex) return 'current';
+    if (skippedIds.includes(r.exerciseId) || i < currentIndex) return 'pending';
+    return 'upcoming';
+  };
+  const segments: Segment[] = open
+    ? [
+        ...rows.map((r, i) => ({ r, i })).filter(({ r }) => !isCardio(r)).map(({ r, i }) => {
+          const st = segmentState(r, i);
+          const word = st === 'done' ? 'נרשם' : st === 'current' ? 'במוקד' : st === 'pending' ? 'ממתין' : 'עוד לא';
+          return { key: r.exerciseId, state: st, label: `${r.n} — ${word}` };
+        }),
+        { key: '__finish', state: isFinish ? 'current' : 'upcoming', label: 'סיום' },
+      ]
+    : [];
+
+  const warmupSummary = (() => {
+    if (!warmupRow) return '';
+    const c = cardioOf(warmupRow);
+    const done = cardioMinutesDone(warmupRow);
+    return done === null ? `${cardioModeLabel(c.mode)} · ${c.minutes} דק׳ · לא נרשם` : `${cardioModeLabel(c.mode)} · ${done} דק׳ · נרשם`;
+  })();
+
+  const painRated = open ? open.knee !== null || open.shoulder !== null : false;
+
+  /** בלוק הכאב: שורה קומפקטית וגלויה, בלי ברירת מחדל (החלטה 2). */
+  const painBlock = open && FEATURES.pain && (
+    <Surface aria-label="כאב" className="wk-pain">
+      <SectionHeader
+        level={3}
+        title="כאב"
+        aside={
+          painRated ? (
+            <StatusChip tone="done">
+              ברך <Num>{open.knee ?? DASH}</Num> · כתף <Num>{open.shoulder ?? DASH}</Num>
+            </StatusChip>
+          ) : (
+            <StatusChip tone="missing">לא דורג</StatusChip>
+          )
+        }
+      />
+      <div className="stack--tight">
+        <ChipSelect<number> label="כאב ברך" options={PAIN_SCALE} value={open.knee} onChange={(knee) => patch({ ...open, knee })} columns={6} />
+        <ChipSelect<number> label="כאב כתף" options={PAIN_SCALE} value={open.shoulder} onChange={(shoulder) => patch({ ...open, shoulder })} columns={6} />
+      </div>
+    </Surface>
+  );
+
+  const finisherFocus = open && finisherRow && FEATURES.cardio && (
+    <CardioFocus
+      key={finisherRow.exerciseId}
+      log={finisherRow}
+      onChange={(next) => {
+        patch({
+          ...open,
+          ex: rows.map((e) => (e.exerciseId === next.exerciseId ? next : e)),
+        });
+      }}
+      onStart={(minutes) => onCardioStart(finisherRow, minutes)}
+      detailed
+      remainingMinutes={remainingMinutes(cardioWeek(db, weekStart(open.d)))}
+      defaultsFor={(mode) => lastFinisherCardio(db.workouts, mode, open.id)}
+      session={sessionFor({ kind: 'finisher', workoutId: open.id, t: open.t, d: open.d })}
+      sessionBusy={session !== null}
+      onStartSession={() => {
+        const c = cardioOf(finisherRow);
+        beginSession(
+          { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
+          c.mode,
+          c.minutes,
+          c.incline ?? null,
+          c.speed ?? null,
+          'אירובי',
+        );
+      }}
+      onSessionChange={changeSession}
+      onFinishSession={finishSession}
+      onEditSummary={() =>
+        openSummary(
+          { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
+          cardioOf(finisherRow).mode,
+          cardioSegmentsOf(finisherRow),
+          cardioOf(finisherRow).steps ?? null,
+          true,
+        )
+      }
+    />
+  );
+
+  const cardioSummaryEl = summary && (
+    <CardioSummary
+      key={`${summary.target.kind}:${summary.target.kind === 'standalone' ? summary.target.id : summary.target.workoutId}`}
+      title={summaryTitle(summary.target)}
+      mode={summary.mode}
+      initialSegments={summary.segments}
+      initialSteps={summary.steps}
+      notice={
+        summary.cut
+          ? 'הריצה נחתכה בזמן שתוכנן — לא נלחץ "סיים". אפשר לתקן את המקטעים לפני השמירה.'
+          : undefined
+      }
+      onSave={saveSummary}
+      onCancel={cancelSummary}
+      onDelete={
+        summary.existing && summary.target.kind === 'standalone'
+          ? () => {
+              deleteStandalone(summary.target.kind === 'standalone' ? summary.target.id : '');
+              setSummary(null);
+            }
+          : undefined
+      }
+    />
+  );
+
+  // ---------- סשן פעיל: תצוגת המוקד ----------
+  if (open) {
+    const performedRows = strengthRows.filter(hasData);
+    const skippedRows = strengthRows.filter((r) => !hasData(r));
+    const swappedRows = strengthRows.filter((r) => r.swappedFrom !== undefined);
+    return (
+      <div className="stack wk-session">
+        {cardioSummaryEl}
+
+        <header className="wk-head">
+          <Button variant="ghost" icon={ChevronRight} aria-label="לתרגיל הקודם" disabled={currentIndex <= 1} onClick={() => setFocus(Math.max(1, currentIndex - 1))} />
+          <button type="button" className="wk-head__title" aria-haspopup="dialog" aria-expanded={listOpen} onClick={() => setListOpen(true)}>
+            <span className="top__eyebrow">
+              אימון {open.t} · {WORKOUT_TITLES[open.t]} · <Num>{formatDM(open.d)}</Num>
+            </span>
+            <span className="wk-head__step">
+              {isFinish ? (
+                'סיום'
+              ) : (
+                <>
+                  תרגיל <Num>{currentNo}</Num> מתוך <Num>{strengthTotal}</Num>
+                </>
+              )}
+            </span>
+          </button>
+          <Button variant="ghost" icon={ChevronLeft} aria-label="לתרגיל הבא" disabled={currentIndex >= finishIndex} onClick={() => setFocus(Math.min(finishIndex, currentIndex + 1))} />
+        </header>
+        <ProgressSegments items={segments} label="התקדמות האימון" />
+
+        <div className="row wk-meta">
+          <Disclosure
+            className="grow"
+            title={
+              <span className="tiny muted">
+                תאריך <Num>{formatDMY(open.d)}</Num>
+              </span>
+            }
+            open={dateOpen}
+            onToggle={() => setDateOpen((v) => !v)}
+          >
+            <DateField label="תאריך האימון" value={open.d} max={today} onChange={(d) => patch({ ...open, d })} />
+          </Disclosure>
+          <Button variant="ghost" onClick={closeEditor}>
+            סגור
+          </Button>
+        </div>
+
+        {/* חימום: שורה מקופלת בראש הסשן. לא חוסמת את התרגיל הראשון. */}
+        {warmupRow && (
+          <Surface as="div" className="surface--row" aria-label="חימום">
+            <Disclosure
+              lead={Timer}
+              title="חימום"
+              summary={warmupSummary}
+              end={cardioMinutesDone(warmupRow) === null ? undefined : <StatusChip tone="done">נרשם</StatusChip>}
+              open={warmupOpen}
+              onToggle={() => setWarmupOpen((v) => !v)}
+            >
+              <CardioFocus
+                key={warmupRow.exerciseId}
+                log={warmupRow}
+                onChange={(next) => {
+                  patch({
+                    ...open,
+                    ex: rows.map((e) => (e.exerciseId === next.exerciseId ? next : e)),
+                  });
+                }}
+                onStart={(minutes) => onCardioStart(warmupRow, minutes)}
+              />
+            </Disclosure>
+          </Surface>
+        )}
+
+        {skipUndo && (
+          <Toast placement="static" actionLabel="בטל" onAction={undoSkip}>
+            {skipUndo.name} — הועבר לסוף האימון
+          </Toast>
+        )}
+
+        {current && !isFinish && (
+          <Surface aria-label={`תרגיל ${currentNo} — ${current.n}`}>
+            <ExerciseFocus
+              key={current.exerciseId}
+              spec={specOf(current)}
+              log={current}
+              history={recentExercises(db.workouts, current.exerciseId, HISTORY_ROWS, open.id)}
+              fullHistory={exerciseHistory(db.workouts, current.exerciseId).filter((h) => h.workoutId !== open.id)}
+              suggestion={suggestNext(
+                exerciseHistory(db.workouts, current.exerciseId).filter((h) => h.workoutId !== open.id),
+                progressionSpecOf(current),
+              )}
+              restSec={restSeconds(current.type, false)}
+              onChange={(next) => {
+                patch({
+                  ...open,
+                  ex: rows.map((e) => (e.exerciseId === next.exerciseId ? next : e)),
+                });
+              }}
+              onSetLogged={(i) => onSetLogged(current, i)}
+              historyOpen={historyOpen}
+              onToggleHistory={() => setHistoryOpen((v) => !v)}
+              onSkip={strengthTotal > 1 ? () => skipExercise(current) : undefined}
+              alternates={alternativesOf(current)}
+              onSwap={(alt) => swapTo(current, alt)}
+              onUnswap={() => unswap(current)}
+              onNext={() => setFocus(Math.min(finishIndex, currentIndex + 1))}
+              nextLabel={currentIndex + 1 >= finishIndex ? 'לסיום' : 'התרגיל הבא'}
+            />
+          </Surface>
+        )}
+
+        {isFinish && (
+          <Surface aria-label="סיום האימון">
+            <SectionHeader
+              title="סיום"
+              aside={
+                <>
+                  <Num>{performedRows.length}</Num> / <Num>{strengthTotal}</Num> תרגילים
+                </>
+              }
+            />
+            {finisherFocus}
+            <ul className="wk-summary list list--block small">
+              <li>
+                <span className="muted">בוצעו ({performedRows.length}):</span> {performedRows.length ? performedRows.map((e) => e.n).join(', ') : DASH}
+              </li>
+              {skippedRows.length > 0 && (
+                <li>
+                  <span className="muted">דולגו ({skippedRows.length}):</span> {skippedRows.map((e) => e.n).join(', ')}
+                </li>
+              )}
+              {swappedRows.length > 0 && (
+                <li>
+                  <span className="muted">הוחלפו ({swappedRows.length}):</span>{' '}
+                  {swappedRows.map((e) => `${e.n} (${swappedFromLabel(e) ?? ''})`).join(', ')}
+                </li>
+              )}
+              {FEATURES.pain && (
+                <li>
+                  <span className="muted">כאב:</span>{' '}
+                  {painRated ? (
+                    <>
+                      ברך <Num>{open.knee ?? DASH}</Num> · כתף <Num>{open.shoulder ?? DASH}</Num>
+                    </>
+                  ) : (
+                    <span className="wk-summary__warn">לא דורג — נגיעה אחת למטה</span>
+                  )}
+                </li>
+              )}
+            </ul>
+          </Surface>
+        )}
+
+        {painBlock}
+
+        {isFinish && (
+          <Surface as="div" aria-label="סיים אימון">
+            <Button variant="accent" block tall onClick={closeEditor}>
+              סיים אימון
+            </Button>
+            <div className="row" style={{ marginTop: 'var(--sp-3)' }}>
+              <p className="tiny muted grow" style={{ margin: 0 }}>
+                {draft ? 'האימון יישמר ברגע שתזין נתון ראשון.' : 'כל שינוי נשמר מיד.'}
+              </p>
+              <ConfirmButton
+                className="btn btn--danger"
+                ariaLabel={`מחק אימון ${open.t} של ${formatDMY(open.d)}`}
+                onConfirm={() => {
+                  void store.update('workouts', removeWorkout(db.workouts, open.id));
+                  setDraft(null);
+                  setOpenId(null);
+                }}
+              />
+            </div>
+          </Surface>
+        )}
+
+        {listOpen && (
+          <Sheet title={`אימון ${open.t} · התרגילים`} onClose={() => setListOpen(false)}>
+            <div aria-label="רשימת התרגילים">
+              {rows.map((r, i) => {
+                if (isCardio(r)) return null;
+                const st = segmentState(r, i);
+                return (
+                  <ListRow
+                    key={r.exerciseId}
+                    title={
+                      <>
+                        <Num>{strengthRows.indexOf(r) + 1}</Num> · {r.n}
+                      </>
+                    }
+                    sub={hasData(r) ? exerciseLine(r).replace(`${r.n} `, '') : swappedFromLabel(r) ?? undefined}
+                    end={
+                      st === 'done' ? (
+                        <StatusChip tone="done">נרשם</StatusChip>
+                      ) : st === 'current' ? (
+                        <StatusChip tone="accent">במוקד</StatusChip>
+                      ) : st === 'pending' ? (
+                        <StatusChip tone="partial">ממתין</StatusChip>
+                      ) : undefined
+                    }
+                    onTap={() => {
+                      setFocus(i);
+                      setListOpen(false);
+                    }}
+                  />
+                );
+              })}
+              <ListRow
+                title="סיום"
+                end={isFinish ? <StatusChip tone="accent">במוקד</StatusChip> : undefined}
+                onTap={() => {
+                  setFocus(finishIndex);
+                  setListOpen(false);
+                }}
+              />
+            </div>
+          </Sheet>
+        )}
+      </div>
+    );
+  }
+
+  // ---------- אין סשן פעיל: מסך פתיחה ----------
   return (
     <div className="stack--loose">
-      {FEATURES.constraints && (
-        <p className="tiny muted" style={{ margin: 0 }}>
-          {CONSTRAINTS}
-        </p>
+      {cardioSummaryEl}
+
+      {!cardioOpen && !summary && (
+        <Surface variant="hero" aria-label="אימון חדש" className="wk-start">
+          <p className="top__eyebrow">הבא בתור</p>
+          <Button variant="accent" block tall onClick={() => startWorkout(upNext)}>
+            התחל אימון {upNext}
+            <span className="wk-start__title">· {WORKOUT_TITLES[upNext]}</span>
+          </Button>
+          <div className="wk-start__other">
+            <span className="tiny muted">אימון אחר:</span>
+            {WORKOUT_TYPES.filter((t) => t !== upNext).map((t) => (
+              <Button key={t} variant="secondary" onClick={() => startWorkout(t)} aria-label={`התחל אימון ${t}`}>
+                {t}
+                {/* D (25/10/2026): מחוץ לסבב — לעולם לא "הבא בתור" ולא נספר ב-n/3. */}
+                {t === 'D' && <span className="tiny muted">· אופציונלי</span>}
+              </Button>
+            ))}
+            {/* לא אימון: שורה משלו, בלי "הבא בתור". */}
+            {FEATURES.cardio && (
+              <Button variant="ghost" onClick={startStandalone}>
+                אירובי — עצמאי
+              </Button>
+            )}
+          </div>
+          {FEATURES.constraints && (
+            <p className="tiny muted" style={{ margin: 0 }}>
+              {CONSTRAINTS}
+            </p>
+          )}
+        </Surface>
       )}
 
-      <section className="section section--first">
+      {cardioOpen && !summary && (
+        <StandaloneCardioEditor
+          value={cardioOpen}
+          today={today}
+          onChange={setCardioOpen}
+          onClose={() => setCardioOpen(null)}
+          remainingMinutes={remainingMinutes(cardioWeek(db, weekStart(cardioOpen.d)))}
+          defaultsFor={(mode) => lastStandalone(db.standaloneCardio, mode)}
+          session={sessionFor({ kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note })}
+          sessionBusy={session !== null}
+          onStart={() =>
+            beginSession(
+              { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
+              cardioOpen.mode,
+              cardioOpen.minutes,
+              cardioOpen.incline,
+              cardioOpen.speed,
+              'אירובי — עצמאי',
+            )
+          }
+          onSessionChange={changeSession}
+          onFinish={finishSession}
+          onManual={() =>
+            openSummary(
+              { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
+              cardioOpen.mode,
+              [{ minutes: cardioOpen.minutes, incline: cardioOpen.incline, speed: cardioOpen.speed }],
+              null,
+              false,
+            )
+          }
+        />
+      )}
+
+      <section className="section">
         <WeekNav
           week={week}
           onChange={setWeek}
@@ -809,297 +1248,6 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           </ul>
         )}
       </section>
-
-      {summary && (
-        <CardioSummary
-          key={`${summary.target.kind}:${summary.target.kind === 'standalone' ? summary.target.id : summary.target.workoutId}`}
-          title={summaryTitle(summary.target)}
-          mode={summary.mode}
-          initialSegments={summary.segments}
-          initialSteps={summary.steps}
-          notice={
-            summary.cut
-              ? 'הריצה נחתכה בזמן שתוכנן — לא נלחץ "סיים". אפשר לתקן את המקטעים לפני השמירה.'
-              : undefined
-          }
-          onSave={saveSummary}
-          onCancel={cancelSummary}
-          onDelete={
-            summary.existing && summary.target.kind === 'standalone'
-              ? () => {
-                  deleteStandalone(summary.target.kind === 'standalone' ? summary.target.id : '');
-                  setSummary(null);
-                }
-              : undefined
-          }
-        />
-      )}
-
-      {!open && !cardioOpen && !summary && (
-        <section className="section">
-          <h2 style={{ marginBottom: 'var(--sp-3)' }}>אימון חדש</h2>
-          <div className="choice choice--big">
-            {WORKOUT_TYPES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className="choice__btn"
-                aria-pressed={t === upNext}
-                onClick={() => startWorkout(t)}
-              >
-                {t}
-                {t === upNext && <span className="choice__hint">הבא בתור</span>}
-                {/* D (25/10/2026): מחוץ לסבב — לעולם לא "הבא בתור" ולא נספר ב-n/3. */}
-                {t === 'D' && <span className="choice__hint">אופציונלי</span>}
-              </button>
-            ))}
-            {/* לא אימון: שורה משלו, מקווקו, בלי "הבא בתור". */}
-            {FEATURES.cardio && (
-              <button
-                type="button"
-                className="choice__btn choice__btn--aside"
-                aria-pressed={false}
-                onClick={startStandalone}
-              >
-                אירובי — עצמאי
-                <span className="choice__hint">לא נספר כאימון</span>
-              </button>
-            )}
-          </div>
-        </section>
-      )}
-
-      {cardioOpen && !summary && (
-        <StandaloneCardioEditor
-          value={cardioOpen}
-          today={today}
-          onChange={setCardioOpen}
-          onClose={() => setCardioOpen(null)}
-          remainingMinutes={remainingMinutes(cardioWeek(db, weekStart(cardioOpen.d)))}
-          defaultsFor={(mode) => lastStandalone(db.standaloneCardio, mode)}
-          session={sessionFor({ kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note })}
-          sessionBusy={session !== null}
-          onStart={() =>
-            beginSession(
-              { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
-              cardioOpen.mode,
-              cardioOpen.minutes,
-              cardioOpen.incline,
-              cardioOpen.speed,
-              'אירובי — עצמאי',
-            )
-          }
-          onSessionChange={changeSession}
-          onFinish={finishSession}
-          onManual={() =>
-            openSummary(
-              { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
-              cardioOpen.mode,
-              [{ minutes: cardioOpen.minutes, incline: cardioOpen.incline, speed: cardioOpen.speed }],
-              null,
-              false,
-            )
-          }
-        />
-      )}
-
-      {open && (
-        <section className="section">
-          <div className="section__head">
-            <h2>
-              אימון {open.t} · {WORKOUT_TITLES[open.t]} ·{' '}
-              <span className="num">{formatDM(open.d)}</span>
-            </h2>
-            <button type="button" className="btn btn--quiet" onClick={closeEditor}>
-              סגור
-            </button>
-          </div>
-
-          <DateField
-            label="תאריך האימון"
-            value={open.d}
-            max={today}
-            onChange={(d) => patch({ ...open, d })}
-          />
-
-          {/* תרגיל אחד במוקד. הרצועה למעלה מאפשרת לדלג ולחזור. */}
-          <div className="focusnav" role="group" aria-label="ניווט בין תרגילים">
-            <span className="tiny muted grow">
-              {current && isCardio(current) ? (
-                current.n
-              ) : (
-                <>
-                  תרגיל <span className="num">{dotLabel(focus)}</span> מתוך{' '}
-                  <span className="num">{strengthTotal}</span>
-                </>
-              )}
-            </span>
-            <div className="focusnav__dots">
-              {rows.map((r, i) => (
-                <button
-                  key={r.exerciseId}
-                  type="button"
-                  className={`focusnav__dot${i === focus ? ' is-current' : ''}${
-                    hasData(r) ? ' is-done' : ''
-                  }`}
-                  aria-label={`${r.n}${hasData(r) ? ' — נרשם' : ''}`}
-                  aria-current={i === focus}
-                  onClick={() => setFocus(i)}
-                >
-                  {dotLabel(i)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {current && isCardio(current) && (
-            <CardioFocus
-              key={current.exerciseId}
-              log={current}
-              onChange={(next) => {
-                patch({
-                  ...open,
-                  ex: rows.map((e) => (e.exerciseId === next.exerciseId ? next : e)),
-                });
-              }}
-              onStart={(minutes) => onCardioStart(current, minutes)}
-              detailed={current.exerciseId === FINISHER_ID}
-              remainingMinutes={current.exerciseId === FINISHER_ID ? remainingMinutes(cardioWeek(db, weekStart(open.d))) : null}
-              defaultsFor={
-                current.exerciseId === FINISHER_ID
-                  ? (mode) => lastFinisherCardio(db.workouts, mode, open.id)
-                  : undefined
-              }
-              session={
-                current.exerciseId === FINISHER_ID
-                  ? sessionFor({ kind: 'finisher', workoutId: open.id, t: open.t, d: open.d })
-                  : null
-              }
-              sessionBusy={session !== null}
-              onStartSession={() => {
-                const c = cardioOf(current);
-                beginSession(
-                  { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
-                  c.mode,
-                  c.minutes,
-                  c.incline ?? null,
-                  c.speed ?? null,
-                  'אירובי',
-                );
-              }}
-              onSessionChange={changeSession}
-              onFinishSession={finishSession}
-              onEditSummary={() =>
-                openSummary(
-                  { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
-                  cardioOf(current).mode,
-                  cardioSegmentsOf(current),
-                  cardioOf(current).steps ?? null,
-                  true,
-                )
-              }
-            />
-          )}
-
-          {skipUndo && (
-            <div className="nut-toast" role="status" style={{ marginTop: 'var(--sp-2)' }}>
-              <span className="grow">{skipUndo.name} — הועבר לסוף האימון</span>
-              <button type="button" className="btn btn--quiet" onClick={undoSkip}>
-                בטל
-              </button>
-            </div>
-          )}
-
-          {current && !isCardio(current) && (
-            <ExerciseFocus
-              key={current.exerciseId}
-              spec={specOf(current)}
-              log={current}
-              history={recentExercises(db.workouts, current.exerciseId, HISTORY_ROWS, open.id)}
-              fullHistory={exerciseHistory(db.workouts, current.exerciseId).filter(
-                (h) => h.workoutId !== open.id,
-              )}
-              suggestion={suggestNext(
-                exerciseHistory(db.workouts, current.exerciseId).filter((h) => h.workoutId !== open.id),
-                progressionSpecOf(current),
-              )}
-              onChange={(next) => {
-                patch({
-                  ...open,
-                  ex: rows.map((e) =>
-                    e.exerciseId === next.exerciseId ? next : e,
-                  ),
-                });
-              }}
-              onSetLogged={(i) => onSetLogged(current, i)}
-              historyOpen={historyOpen}
-              onToggleHistory={() => setHistoryOpen((v) => !v)}
-              onSkip={rows.filter((r) => !isCardio(r)).length > 1 ? () => skipExercise(current) : undefined}
-              alternates={alternativesOf(current)}
-              onSwap={(alt) => swapTo(current, alt)}
-              onUnswap={() => unswap(current)}
-            />
-          )}
-
-          <div className="row" style={{ marginTop: 'var(--sp-4)' }}>
-            <button
-              type="button"
-              className="btn grow"
-              disabled={focus === 0}
-              onClick={() => setFocus((i) => Math.max(0, i - 1))}
-            >
-              הקודם
-            </button>
-            <button
-              type="button"
-              className="btn grow"
-              disabled={focus >= rows.length - 1}
-              onClick={() => setFocus((i) => Math.min(rows.length - 1, i + 1))}
-            >
-              {current && hasData(current) ? 'הבא' : 'דלג'}
-            </button>
-          </div>
-
-          {FEATURES.pain && (
-            <div className="section" style={{ marginTop: 'var(--sp-5)' }}>
-              <div className="stack">
-                <Choice
-                  label="כאב ברך"
-                  scale
-                  options={PAIN_SCALE}
-                  value={open.knee}
-                  onChange={(knee) => patch({ ...open, knee })}
-                />
-                <Choice
-                  label="כאב כתף"
-                  scale
-                  options={PAIN_SCALE}
-                  value={open.shoulder}
-                  onChange={(shoulder) => patch({ ...open, shoulder })}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="row" style={{ marginTop: 'var(--sp-4)' }}>
-            <button type="button" className="btn btn--primary btn--block" onClick={closeEditor}>
-              סיים
-            </button>
-            <ConfirmButton
-              className="btn btn--danger"
-              ariaLabel={`מחק אימון ${open.t} של ${formatDMY(open.d)}`}
-              onConfirm={() => {
-                void store.update('workouts', removeWorkout(db.workouts, open.id));
-                setDraft(null);
-                setOpenId(null);
-              }}
-            />
-          </div>
-          <p className="tiny muted" style={{ marginTop: 'var(--sp-2)' }}>
-            {draft ? 'האימון יישמר ברגע שתזין נתון ראשון.' : 'כל שינוי נשמר מיד.'}
-          </p>
-        </section>
-      )}
 
       <section className="section">
         <div className="section__head">

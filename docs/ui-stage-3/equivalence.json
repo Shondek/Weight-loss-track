@@ -1,0 +1,998 @@
+{
+ "session": {
+  "identical": true,
+  "diffs": [],
+  "stripped": {
+   "before": {
+    "exported": "2026-10-30T06:25:17.381Z",
+    "newIds": [
+     "2026-10-30-0mvukig6x-75488609-A"
+    ]
+   },
+   "after": {
+    "exported": "2026-10-30T06:25:19.726Z",
+    "newIds": [
+     "2026-10-30-0mvukig6q-53b205ce-A"
+    ]
+   }
+  },
+  "workoutAfter": {
+   "schemaVersion": 2,
+   "id": "2026-10-30-0mvukig6q-53b205ce-A",
+   "d": "2026-10-30",
+   "t": "A",
+   "ex": [
+    {
+     "exerciseId": "warmup",
+     "n": "חימום",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 600
+      }
+     ],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 10
+     }
+    },
+    {
+     "exerciseId": "leg-press",
+     "n": "לג-פרס במכונה בישיבה",
+     "sets": [
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "smith-bench-press",
+     "n": "בנץ' פרס- סמית משין",
+     "sets": [
+      {
+       "weight": 55,
+       "reps": 8,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 7,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 8,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 8,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 1
+    },
+    {
+     "exerciseId": "lat-pulldown",
+     "n": "משיכה מפולי עליון- אחיזה רחבה בישיבה",
+     "sets": [
+      {
+       "weight": 50,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 50,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 50,
+       "reps": 9,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "lying-leg-curl",
+     "n": "כפיפת ברכיים במכונה על הבטן",
+     "sets": [
+      {
+       "weight": 30,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 30,
+       "reps": 12,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "swappedFrom": "leg-curl",
+     "rir": 3
+    },
+    {
+     "exerciseId": "back-extension",
+     "n": "פשיטת ירך בספסל רומי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      },
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      },
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "db-lateral-raise-seated",
+     "n": "הרחקת כתפיים- ישיבה מ.יד",
+     "sets": [
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false
+    },
+    {
+     "exerciseId": "plank",
+     "n": "בטן- פלאנק סטטי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      },
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      },
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      }
+     ],
+     "targetRepMin": 60,
+     "targetRepMax": 60,
+     "type": "core",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "leg-extension",
+     "n": "פשיטת ברכיים במכונה",
+     "sets": [
+      {
+       "weight": 45,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 45,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "finisher-cardio",
+     "n": "אירובי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 1200
+      }
+     ],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 20,
+      "incline": 2,
+      "speed": 5.5,
+      "segments": [
+       {
+        "minutes": 20,
+        "incline": 2,
+        "speed": 5.5
+       }
+      ]
+     }
+    }
+   ],
+   "knee": 2,
+   "shoulder": 0
+  },
+  "workoutBefore": {
+   "schemaVersion": 2,
+   "id": "2026-10-30-0mvukig6x-75488609-A",
+   "d": "2026-10-30",
+   "t": "A",
+   "ex": [
+    {
+     "exerciseId": "warmup",
+     "n": "חימום",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 600
+      }
+     ],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 10
+     }
+    },
+    {
+     "exerciseId": "leg-press",
+     "n": "לג-פרס במכונה בישיבה",
+     "sets": [
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "smith-bench-press",
+     "n": "בנץ' פרס- סמית משין",
+     "sets": [
+      {
+       "weight": 55,
+       "reps": 8,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 7,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 8,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 8,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 1
+    },
+    {
+     "exerciseId": "lat-pulldown",
+     "n": "משיכה מפולי עליון- אחיזה רחבה בישיבה",
+     "sets": [
+      {
+       "weight": 50,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 50,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 50,
+       "reps": 9,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "lying-leg-curl",
+     "n": "כפיפת ברכיים במכונה על הבטן",
+     "sets": [
+      {
+       "weight": 30,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 30,
+       "reps": 12,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "swappedFrom": "leg-curl",
+     "rir": 3
+    },
+    {
+     "exerciseId": "back-extension",
+     "n": "פשיטת ירך בספסל רומי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      },
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      },
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "db-lateral-raise-seated",
+     "n": "הרחקת כתפיים- ישיבה מ.יד",
+     "sets": [
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false
+    },
+    {
+     "exerciseId": "plank",
+     "n": "בטן- פלאנק סטטי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      },
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      },
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      }
+     ],
+     "targetRepMin": 60,
+     "targetRepMax": 60,
+     "type": "core",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "leg-extension",
+     "n": "פשיטת ברכיים במכונה",
+     "sets": [
+      {
+       "weight": 45,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 45,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "finisher-cardio",
+     "n": "אירובי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 1200
+      }
+     ],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 20,
+      "incline": 2,
+      "speed": 5.5,
+      "segments": [
+       {
+        "minutes": 20,
+        "incline": 2,
+        "speed": 5.5
+       }
+      ]
+     }
+    }
+   ],
+   "knee": 2,
+   "shoulder": 0
+  }
+ },
+ "edit": {
+  "identical": true,
+  "diffs": [],
+  "editedAfter": {
+   "schemaVersion": 2,
+   "id": "2026-10-28-seed-C",
+   "d": "2026-10-28",
+   "t": "C",
+   "ex": [
+    {
+     "exerciseId": "warmup",
+     "n": "חימום",
+     "sets": [],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 10
+     }
+    },
+    {
+     "exerciseId": "machine-hip-abduction",
+     "n": "הרחקת ירך במכונה",
+     "sets": [
+      {
+       "weight": 60,
+       "reps": 20,
+       "seconds": null
+      },
+      {
+       "weight": 60,
+       "reps": 11,
+       "seconds": null
+      },
+      {
+       "weight": 60,
+       "reps": 20,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 15,
+     "targetRepMax": 20,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "machine-row",
+     "n": "חתירה- מכונה ייעודית",
+     "sets": [
+      {
+       "weight": 55,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 12,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "smith-incline-bench-press",
+     "n": "בנץ' פרס עליון- סמית משין",
+     "sets": [
+      {
+       "weight": 45,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 45,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 45,
+       "reps": 12,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 8,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "leg-press",
+     "n": "לג-פרס במכונה בישיבה",
+     "sets": [
+      {
+       "weight": 130,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 130,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 130,
+       "reps": 12,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "db-lateral-raise-standing",
+     "n": "הרחקת כתפיים- עמידה מ.יד",
+     "sets": [
+      {
+       "weight": 12.5,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 12.5,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 12.5,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "ez-bar-preacher-curl",
+     "n": "כפיפת מרפקים- כיסא כומר מוט W",
+     "sets": [
+      {
+       "weight": 30,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 30,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "triceps-pushdown",
+     "n": "פשיטת מרפקים- פולי עליון חבל",
+     "sets": [
+      {
+       "weight": 35,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 35,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "cable-torso-rotation",
+     "n": "בטן- רוטציות גו פולי אמצעי",
+     "sets": [
+      {
+       "weight": 25,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 25,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 25,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "core",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "finisher-cardio",
+     "n": "אירובי",
+     "sets": [],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 30
+     }
+    }
+   ],
+   "knee": 3,
+   "shoulder": 0
+  }
+ },
+ "taps": {
+  "before": {
+   "clicks": 6,
+   "typed": 3
+  },
+  "after": {
+   "clicks": 5,
+   "typed": 0
+  }
+ },
+ "log": {
+  "before": [
+   {
+    "n": 1,
+    "name": "לג-פרס במכונה בישיבה",
+    "sets": [
+     10,
+     10,
+     10
+    ],
+    "rir": 2
+   },
+   {
+    "n": 2,
+    "name": "בנץ' פרס- סמית משין",
+    "sets": [
+     8,
+     7,
+     8
+    ],
+    "rir": 1
+   },
+   {
+    "n": 3,
+    "name": "משיכה מפולי עליון- אחיזה רחבה בישיבה",
+    "sets": [
+     10,
+     10,
+     9
+    ],
+    "rir": 2
+   },
+   {
+    "n": 4,
+    "name": "פשיטת ברכיים במכונה",
+    "action": "skip"
+   },
+   {
+    "n": 4,
+    "name": "כפיפת ברכיים במכונה → כפיפת ברכיים במכונה על הבטן",
+    "sets": [
+     12,
+     12
+    ],
+    "rir": 3
+   },
+   {
+    "n": 5,
+    "name": "פשיטת ירך בספסל רומי",
+    "sets": [
+     17,
+     17,
+     17
+    ],
+    "rir": 2
+   },
+   {
+    "n": 6,
+    "name": "הרחקת כתפיים- ישיבה מ.יד",
+    "sets": [
+     15,
+     15,
+     15
+    ],
+    "rir": null
+   },
+   {
+    "n": 7,
+    "name": "בטן- פלאנק סטטי",
+    "sets": [
+     60,
+     60,
+     60
+    ],
+    "rir": 2
+   },
+   {
+    "n": 8,
+    "name": "פשיטת ברכיים במכונה",
+    "sets": [
+     15,
+     15
+    ],
+    "rir": 2
+   }
+  ],
+  "after": [
+   {
+    "n": 1,
+    "name": "לג-פרס במכונה בישיבה",
+    "sets": [
+     10,
+     10,
+     10
+    ],
+    "rir": 2
+   },
+   {
+    "n": 2,
+    "name": "בנץ' פרס- סמית משין",
+    "sets": [
+     8,
+     7,
+     8
+    ],
+    "rir": 1
+   },
+   {
+    "n": 3,
+    "name": "משיכה מפולי עליון- אחיזה רחבה בישיבה",
+    "sets": [
+     10,
+     10,
+     9
+    ],
+    "rir": 2
+   },
+   {
+    "n": 4,
+    "name": "פשיטת ברכיים במכונה",
+    "action": "skip"
+   },
+   {
+    "n": 4,
+    "name": "כפיפת ברכיים במכונה → כפיפת ברכיים במכונה על הבטן",
+    "sets": [
+     12,
+     12
+    ],
+    "rir": 3
+   },
+   {
+    "n": 5,
+    "name": "פשיטת ירך בספסל רומי",
+    "sets": [
+     17,
+     17,
+     17
+    ],
+    "rir": 2
+   },
+   {
+    "n": 6,
+    "name": "הרחקת כתפיים- ישיבה מ.יד",
+    "sets": [
+     15,
+     15,
+     15
+    ],
+    "rir": null
+   },
+   {
+    "n": 7,
+    "name": "בטן- פלאנק סטטי",
+    "sets": [
+     60,
+     60,
+     60
+    ],
+    "rir": 2
+   },
+   {
+    "n": 8,
+    "name": "פשיטת ברכיים במכונה",
+    "sets": [
+     15,
+     15
+    ],
+    "rir": 2
+   }
+  ]
+ },
+ "errors": {
+  "before": [],
+  "after": []
+ },
+ "painUntouched": {
+  "before": {
+   "knee": null,
+   "shoulder": null,
+   "hasKneeKey": true,
+   "hasShoulderKey": true
+  },
+  "after": {
+   "knee": null,
+   "shoulder": null,
+   "hasKneeKey": true,
+   "hasShoulderKey": true
+  }
+ }
+}
