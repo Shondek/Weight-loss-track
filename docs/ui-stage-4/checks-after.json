@@ -186,5 +186,35 @@
   "textNodes": 179,
   "flippedNums": 0,
   "errors": []
+ },
+ {
+  "screen": "13-quick-plus",
+  "title": "שורה עם \"+\" (מה שאני אוכל) ואריח מועדף",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2063,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 171,
+  "flippedNums": 0,
+  "errors": []
+ },
+ {
+  "screen": "14-quick-toast",
+  "title": "אחרי \"+\": Toast \"נרשם · שקדים · בטל\"",
+  "dir": "rtl",
+  "hscroll": false,
+  "scrollHeight": 2118,
+  "font": "Rubik",
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastMin": 4.77,
+  "contrastFails": [],
+  "textNodes": 182,
+  "flippedNums": 0,
+  "errors": []
  }
 ]

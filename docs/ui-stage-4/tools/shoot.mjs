@@ -157,6 +157,27 @@ const SCENARIOS = [
       await page.evaluate(() => window.scrollBy(0, -120));
     },
   },
+  {
+    id: '13-quick-plus',
+    title: 'שורה עם "+" (מה שאני אוכל) ואריח מועדף',
+    act: async (d, page) => {
+      await d.openTab();
+      const row = label === 'before' ? page.locator('.nut-quick__item', { hasText: 'שקדים' }) : page.getByRole('region', { name: 'מה שאני אוכל' }).locator('.listrow', { hasText: 'שקדים' });
+      await crop(row, '13-quick-plus');
+      if (label === 'after') await crop(page.getByRole('region', { name: 'מועדפים' }), '13-quick-plus-favorites');
+      await page.evaluate(() => window.scrollBy(0, -200));
+    },
+  },
+  {
+    id: '14-quick-toast',
+    title: 'אחרי "+": Toast "נרשם · שקדים · בטל"',
+    act: async (d, page) => {
+      await d.openTab();
+      await d.quickLog('שקדים');
+      await settle(page, 200);
+      await crop(page.locator(label === 'before' ? '.nut-toast' : '.toast'), '14-quick-toast');
+    },
+  },
 ];
 
 const browser = await launch();

@@ -111,6 +111,19 @@ export function oldDriver(page) {
     async logFavorite(name, adjust) {
       return this.logFrequent(name, adjust);
     },
+    /** רישום כמו שהוא בנגיעה אחת: נגיעה בפריט. */
+    async quickLog(name) {
+      await click(quick(name).locator('.nut-quick__tap'), c);
+      await settle(page, 200);
+    },
+    async quickLogFavorite(name) {
+      return this.quickLog(name);
+    },
+    /** "בטל" בטוסט הביטול. */
+    async undo() {
+      await click(page.locator('.nut-toast').getByRole('button', { name: 'בטל' }), c);
+      await settle(page, 200);
+    },
     async search(query) {
       await type(page.locator('#food-search'), query, c);
       await settle(page, 200);
@@ -219,17 +232,32 @@ export function newDriver(page) {
     async openTab() {
       await tab(page, 'תזונה');
     },
+    /** בלי כיוון כמות — "+" (נגיעה אחת); עם כיוון — השם פותח את החלונית. */
     async logFrequent(name, adjust) {
-      await click(frequentRow(name), c);
+      if (!adjust) return this.quickLog(name);
+      await click(frequentRow(name).locator('.listrow__tap'), c);
       await settle(page, 200);
-      if (adjust) await adjust(qtyIn());
+      await adjust(qtyIn());
       await addFromSheet();
     },
     async logFavorite(name, adjust) {
-      await click(page.locator('.qtile', { hasText: name }).first(), c);
+      if (!adjust) return this.quickLogFavorite(name);
+      await click(page.locator('.qtile', { hasText: name }).first().locator('.qtile__tap'), c);
       await settle(page, 200);
-      if (adjust) await adjust(qtyIn());
+      await adjust(qtyIn());
       await addFromSheet();
+    },
+    async quickLog(name) {
+      await click(frequentRow(name).locator('.listrow__add'), c);
+      await settle(page, 200);
+    },
+    async quickLogFavorite(name) {
+      await click(page.locator('.qtile', { hasText: name }).first().locator('.qtile__add'), c);
+      await settle(page, 200);
+    },
+    async undo() {
+      await click(page.locator('.toast').getByRole('button', { name: /בטל/ }), c);
+      await settle(page, 200);
     },
     async search(query) {
       await type(page.locator('#food-search'), query, c);
@@ -259,7 +287,7 @@ export function newDriver(page) {
     },
     /** כוכב בחלונית של פריט מ"מה שאני אוכל". */
     async markFavorite(name) {
-      await click(frequentRow(name), c);
+      await click(frequentRow(name).locator('.listrow__tap'), c);
       await settle(page, 150);
       await click(sheet().getByRole('button', { name: 'הוסף למועדפים' }), c);
       await click(sheet().getByRole('button', { name: 'סגור' }), c);
@@ -268,7 +296,7 @@ export function newDriver(page) {
     },
     /** הסרה מתוך האריח במועדפים. */
     async unmarkFavorite(name) {
-      await click(page.locator('.qtile', { hasText: name }).first(), c);
+      await click(page.locator('.qtile', { hasText: name }).first().locator('.qtile__tap'), c);
       await settle(page, 150);
       await click(sheet().getByRole('button', { name: /הסר$/ }), c);
       await click(sheet().getByRole('button', { name: 'סגור' }), c);

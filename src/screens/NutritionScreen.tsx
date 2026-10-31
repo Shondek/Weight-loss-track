@@ -200,11 +200,15 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     armUndo(null);
   };
 
-  /** רישום אחד + טוסט. השם והערכים לטוסט מחושבים מהרשומה עצמה. */
-  const commit = (entry: FoodEntry, label: string) => {
+  /**
+   * רישום אחד + טוסט "נרשם · <שם> · בטל" (6 שניות; "בטל" מסיר את הרישום הזה
+   * דרך `removeEntry`, כמו מחיקה). `quick` — רישום בנגיעה אחת: השם בלבד; מהחלונית
+   * מצורפים גם הערכים, מחושבים מהרשומה עצמה.
+   */
+  const commit = (entry: FoodEntry, label: string, quick = false) => {
     void store.update('entries', upsertEntry(db.entries, entry));
     const n = entryNutrition(entry, resolve(entry.foodId));
-    armUndo({ kind: 'added', ids: [entry.id], text: `${label} · ${int(n.kcal)} קק"ל · ${int(n.protein)} חלבון` });
+    armUndo({ kind: 'added', ids: [entry.id], text: quick ? `נרשם · ${label}` : `נרשם · ${label} · ${int(n.kcal)} קק"ל · ${int(n.protein)} חלבון` });
   };
 
   const del = (entry: FoodEntry) => {
@@ -239,6 +243,30 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
   /** פתיחת חלונית לרישום מזון חי. */
   const openFood = (f: Food, grams = portionOf(f)) => {
     setSheet({ kind: 'add', foodId: f.id, name: f.name, ref: { name: f.name, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat, fiber: f.fiber, ...(f.unitFood ? { unitFood: true as const } : {}) }, grams, meal: mealNow() });
+  };
+
+  /**
+   * "+" — רישום בנגיעה אחת, בדיוק מה שהנגיעה האחת בגרסה הקודמת עשתה: הכמות
+   * האחרונה שנרשמה לפריט, הארוחה לפי השעה, ה-ref של המזון החי (או של הרישום
+   * הקודם כשהמזון נעלם); הערכה ידנית נרשמת מחדש באותם ערכים.
+   */
+  const quickLogFrequent = (item: FrequentItem) => {
+    const ts = nowTs();
+    const meal = mealNow();
+    if (item.kind === 'adhoc') {
+      commit(relogAdhoc(item.ref, item.name, meal, ts, unique()), item.name, true);
+      return;
+    }
+    const live = resolve(item.foodId);
+    const entry = live
+      ? newEntry(live, item.lastGrams, meal, ts, unique())
+      : newEntryFromRef(item.foodId, item.ref, item.lastGrams, meal, ts, unique());
+    commit(entry, item.name, true);
+  };
+
+  /** "+" באריח מועדף: הכמות השמורה במועדף, הארוחה לפי השעה. */
+  const quickLogFavorite = (food: Food, grams: number) => {
+    commit(newEntry(food, grams, mealNow(), nowTs(), unique()), food.name, true);
   };
 
   /** פתיחת חלונית לפריט מ"מה שאני אוכל" — גם כשהמזון החי נעלם (אז לפי ה-ref). */
@@ -833,7 +861,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
 
       {/* ---------- מועדפים ---------- */}
       <Surface aria-label="מועדפים">
-        <SectionHeader title="מועדפים" aside={favorites.length > 0 ? 'נגיעה = כמות' : undefined} />
+        <SectionHeader title="מועדפים" aside={favorites.length > 0 ? '+ = רישום · שם = כמות' : undefined} />
         {favorites.length === 0 ? (
           <p className="small muted" style={{ margin: 0 }}>
             אין מועדפים עדיין. בחלונית הכמות של מזון — "הוסף למועדפים".
@@ -856,6 +884,8 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                   }
                   onTap={() => openFood(food, grams)}
                   tapLabel={`${food.name} — ${qty}, ${int(v.protein)} גרם חלבון. כמות ורישום`}
+                  onAdd={() => quickLogFavorite(food, grams)}
+                  addLabel={`רשום ${food.name} ${qty}`}
                 />
               );
             })}
@@ -869,7 +899,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           title="מה שאני אוכל"
           aside={
             <>
-              <Num>14</Num> ימים אחרונים · נגיעה = כמות
+              <Num>14</Num> ימים אחרונים · + = רישום · שם = כמות
             </>
           }
         />
@@ -897,12 +927,14 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                       </>
                     }
                     end={
-                      <>
-                        <span className="nut-protein">
-                          <Num>{int(v.protein)}</Num> <span className="tiny muted">ג׳</span>
-                        </span>
-                        <Icon icon={Plus} className="nut-plus" />
-                      </>
+                      <span className="nut-protein">
+                        <Num>{int(v.protein)}</Num> <span className="tiny muted">ג׳</span>
+                      </span>
+                    }
+                    action={
+                      <button type="button" className="listrow__add" aria-label={`רשום ${item.name} ${qty}`} onClick={() => quickLogFrequent(item)}>
+                        <Icon icon={Plus} />
+                      </button>
                     }
                   />
                 </li>

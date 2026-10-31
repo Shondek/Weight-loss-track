@@ -11,6 +11,11 @@ type Base = {
   end?: ReactNode;
   /** הכותרת נשברת לשתי שורות לכל היותר (ואז שלוש נקודות) במקום להיחתך בשורה אחת. */
   wrap?: boolean | undefined;
+  /**
+   * פעולה נפרדת בקצה השורה (כפתור משלה, ≥48px), מחוץ לאזור המגע של `onTap`:
+   * "+" שרושם בנגיעה אחת לצד שורה שנגיעה בה פותחת את חלונית הכמות.
+   */
+  action?: ReactNode;
   className?: string | undefined;
 };
 
@@ -23,7 +28,7 @@ type Props =
  * עם `onTap` כל השורה היא כפתור.
  */
 export default function ListRow(props: Props) {
-  const { title, sub, lead, end, className, wrap } = props;
+  const { title, sub, lead, end, className, wrap, action } = props;
   const body = (
     <>
       {lead && (
@@ -38,15 +43,27 @@ export default function ListRow(props: Props) {
       {end && <span className="listrow__end">{end}</span>}
     </>
   );
+  if (props.onTap && action) {
+    // שני כפתורים זה לצד זה: גוף השורה (פותח) והפעולה (רושמת). לא כפתור בתוך כפתור.
+    const { onTap, title: _t, sub: _s, lead: _l, end: _e, className: _c, wrap: _w, action: _a, ...rest } = props;
+    return (
+      <div className={['listrow', 'listrow--split', className ?? ''].filter(Boolean).join(' ')}>
+        <button type="button" className="listrow__tap" onClick={onTap} {...rest}>
+          {body}
+        </button>
+        {action}
+      </div>
+    );
+  }
   if (props.onTap) {
-    const { onTap, title: _t, sub: _s, lead: _l, end: _e, className: _c, wrap: _w, ...rest } = props;
+    const { onTap, title: _t, sub: _s, lead: _l, end: _e, className: _c, wrap: _w, action: _a, ...rest } = props;
     return (
       <button type="button" className={['listrow', 'listrow--tap', className ?? ''].filter(Boolean).join(' ')} onClick={onTap} {...rest}>
         {body}
       </button>
     );
   }
-  const { onTap: _o, title: _t, sub: _s, lead: _l, end: _e, className: _c, wrap: _w, ...rest } = props;
+  const { onTap: _o, title: _t, sub: _s, lead: _l, end: _e, className: _c, wrap: _w, action: _a, ...rest } = props;
   return (
     <div className={['listrow', className ?? ''].filter(Boolean).join(' ')} {...rest}>
       {body}

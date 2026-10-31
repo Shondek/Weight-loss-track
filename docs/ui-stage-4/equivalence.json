@@ -4,79 +4,79 @@
   "diffs": [],
   "stripped": {
    "before": {
-    "exported": "2026-10-30T06:05:38.847Z",
+    "exported": "2026-10-30T06:05:38.824Z",
     "entryIds": [
      {
-      "id": "0mvukigs2-3b0cfb3e",
-      "ts": 1793340301682
+      "id": "0mvukigrt-8b240a22",
+      "ts": 1793340301673
      },
      {
-      "id": "0mvukih5x-05cfa465",
-      "ts": 1793340302181
+      "id": "0mvukih5q-c429cd35",
+      "ts": 1793340302174
      },
      {
-      "id": "0mvukihy4-e7768c11",
-      "ts": 1793340303196
+      "id": "0mvukihxy-67a917cf",
+      "ts": 1793340303190
      },
      {
-      "id": "0mvukj84s-0f8eb726",
-      "ts": 1793340337132
+      "id": "0mvukj84j-7f3dce14",
+      "ts": 1793340337123
      },
      {
-      "id": "0mvukj8r0-92fb5c37",
-      "ts": 1793340337932
+      "id": "0mvukj8r8-f585afd1",
+      "ts": 1793340337940
      },
      {
-      "id": "0mvukj91m-df96d1cb",
-      "ts": 1793340338314
+      "id": "0mvukj91d-2608b6b5",
+      "ts": 1793340338305
      }
     ],
     "customIds": [
-     "c:ae33cc52-7367-4286-b0f1-8c87521511a5"
+     "c:a26a5b53-ea04-4b7d-b120-570e1792694b"
     ],
     "closedAt": [
-     "2026-10-30T06:05:38.612Z"
+     "2026-10-30T06:05:38.589Z"
     ],
     "creatineAt": [
-     "2026-10-30T06:05:00.902Z"
+     "2026-10-30T06:05:00.924Z"
     ]
    },
    "after": {
-    "exported": "2026-10-30T06:05:09.278Z",
+    "exported": "2026-10-30T06:05:09.170Z",
     "entryIds": [
      {
-      "id": "0mvukih0p-3b422c29",
-      "ts": 1793340301993
+      "id": "0mvukigvx-e6e5db34",
+      "ts": 1793340301821
      },
      {
-      "id": "0mvukihl1-01114e47",
-      "ts": 1793340302725
+      "id": "0mvukihg8-b5ca202b",
+      "ts": 1793340302552
      },
      {
-      "id": "0mvukiicu-75a780d7",
-      "ts": 1793340303726
+      "id": "0mvukii80-825e11b5",
+      "ts": 1793340303552
      },
      {
-      "id": "0mvukil9g-5c1048de",
-      "ts": 1793340307492
+      "id": "0mvukil60-c78f1c3a",
+      "ts": 1793340307368
      },
      {
-      "id": "0mvukilyi-b4925502",
-      "ts": 1793340308394
+      "id": "0mvukiluo-23728908",
+      "ts": 1793340308256
      },
      {
-      "id": "0mvukim8n-99003736",
-      "ts": 1793340308759
+      "id": "0mvukim5b-80889c42",
+      "ts": 1793340308639
      }
     ],
     "customIds": [
-     "c:7d9f78fc-2745-4353-b36d-bb315cc476ce"
+     "c:de0e5715-8fc1-44f5-9cbd-5d39f44af5cd"
     ],
     "closedAt": [
-     "2026-10-30T06:05:09.043Z"
+     "2026-10-30T06:05:08.935Z"
     ],
     "creatineAt": [
-     "2026-10-30T06:05:00.844Z"
+     "2026-10-30T06:05:00.935Z"
     ]
    }
   },
@@ -142,7 +142,7 @@
     }
    },
    {
-    "foodId": "c:7d9f78fc-2745-4353-b36d-bb315cc476ce",
+    "foodId": "c:de0e5715-8fc1-44f5-9cbd-5d39f44af5cd",
     "grams": 100,
     "meal": "breakfast",
     "n": null,
@@ -251,7 +251,7 @@
     }
    },
    {
-    "foodId": "c:ae33cc52-7367-4286-b0f1-8c87521511a5",
+    "foodId": "c:a26a5b53-ea04-4b7d-b120-570e1792694b",
     "grams": 100,
     "meal": "breakfast",
     "n": null,
@@ -303,7 +303,7 @@
     "d": "2026-10-30",
     "closed": true,
     "fridayTier": "regular",
-    "closedAt": "2026-10-30T06:05:09.043Z"
+    "closedAt": "2026-10-30T06:05:08.935Z"
    }
   ],
   "favoritesAfter": [
@@ -328,7 +328,7 @@
   ],
   "customFoodsAfter": [
    {
-    "id": "c:7d9f78fc-2745-4353-b36d-bb315cc476ce",
+    "id": "c:de0e5715-8fc1-44f5-9cbd-5d39f44af5cd",
     "name": "חטיף חלבון ביתי",
     "cat": null,
     "portions": [],
@@ -341,14 +341,200 @@
    }
   ]
  },
- "taps": {
+ "quick": {
+  "identical": true,
+  "diffs": [],
+  "todayEntriesAfter": [
+   {
+    "foodId": "14201019",
+    "grams": 250,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "42101000",
+    "grams": 25,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "שקדים לא קלויים, ללא מלח",
+     "kcal": 579,
+     "protein": 21.1,
+     "carbs": 9.1,
+     "fat": 49.9,
+     "fiber": 12.5
+    }
+   },
+   {
+    "foodId": "c:seed-tahini",
+    "grams": 15,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "טחינה גולמית מלאה",
+     "kcal": 620,
+     "protein": 23,
+     "carbs": 10,
+     "fat": 55,
+     "fiber": 10
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": "המבורגר במסעדה",
+    "adhoc": true,
+    "ref": {
+     "name": "המבורגר במסעדה",
+     "kcal": 85000,
+     "protein": 4500,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   },
+   {
+    "foodId": "c:seed-pro40",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "PRO 40 יטבתה",
+     "kcal": 21000,
+     "protein": 4000,
+     "carbs": 1200,
+     "fat": 300,
+     "fiber": 0,
+     "unitFood": true
+    }
+   }
+  ],
+  "todayEntriesBefore": [
+   {
+    "foodId": "14201019",
+    "grams": 250,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "גבינת קוטג' 5% שומן, תנובה",
+     "kcal": 95,
+     "protein": 11,
+     "carbs": 1.5,
+     "fat": 5,
+     "fiber": 0
+    }
+   },
+   {
+    "foodId": "42101000",
+    "grams": 25,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "שקדים לא קלויים, ללא מלח",
+     "kcal": 579,
+     "protein": 21.1,
+     "carbs": 9.1,
+     "fat": 49.9,
+     "fiber": 12.5
+    }
+   },
+   {
+    "foodId": "c:seed-tahini",
+    "grams": 15,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "טחינה גולמית מלאה",
+     "kcal": 620,
+     "protein": 23,
+     "carbs": 10,
+     "fat": 55,
+     "fiber": 10
+    }
+   },
+   {
+    "foodId": "c:adhoc",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": "המבורגר במסעדה",
+    "adhoc": true,
+    "ref": {
+     "name": "המבורגר במסעדה",
+     "kcal": 85000,
+     "protein": 4500,
+     "carbs": null,
+     "fat": null,
+     "fiber": null,
+     "unitFood": true
+    }
+   },
+   {
+    "foodId": "c:seed-pro40",
+    "grams": 1,
+    "meal": "breakfast",
+    "n": null,
+    "adhoc": false,
+    "ref": {
+     "name": "PRO 40 יטבתה",
+     "kcal": 21000,
+     "protein": 4000,
+     "carbs": 1200,
+     "fat": 300,
+     "fiber": 0,
+     "unitFood": true
+    }
+   }
+  ]
+ },
+ "undo": {
   "before": {
-   "clicks": 2,
-   "typed": 0
+   "identical": true,
+   "diffs": []
   },
   "after": {
-   "clicks": 3,
-   "typed": 0
+   "identical": true,
+   "diffs": []
+  },
+  "entriesTodayAfterUndo": 1,
+  "entriesTodayBaseline": 1
+ },
+ "taps": {
+  "before": {
+   "asIs": {
+    "clicks": 1,
+    "typed": 0
+   },
+   "differentQty": {
+    "clicks": 2,
+    "typed": 0
+   }
+  },
+  "after": {
+   "asIs": {
+    "clicks": 1,
+    "typed": 0
+   },
+   "differentQty": {
+    "clicks": 3,
+    "typed": 0
+   }
   }
  },
  "favoriteRecord": {

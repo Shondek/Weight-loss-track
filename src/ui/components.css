@@ -550,6 +550,51 @@
   white-space: nowrap;
 }
 
+/* שורה מפוצלת: גוף השורה כפתור, ופעולה ("+") כפתור נפרד לידו. */
+.listrow--split {
+  padding: 0;
+  gap: var(--sp-1);
+}
+
+.listrow__tap {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: var(--sp-2) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: start;
+}
+
+/* "+" שרושם בנגיעה אחת: 48×48, על משטח 3. */
+.listrow__add,
+.qtile__add {
+  appearance: none;
+  border: 0;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.listrow__add:active,
+.qtile__add:active {
+  background: var(--accent-soft);
+}
+
 /* שם ארוך: שתי שורות לכל היותר, ואז שלוש נקודות (שלב 4, סעיף 8.6 בדוח שלב 1). */
 .listrow__title--wrap {
   white-space: normal;
@@ -986,6 +1031,47 @@
 }
 
 .qtile:active {
+  background: var(--surface-2);
+}
+
+/* אריח מפוצל: הגוף כפתור, "+" כפתור 48px בפינה (בקצה, משמאל ב-RTL). */
+.qtile--split {
+  position: relative;
+  padding: 0;
+  display: block;
+  cursor: default;
+}
+
+.qtile__tap {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  min-height: 96px;
+  padding: var(--sp-3);
+  padding-inline-end: var(--sp-3);
+  text-align: start;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+}
+
+.qtile__tap .qtile__top {
+  padding-inline-end: calc(var(--tap) - var(--sp-2));
+}
+
+.qtile--split .qtile__add {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  border-start-end-radius: var(--r-md);
+  border-end-start-radius: var(--r-md);
+  border-start-start-radius: 0;
+  border-end-end-radius: 0;
   background: var(--surface-2);
 }
 
