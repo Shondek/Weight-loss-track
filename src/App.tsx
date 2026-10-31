@@ -13,24 +13,28 @@ import { requestPersistentStorage } from './platform/storagePersist';
 import { useRestTimer } from './hooks/useRestTimer';
 import RestTimerBar from './components/RestTimerBar';
 import { Notice, TabBar, type IconComponent } from './ui';
-import { ClipboardCheck, Database, Dumbbell, Scale, Utensils } from './ui/icons';
+import { ClipboardCheck, Database, Dumbbell, House, Utensils } from './ui/icons';
 import WeightScreen from './screens/WeightScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
 import CheckinScreen from './screens/CheckinScreen';
 import DataScreen from './screens/DataScreen';
 import NutritionScreen from './screens/NutritionScreen';
 
+/**
+ * שלב 2: הטאב הראשון נקרא "היום" (היה "משקל") — המסך מציג את מדדי ההחלטה
+ * של הבוקר, לא רק משקל. המזהה הפנימי `weight` וכל מה שנשמר באחסון לא השתנו.
+ */
 const TAB_LABELS: Record<TabId, string> = {
-  weight: 'משקל',
+  weight: 'היום',
   nutrition: 'תזונה',
   workout: 'אימונים',
   checkin: "צ'ק-אין",
   data: 'נתונים',
 };
 
-/** אייקון לכל טאב (Lucide, ui/icons.ts). אותם טאבים, אותם שמות, אותו סדר. */
+/** אייקון לכל טאב (Lucide, ui/icons.ts). אותם טאבים, אותו סדר; "היום" עם בית. */
 const TAB_ICONS: Record<TabId, IconComponent> = {
-  weight: Scale,
+  weight: House,
   nutrition: Utensils,
   workout: Dumbbell,
   checkin: ClipboardCheck,
@@ -221,7 +225,7 @@ export default function App() {
           </div>
         )}
 
-          {tab === 'weight' && <WeightScreen store={store} today={today} />}
+          {tab === 'weight' && <WeightScreen store={store} today={today} onNavigate={setTab} />}
           {tab === 'nutrition' && <NutritionScreen store={store} today={today} />}
           {tab === 'workout' && (
             <WorkoutScreen store={store} today={today} timer={timer} />
