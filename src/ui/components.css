@@ -748,3 +748,138 @@
 .surface--row {
   padding-block: var(--sp-1);
 }
+
+/* ---------- Disclosure: שורה מקופלת שנפתחת בנגיעה ---------- */
+
+.disc {
+  display: grid;
+}
+
+.disc__head {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-1) 0;
+  text-align: start;
+  cursor: pointer;
+}
+
+.disc__lead,
+.disc__chev {
+  color: var(--text-quiet);
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.disc__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.disc__title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.disc__sum {
+  font-size: var(--t-label);
+  color: var(--text-quiet);
+}
+
+.disc__end {
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
+.disc__panel {
+  padding: var(--sp-1) 0 var(--sp-2);
+}
+
+/* ---------- ProgressSegments: מקטע לכל תרגיל ---------- */
+
+.segs {
+  display: flex;
+  gap: 3px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.seg {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-3);
+}
+
+.seg--done {
+  background: var(--text-secondary);
+}
+
+.seg--current {
+  background: var(--accent);
+}
+
+/* דולג / ממתין: מקווקו בצבע "חלקי" — צורה + צבע. */
+.seg--pending {
+  background: repeating-linear-gradient(90deg, var(--status-partial) 0 4px, transparent 4px 7px);
+}
+
+/* ---------- ChipSelect: בחירה מצ'יפים, אזור מגע 48 ---------- */
+
+.chipsel {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.chipsel__label {
+  font-size: var(--t-label);
+  color: var(--text-secondary);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.chips--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--chips-cols, 6), minmax(0, 1fr));
+}
+
+.chipbtn {
+  appearance: none;
+  font: inherit;
+  font-size: var(--t-sub);
+  font-variant-numeric: tabular-nums;
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-radius: var(--r-chip);
+  background: var(--surface-3);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.chips--grid .chipbtn {
+  padding-inline: var(--sp-1);
+  min-height: var(--tap-min);
+}
+
+.chipbtn[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+}

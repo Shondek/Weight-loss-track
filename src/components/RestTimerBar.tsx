@@ -16,7 +16,7 @@ function mmss(total: number): string {
  * שורת הטיימר. לא חוסמת — אפשר להזין את הסט הבא בזמן שהיא רצה.
  * יושבת מעל הניווט התחתון כדי שתיראה בלי לגלול.
  *
- * מנוחה: ±15 ודלג. ספירה לאחור (חימום/אירובי): השהה/המשך, אפס, דלג.
+ * מנוחה: −15, +30 ודלג. ספירה לאחור (חימום/אירובי): השהה/המשך, אפס, דלג.
  */
 export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Props) {
   if (!timer.running && !timer.justFinished) return null;
@@ -49,6 +49,7 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Pro
                 </button>
               </>
             ) : (
+              // מנוחה: −15 (יכולת קיימת), +30 ו"דלג".
               <>
                 <button
                   type="button"
@@ -61,10 +62,10 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Pro
                 <button
                   type="button"
                   className="btn btn--step"
-                  onClick={() => timer.add(15)}
-                  aria-label="הוסף 15 שניות"
+                  onClick={() => timer.add(30)}
+                  aria-label="הוסף 30 שניות"
                 >
-                  <span className="num">+15</span>
+                  <span className="num">+30</span>
                 </button>
               </>
             )}

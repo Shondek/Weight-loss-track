@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import {
   Button,
+  ChipSelect,
   DayDots,
+  Disclosure,
+  ProgressSegments,
   HeroValue,
   Icon,
   ListRow,
@@ -268,6 +271,30 @@ export default function Kit() {
         <MetricTile label="חלבון היום" icon={icons.Utensils} value={<Num>116</Num>} unit={<Num>/ 170</Num>} bar={<ProgressBar fraction={116 / 170} tone="partial" label="חלבון מול היעד" valueNow={116} valueMax={170} />} sub={<>חסר <Num>54</Num> ג׳</>} />
         <MetricTile label="מותניים" icon={icons.Ruler} value={<Num>97.0</Num>} unit='ס"מ' dim chip={<StatusChip tone="partial">חסר — למדוד היום</StatusChip>} sub={<>אחרון <Num>21/10</Num></>} />
         <MetricTile label="מותניים" icon={icons.Ruler} value={<Num>97.0</Num>} unit='ס"מ' dim chip={<StatusChip tone="missing">הוחמץ השבוע</StatusChip>} sub={<>אחרון <Num>21/10</Num></>} />
+      </div>
+
+      <SectionHeader title="Disclosure + ProgressSegments + ChipSelect" aside="מסך האימון" />
+      <ProgressSegments
+        label="התקדמות האימון"
+        items={[
+          { key: '1', state: 'done', label: 'לג-פרס — נרשם' },
+          { key: '2', state: 'done', label: 'בנץ׳ — נרשם' },
+          { key: '3', state: 'current', label: 'פולי עליון — במוקד' },
+          { key: '4', state: 'pending', label: 'פשיטת ברכיים — ממתין' },
+          { key: '5', state: 'upcoming', label: 'כפיפת ברכיים — עוד לא' },
+          { key: '6', state: 'upcoming', label: 'סיום' },
+        ]}
+      />
+      <Surface as="div" className="surface--row">
+        <Disclosure lead={icons.Timer} title="חימום" summary="אופניים · 10 דק׳ · לא נרשם">
+          <p className="small" style={{ margin: 0 }}>
+            תוכן השורה נפתח כאן.
+          </p>
+        </Disclosure>
+      </Surface>
+      <div className="stack--tight">
+        <ChipSelect<number> label="חזרות ברזרבה בסט האחרון" options={[0, 1, 2, 3].map((v) => ({ value: v, label: String(v) })).concat({ value: 4, label: '4+' })} value={2} onChange={() => undefined} />
+        <ChipSelect<number> label="כאב ברך" options={Array.from({ length: 11 }, (_, v) => ({ value: v, label: String(v) }))} value={null} onChange={() => undefined} columns={6} />
       </div>
 
       <SectionHeader title="אייקונים" aside="Lucide · קו 2" />
