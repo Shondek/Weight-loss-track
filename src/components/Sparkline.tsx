@@ -48,12 +48,12 @@ export default function Sparkline({ values, label }: Props) {
         <polyline
           points={pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
           fill="none"
-          stroke="var(--ink-2)"
+          stroke="var(--text-secondary)"
           strokeWidth="1.25"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-        {last && <circle cx={last.x} cy={last.y} r={R} fill="var(--ink)" />}
+        {last && <circle cx={last.x} cy={last.y} r={R} fill="var(--accent)" />}
       </svg>
     );
   }

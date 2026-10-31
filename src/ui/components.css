@@ -1,0 +1,563 @@
+/* ============================================================
+   ספריית הרכיבים (src/ui) — "לילה"
+   כל מחלקה כאן משמשת רכיב אחד ב-src/ui/. מסכים שעדיין מרנדרים מחלקות
+   ישירות (.btn, .section__head, .notice …) מקבלים אותו מראה בדיוק, כי
+   הרכיבים מרנדרים את אותן המחלקות. צבעים: tokens בלבד.
+   ============================================================ */
+
+/* ---------- אייקון (lucide, קו 2, גודל אחיד) ---------- */
+
+.ic {
+  width: var(--icon);
+  height: var(--icon);
+  flex: 0 0 auto;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.ic--sm {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- Num: מספרים ברוחב אחיד, תמיד LTR ומבודדים ---------- */
+
+.num {
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* ---------- Surface: פאנל. משטח 2, רדיוס 16, בלי מסגרת ובלי צל ---------- */
+
+.surface {
+  background: var(--surface-2);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+}
+
+.surface--sunk {
+  background: var(--surface-3);
+}
+
+.surface--hero {
+  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+}
+
+/* ---------- SectionHeader ---------- */
+
+.section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+/* ---------- Button: מבטא / משני / רפאים ---------- */
+
+.btn {
+  appearance: none;
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--t-body);
+  font-weight: 500;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+}
+
+/* מושבת: צבעים מפורשים ולא שקיפות, כדי שגם הטקסט המושבת יישאר ≥ 4.5 (שקט על משטח 3 = 4.8). */
+.btn:disabled,
+.btn--primary:disabled,
+.btn--accent:disabled,
+.btn--danger:disabled {
+  background: var(--surface-3);
+  color: var(--text-quiet);
+  cursor: default;
+}
+
+.btn--quiet:disabled,
+.btn--ghost:disabled {
+  background: none;
+  color: var(--text-quiet);
+}
+
+/* פעולה ראשית: המבטא היחיד. טקסט כהה עליו (8.7:1). */
+.btn--primary,
+.btn--accent {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* רפאים: בלי משטח. טקסט משני. */
+.btn--quiet,
+.btn--ghost {
+  background: none;
+  color: var(--text-secondary);
+  padding-inline: var(--sp-2);
+  font-size: var(--t-sub);
+  font-weight: 400;
+}
+
+/* רפאים עם נוכחות: אותו דבר, בטקסט ראשי (פעולה משנית שצריכה להיבדל משורה). */
+.btn--outlined {
+  color: var(--text-primary);
+  background: var(--surface-3);
+}
+
+/* הרסני: טרקוטה כטקסט על משטח, לעולם לא מלא. */
+.btn--danger {
+  background: var(--surface-3);
+  color: var(--danger);
+}
+
+.btn--danger.err,
+.btn--quiet.err {
+  color: var(--danger);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--tall {
+  min-height: 60px;
+  font-size: 18px;
+}
+
+/* כפתור −/+ מרובע. */
+.btn--step {
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  flex: 0 0 var(--tap);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.btn .ic {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- StatusChip: מילה + צבע, על רקע רך ---------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--t-label);
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: var(--r-chip);
+  line-height: 1.3;
+  white-space: nowrap;
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.chip .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.chip--done {
+  background: var(--status-done-soft);
+  color: var(--status-done);
+}
+
+.chip--partial {
+  background: var(--status-partial-soft);
+  color: var(--status-partial);
+}
+
+.chip--missing {
+  background: var(--status-missing-soft);
+  color: var(--status-missing);
+}
+
+.chip--accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- Stepper: −/+ 48px משני צידי הערך, על משטח 3 ---------- */
+
+.stepper {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface-3);
+  border-radius: var(--r-md);
+  direction: ltr;
+}
+
+.stepper__btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.stepper__btn:disabled {
+  color: var(--text-quiet);
+  cursor: default;
+}
+
+/* שדה הערך: שקוף, במרכז, 20px. לעולם לא צר מ-72px. */
+.stepper input[type='number'],
+.stepper__value {
+  flex: 1;
+  min-width: 72px;
+  min-height: var(--tap);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  text-align: center;
+  font-size: 20px;
+  padding: 0 var(--sp-1);
+  color: var(--text-primary);
+}
+
+.stepper__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stepper--compact .stepper__btn {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  flex-basis: var(--tap-min);
+}
+
+.stepper--compact input[type='number'],
+.stepper--compact .stepper__value {
+  min-width: 56px;
+  min-height: var(--tap-min);
+  font-size: 18px;
+}
+
+/* ---------- ProgressBar ---------- */
+
+.bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: visible;
+}
+
+.bar__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 200ms ease-out;
+}
+
+.bar--done .bar__fill {
+  background: var(--status-done);
+}
+
+.bar--partial .bar__fill {
+  background: var(--status-partial);
+}
+
+.bar--missing .bar__fill {
+  background: var(--status-missing);
+}
+
+.bar__floor {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  background: var(--text-quiet);
+  border-radius: 1px;
+}
+
+/* ---------- Notice: תזכורת. שורה שקטה עם פס ענבר דק — נתון, לא אזעקה ---------- */
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--t-label);
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border-inline-start: 3px solid var(--status-partial);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-3);
+  margin: 0;
+}
+
+.notice--row {
+  margin-bottom: var(--sp-4);
+}
+
+.notice__icon {
+  color: var(--status-partial);
+  display: inline-flex;
+}
+
+.notice .btn {
+  flex: 0 0 auto;
+  min-height: var(--tap-min);
+  margin-block: -4px;
+}
+
+.notice--info {
+  border-inline-start-color: var(--status-missing);
+}
+
+.notice--info .notice__icon {
+  color: var(--status-missing);
+}
+
+.notice--danger {
+  border-inline-start-color: var(--danger);
+}
+
+.notice--danger .notice__icon {
+  color: var(--danger);
+}
+
+/* ---------- Toast: בהיר על כהה, "בטל" בקצה ---------- */
+
+.toast {
+  position: fixed;
+  inset-inline: var(--sp-4);
+  bottom: calc(var(--nav-h) + var(--sp-3) + env(safe-area-inset-bottom));
+  z-index: 22;
+  max-width: calc(var(--maxw) - 2 * var(--sp-4));
+  margin: 0 auto;
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--t-sub);
+}
+
+.toast--static {
+  position: static;
+  max-width: none;
+}
+
+.toast__msg {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast .btn,
+.toast__action {
+  appearance: none;
+  border: 0;
+  background: var(--toast-action-bg);
+  color: inherit;
+  border-radius: var(--r-sm);
+  min-height: var(--tap-min);
+  padding: 0 var(--sp-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: var(--t-sub);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ---------- Sheet: חלונית שעולה מלמטה, עם ידית ---------- */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  z-index: 30;
+}
+
+.sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 31;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  background: var(--surface-2);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: var(--sp-2) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom));
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.sheet--static {
+  position: static;
+  border-radius: var(--r-lg);
+}
+
+.sheet__handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-2);
+  margin: 0 auto;
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.sheet__title {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ---------- TabBar: משטח, אייקון 24 + תווית 11, הפעיל במבטא ---------- */
+
+.tabs {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  background: var(--surface-2);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabs__inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(var(--tabs-count, 5), 1fr);
+  height: var(--nav-h);
+}
+
+.tab {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  color: var(--text-quiet);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  padding: 0 var(--sp-1);
+  min-height: var(--tap);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--accent);
+}
+
+.tab__icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+}
+
+.tab__icon .ic {
+  width: 24px;
+  height: 24px;
+}
+
+.tab__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* נקודה: צ'ק-אין ממתין. סטטוס "חלקי", לא אזעקה. */
+.tab__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-partial);
+}
+
+/* ---------- ListRow: שורה ברשימה, אזור מגע מלא ---------- */
+
+.listrow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--tap);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--line);
+  color: var(--text-primary);
+  width: 100%;
+  text-align: start;
+}
+
+.listrow:first-child {
+  border-top: 0;
+}
+
+.listrow--tap {
+  appearance: none;
+  border-inline: 0;
+  border-bottom: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.listrow__lead {
+  color: var(--text-quiet);
+  display: inline-flex;
+}
+
+.listrow__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.listrow__title {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listrow__sub {
+  font-size: var(--t-micro);
+  color: var(--text-quiet);
+}
+
+.listrow__end {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}

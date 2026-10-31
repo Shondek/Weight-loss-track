@@ -1,0 +1,59 @@
+{
+ "fetchedAt": "2026-10-30T22:49:30.524Z",
+ "lighthouseVersion": "13.6.0",
+ "url": "http://127.0.0.1:4180/",
+ "formFactor": "mobile",
+ "note": "production build of the base branch (19c23a5) served by vite preview on localhost; empty IndexedDB; Chromium headless",
+ "categories": {
+  "performance": 92,
+  "accessibility": 100,
+  "best-practices": 100,
+  "seo": 91
+ },
+ "audits": {
+  "first-contentful-paint": {
+   "score": 1,
+   "displayValue": "0.8 s"
+  },
+  "largest-contentful-paint": {
+   "score": 0.92,
+   "displayValue": "2.4 s"
+  },
+  "total-blocking-time": {
+   "score": 0.8,
+   "displayValue": "290 ms"
+  },
+  "cumulative-layout-shift": {
+   "score": 1,
+   "displayValue": "0"
+  },
+  "speed-index": {
+   "score": 1,
+   "displayValue": "0.8 s"
+  },
+  "interactive": {
+   "score": 0.98,
+   "displayValue": "2.4 s"
+  },
+  "total-byte-weight": {
+   "score": 1,
+   "displayValue": "Total size was 168 KiB"
+  },
+  "unused-javascript": {
+   "score": 0,
+   "displayValue": "Est savings of 43 KiB"
+  },
+  "color-contrast": {
+   "score": 1,
+   "displayValue": null
+  },
+  "target-size": {
+   "score": 1,
+   "displayValue": null
+  },
+  "label": {
+   "score": 1,
+   "displayValue": null
+  }
+ }
+}

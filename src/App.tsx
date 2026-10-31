@@ -12,6 +12,8 @@ import { onAppUpdate } from './platform/appUpdate';
 import { requestPersistentStorage } from './platform/storagePersist';
 import { useRestTimer } from './hooks/useRestTimer';
 import RestTimerBar from './components/RestTimerBar';
+import { Notice, TabBar, type IconComponent } from './ui';
+import { ClipboardCheck, Database, Dumbbell, Scale, Utensils } from './ui/icons';
 import WeightScreen from './screens/WeightScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
 import CheckinScreen from './screens/CheckinScreen';
@@ -26,13 +28,26 @@ const TAB_LABELS: Record<TabId, string> = {
   data: 'נתונים',
 };
 
+/** אייקון לכל טאב (Lucide, ui/icons.ts). אותם טאבים, אותם שמות, אותו סדר. */
+const TAB_ICONS: Record<TabId, IconComponent> = {
+  weight: Scale,
+  nutrition: Utensils,
+  workout: Dumbbell,
+  checkin: ClipboardCheck,
+  data: Database,
+};
+
 /**
  * הלשוניות לפי פרופיל המכשיר (lib/profile.ts). בלי פרופיל — כל החמש, כמו
  * היום. בת הזוג: אימונים ונתונים בלבד. אין ניתוב לפי כתובת — הלשונית היא
  * מצב בזיכרון, ולכן מסך שאינו ברשימה אינו נגיש בשום דרך.
  */
 const PROFILE = activeProfile();
-const TABS: { id: TabId; label: string }[] = visibleTabs(PROFILE).map((id) => ({ id, label: TAB_LABELS[id] }));
+const TABS: { id: TabId; label: string; icon: IconComponent }[] = visibleTabs(PROFILE).map((id) => ({
+  id,
+  label: TAB_LABELS[id],
+  icon: TAB_ICONS[id],
+}));
 
 export default function App() {
   const store = useDb();
@@ -113,22 +128,24 @@ export default function App() {
           tabIndex={-1}
         >
         {backupDue && (
-          <div className="notice notice--row" role="status">
-            <span className="grow">
-              {sinceBackup === null ? (
-                'גיבוי: אין עדיין. הנתונים קיימים רק במכשיר הזה.'
-              ) : (
-                <>
-                  גיבוי: עברו <span className="num">{sinceBackup}</span> ימים מהגיבוי האחרון.
-                </>
-              )}
-            </span>
-            {tab !== 'data' && (
-              <button type="button" className="btn btn--quiet btn--outlined" onClick={() => setTab('data')}>
-                ייצא
-              </button>
+          <Notice
+            className="notice--row"
+            action={
+              tab !== 'data' ? (
+                <button type="button" className="btn btn--quiet" onClick={() => setTab('data')}>
+                  ייצא
+                </button>
+              ) : undefined
+            }
+          >
+            {sinceBackup === null ? (
+              'גיבוי: אין עדיין. הנתונים קיימים רק במכשיר הזה.'
+            ) : (
+              <>
+                גיבוי: עברו <span className="num">{sinceBackup}</span> ימים מהגיבוי האחרון.
+              </>
             )}
-          </div>
+          </Notice>
         )}
 
         {updateReady && (
@@ -222,43 +239,18 @@ export default function App() {
         }
       />
 
-      <nav className="tabs" aria-label="ניווט ראשי">
-        <div
-          className="tabs__inner"
-          role="tablist"
-          aria-label="מסכים"
-          onKeyDown={onTabKey}
-        >
-          {TABS.map((t) => {
-            const selected = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                id={`tab-${t.id}`}
-                ref={(el) => {
-                  tabRefs.current[t.id] = el;
-                }}
-                type="button"
-                role="tab"
-                className="tab"
-                aria-selected={selected}
-                aria-controls={`panel-${t.id}`}
-                // רק הטאב הפעיל בסדר ה-Tab; החצים מזיזים בין הטאבים.
-                tabIndex={selected ? 0 : -1}
-                onClick={() => setTab(t.id)}
-              >
-                {t.label}
-                {t.id === 'checkin' && checkinDue && (
-                  <>
-                    <span className="tab__dot" aria-hidden="true" />
-                    <span className="visually-hidden">ממתין</span>
-                  </>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* צ'ק-אין ממתין מסומן בנקודה על הטאב בלבד (ראו למעלה). */}
+      <TabBar<TabId>
+        tabs={TABS.map((t) => ({ ...t, dot: t.id === 'checkin' && checkinDue, dotLabel: 'ממתין' }))}
+        selected={tab}
+        onSelect={setTab}
+        tabRef={(id, el) => {
+          tabRefs.current[id] = el;
+        }}
+        onKeyDown={onTabKey}
+        navLabel="ניווט ראשי"
+        listLabel="מסכים"
+      />
 
       <span className="visually-hidden" aria-live="polite">
         שבוע נוכחי מתחיל ב-{thisWeek}

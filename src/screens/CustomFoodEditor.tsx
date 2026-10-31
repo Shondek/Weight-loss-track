@@ -290,7 +290,7 @@ export default function CustomFoodEditor({
             <span className="tiny muted">מהתווית, כמו שהם</span>
           </div>
           <div className="stack">
-            <label className="row" style={{ fontSize: 14, color: 'var(--ink)', gap: 'var(--sp-2)', cursor: 'pointer' }}>
+            <label className="row" style={{ fontSize: 14, color: 'var(--text-primary)', gap: 'var(--sp-2)', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={unitFood}

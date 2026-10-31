@@ -28,7 +28,7 @@ const MIN_SPAN = 1;
 /**
  * התקדמות של תרגיל אחד לאורך זמן: ערך (משקל / שניות / חזרות) מול תאריך.
  * המרחק האופקי הוא זמן אמיתי, לא מספר סידורי — שבועיים בלי אימון נראים
- * כפער. אותה שפה של WeeklyChart: דיו בלבד, בלי צירים, בלי אנימציה.
+ * כפער. אותה שפה של WeeklyChart: קו מבטא, בלי צירים, בלי אנימציה.
  * נגיעה בנקודה מציגה את התאריך והערך שלה; ברירת המחדל היא האחרונה.
  */
 export default function ExerciseChart({ points, unit, label }: Props) {
@@ -72,8 +72,8 @@ export default function ExerciseChart({ points, unit, label }: Props) {
         <polyline
           points={xy.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
           fill="none"
-          stroke="var(--ink)"
-          strokeWidth="1.25"
+          stroke="var(--accent)"
+          strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -83,9 +83,9 @@ export default function ExerciseChart({ points, unit, label }: Props) {
               cx={p.x}
               cy={p.y}
               r={R}
-              fill={p === sel ? 'var(--ink)' : 'var(--paper)'}
-              stroke="var(--ink)"
-              strokeWidth="1.25"
+              fill={p === sel ? 'var(--accent)' : 'var(--surface-2)'}
+              stroke="var(--accent)"
+              strokeWidth="2"
             />
             {/* אזור נגיעה גדול מהנקודה, שקוף. */}
             <circle
@@ -102,7 +102,7 @@ export default function ExerciseChart({ points, unit, label }: Props) {
           x={sel.x}
           y={sel.y - R - 6}
           fontSize="12"
-          fill="var(--ink)"
+          fill="var(--text-primary)"
           textAnchor={anchor}
           direction="ltr"
           style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -113,13 +113,13 @@ export default function ExerciseChart({ points, unit, label }: Props) {
           x={width - PAD_X}
           y={H - 4}
           fontSize="11"
-          fill="var(--ink-3)"
+          fill="var(--text-quiet)"
           textAnchor="end"
           direction="ltr"
         >
           {formatDM(first.d)}
         </text>
-        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--ink-3)" textAnchor="start" direction="ltr">
+        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--text-quiet)" textAnchor="start" direction="ltr">
           {formatDM(points[points.length - 1]!.d)}
         </text>
         <text className="num chart__value" x={0} y={PAD_TOP + 4} textAnchor="start" direction="ltr">

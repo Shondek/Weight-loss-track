@@ -15,6 +15,7 @@ import type { FoodEntry, FoodRef, FridayTier } from '../types';
 import { ADHOC_FOOD_ID } from '../types';
 import { useFoodIndex } from '../useFoodIndex';
 import ProgressBar, { toneOf } from '../components/ProgressBar';
+import { StatusChip } from '../ui';
 import { addDays, compareISO, formatDM, dayName } from '../lib/date';
 import { MAX_GRAMS, MIN_GRAMS } from '../lib/schema';
 import { upsertCustomFood, type Food } from '../lib/nutrition/foods';
@@ -457,8 +458,18 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           <span className="strong">{isToday ? 'היום' : dayName(day)}</span>
           {' · '}
           <span className="num">{formatDM(day)}</span>
-          {closed && <span className="nut-badge nut-badge--closed"> נסגר</span>}
-          {estimated && <span className="nut-badge"> כולל הערכות</span>}
+          {closed && (
+            <>
+              {' '}
+              <StatusChip tone="done">נסגר</StatusChip>
+            </>
+          )}
+          {estimated && (
+            <>
+              {' '}
+              <StatusChip tone="neutral">כולל הערכות</StatusChip>
+            </>
+          )}
         </div>
         <button type="button" className="btn btn--quiet" aria-label="יום הבא" disabled={isToday} onClick={() => setDay(addDays(day, 1))}>
           ‹

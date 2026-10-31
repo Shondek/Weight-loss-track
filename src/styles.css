@@ -1,90 +1,34 @@
 /* ============================================================
-   מערכת עיצוב — "מינימליזם רך" (שלב 7: בכל הטאבים)
-   רקע נייר, כרטיסים לבנים עם מסגרת רכה וצל עדין, מרווחים נדיבים.
-   מצבים: מרווה = טוב, ענבר = בינוני / נתון לתשומת לב, צפחה = נמוך.
-   פעולה ראשית אחת (כפתור כהה) לכל כרטיס; פעולה הרסנית בטרקוטה עמומה.
-   כל המספרים ברוחב אחיד. אזור מגע 44px לפחות; 48px+ בהזנת סטים.
-   האסימונים חיים ב-:root ומשותפים לכל המסכים; קידומת nut- נשמרת כשם
-   נרדף כדי שמסך התזונה (שלב 3) יישאר זהה.
+   מערכת העיצוב — כיוון 3 · "לילה" (שלב 1 של תוכנית ה-UI)
+   פחם חם במקום שחור; בלי מסגרות ובלי צל — שלוש דרגות משטח עושות את
+   ההפרדה. מספרים גדולים ב-Rubik 300. מבטא אחד (כחול-פלדה) לפעולה
+   הראשית, לטאב הפעיל ולקו הממוצע. סטטוס = צ'יפ רך עם מילה.
+   כל הצבעים ב-src/ui/tokens.css; רכיבי הספרייה ב-src/ui/components.css.
+   הקובץ הזה: בסיס, שלד, והמחלקות שהמסכים הקיימים עדיין מרנדרים ישירות.
+   מבנה המסכים, סדר השדות וההתנהגות לא השתנו — רק המראה.
    ============================================================ */
 
+@import './ui/tokens.css';
+@import './ui/components.css';
+
+/* Rubik, self-hosted (src/fonts, OFL 1.1). תתי-קבוצות hebrew + latin, variable 300–900. */
 @font-face {
-  font-family: 'Heebo';
+  font-family: 'Rubik';
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 300 900;
   font-display: swap;
-  src: url('./fonts/heebo-hebrew.woff2') format('woff2');
+  src: url('./fonts/rubik-hebrew.woff2') format('woff2');
   unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
 }
 @font-face {
-  font-family: 'Heebo';
+  font-family: 'Rubik';
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 300 900;
   font-display: swap;
-  src: url('./fonts/heebo-latin.woff2') format('woff2');
+  src: url('./fonts/rubik-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
     U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191,
     U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-:root {
-  /* הפלטה נבדקה מול AA: טקסט משני 4.65:1 ומעלה, גבול פקד 3.02:1 ומעלה.
-     --rule הוא קו הפרדה דקורטיבי בלבד ואינו מגדיר שום פקד. */
-  --paper: #faf9f7;
-  --paper-sunk: #f5f3f0;
-  --ink: #16150f;
-  --ink-2: #55524a;
-  --ink-3: #716d65;
-  --rule: #e2dfd8;
-  --rule-strong: #8e8a81;
-  --error: #a32a22;
-
-  /* אסימוני "מינימליזם רך" (שלב 3 → כל האפליקציה בשלב 7) */
-  --card: #ffffff;
-  --cream: #fffdf7;
-  --border: #e8e5de;
-  --divider: #f0ede6;
-  --sage: #8fae7e;
-  --amber: #d4a854;
-  --slate: #8b8b8b;
-  --track: #f0ede6;
-  --radius-card: 10px;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  /* פעולה הרסנית: טרקוטה עמומה, לא אדום. 5.0:1 על לבן, 4.8:1 על נייר. */
-  --terracotta: #a85a3a;
-  --terracotta-soft: #f6ebe5;
-
-  /* ביטחון בנתון — מלאות השבוע בלבד (7/7, 4–6, פחות מ-4). נבדק מול AA
-     על --paper: 4.70, 4.83, 5.28. לעולם לא על כיוון שינוי או על משקל. */
-  --confidence-high: #4e7a57;
-  --confidence-mid: #946512;
-  --confidence-low: #5d6a74;
-
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 24px;
-  --sp-6: 32px;
-
-  --tap: 44px;
-  --radius: 6px;
-  --maxw: 620px;
-
-  /* מספר-הגיבור: גדול ומלא רק לשבוע 7/7; חלקי וריק מושתקים באותו גודל */
-  --hero-size: 64px;
-  --hero-size-muted: 44px;
-  --text-chart-label: 11px;
-  /* תוויות משניות: אותיות ימים, תאריך ריק, תווית אריח, רמז בכפתור */
-  --text-label-sm: 12px;
-  /* אריח מאקרו משני (פחמימה/שומן/סיבים): קטן מהאריח הרגיל, רמה שנייה */
-  --stat-small-value: 17px;
-  --stat-small-min-height: 56px;
-  /* כפתורי בלוק ברובריקה: שניים רחבים למעלה, ארבעה קטנים מתחת */
-  --block-primary-height: 56px;
-  --text-block-secondary: 13px;
-
-  color-scheme: light;
 }
 
 * {
@@ -98,27 +42,20 @@ body {
 }
 
 html {
-  background: var(--paper);
+  background: var(--surface-1);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: 'Heebo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-  font-size: 16px;
+  font-family: var(--font);
+  font-size: var(--t-body);
   line-height: 1.5;
-  color: var(--ink);
-  background: var(--paper);
+  color: var(--text-primary);
+  background: var(--surface-1);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-/* מספרים תמיד ברוחב אחיד ובכיוון LTR, גם בתוך טקסט עברי */
-.num {
-  font-variant-numeric: tabular-nums;
-  direction: ltr;
-  unicode-bidi: isolate;
 }
 
 /* ---------- שלד ---------- */
@@ -137,70 +74,12 @@ body {
 .app__main {
   flex: 1;
   padding-block: var(--sp-4);
-  padding-bottom: calc(52px + var(--sp-6) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--nav-h) + var(--sp-6) + env(safe-area-inset-bottom));
 }
 
-/* ---------- ניווט תחתון ---------- */
-
-.tabs {
-  position: fixed;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 20;
-  background: var(--card);
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.tabs__inner {
-  max-width: var(--maxw);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-}
-
-.tab {
-  appearance: none;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 14px;
-  color: var(--ink-3);
-  min-height: 52px;
-  padding: var(--sp-2) var(--sp-1);
-  cursor: pointer;
-  position: relative;
-}
-
-/* הטאב הפעיל: כהה ומודגש, עם פס מרווה מעוגל למעלה. */
-.tab[aria-selected='true'] {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.tab[aria-selected='true']::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  inset-inline: 18%;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--sage);
-}
-
-.tab__dot {
-  background: var(--amber);
-}
-
-.tab__dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  margin-inline-start: 5px;
-  vertical-align: 2px;
+/* מרווח נוסף בתחתית כשהטיימר רץ, כדי שלא יכסה תוכן */
+.app__main--timer {
+  padding-bottom: calc(var(--nav-h) + 68px + var(--sp-6) + env(safe-area-inset-bottom));
 }
 
 /* ---------- טיפוגרפיה ---------- */
@@ -209,19 +88,20 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.25;
 }
 
 h1 {
-  font-size: 20px;
+  font-size: var(--t-h1);
 }
 
+/* כותרת סעיף: תווית קטנה ושקטה, כמו panel__label באב-הטיפוס. */
 h2 {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--t-label);
+  font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--ink-2);
+  color: var(--text-quiet);
 }
 
 h3 {
@@ -230,7 +110,7 @@ h3 {
 }
 
 .hero {
-  font-size: var(--hero-size);
+  font-size: var(--t-hero);
   font-weight: 300;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -238,64 +118,57 @@ h3 {
   text-align: start;
 }
 
-.hero--empty {
-  color: var(--ink-3);
-  font-size: var(--hero-size-muted);
-}
-
-/* שבוע חלקי: אותו טיפול כמו ריק. שקילה אחת אינה מגמה. */
+.hero--empty,
 .hero--partial {
-  color: var(--ink-3);
-  font-size: var(--hero-size-muted);
+  color: var(--text-quiet);
+  font-size: var(--t-hero-muted);
 }
 
 .sub {
-  font-size: 14px;
-  color: var(--ink-2);
+  font-size: var(--t-sub);
+  color: var(--text-secondary);
 }
 
 .muted {
-  color: var(--ink-3);
+  color: var(--text-quiet);
 }
 
 .small {
-  font-size: 13px;
+  font-size: var(--t-label);
 }
 
 .tiny {
-  font-size: 12px;
+  font-size: var(--t-micro);
 }
 
 .err {
-  color: var(--error);
+  color: var(--danger);
 }
 
 .strong {
-  font-weight: 600;
+  font-weight: 500;
 }
 
-/* ---------- ביטחון בנתון (מלאות השבוע) ---------- */
+/* ---------- ביטחון בנתון (מלאות השבוע) — צבע סטטוס כמילה ---------- */
 
 .confidence--high {
-  color: var(--confidence-high);
+  color: var(--status-done);
 }
 
 .confidence--mid {
-  color: var(--confidence-mid);
+  color: var(--status-partial);
 }
 
 .confidence--low {
-  color: var(--confidence-low);
+  color: var(--status-missing);
 }
 
 /* ---------- מבנים ---------- */
 
-/* כרטיס: כל סעיף במסך הוא כרטיס לבן עם מסגרת רכה וצל עדין (כמו .nut-card). */
+/* כרטיס = פאנל: משטח 2, רדיוס 16, בלי מסגרת ובלי צל. */
 .section {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow);
+  background: var(--surface-2);
+  border-radius: var(--r-lg);
   padding: var(--sp-4);
 }
 
@@ -303,33 +176,25 @@ h3 {
   margin-top: 0;
 }
 
-/* אזור מסוכן (מסך נתונים): מופרד, מסגרת טרקוטה מקווקוות על רקע חם. */
+/* אזור מסוכן (מסך נתונים): על הרקע, מסגרת טרקוטה מקווקוות — הסטייה
+   היחידה מ"בלי מסגרות", כדי שהמחיקה תיראה שונה מכל פאנל אחר. */
 .section--danger {
-  border: 1px dashed var(--terracotta);
-  background: var(--terracotta-soft);
-  box-shadow: none;
+  background: var(--danger-soft);
+  outline: 1px dashed var(--danger);
+  outline-offset: -1px;
 }
 
 .stack--loose > .section--danger {
   margin-top: var(--sp-6);
 }
 
-/* סעיף בתוך כרטיס: קו הפרדה בלבד, בלי כרטיס בתוך כרטיס. */
+/* סעיף בתוך כרטיס: קו הפרדה בלבד, בלי פאנל בתוך פאנל. */
 .section .section {
   background: none;
-  border: 0;
-  border-top: 1px solid var(--divider);
+  border-top: 1px solid var(--line);
   border-radius: 0;
-  box-shadow: none;
   padding: var(--sp-4) 0 0;
-}
-
-.section__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-3);
+  margin-top: var(--sp-4);
 }
 
 .row {
@@ -372,31 +237,39 @@ h3 {
 label,
 .label {
   display: block;
-  font-size: 13px;
-  color: var(--ink-2);
+  font-size: var(--t-label);
+  color: var(--text-secondary);
   margin-bottom: var(--sp-1);
 }
 
 input[type='text'],
 input[type='date'],
 input[type='number'],
+input[type='search'],
 textarea,
 select {
   font: inherit;
   /* 16px חובה — פחות מזה גורם ל-iOS להגדיל את המסך בפוקוס */
-  font-size: 16px;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
+  font-size: var(--t-body);
+  color: var(--text-primary);
+  background: var(--surface-3);
+  border: 0;
+  border-radius: var(--r-md);
   padding: 10px var(--sp-3);
   min-height: var(--tap);
   width: 100%;
   appearance: none;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-quiet);
+  opacity: 1;
+}
+
 input[type='date'] {
   min-width: 0;
+  color-scheme: dark;
 }
 
 input[type='number'] {
@@ -411,18 +284,30 @@ input[type='number']::-webkit-inner-spin-button {
   margin: 0;
 }
 
+input[aria-invalid='true'] {
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
 textarea {
   min-height: 76px;
   resize: vertical;
   line-height: 1.45;
 }
 
+select {
+  padding-inline-end: var(--sp-5);
+}
+
+input[type='checkbox'] {
+  accent-color: var(--accent);
+}
+
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* ---------- כפתורים ---------- */
+/* ---------- כפתורים (הבסיס ב-ui/components.css) ---------- */
 
 button {
   font: inherit;
@@ -430,137 +315,59 @@ button {
   cursor: pointer;
 }
 
-.btn {
-  appearance: none;
-  min-height: var(--tap);
-  min-width: var(--tap);
-  padding: 0 var(--sp-4);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 15px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-}
-
-.btn:disabled {
-  color: var(--ink-3);
-  border-color: var(--rule);
-  cursor: default;
-}
-
-.btn--primary {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
-  font-weight: 500;
-}
-
-.btn--primary:disabled {
-  background: var(--paper-sunk);
-  color: var(--ink-3);
-  border-color: var(--rule);
-}
-
-.btn--quiet {
-  border-color: transparent;
-  padding-inline: var(--sp-2);
-  color: var(--ink-2);
-  font-size: 14px;
-}
-
-/* כפתור שקט עם גבול דק: פעולה משנית שצריכה להיבדל משורה שנפתחת. */
-.btn--outlined {
-  border-color: var(--border);
-}
-
-/* פעולה הרסנית: טרקוטה עמומה. לעולם לא אדום בוהק, ולעולם לא מלא. */
-.btn--danger {
-  color: var(--terracotta);
-  border-color: var(--terracotta);
-  background: var(--card);
-}
-
-.btn--danger.err {
-  color: var(--terracotta);
-}
-
-.btn--block {
-  width: 100%;
-}
-
-.btn--step {
-  width: var(--tap);
-  padding: 0;
-  font-size: 18px;
-  font-weight: 400;
-  flex: 0 0 var(--tap);
-}
-
 /* שדה תאריך מכווץ: שורה אחת, יישור להתחלה, אזור מגע מלא. */
 .datefield__summary {
   width: 100%;
   justify-content: flex-start;
   padding-inline: 0;
-  color: var(--ink);
+  color: var(--text-primary);
+  font-size: var(--t-body);
 }
 
-/* שורה מכווצת שפותחת סעיף: רוחב מלא, יישור להתחלה, חץ טיפוגרפי בקצה.
-   אותה צורה של .menu__head, בלי המסגרת של קבוצה. */
+/* שורה מכווצת שפותחת סעיף: רוחב מלא, יישור להתחלה, חץ בקצה. */
 .disclosure {
   width: 100%;
   justify-content: flex-start;
   padding-inline: 0;
-  color: var(--ink);
+  color: var(--text-primary);
+  font-size: var(--t-body);
   gap: var(--sp-3);
 }
 
-/* ---------- stepper ---------- */
-
-.stepper {
-  display: flex;
-  align-items: stretch;
-  gap: var(--sp-2);
-}
-
-/* שדה הערך לעולם לא צר מ-72px: "15.0" / "6.5" / "120" נראים במלואם,
-   בלי להקטין את הטקסט. כשאין מקום לשני סטפרים בשורה — הם נערמים. */
-.stepper input {
-  flex: 1;
-  min-width: 72px;
-}
+/* ---------- stepper ישן (עדיין בשימוש ב-components/Stepper דרך ui/Stepper) ---------- */
 
 /* ---------- בחירה בכפתורים (0–10 וכו') ---------- */
 
 .choice {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-1);
+  gap: var(--sp-2);
 }
 
-/* צ'יפ לחיץ: מסגרת רכה, מעוגל; הנבחר מתמלא במרווה. אותם ערכים ושדות. */
+/* צ'יפ לחיץ: משטח 3, מעוגל; הנבחר = מבטא עם טקסט כהה. אותם ערכים ושדות. */
 .choice__btn {
   appearance: none;
   min-height: var(--tap);
   min-width: var(--tap);
   flex: 1 0 var(--tap);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--card);
-  color: var(--ink);
+  border: 0;
+  border-radius: var(--r-chip);
+  background: var(--surface-3);
+  color: var(--text-primary);
   font-size: 15px;
   font-variant-numeric: tabular-nums;
-  padding: 0 2px;
+  padding: 0 var(--sp-1);
 }
 
 .choice__btn[aria-pressed='true'] {
-  background: var(--sage);
-  color: #fff;
-  border-color: var(--sage);
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 500;
+}
+
+.choice__btn:disabled {
+  background: var(--surface-3);
+  color: var(--text-quiet);
 }
 
 .choice--scale {
@@ -574,116 +381,79 @@ button {
   min-height: 64px;
   font-size: 20px;
   font-weight: 500;
-  border-color: var(--border);
-  border-radius: var(--radius-card);
-  background: var(--cream);
+  border-radius: var(--r-lg);
 }
 
 .choice__hint {
   display: block;
-  font-size: var(--text-label-sm);
+  font-size: var(--t-micro);
   font-weight: 400;
 }
 
 /*
- * כרטיס שאינו אימון (אירובי עצמאי): שורה משלו מתחת ל-A/B/C, מסגרת
- * מקווקוות, בלי משקל — כדי שלא ייקרא כאימון רביעי.
+ * כרטיס שאינו אימון (אירובי עצמאי): שורה משלו מתחת ל-A/B/C, מקווקו,
+ * בלי משקל — כדי שלא ייקרא כאימון רביעי.
  */
 .choice--big .choice__btn--aside {
   flex: 1 0 100%;
-  min-height: 48px;
-  border-style: dashed;
-  background: var(--paper-sunk);
-  color: var(--ink-2);
-  font-size: 16px;
+  min-height: var(--tap);
+  background: none;
+  outline: 1px dashed var(--line-2);
+  outline-offset: -1px;
+  color: var(--text-secondary);
+  font-size: var(--t-body);
   font-weight: 400;
 }
 
-/* "החלפה" בייבוא: בחירה הרסנית — טרקוטה במקום מרווה. */
+/* "החלפה" בייבוא: בחירה הרסנית — טרקוטה במקום מבטא. */
 .choice__btn--danger[aria-pressed='true'] {
-  background: var(--terracotta);
-  border-color: var(--terracotta);
-}
-
-/* כרטיסי A/B/C: הנבחר ("הבא בתור") כהה — זו הפעולה הראשית של הכרטיס. */
-.choice--big .choice__btn[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  background: var(--danger);
+  color: var(--on-accent);
 }
 
 .choice--big .choice__btn--aside[aria-pressed='true'] {
-  background: var(--ink-2);
-  color: var(--paper);
-  border-style: solid;
+  background: var(--surface-3);
+  color: var(--text-primary);
+  outline: 0;
 }
 
 /* סקשן של דבר שאינו אימון — אותו סימון מקווקו כמו הכרטיס. */
 .section--aside {
-  border: 1px dashed var(--rule-strong);
-  box-shadow: none;
+  outline: 1px dashed var(--line-2);
+  outline-offset: -1px;
 }
 
 /* ---------- באנרים ---------- */
 
-/* באנר = כרטיס רך, לא פס מלא. פס צד: צפחה (הודעה), טרקוטה (שגיאה). */
+/* באנר = פאנל עם פס צד: צפחה (הודעה), טרקוטה (שגיאה). */
 .banner {
-  border: 1px solid var(--border);
-  border-inline-start: 3px solid var(--slate);
-  border-radius: var(--radius-card);
+  background: var(--surface-2);
+  border-inline-start: 3px solid var(--status-missing);
+  border-radius: var(--r-md);
   padding: var(--sp-3) var(--sp-4);
-  font-size: 14px;
-  background: var(--card);
-  box-shadow: var(--shadow);
+  font-size: var(--t-sub);
   margin-bottom: var(--sp-4);
 }
 
 .banner--error {
-  border-inline-start-color: var(--terracotta);
-  color: var(--ink);
-  background: var(--card);
+  border-inline-start-color: var(--danger);
+  color: var(--text-primary);
 }
 
 .banner--error .btn--quiet.err {
-  color: var(--terracotta);
+  color: var(--danger);
 }
 
-/* "נתונים חסרים" (שלב 2): חוסם ובולט — מסגרת טרקוטה מלאה על רקע חם. */
+/* "נתונים חסרים": חוסם ובולט — רקע טרקוטה רך ומסגרת מלאה. */
 .banner--blocking {
-  border: 2px solid var(--terracotta);
-  border-inline-start-width: 2px;
-  background: var(--terracotta-soft);
-  box-shadow: none;
+  background: var(--danger-soft);
+  outline: 2px solid var(--danger);
+  outline-offset: -2px;
 }
 
-/* תזכורת (גיבוי / מותניים): שורה שקטה עם פס ענבר — נתון, לא אזעקה. */
-.notice {
-  font-size: 13px;
-  color: var(--ink-2);
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-inline-start: 3px solid var(--amber);
-  border-radius: var(--radius-card);
-  padding: var(--sp-2) var(--sp-3);
-}
-
-/* תזכורת כשורה (גיבוי, שלב 0): טקסט + כפתור קטן בקצה, מעל כל טאב. */
-.notice--row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-4);
-  padding-block: var(--sp-1);
-}
-
-.notice--row .btn {
-  flex: 0 0 auto;
-  font-size: 13px;
-}
-
-/* אימות גיבוי שעבר: מרווה כהה (AA), כמו תג המלאות. */
+/* אימות גיבוי שעבר: סטטוס "הושלם". */
 .backup-save__ok {
-  color: var(--confidence-high);
+  color: var(--status-done);
 }
 
 /* ---------- רשתות ורשימות ---------- */
@@ -695,9 +465,8 @@ button {
 }
 
 .day {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--cream);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
   padding: var(--sp-2) 2px;
   text-align: center;
   min-height: 58px;
@@ -708,28 +477,28 @@ button {
 }
 
 .day--today {
-  border-color: var(--ink);
-  border-width: 2px;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-/* יום עתידי מסומן בקו מקווקו ולא בשקיפות: שקיפות הייתה מורידה את
-   ניגודיות הטקסט מתחת ל-AA. */
+/* יום עתידי: מקווקו, בלי משטח. שקיפות הייתה מורידה ניגודיות מתחת ל-AA. */
 .day--future {
-  border-style: dashed;
-}
-
-.day--future .day__letter,
-.day--future .day__empty {
-  color: var(--ink-3);
+  background: none;
+  outline: 1px dashed var(--line-2);
+  outline-offset: -1px;
 }
 
 .day__letter {
-  font-size: var(--text-label-sm);
-  color: var(--ink-3);
+  font-size: var(--t-micro);
+  color: var(--text-quiet);
+}
+
+.day--today .day__letter {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .day__value {
-  font-size: 14px;
+  font-size: var(--t-sub);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   direction: ltr;
@@ -737,8 +506,8 @@ button {
 }
 
 .day__empty {
-  font-size: var(--text-label-sm);
-  color: var(--ink-3);
+  font-size: var(--t-micro);
+  color: var(--text-quiet);
   font-variant-numeric: tabular-nums;
   direction: ltr;
   unicode-bidi: isolate;
@@ -751,7 +520,7 @@ button {
 }
 
 .list > li {
-  border-top: 1px solid var(--divider);
+  border-top: 1px solid var(--line);
   padding-block: var(--sp-2);
   min-height: var(--tap);
   display: flex;
@@ -777,14 +546,9 @@ button {
 
 .weeknav__label {
   font-size: 15px;
-  color: var(--ink);
+  color: var(--text-primary);
   text-align: center;
   flex: 1;
-}
-
-.weeknav .btn--step {
-  border-color: var(--border);
-  border-radius: 8px;
 }
 
 /* ---------- אריחי סיכום ---------- */
@@ -796,9 +560,8 @@ button {
 }
 
 .stat {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--cream);
+  border-radius: var(--r-md);
+  background: var(--surface-3);
   padding: var(--sp-3);
   display: flex;
   flex-direction: column;
@@ -806,48 +569,48 @@ button {
   min-height: 72px;
 }
 
-/* אריח קטן: אותה שפה, פחות משקל. למאקרו המשני מתחת לחלבון. */
+/* אריח קטן: אותה שפה, פחות משקל. */
 .stat--small {
-  min-height: var(--stat-small-min-height);
+  min-height: 56px;
   padding: var(--sp-2) var(--sp-3);
 }
 
 .stat--small .stat__value {
-  font-size: var(--stat-small-value);
+  font-size: 17px;
 }
 
-/* מסגרת האריח של ממוצע השבוע — אותו קידוד מלאות כמו התג במסך המשקל. */
+/* אריח ממוצע השבוע — אותו קידוד מלאות כמו התג במסך המשקל, כפס צד. */
 .stat--confidence-high {
-  border-color: var(--confidence-high);
+  border-inline-start: 3px solid var(--status-done);
 }
 
 .stat--confidence-mid {
-  border-color: var(--confidence-mid);
+  border-inline-start: 3px solid var(--status-partial);
 }
 
 .stat--confidence-low {
-  border-color: var(--confidence-low);
+  border-inline-start: 3px solid var(--status-missing);
 }
 
 .stat__label {
-  font-size: var(--text-label-sm);
-  color: var(--ink-3);
+  font-size: var(--t-micro);
+  color: var(--text-quiet);
 }
 
 .stat__value {
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.15;
 }
 
 .stat__note {
-  font-size: 11px;
-  color: var(--ink-2);
+  font-size: var(--t-chart);
+  color: var(--text-secondary);
 }
 
 /* ---------- גרף ---------- */
 
-/* קו מרווה לממוצעים השבועיים, נקודות צפחה לשקילות היומיות. בלי קווי רשת. */
+/* קו מבטא לממוצעים השבועיים, נקודות line-2 לשקילות היומיות. בלי קווי רשת. */
 .chart {
   width: 100%;
   height: 112px;
@@ -855,38 +618,31 @@ button {
   overflow: visible;
 }
 
-/* גבולות ציר ה-Y בשולי הגרף. שני מספרים, בלי קווי רשת. */
 .chart__value {
-  font-size: var(--text-chart-label);
-  fill: var(--ink-3);
+  font-size: var(--t-chart);
+  fill: var(--text-quiet);
 }
 
 /* ---------- תיבת ייצוא ---------- */
 
 .export-box {
   width: 100%;
-  font-family: 'Heebo', system-ui, sans-serif;
-  font-size: 13px;
+  font-family: var(--font);
+  font-size: var(--t-label);
   line-height: 1.55;
   white-space: pre-wrap;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border: 0;
+  border-radius: var(--r-md);
   padding: var(--sp-3);
-  background: var(--cream);
+  background: var(--surface-3);
   min-height: 240px;
-  color: var(--ink);
-}
-
-textarea {
-  border-color: var(--border);
-  border-radius: 8px;
-  background: var(--card);
+  color: var(--text-primary);
 }
 
 /* ---------- תרגיל ---------- */
 
 .exercise {
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
   padding-top: var(--sp-3);
   margin-top: var(--sp-3);
 }
@@ -909,47 +665,40 @@ textarea {
 
 .focusnav__dots {
   display: flex;
-  gap: 3px;
+  gap: var(--sp-1);
   flex-wrap: wrap;
 }
 
-.focusnav__dots {
-  gap: var(--sp-1);
-}
-
-/* נקודות ניווט בגודל מגע מלא (44px); נשברות לשורה שנייה כשצריך. */
+/* נקודות ניווט בגודל מגע מלא; נשברות לשורה שנייה כשצריך. */
 .focusnav__dot {
   appearance: none;
   width: var(--tap);
   height: var(--tap);
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--ink-2);
-  font-size: 13px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  font-size: var(--t-label);
   font-variant-numeric: tabular-nums;
 }
 
 .focusnav__dot.is-done {
-  background: var(--cream);
-  border-color: var(--sage);
-  color: var(--ink);
+  background: var(--status-done-soft);
+  color: var(--status-done);
 }
 
 .focusnav__dot.is-current {
-  border-color: var(--ink);
-  border-width: 2px;
-  color: var(--ink);
-  font-weight: 600;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
 }
 
-/* כרטיס התרגיל: שמנת בתוך כרטיס האימון הלבן — המקום שבו מזינים. */
+/* כרטיס התרגיל: שקוע לתוך הרקע בתוך פאנל האימון — המקום שבו מזינים. */
 .focus {
   margin-top: var(--sp-3);
-  background: var(--cream);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  background: var(--surface-1);
+  border-radius: var(--r-lg);
   padding: var(--sp-4);
 }
 
@@ -959,7 +708,7 @@ textarea {
   margin: 0;
 }
 
-/* ▶ לסרטון הדגמה. אזור מגע 44px בלי להגדיל את הכותרת. */
+/* ▶ לסרטון הדגמה. אזור מגע מלא בלי להגדיל את הכותרת. */
 .focus__video {
   display: inline-flex;
   align-items: center;
@@ -969,16 +718,16 @@ textarea {
   margin-block: calc(-1 * var(--sp-2));
   margin-inline-start: var(--sp-1);
   vertical-align: middle;
-  font-size: 14px;
-  color: var(--ink-2);
+  font-size: var(--t-sub);
+  color: var(--text-secondary);
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .focus__video:hover,
 .focus__video:focus-visible {
-  color: var(--ink);
-  background: var(--paper-sunk);
+  color: var(--text-primary);
+  background: var(--surface-3);
 }
 
 .focus__meta {
@@ -991,13 +740,13 @@ textarea {
 
 .focus__note {
   margin: var(--sp-3) 0 0;
-  border-inline-start: 3px solid var(--slate);
+  border-inline-start: 3px solid var(--status-missing);
   padding-inline-start: var(--sp-3);
 }
 
 .focus__history {
   margin: var(--sp-3) 0 0;
-  border-inline-start: 3px solid var(--border);
+  border-inline-start: 3px solid var(--line-2);
   padding-inline-start: var(--sp-3);
 }
 
@@ -1005,31 +754,27 @@ textarea {
   margin: 0;
 }
 
-/* כותרת האקורדיון: שורה מלאה, אזור מגע 44px, בלי מסגרת. */
+/* כותרת האקורדיון: שורה מלאה, אזור מגע מלא, בלי משטח. */
 .focus__history-toggle {
   display: flex;
   align-items: center;
   width: 100%;
   min-height: var(--tap);
   padding-inline: 0;
-  font-size: 14px;
+  font-size: var(--t-sub);
 }
 
 .focus__history-toggle + div {
   margin-top: var(--sp-1);
 }
 
-/* הזנה: משקל (עמודה אחת לתרגיל — משקל אחד לכל הסטים) ליד חזרות לכל סט. */
+/* הזנה: משקל (עמודה אחת לתרגיל) ליד חזרות לכל סט. */
 .focus__entry {
   margin-top: var(--sp-4);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
   gap: var(--sp-3) var(--sp-2);
   align-items: start;
-}
-
-.focus__weight .stepper {
-  gap: 6px;
 }
 
 .focus__sets {
@@ -1045,7 +790,7 @@ textarea {
 
 .focus__setno {
   min-width: 36px;
-  font-size: 13px;
+  font-size: var(--t-label);
 }
 
 .focus__reps {
@@ -1053,22 +798,14 @@ textarea {
   min-width: 0;
 }
 
-/* שדות גדולים — הזנה באגודל אחד, בעמידה: 48px לפחות, ומקלדת מספרים. */
-.focus__set input[type='number'],
-.focus__weight input[type='number'] {
+/* שדות גדולים — הזנה באגודל אחד, בעמידה: 52px, מקלדת מספרים. */
+.focus__set input[type='number'] {
   min-height: 52px;
   font-size: 19px;
-  background: var(--card);
-  border-color: var(--border);
-  border-radius: 8px;
 }
 
-.focus__weight .btn--step {
-  min-height: 52px;
-  height: 52px;
-  border-color: var(--border);
-  background: var(--card);
-  border-radius: 8px;
+.focus__weight .stepper input[type='number'] {
+  font-size: 22px;
 }
 
 /* ---------- חימום / אירובי סיום ---------- */
@@ -1109,15 +846,14 @@ textarea {
 
 .cardio-summary__seg {
   padding: var(--sp-2) 0;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
 }
 
 .cardio-summary__seg:first-child {
   border-top: 0;
 }
 
-/* שיפוע | מהירות: זה לצד זה כשיש ≥176px לכל סטפר (−, +, 72px ערך),
-   אחרת אחד מתחת לשני עם התווית מעל כל אחד. הטקסט לא מתכווץ. */
+/* שיפוע | מהירות: זה לצד זה כשיש מקום, אחרת אחד מתחת לשני. */
 .cardio__gauges {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
@@ -1126,22 +862,14 @@ textarea {
   align-items: start;
 }
 
-/* ---------- טיימר מנוחה ---------- */
+/* ---------- טיימר מנוחה: גדול, על משטח 3, מעל הניווט ---------- */
 
-/* יושב מעל הניווט התחתון: נראה בלי לגלול, ולא חוסם את שדות ההזנה. */
 .resttimer {
   position: fixed;
   inset-inline: 0;
-  bottom: calc(52px + env(safe-area-inset-bottom));
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
   z-index: 25;
-  background: var(--card);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--divider);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.resttimer__count {
-  color: var(--ink);
+  background: var(--surface-3);
 }
 
 .resttimer__inner {
@@ -1150,49 +878,53 @@ textarea {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-2) max(var(--sp-3), env(safe-area-inset-right))
-    var(--sp-2) max(var(--sp-3), env(safe-area-inset-left));
+  min-height: 68px;
+  padding: var(--sp-2) max(var(--sp-4), env(safe-area-inset-right))
+    var(--sp-2) max(var(--sp-4), env(safe-area-inset-left));
 }
 
 .resttimer__count {
-  font-size: 30px;
+  color: var(--text-primary);
+  font-size: 36px;
   font-weight: 300;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   direction: ltr;
   unicode-bidi: isolate;
-  min-width: 68px;
+  min-width: 84px;
+}
+
+.resttimer .btn {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  min-height: var(--tap-min);
+  padding: 0 var(--sp-3);
+  font-size: var(--t-sub);
 }
 
 .resttimer .btn--step {
-  font-size: 14px;
   flex: 0 0 auto;
   width: auto;
-  padding: 0 var(--sp-2);
-  min-width: 44px;
-}
-
-/* מרווח נוסף בתחתית המסך כשהטיימר רץ, כדי שלא יכסה תוכן */
-.app__main--timer {
-  padding-bottom: calc(52px + var(--tap) + var(--sp-6) + env(safe-area-inset-bottom));
+  height: auto;
+  min-width: var(--tap-min);
 }
 
 /* ---------- תזונה ---------- */
 
-/* שורת המאקרו מתחת למספר הגדול: שלושה אריחים באותה שפה של .stat */
+/* שורת המאקרו: שלושה אריחים באותה שפה של .stat */
 .macros {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--sp-2);
 }
 
-/* תוצאות חיפוש: שורות לחיצות בגובה מגע מלא, בלי מסגרת כפתור */
+/* תוצאות חיפוש: שורות לחיצות בגובה מגע מלא, על הרקע */
 .results {
   list-style: none;
   margin: var(--sp-2) 0 0;
-  padding: 0;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  padding: 0 var(--sp-2);
+  background: var(--surface-1);
+  border-radius: var(--r-md);
   max-height: 46vh;
   overflow-y: auto;
 }
@@ -1203,13 +935,14 @@ textarea {
   background: none;
   width: 100%;
   min-height: var(--tap);
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--sp-2);
   text-align: start;
   display: flex;
   align-items: baseline;
   gap: var(--sp-3);
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
   font-size: 15px;
+  color: var(--text-primary);
 }
 
 .results > li:first-child .results__btn {
@@ -1217,10 +950,14 @@ textarea {
 }
 
 .results__btn:active {
-  background: var(--paper-sunk);
+  background: var(--surface-3);
 }
 
-/* שדה הגרמים — גדול, להקלדה ביד אחת ליד המשקל */
+.results__btn:disabled {
+  color: var(--text-quiet);
+}
+
+/* שדה הגרמים — גדול, להקלדה ביד אחת */
 .grams input[type='number'] {
   min-height: 52px;
   font-size: 19px;
@@ -1231,37 +968,40 @@ textarea {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
+  background: var(--surface-3);
+  border-radius: var(--r-md);
   padding: var(--sp-2) var(--sp-3);
-  font-size: 14px;
+  font-size: var(--t-sub);
 }
 
 /* ---------- קלט קובץ ---------- */
 
 input[type='file'] {
   font: inherit;
-  font-size: 16px;
+  font-size: var(--t-body);
   width: 100%;
   min-height: var(--tap);
   padding: 8px var(--sp-3);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink-2);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+}
+
+input[type='file']:disabled {
+  color: var(--text-quiet);
 }
 
 input[type='file']::file-selector-button {
   font: inherit;
   font-size: 15px;
-  /* לא שדה הקלדה — 15px כאן לא גורם ל-iOS להגדיל את המסך. */
   margin-inline-end: var(--sp-3);
   min-height: 34px;
   padding: 0 var(--sp-3);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper-sunk);
-  color: var(--ink);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-primary);
 }
 
 /* ---------- נגישות ---------- */
@@ -1289,10 +1029,8 @@ input[type='file']::file-selector-button {
   }
 }
 
-/* ---------- "התפריט שלי": קבוצות מתקפלות של כפתורי רישום בלחיצה אחת ---------- */
+/* ---------- "התפריט שלי" / שייקים: קבוצות מתקפלות ---------- */
 
-/* בלוקים: תמיד גלויים מעל האקורדיונים. שתי רמות — שני הבלוקים היומיים
-   רחבים, ארבעת הנותרים קטנים. */
 .menu__blocks {
   margin-bottom: var(--sp-2);
 }
@@ -1314,10 +1052,10 @@ input[type='file']::file-selector-button {
   appearance: none;
   min-height: var(--tap);
   padding: var(--sp-1) var(--sp-2);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--text-primary);
   font-size: 15px;
   display: flex;
   flex-direction: column;
@@ -1328,28 +1066,27 @@ input[type='file']::file-selector-button {
 }
 
 .block-btn--primary {
-  min-height: var(--block-primary-height);
+  min-height: 56px;
   font-weight: 500;
 }
 
 .block-btn--secondary {
-  font-size: var(--text-block-secondary);
+  font-size: var(--t-label);
   padding-inline: 2px;
 }
 
 .block-btn:active {
-  background: var(--paper-sunk);
+  background: var(--surface-2);
 }
 
-/* נרשם היום: מושתק, לא מושבת — לפעמים רושמים פעמיים. נתון, לא חסימה. */
+/* נרשם היום: מושתק, לא מושבת. */
 .block-btn.is-logged {
-  color: var(--ink-3);
-  border-color: var(--rule);
+  color: var(--text-quiet);
 }
 
 .menu__group {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  background: var(--surface-3);
+  border-radius: var(--r-md);
 }
 
 .menu__group + .menu__group {
@@ -1369,14 +1106,14 @@ input[type='file']::file-selector-button {
   text-align: start;
   font-size: 15px;
   font-weight: 500;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .menu__items {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
 }
 
 .menu__btn {
@@ -1390,9 +1127,9 @@ input[type='file']::file-selector-button {
   display: flex;
   align-items: baseline;
   gap: var(--sp-3);
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
   font-size: 15px;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .menu__items > li:first-child .menu__btn {
@@ -1400,58 +1137,39 @@ input[type='file']::file-selector-button {
 }
 
 .menu__btn:active {
-  background: var(--paper-sunk);
+  background: var(--surface-2);
 }
 
-/* עריכת גרמים בשורת "מה אכלתי היום": שדה קצר במקום הטקסט, בלי לשבור את השורה */
+/* עריכת גרמים בשורת "מה אכלתי היום" */
 .list__grams {
   width: 5.5em;
-  min-height: 36px;
+  min-height: var(--tap-min);
   padding: 4px var(--sp-2);
   font-size: 15px;
 }
 
-/* שורת המרכיבים מתחת לשם המנה ברובריקה */
 .menu__ingredients {
   display: block;
-  font-size: 12px;
-  color: var(--ink-3);
+  font-size: var(--t-micro);
+  color: var(--text-quiet);
   margin-top: 2px;
   line-height: 1.35;
 }
 
 /* רישום ידני (הערכה): מסומן בבירור מול רישום מדוד */
 .list > li.is-adhoc {
-  border-inline-start: 3px dashed var(--rule-strong);
+  border-inline-start: 3px dashed var(--line-2);
   padding-inline-start: var(--sp-2);
 }
 
 .adhoc-note {
-  color: var(--ink-2);
+  color: var(--text-secondary);
   font-style: italic;
 }
 
 /* ============================================================
-   מסך התזונה (שלב 3) — "מינימליזם רך"
-   רקע שמנת, כרטיסים לבנים, מרווחים נדיבים, היררכיה אחת: גיבור >
-   פריטים מהירים > רישומים. מרווה = טוב, ענבר = בינוני, צפחה = נמוך.
-   בלוק שחור אחד בלבד — הפעולה הראשית. כל המספרים ברוחב אחיד.
-   תחום: הטאב הזה והקטעים שעברו למסך הנתונים (.nut-manage) בלבד.
+   מסך התזונה — אותם tokens, אותה היררכיה: גיבור > פריטים מהירים > רישומים
    ============================================================ */
-
-:root {
-  /* שמות נרדפים לאסימוני השורש — אותם ערכים בדיוק, מסך התזונה לא משתנה. */
-  --nut-cream: var(--cream);
-  --nut-card: var(--card);
-  --nut-border: var(--border);
-  --nut-divider: var(--divider);
-  --nut-sage: var(--sage);
-  --nut-amber: var(--amber);
-  --nut-slate: var(--slate);
-  --nut-track: var(--track);
-  --nut-radius: var(--radius-card);
-  --nut-shadow: var(--shadow);
-}
 
 .nut {
   font-variant-numeric: tabular-nums;
@@ -1459,15 +1177,12 @@ input[type='file']::file-selector-button {
 
 .nut-card,
 .nut-manage {
-  background: var(--nut-card);
-  border: 1px solid var(--nut-border);
-  border-radius: var(--nut-radius);
-  box-shadow: var(--nut-shadow);
+  background: var(--surface-2);
+  border-radius: var(--r-lg);
   padding: var(--sp-4);
 }
 
 .nut-manage {
-  border-top: 1px solid var(--nut-border);
   margin-top: var(--sp-4);
 }
 
@@ -1476,8 +1191,6 @@ input[type='file']::file-selector-button {
 }
 
 .nut h2 {
-  font-size: 15px;
-  font-weight: 600;
   margin: 0;
 }
 
@@ -1490,18 +1203,26 @@ input[type='file']::file-selector-button {
   padding-top: var(--sp-2);
 }
 
+.nut-daybar .btn--quiet {
+  min-width: var(--tap);
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
 .nut-daybar__label {
   flex: 1;
   text-align: center;
   font-size: 15px;
 }
 
+/* תג יום: צ'יפ סטטוס (מילה + צבע), בלי מסגרת */
 .nut-badge {
   display: inline-block;
-  font-size: 12px;
-  color: var(--ink-3);
-  border: 1px solid var(--nut-border);
-  border-radius: 999px;
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--status-missing);
+  background: var(--status-missing-soft);
+  border-radius: var(--r-chip);
   padding: 0 var(--sp-2);
   margin-inline-start: var(--sp-2);
   line-height: 20px;
@@ -1509,8 +1230,8 @@ input[type='file']::file-selector-button {
 }
 
 .nut-badge--closed {
-  color: var(--confidence-high);
-  border-color: var(--nut-sage);
+  color: var(--status-done);
+  background: var(--status-done-soft);
 }
 
 /* ---------- גיבור ---------- */
@@ -1519,10 +1240,6 @@ input[type='file']::file-selector-button {
   display: grid;
   gap: var(--sp-4);
   padding: var(--sp-5) var(--sp-4);
-}
-
-.nut-hero.is-closed {
-  border-color: var(--nut-sage);
 }
 
 .nut-hero__row {
@@ -1538,96 +1255,78 @@ input[type='file']::file-selector-button {
 }
 
 .nut-hero__label {
-  font-size: 13px;
-  color: var(--ink-2);
+  font-size: var(--t-label);
+  font-weight: 500;
+  color: var(--text-quiet);
 }
 
 .nut-hero__value {
-  font-size: 34px;
+  font-size: 36px;
   font-weight: 300;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .nut-hero__target,
 .nut-hero__unit {
   font-size: 15px;
   font-weight: 400;
-  color: var(--ink-3);
+  color: var(--text-secondary);
   letter-spacing: 0;
 }
 
 .nut-hero__note {
   margin: 0;
-  font-size: 13px;
-  color: var(--ink-2);
+  font-size: var(--t-label);
+  color: var(--text-secondary);
 }
 
 .nut-tone--high {
-  color: var(--confidence-high);
+  color: var(--status-done);
 }
 .nut-tone--mid {
-  color: var(--confidence-mid);
+  color: var(--status-partial);
 }
 .nut-tone--low {
-  color: var(--confidence-low);
+  color: var(--status-missing);
 }
 
 .nut-macros {
   margin: 0;
   padding-top: var(--sp-3);
-  border-top: 1px solid var(--nut-divider);
+  border-top: 1px solid var(--line);
 }
 
-/* פס התקדמות: מסילה בהירה, מילוי בצבע לפי אחוז, סימון רצפה כקו דק */
-.nut-bar {
-  position: relative;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--nut-track);
-  overflow: visible;
-}
-
-.nut-bar__fill {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--nut-slate);
-  transition: width 200ms ease-out;
-}
-
-.nut-bar--high .nut-bar__fill {
-  background: var(--nut-sage);
-}
-.nut-bar--mid .nut-bar__fill {
-  background: var(--nut-amber);
-}
-
-.nut-bar__floor {
-  position: absolute;
-  top: -3px;
-  width: 2px;
-  height: 14px;
-  background: var(--ink-3);
-  border-radius: 1px;
-}
-
-/* ---------- טוסט (ביטול / הצעה) ---------- */
+/* ---------- טוסט (ביטול / הצעה): בהיר על כהה, כמו .toast ---------- */
 
 .nut-toast {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  background: var(--nut-card);
-  border: 1px solid var(--nut-sage);
-  border-radius: var(--nut-radius);
-  padding: var(--sp-2) var(--sp-3);
-  font-size: 14px;
-  box-shadow: var(--nut-shadow);
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  font-size: var(--t-sub);
+}
+
+.nut-toast .btn {
+  background: var(--toast-action-bg);
+  color: inherit;
+  border-radius: var(--r-sm);
+  min-height: var(--tap-min);
+  padding: 0 var(--sp-3);
+  font-weight: 500;
 }
 
 .nut-toast--offer {
-  border-color: var(--nut-amber);
+  background: var(--status-partial-soft);
+  color: var(--text-primary);
+}
+
+.nut-toast--offer .btn {
+  background: var(--surface-3);
 }
 
 /* ---------- מה שאני אוכל ---------- */
@@ -1644,10 +1343,9 @@ input[type='file']::file-selector-button {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  border: 1px solid var(--nut-border);
-  border-radius: var(--nut-radius);
-  padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
-  background: var(--nut-cream);
+  border-radius: var(--r-md);
+  padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-3);
+  background: var(--surface-3);
 }
 
 .nut-quick__tap {
@@ -1678,37 +1376,43 @@ input[type='file']::file-selector-button {
   white-space: nowrap;
 }
 
-/* ---------- בקרת כמות ---------- */
+/* ---------- בקרת כמות: −/+ בגודל מגע מלא (44), על המשטח ---------- */
 
 .nut-qty {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-1);
+  gap: 0;
   flex: 0 0 auto;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+}
+
+.nut-qty--grams {
+  background: none;
+  gap: var(--sp-1);
 }
 
 .nut-qty .btn--step {
-  width: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  flex-basis: 36px;
-  border-color: var(--nut-border);
-  background: var(--nut-card);
-  border-radius: 8px;
+  width: var(--tap-min);
+  min-width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min);
+  flex-basis: var(--tap-min);
+  background: none;
+  border-radius: var(--r-md);
 }
 
 .nut-qty__value {
-  min-width: 36px;
+  min-width: 40px;
   text-align: center;
   font-size: 15px;
 }
 
 .nut-qty__input {
   width: 72px;
-  min-height: 36px;
+  min-height: var(--tap-min);
   padding: 4px var(--sp-2);
-  border-color: var(--nut-border);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 /* ---------- חיפוש ---------- */
@@ -1716,11 +1420,11 @@ input[type='file']::file-selector-button {
 .nut-search,
 .nut input[type='search'] {
   font: inherit;
-  font-size: 16px;
-  color: var(--ink);
-  background: var(--nut-cream);
-  border: 1px solid var(--nut-border);
-  border-radius: var(--nut-radius);
+  font-size: var(--t-body);
+  color: var(--text-primary);
+  background: var(--surface-3);
+  border: 0;
+  border-radius: var(--r-md);
   padding: 10px var(--sp-3);
   min-height: var(--tap);
   width: 100%;
@@ -1728,13 +1432,7 @@ input[type='file']::file-selector-button {
 }
 
 .nut .results {
-  border-color: var(--nut-border);
-  border-radius: var(--nut-radius);
   max-height: 40vh;
-}
-
-.nut .results__btn {
-  border-top-color: var(--nut-divider);
 }
 
 .nut-results__title {
@@ -1743,11 +1441,15 @@ input[type='file']::file-selector-button {
 
 .nut-selected {
   margin-top: var(--sp-3);
-  border: 1px solid var(--nut-sage);
-  border-radius: var(--nut-radius);
+  background: var(--surface-3);
+  border-radius: var(--r-md);
   padding: var(--sp-2) var(--sp-3);
   display: grid;
   gap: var(--sp-2);
+}
+
+.nut-selected .nut-qty {
+  background: var(--surface-1);
 }
 
 .nut-selected__head,
@@ -1755,6 +1457,7 @@ input[type='file']::file-selector-button {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  flex-wrap: wrap;
 }
 
 .nut-two {
@@ -1771,9 +1474,9 @@ input[type='file']::file-selector-button {
 
 .nut-meal__title {
   margin: 0 0 var(--sp-1);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-2);
+  font-size: var(--t-label);
+  font-weight: 500;
+  color: var(--text-secondary);
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -1786,7 +1489,7 @@ input[type='file']::file-selector-button {
 }
 
 .nut-row {
-  border-top: 1px solid var(--nut-divider);
+  border-top: 1px solid var(--line);
 }
 
 .nut-row:first-child {
@@ -1794,10 +1497,10 @@ input[type='file']::file-selector-button {
 }
 
 .nut-row.is-open {
-  background: var(--nut-cream);
+  background: var(--surface-3);
   margin-inline: calc(-1 * var(--sp-3));
   padding-inline: var(--sp-3);
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 
 .nut-row__tap {
@@ -1824,12 +1527,12 @@ input[type='file']::file-selector-button {
 
 .nut-row__nums {
   flex: 0 0 auto;
-  font-size: 14px;
-  color: var(--ink);
+  font-size: var(--t-sub);
+  color: var(--text-primary);
 }
 
 .nut-row.is-adhoc .nut-row__name {
-  color: var(--ink-2);
+  color: var(--text-secondary);
 }
 
 .nut-row__edit {
@@ -1840,31 +1543,39 @@ input[type='file']::file-selector-button {
   padding: 0 0 var(--sp-3);
 }
 
-/* ---------- צ'יפים (ארוחה, דרגת שישי) ---------- */
+.nut-row__edit .nut-qty {
+  background: var(--surface-2);
+}
+
+/* ---------- צ'יפים (ארוחה, דרגת שישי, RIR): גובה מגע מלא ---------- */
 
 .nut-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-1);
+  gap: var(--sp-2);
 }
 
 .nut-chip {
   appearance: none;
   font: inherit;
-  font-size: 13px;
-  min-height: 32px;
+  font-size: var(--t-sub);
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
   padding: 0 var(--sp-3);
-  border: 1px solid var(--nut-border);
-  border-radius: 999px;
-  background: var(--nut-card);
-  color: var(--ink-2);
+  border: 0;
+  border-radius: var(--r-chip);
+  background: var(--surface-3);
+  color: var(--text-primary);
   cursor: pointer;
 }
 
+.nut-row.is-open .nut-chip {
+  background: var(--surface-2);
+}
+
 .nut-chip[aria-pressed='true'] {
-  background: var(--nut-sage);
-  border-color: var(--nut-sage);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 500;
 }
 
@@ -1884,27 +1595,22 @@ input[type='file']::file-selector-button {
   gap: var(--sp-3);
 }
 
-.nut-close.is-closed {
-  border-color: var(--nut-sage);
-  background: var(--nut-cream);
-}
-
 .nut-close__state {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   font-size: 15px;
-  color: var(--confidence-high);
+  color: var(--status-done);
 }
 
 .nut-friday {
   display: grid;
   gap: var(--sp-2);
   padding-bottom: var(--sp-3);
-  border-bottom: 1px solid var(--nut-divider);
+  border-bottom: 1px solid var(--line);
 }
 
-/* ---------- יחידות מנה (שלב 3.1) ---------- */
+/* ---------- יחידות מנה ---------- */
 
 .nut-qty__value--unit {
   display: inline-flex;
@@ -1915,8 +1621,8 @@ input[type='file']::file-selector-button {
 }
 
 .nut-qty__unit {
-  font-size: 11px;
-  color: var(--ink-3);
+  font-size: var(--t-chart);
+  color: var(--text-quiet);
   white-space: nowrap;
 }
 
@@ -1924,25 +1630,25 @@ input[type='file']::file-selector-button {
 .nut-qty__toggle {
   appearance: none;
   font: inherit;
-  font-size: 12px;
-  min-height: 36px;
+  font-size: var(--t-micro);
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
   padding: 0 var(--sp-2);
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: 0;
+  border-radius: var(--r-sm);
   background: none;
-  color: var(--ink-3);
+  color: var(--text-secondary);
   cursor: pointer;
   text-decoration: underline dotted;
 }
 
-/* ---------- תכולת מנה (שלב 3.1) ---------- */
+/* ---------- תכולת מנה ---------- */
 
-/* שורה אחת עם שלוש נקודות בכל מקום; הטקסט המלא בגיליון העריכה */
 .nut-comp {
   display: block;
-  font-size: 12px;
+  font-size: var(--t-micro);
   line-height: 1.4;
-  color: var(--ink-3);
+  color: var(--text-quiet);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1971,8 +1677,7 @@ input[type='file']::file-selector-button {
 }
 
 /* ============================================================
-   מסך אימונים — תוספות שלב 4 (RIR, הצעה, תקציב אירובי).
-   אותם אסימונים של שלב 3; שאר הטאב לא עוצב מחדש.
+   מסך אימונים — RIR, הצעה, תקציב אירובי, החלפה/דילוג
    ============================================================ */
 
 .wk-rir {
@@ -1981,31 +1686,29 @@ input[type='file']::file-selector-button {
   margin-top: var(--sp-3);
 }
 
-/* צ'יפי RIR בגודל מגע מלא, שקטים — לא מתחרים בהזנת הסטים. */
 .wk-rir .nut-chip {
   min-height: var(--tap);
   min-width: var(--tap);
 }
 
-/* הצעה לאימון הבא: כרטיס רך; מרווה = עלייה, צפחה = אותו משקל, ענבר = ירידה / RIR חסר */
+/* הצעה לאימון הבא: משטח 3 עם פס סטטוס — מלא = עלייה, צפחה = אותו משקל, ענבר = ירידה / RIR חסר */
 .wk-suggest {
   margin-top: var(--sp-3);
-  border: 1px solid var(--nut-border);
-  border-inline-start: 3px solid var(--nut-slate);
-  border-radius: var(--nut-radius);
-  background: var(--nut-cream);
+  background: var(--surface-3);
+  border-inline-start: 3px solid var(--status-missing);
+  border-radius: var(--r-md);
   padding: var(--sp-2) var(--sp-3);
   display: grid;
   gap: var(--sp-1);
 }
 
 .wk-suggest--up {
-  border-inline-start-color: var(--nut-sage);
+  border-inline-start-color: var(--status-done);
 }
 
 .wk-suggest--down,
 .wk-suggest--unknown {
-  border-inline-start-color: var(--nut-amber);
+  border-inline-start-color: var(--status-partial);
 }
 
 .wk-suggest__head {
@@ -2015,46 +1718,47 @@ input[type='file']::file-selector-button {
   font-size: 15px;
 }
 
+.wk-suggest .btn--outlined {
+  background: var(--surface-2);
+}
+
 .wk-suggest__warn {
-  color: var(--confidence-mid);
+  color: var(--status-partial);
 }
 
 /* תקציב אירובי: מעל התקציב בענבר (נתון, לא אזהרה) */
 .wk-budget--over {
-  color: var(--confidence-mid);
+  color: var(--status-partial);
 }
 
 .wk-budget__flag {
   font-weight: 500;
 }
 
-/* דלג ואחזור / החלף (שלב 4.1): פעולות משניות, שקטות, בתחתית הכרטיס. */
+/* דלג ואחזור / החלף: פעולות משניות, שקטות, בתחתית הכרטיס. */
 .wk-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
   margin-top: var(--sp-4);
   padding-top: var(--sp-3);
-  border-top: 1px solid var(--divider);
+  border-top: 1px solid var(--line);
 }
 
 .wk-actions .btn {
-  font-size: 14px;
-  color: var(--ink-2);
-  background: var(--card);
+  font-size: var(--t-sub);
 }
 
 /* "הוחלף מ-…" — סימון עובדתי, בענבר */
 .wk-swapped {
-  color: var(--confidence-mid);
+  color: var(--status-partial);
 }
 
 /* רשימת החלופות */
 .wk-alts {
   margin-top: var(--sp-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--card);
+  background: var(--surface-3);
+  border-radius: var(--r-md);
   padding: var(--sp-1) var(--sp-2);
 }
 
@@ -2065,6 +1769,7 @@ input[type='file']::file-selector-button {
   justify-items: start;
   text-align: start;
   padding: var(--sp-2) var(--sp-1);
+  color: var(--text-primary);
 }
 
 .wk-alt__name {
@@ -2072,7 +1777,7 @@ input[type='file']::file-selector-button {
   font-weight: 500;
 }
 
-/* צעדים (שלב 6): שורת שבעת הימים האחרונים */
+/* צעדים: שורת שבעת הימים האחרונים */
 .steps-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -2084,40 +1789,37 @@ input[type='file']::file-selector-button {
   display: grid;
   gap: 2px;
   padding: var(--sp-1) 0;
-  border: 1px solid transparent;
-  border-radius: var(--nut-radius);
+  border-radius: var(--r-sm);
 }
 
 .steps-day.is-current {
-  border-color: var(--nut-border);
-  background: var(--nut-cream);
+  background: var(--surface-3);
 }
 
 .steps-val {
-  font-size: 13px;
+  font-size: var(--t-label);
 }
 
-/* מול היעד (מ-1/11): מרווה = עמד, אפור-צפחה = מתחת. לפני כן — בלי צבע. */
+/* מול היעד: הושלם = מלא, מתחת = צפחה. לפני כן — בלי צבע. */
 .steps-val--ok {
-  color: var(--nut-sage);
+  color: var(--status-done);
 }
 
 .steps-val--low {
-  color: var(--nut-slate);
+  color: var(--status-missing);
 }
 
-/* רמז צעדי הליכון מהאירובי (שלב 7.1): שורה שקטה, כפתור משני, "נוסף ✓" במרווה */
 .steps-cardio {
   min-height: var(--tap);
 }
 
 .steps-cardio__done {
-  color: var(--confidence-high);
+  color: var(--status-done);
   font-weight: 500;
   padding-inline: var(--sp-2);
 }
 
-/* קריאטין (מסך תזונה): שורה אחת, נגיעה = סימון. ○ / ✓ במרווה. */
+/* קריאטין: שורה אחת, נגיעה = סימון. ○ / ✓ */
 .nut-creatine {
   padding: var(--sp-1) var(--sp-3);
 }
@@ -2143,17 +1845,107 @@ input[type='file']::file-selector-button {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1.5px solid var(--border);
+  background: var(--surface-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--ink-3);
+  color: var(--text-quiet);
   font-size: 15px;
   flex: 0 0 28px;
 }
 
 .nut-creatine__mark.is-on {
-  background: var(--sage);
-  border-color: var(--sage);
-  color: #fff;
+  background: var(--status-done);
+  color: var(--on-accent);
+}
+
+/* ============================================================
+   דף הערכה (פיתוח בלבד, src/ui/Kit.tsx)
+   ============================================================ */
+
+.kit {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.kit__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+.kit__swatch {
+  display: grid;
+  gap: 2px;
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+.kit__swatch-chip {
+  height: 40px;
+  border-radius: var(--r-sm);
+  outline: 1px solid var(--line);
+  outline-offset: -1px;
+}
+
+.kit__swatch-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.kit__row {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.kit__icons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-2);
+}
+
+.kit__icon {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-quiet);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: var(--sp-2) 2px;
+}
+
+.kit__icon .ic {
+  width: 22px;
+  height: 22px;
+  color: var(--text-primary);
+}
+
+.kit__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-label);
+}
+
+.kit__table th {
+  text-align: start;
+  color: var(--text-quiet);
+  font-weight: 500;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.kit__table td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.kit__pair {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
 }

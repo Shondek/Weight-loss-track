@@ -20,8 +20,8 @@ const R_DAY = 1.75;
 const MIN_SPAN = 1;
 
 /**
- * ממוצעים שבועיים כקו מרווה (שבוע חלקי — נקודה חלולה), ושקילות יומיות
- * כנקודות צפחה קטנות סביבו. בלי קווי רשת, בלי אנימציה; שני מספרים בקצה
+ * ממוצעים שבועיים כקו מבטא (שבוע חלקי — נקודה חלולה), ושקילות יומיות
+ * כנקודות שקטות קטנות סביבו. צבעים מה-tokens בלבד. בלי קווי רשת, בלי אנימציה; שני מספרים בקצה
  * הציר נותנים קנה מידה. הזמן זורם מימין לשמאל, כמו שאר הממשק.
  */
 export default function WeeklyChart({ weeks }: Props) {
@@ -68,13 +68,13 @@ export default function WeeklyChart({ weeks }: Props) {
           .join(', ')}`}
       >
         {dots.map((d) => (
-          <circle key={d.key} cx={d.x} cy={d.y} r={R_DAY} fill="var(--slate)" opacity="0.7" />
+          <circle key={d.key} cx={d.x} cy={d.y} r={R_DAY} fill="var(--text-quiet)" />
         ))}
         <polyline
           points={xy.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
           fill="none"
-          stroke="var(--sage)"
-          strokeWidth="2"
+          stroke="var(--accent)"
+          strokeWidth="2.5"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -84,8 +84,8 @@ export default function WeeklyChart({ weeks }: Props) {
             cx={p.x}
             cy={p.y}
             r={R}
-            fill={p.complete ? 'var(--sage)' : 'var(--card)'}
-            stroke="var(--sage)"
+            fill={p.complete ? 'var(--accent)' : 'var(--surface-2)'}
+            stroke={p.complete ? 'var(--accent)' : 'var(--text-quiet)'}
             strokeWidth="2"
           />
         ))}
@@ -93,13 +93,13 @@ export default function WeeklyChart({ weeks }: Props) {
           x={width - PAD_X}
           y={H - 4}
           fontSize="11"
-          fill="var(--ink-3)"
+          fill="var(--text-quiet)"
           textAnchor="end"
           direction="ltr"
         >
           {formatDM(points[0]!.weekStart)}
         </text>
-        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--ink-3)" textAnchor="start" direction="ltr">
+        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--text-quiet)" textAnchor="start" direction="ltr">
           {formatDM(points[points.length - 1]!.weekStart)}
         </text>
         {/* גבולות הציר. בלי קווי רשת — רק שני מספרים שנותנים קנה מידה. */}

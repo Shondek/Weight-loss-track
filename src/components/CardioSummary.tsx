@@ -11,6 +11,7 @@ import { cardioModeLabel } from '../lib/workouts';
 import NumberField from './NumberField';
 import Stepper from './Stepper';
 import ConfirmButton from './ConfirmButton';
+import { Notice } from '../ui';
 
 const MAX_STEPS = 100_000;
 
@@ -67,9 +68,9 @@ export default function CardioSummary({
         <span className="tiny muted">{cardioModeLabel(mode)}</span>
       </div>
       {notice && (
-        <p className="notice" style={{ margin: '0 0 var(--sp-3)' }}>
+        <Notice tone="danger" className="notice--row" role="note">
           {notice}
-        </p>
+        </Notice>
       )}
       <p className="sub" style={{ margin: '0 0 var(--sp-3)' }}>
         סה״כ <span className="num">{total}</span> דק׳ ·{' '}
