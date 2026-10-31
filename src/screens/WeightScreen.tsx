@@ -11,12 +11,11 @@
  * לוגיקת התצוגה (סטטוס מותניים, נקודות) ב-./todayView.ts, עם בדיקות.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { ScreenProps } from './types';
 import type { TabId } from '../lib/profile';
 import { useWeek } from '../useWeek';
 import Stepper from '../components/Stepper';
-import ConfirmButton from '../components/ConfirmButton';
 import DateField from '../components/DateField';
 import WeekNav from '../components/WeekNav';
 import WeeklyChart from '../components/WeeklyChart';
@@ -24,7 +23,7 @@ import NumberField from '../components/NumberField';
 import ProgressBar from '../components/ProgressBar';
 import { addDays, dayLetter, dayName, formatDM, formatDMY, weekNumber, weekStart } from '../lib/date';
 import { addCardioSteps, canStepForward, cardioStepsOn, defaultStepsDate, recentSteps, stepsGoalFor, stepsStatus } from '../lib/steps';
-import { dayMeta, setDayClosed, setDaySteps, stepsOn } from '../lib/nutrition/days';
+import { dayMeta, setDayClosed, setDaySteps, stepsOn, upsertDay } from '../lib/nutrition/days';
 import { entriesOn } from '../lib/nutrition/entries';
 import { daySummary } from '../lib/nutrition/calc';
 import { targetFor } from '../lib/nutrition/targets';
@@ -49,7 +48,7 @@ import { MAX_DAY_STEPS, MAX_WAIST, MAX_WEIGHT, MIN_WAIST, MIN_WEIGHT } from '../
 import { programStartWeek } from '../lib/db';
 import { DASH } from '../lib/format';
 import { confidenceOf } from '../components/confidence';
-import { Button, DayDots, HeroValue, Icon, ListRow, MetricTile, Num, ScreenHeader, SectionHeader, StatusChip, Surface, Toast } from '../ui';
+import { Button, DayDots, HeroValue, Icon, ListRow, MetricTile, Num, ScreenHeader, SectionHeader, StatusChip, Surface, useToast } from '../ui';
 import { ChevronLeft, Circle, CircleCheck, Dumbbell, Pencil, Ruler, Utensils } from '../ui/icons';
 import { waistStatus, weekDots } from './todayView';
 
@@ -57,10 +56,6 @@ const RECENT_COUNT = 10;
 /** מלאות השבוע → טון הצ'יפ: 7/7 מלא, 4–6 חלקי, פחות — חסר. */
 const CHIP_TONE = { high: 'done', mid: 'partial', low: 'missing' } as const;
 const MIN_FULL_WEEKS_FOR_CHART = 3;
-/** כמה זמן הכפתור אומר "נשמר" — אותו דפוס כמו "הועתק" ב-CopyBlock. */
-const SAVED_MS = 2500;
-/** כמה זמן טוסט "היום נסגר · בטל" נשאר — כמו טוסט הביטול במסך התזונה. */
-const UNDO_MS = 6000;
 
 type Props = ScreenProps & {
   /** מעבר לטאב אחר (אימונים, תזונה). אותו `setTab` של App. */
@@ -89,22 +84,15 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
   const [stepsDraft, setStepsDraft] = useState<number | null>(null);
   /** צעדי הליכון מהאירובי כבר נוספו לשדה (לתאריך הזה). לעולם לא אוטומטית. */
   const [cardioAddedFor, setCardioAddedFor] = useState<string | null>(null);
-  const [savedFlash, setSavedFlash] = useState(false);
-  const savedTimer = useRef<number | undefined>(undefined);
-  /** טוסט אחרי "סגור יום": "היום נסגר · בטל" ל-6 שניות. */
-  const [closedToast, setClosedToast] = useState(false);
-  const toastTimer = useRef<number | undefined>(undefined);
   /** שורת שקילה פתוחה ב"שקילות אחרונות" — רק בה מוצג כפתור המחיקה. */
   const [openRecent, setOpenRecent] = useState<string | null>(null);
   /** טופס המותניים, יעד הנגיעה באריח. */
   const waistForm = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    return () => {
-      if (savedTimer.current !== undefined) window.clearTimeout(savedTimer.current);
-      if (toastTimer.current !== undefined) window.clearTimeout(toastTimer.current);
-    };
-  }, []);
+  /**
+   * טוסט אחד לכל האפליקציה (שלב 5): "נשמר" אחרי שמירה, "נמחק · בטל" אחרי
+   * מחיקה. "בטל" מחזיר דרך אותן פונקציות שמוסיפות (upsert) על ה-DB העדכני.
+   */
+  const toast = useToast();
 
   const weeks = useMemo(() => weeklyAverages(db.weights), [db.weights]);
   const current = useMemo(() => summarizeWeek(db.weights, week), [db.weights, week]);
@@ -148,6 +136,21 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
     if (stepsValue === null) return;
     void store.update('days', setDaySteps(db.days, stepsDate, stepsValue));
     setStepsDraft(null);
+    toast.saved();
+  };
+
+  /** מחיקת צעדים: מיידית, "בטל" מחזיר את רשומת היום בדיוק (אותו אובייקט). */
+  const deleteSteps = () => {
+    const meta = dayMeta(db.days, stepsDate);
+    if (!meta || meta.steps === undefined) return;
+    void store.update('days', setDaySteps(db.days, stepsDate, null));
+    setStepsDraft(null);
+    toast.undo(
+      <>
+        נמחק · צעדים <Num>{formatDMY(stepsDate)}</Num> · <Num>{meta.steps.toLocaleString('en-US')}</Num>
+      </>,
+      () => void store.update('days', upsertDay(store.latest().days, meta)),
+    );
   };
 
   const waistLast = useMemo(() => lastWaist(db.waist), [db.waist]);
@@ -170,10 +173,10 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
   const dayClosed = todayMeta?.closed === true;
   const toggleClosed = () => {
     void store.update('days', setDayClosed(db.days, today, !dayClosed, new Date().toISOString()));
-    // סגירה מציגה טוסט עם "בטל"; פתיחה (מהכפתור או מ"בטל") מסירה אותו.
-    if (toastTimer.current !== undefined) window.clearTimeout(toastTimer.current);
-    setClosedToast(!dayClosed);
-    if (!dayClosed) toastTimer.current = window.setTimeout(() => setClosedToast(false), UNDO_MS);
+    // סגירה מציגה טוסט "היום נסגר · בטל"; פתיחה מהכפתור מורידה אותו.
+    // "בטל" = אותה פונקציה, פתיחה, על ה-DB העדכני.
+    if (dayClosed) toast.dismiss();
+    else toast.undo('היום נסגר', () => void store.update('days', setDayClosed(store.latest().days, today, false, new Date().toISOString())));
   };
 
   const upNext = useMemo(() => nextType(db.workouts), [db.workouts]);
@@ -189,15 +192,40 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
     void store.update('weights', upsertWeight(db.weights, { d: entryDate, w: weightValue }));
     setDraft(null);
     setEditOpen(false);
-    setSavedFlash(true);
-    if (savedTimer.current !== undefined) window.clearTimeout(savedTimer.current);
-    savedTimer.current = window.setTimeout(() => setSavedFlash(false), SAVED_MS);
+    toast.saved();
   };
 
   const saveWaist = () => {
     if (waistValue === null) return;
     void store.update('waist', upsertWaist(db.waist, { d: waistDate, cm: waistValue }));
     setWaistDraft(null);
+    toast.saved();
+  };
+
+  /** מחיקת מדידת מותניים: מיידית, "בטל" מחזיר את אותה רשומה. */
+  const deleteWaist = () => {
+    const entry = waistExisting;
+    if (!entry) return;
+    void store.update('waist', removeWaist(db.waist, entry.d));
+    setWaistDraft(null);
+    toast.undo(
+      <>
+        נמחק · מותניים <Num>{formatDMY(entry.d)}</Num> · <Num>{entry.cm.toFixed(1)}</Num>
+      </>,
+      () => void store.update('waist', upsertWaist(store.latest().waist, entry)),
+    );
+  };
+
+  /** מחיקת שקילה מ"שקילות אחרונות": מיידית, "בטל" מחזיר את אותה רשומה. */
+  const deleteWeight = (entry: { d: string; w: number }) => {
+    void store.update('weights', removeWeight(db.weights, entry.d));
+    setOpenRecent(null);
+    toast.undo(
+      <>
+        נמחק · שקילה <Num>{formatDMY(entry.d)}</Num> · <Num>{entry.w.toFixed(1)}</Num>
+      </>,
+      () => void store.update('weights', upsertWeight(store.latest().weights, entry)),
+    );
   };
 
   const scrollToWaist = () => {
@@ -294,7 +322,7 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
                 הבוקר <Num className="strong">{todayEntry.w.toFixed(1)}</Num> ק"ג
               </>
             }
-            sub={savedFlash ? 'נשמר' : 'נרשם היום'}
+            sub="נרשם היום"
             end={
               <Button
                 variant="ghost"
@@ -343,7 +371,7 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
             />
             <div className="row">
               <Button variant="accent" block disabled={weightValue === null} onClick={saveWeight}>
-                {savedFlash ? 'נשמר' : existing ? 'עדכן שקילה' : 'שמור שקילה'}
+                {existing ? 'עדכן שקילה' : 'שמור שקילה'}
               </Button>
               {todayEntry && editOpen && (
                 <Button variant="ghost" onClick={() => setEditOpen(false)}>
@@ -507,11 +535,6 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
       </Surface>
 
       {/* "בטל" = אותה פונקציה של "פתח מחדש". צף מעל הניווט, 6 שניות. */}
-      {closedToast && dayClosed && (
-        <Toast actionLabel="בטל" onAction={toggleClosed}>
-          היום נסגר
-        </Toast>
-      )}
 
       {/* 6. אימון: הבא בסבב, כפי שמסך האימונים כבר מחשב. נגיעה מעבירה לשם. */}
       <Surface as="div" className="surface--row" aria-label="אימון">
@@ -582,11 +605,14 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
               {stepsExisting !== null ? 'עדכן' : 'שמור'}
             </button>
             {stepsExisting !== null && (
-              <ConfirmButton
+              <button
+                type="button"
                 className="btn btn--danger"
-                ariaLabel={`מחק צעדים של ${formatDMY(stepsDate)}`}
-                onConfirm={() => void store.update('days', setDaySteps(db.days, stepsDate, null))}
-              />
+                aria-label={`מחק צעדים של ${formatDMY(stepsDate)}`}
+                onClick={deleteSteps}
+              >
+                מחק
+              </button>
             )}
           </div>
           {cardioSteps > 0 && (
@@ -671,11 +697,14 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
               {waistExisting ? 'עדכן מדידה' : 'שמור מדידה'}
             </button>
             {waistExisting && (
-              <ConfirmButton
+              <button
+                type="button"
                 className="btn btn--danger"
-                ariaLabel={`מחק מדידת מותניים של ${formatDMY(waistDate)}`}
-                onConfirm={() => void store.update('waist', removeWaist(db.waist, waistDate))}
-              />
+                aria-label={`מחק מדידת מותניים של ${formatDMY(waistDate)}`}
+                onClick={deleteWaist}
+              >
+                מחק
+              </button>
             )}
           </div>
         </div>
@@ -712,7 +741,7 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
         ) : (
           <ul className="list">
             {/* המחיקה מוסתרת עד פתיחת שורה, כמו במסך האימונים — עשרה
-                כפתורי "מחק" ליד המספרים היו רעש. */}
+                כפתורי "מחק" ליד המספרים היו רעש. נגיעה אחת מוחקת; "בטל" בטוסט. */}
             {recent.map((e) => {
               const isOpen = openRecent === e.d;
               return (
@@ -731,13 +760,14 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
                     <span className="num strong">{e.w.toFixed(1)}</span>
                   </button>
                   {isOpen && (
-                    <ConfirmButton
-                      ariaLabel={`מחק שקילה של ${formatDMY(e.d)}`}
-                      onConfirm={() => {
-                        void store.update('weights', removeWeight(db.weights, e.d));
-                        setOpenRecent(null);
-                      }}
-                    />
+                    <button
+                      type="button"
+                      className="btn btn--quiet err"
+                      aria-label={`מחק שקילה של ${formatDMY(e.d)}`}
+                      onClick={() => deleteWeight(e)}
+                    >
+                      מחק
+                    </button>
                   )}
                 </li>
               );

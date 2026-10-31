@@ -12,15 +12,18 @@ type Props = {
    * ברירת המחדל: צף מעל הניווט התחתון.
    */
   placement?: 'fixed' | 'static' | undefined;
+  /** פס הטיימר מוצג — הטוסט הצף עולה מעליו (שלב 5). */
+  lifted?: boolean | undefined;
 };
 
 /**
- * טוסט: בהיר על כהה, הודעה קצרה + פעולה אחת בקצה. בשלב הזה הרכיב קיים
- * בספרייה בלבד; ההתנהגות (מתי מופיע, כמה זמן) לא מחוברת עדיין.
+ * טוסט: בהיר על כהה, הודעה קצרה + פעולה אחת בקצה. תצוגה בלבד — ההתנהגות
+ * (טוסט אחד בכל פעם, משך, "בטל") ב-ToastHost.
  */
-export default function Toast({ children, actionLabel, onAction, placement = 'fixed' }: Props) {
+export default function Toast({ children, actionLabel, onAction, placement = 'fixed', lifted = false }: Props) {
+  const cls = ['toast', placement === 'static' ? 'toast--static' : '', lifted ? 'toast--lifted' : ''].filter(Boolean).join(' ');
   return (
-    <div className={placement === 'static' ? 'toast toast--static' : 'toast'} role="status">
+    <div className={cls} role="status">
       <span className="toast__msg">{children}</span>
       {actionLabel && onAction && (
         <button type="button" className="toast__action" onClick={onAction}>

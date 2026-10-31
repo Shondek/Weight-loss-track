@@ -105,7 +105,7 @@ import CardioSummary from '../components/CardioSummary';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
 import { useWakeLock } from '../hooks/useWakeLock';
-import { Button, ChipSelect, Disclosure, ListRow, Num, ProgressSegments, SectionHeader, Sheet, StatusChip, Surface, Toast, type Segment } from '../ui';
+import { Button, ChipSelect, Disclosure, ListRow, Num, ProgressSegments, SectionHeader, Sheet, StatusChip, Surface, Toast, useToast, type Segment } from '../ui';
 import { ChevronLeft, ChevronRight, Timer } from '../ui/icons';
 import {
   readCardioSession,
@@ -305,6 +305,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const [summary, setSummary] = useState<SummaryState | null>(null);
   /** "דלג ואחזור": הסדר שלפני הדילוג, לביטול. נעלם במעבר אימון. */
   const [skipUndo, setSkipUndo] = useState<{ ids: string[]; name: string } | null>(null);
+  /**
+   * טוסט אחד לכל האפליקציה (שלב 5): "נמחק · בטל" אחרי מחיקת אימון (אחרי
+   * האישור הקיים) או אירובי עצמאי (בלי אישור), "נשמר" אחרי "סיים אימון".
+   * "בטל" מחזיר את אותה רשומה בדיוק דרך upsert על ה-DB העדכני.
+   */
+  const toast = useToast();
 
   const start = useMemo(() => programStartWeek(db), [db]);
   // כוח בלבד. אירובי עצמאי חי ב-db.standaloneCardio ולא נכנס לכאן.
@@ -536,9 +542,29 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     setCardioOpen(blankStandalone(db.standaloneCardio, d, makeStandaloneId(d, newId())));
   };
 
+  /** מחיקת אירובי עצמאי: מיידית, "בטל" מחזיר את אותה רשומה. */
   const deleteStandalone = (id: string) => {
+    const entry = db.standaloneCardio.find((e) => e.id === id);
+    if (!entry) return;
     void store.update('standaloneCardio', removeStandalone(db.standaloneCardio, id));
     if (cardioOpen?.id === id) setCardioOpen(null);
+    toast.undo(
+      <>
+        נמחק · אירובי <Num>{formatDM(entry.d)}</Num> · {standaloneLine(entry)}
+      </>,
+      () => void store.update('standaloneCardio', upsertStandalone(store.latest().standaloneCardio, entry)),
+    );
+  };
+
+  /** מחיקת אימון שלם (אחרי האישור בשני שלבים): "בטל" מחזיר את אותה רשומה. */
+  const deleteWorkout = (w: WorkoutEntry) => {
+    void store.update('workouts', removeWorkout(db.workouts, w.id));
+    toast.undo(
+      <>
+        נמחק · אימון {w.t} <Num>{formatDM(w.d)}</Num>
+      </>,
+      () => void store.update('workouts', upsertWorkout(store.latest().workouts, w)),
+    );
   };
 
   // ---------- ריצת אירובי: התחלה, שינוי, סיום, סיכום ----------
@@ -740,7 +766,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         expanded={expanded === key}
         onToggle={() => setExpanded(expanded === key ? null : key)}
         onEdit={() => editWorkout(w)}
-        onDelete={() => void store.update('workouts', removeWorkout(db.workouts, w.id))}
+        onDelete={() => deleteWorkout(w)}
       />
     );
   };
@@ -1060,7 +1086,16 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
 
         {isFinish && (
           <Surface as="div" aria-label="סיים אימון">
-            <Button variant="accent" block tall onClick={closeEditor}>
+            <Button
+              variant="accent"
+              block
+              tall
+              onClick={() => {
+                closeEditor();
+                // טיוטה ריקה לא נשמרה — אין מה לאשר.
+                if (!draft) toast.saved();
+              }}
+            >
               סיים אימון
             </Button>
             <div className="row" style={{ marginTop: 'var(--sp-3)' }}>
@@ -1071,7 +1106,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                 className="btn btn--danger"
                 ariaLabel={`מחק אימון ${open.t} של ${formatDMY(open.d)}`}
                 onConfirm={() => {
-                  void store.update('workouts', removeWorkout(db.workouts, open.id));
+                  // טיוטה (עוד לא באחסון) רק נסגרת; אימון שמור נמחק עם "בטל".
+                  if (!draft) deleteWorkout(open);
                   setDraft(null);
                   setOpenId(null);
                 }}
