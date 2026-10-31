@@ -16,15 +16,24 @@ import BackupSave from '../components/BackupSave';
 import { formatDMY, isSaturday, weekEnd, weekNumber, weekStart } from '../lib/date';
 import { programStartWeek } from '../lib/db';
 import WeekNav from '../components/WeekNav';
-import Choice from '../components/Choice';
-import Stepper from '../components/Stepper';
 import CopyBlock from '../components/CopyBlock';
 import WeekSummary from '../components/WeekSummary';
-import { useToast } from '../ui';
+import { Button, ChipSelect, Num, ScreenHeader, SectionHeader, StatusChip, Stepper, Surface, useToast, type ChipOption } from '../ui';
+import { CircleCheck, Circle, FileText } from '../ui/icons';
 
-const SCALE_1_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const DAYS_0_7 = [0, 1, 2, 3, 4, 5, 6, 7];
-const DAYS_0_5 = Array.from({ length: HOME_LUNCH_MAX + 1 }, (_, i) => i);
+/** אותם סולמות, אותם ערכים שנשמרים (1–10, 0–7, 0–5). */
+const SCALE_1_10: readonly ChipOption<number>[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => ({ value: v, label: v }));
+const DAYS_0_7: readonly ChipOption<number>[] = [0, 1, 2, 3, 4, 5, 6, 7].map((v) => ({ value: v, label: v }));
+const DAYS_0_5: readonly ChipOption<number>[] = Array.from({ length: HOME_LUNCH_MAX + 1 }, (_, i) => ({ value: i, label: i }));
+
+/** שאלה אחת: תווית בולטת (יש היררכיה בין השאלות, לא ~50 ריבועים באותו גודל) וסולם של 48. */
+function Scale({ label, options, value, onChange }: { label: string; options: readonly ChipOption<number>[]; value: number | null; onChange: (v: number | null) => void }) {
+  return (
+    <div className="checkin-q">
+      <ChipSelect label={label} options={options} value={value} onChange={onChange} columns={5} tall />
+    </div>
+  );
+}
 
 export default function CheckinScreen({ store, today }: ScreenProps) {
   const { db } = store;
@@ -48,7 +57,7 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
   const summaryWeekNo = start ? weekNumber(start, summaryWeek) : null;
 
   /**
-   * כל שינוי נשמר מיד, כמו קודם. חדש (שלב 5): טוסט "נשמר" קצר — לסולמות
+   * כל שינוי נשמר מיד, כמו קודם. טוסט "נשמר" קצר (שלב 5) — לסולמות
    * ולשינה בכל נגיעה; להערה פעם אחת ביציאה מהשדה, לא בכל תו.
    */
   const toast = useToast();
@@ -58,71 +67,64 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
     if (!quiet) toast.saved();
   };
 
+  const filled = isFilled(saved);
+  const isThisSaturday = isSaturday(today) && week === weekStart(today);
+
   return (
     <div className="stack--loose">
-      <section className="section section--first">
-        <WeekNav
-          week={week}
-          onChange={setWeek}
-          today={today}
-          weekNo={start ? weekNumber(start, week) : null}
-        />
-        <p className="sub" style={{ margin: 'var(--sp-4) 0 0' }}>
-          צ'ק-אין לשבת <span className="num">{formatDMY(weekEnd(week))}</span>
-          {isSaturday(today) && week === weekStart(today) ? ' · היום' : ''}
-          {isFilled(saved) ? ' · מולא' : ' · לא מולא'}
-        </p>
-      </section>
+      {/* 1. כותרת: שבת הצ'ק-אין, מצב המילוי, וניווט השבוע כמו היום. */}
+      <Surface variant="hero" aria-label="שבוע הצ'ק-אין">
+        <WeekNav week={week} onChange={setWeek} today={today} weekNo={start ? weekNumber(start, week) : null} />
+        <div className="checkin-head">
+          <ScreenHeader
+            eyebrow="צ'ק-אין"
+            title={
+              <>
+                שבת · <Num>{formatDMY(weekEnd(week))}</Num>
+              </>
+            }
+            sub={isThisSaturday ? 'היום' : undefined}
+          />
+          <StatusChip tone={filled ? 'done' : 'partial'} icon={filled ? CircleCheck : Circle}>
+            {filled ? 'מולא' : 'לא מולא'}
+          </StatusChip>
+        </div>
+      </Surface>
 
-      <section className="section">
-        <h2 style={{ marginBottom: 'var(--sp-3)' }}>סיכום השבוע</h2>
+      {/* 2. הסיכום במסך — אותם נתונים של הדוח, במקטעים. */}
+      <Surface aria-label="סיכום השבוע">
+        <SectionHeader title="סיכום השבוע" />
         <WeekSummary report={summary} today={today} />
-      </section>
+      </Surface>
 
-      <section className="section">
+      {/* 3. השאלות — אותם שדות, אותם סולמות, אותם ערכים שנשמרים. */}
+      <Surface aria-label="שאלות הצ'ק-אין">
+        <SectionHeader title="איך היה השבוע" aside="נשמר בכל נגיעה" />
         <div className="stack--loose">
-          <Choice
-            label="היצמדות"
-            scale
-            options={SCALE_1_10}
-            value={value.adherence}
-            onChange={(adherence) => patch({ adherence })}
-          />
-          <Choice
-            label="רעב"
-            scale
-            options={SCALE_1_10}
-            value={value.hunger}
-            onChange={(hunger) => patch({ hunger })}
-          />
-          <Choice
-            label="אנרגיה"
-            scale
-            options={SCALE_1_10}
-            value={value.energy}
-            onChange={(energy) => patch({ energy })}
-          />
-          <Stepper
-            label="שינה — ממוצע שעות בלילה"
-            value={value.sleepHours}
-            onChange={(sleepHours) => patch({ sleepHours })}
-            step={0.5}
-            min={0}
-            max={14}
-            decimals={1}
-            placeholder="0.0"
-          />
-          <Choice
+          <Scale label="היצמדות" options={SCALE_1_10} value={value.adherence} onChange={(adherence) => patch({ adherence })} />
+          <Scale label="רעב" options={SCALE_1_10} value={value.hunger} onChange={(hunger) => patch({ hunger })} />
+          <Scale label="אנרגיה" options={SCALE_1_10} value={value.energy} onChange={(energy) => patch({ energy })} />
+          <div className="checkin-q">
+            <Stepper
+              label="שינה — ממוצע שעות בלילה"
+              value={value.sleepHours}
+              onChange={(sleepHours) => patch({ sleepHours })}
+              step={0.5}
+              min={0}
+              max={14}
+              decimals={1}
+              placeholder="0.0"
+            />
+          </div>
+          <Scale
             label="ימי נשנוש בלתי מתוכנן"
-            scale
             options={DAYS_0_7}
             value={value.unplannedSnackDays}
             onChange={(unplannedSnackDays) => patch({ unplannedSnackDays })}
           />
           {/* שלב 2 (1/11/2026): אופציונלי. ניקוי מסיר את השדה מהרשומה — לא כותב null. */}
-          <Choice
+          <Scale
             label={`צהריים מהבית (0–${HOME_LUNCH_MAX})`}
-            scale
             options={DAYS_0_5}
             value={value.homeLunchDays ?? null}
             onChange={(homeLunchDays) => {
@@ -131,7 +133,7 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
             }}
           />
 
-          <div>
+          <div className="checkin-q">
             <label htmlFor="note">הערה קצרה</label>
             <textarea
               id="note"
@@ -148,47 +150,57 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
               }}
             />
             <p className="tiny muted" style={{ margin: '4px 0 0' }}>
-              <span className="num">
+              <Num>
                 {value.note.length}/{NOTE_MAX}
-              </span>
+              </Num>
             </p>
           </div>
         </div>
-      </section>
+      </Surface>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>סיכום שבועי לצ'אט</h2>
-          <span className="tiny muted">
-            <span className="num">{weekly.length}</span> תווים
-          </span>
-        </div>
+      {/* 4. סיכום שבועי לצ'אט: העתק (נשאר), שתף (חדש — אותו טקסט), קובץ טקסט. */}
+      <Surface aria-label="סיכום שבועי לצ'אט">
+        <SectionHeader
+          title="סיכום שבועי לצ'אט"
+          aside={
+            <>
+              <Num>{weekly.length}</Num> תווים
+            </>
+          }
+        />
         <div className="stack">
           <WeekNav week={summaryWeek} onChange={setSummaryWeek} today={today} weekNo={summaryWeekNo} />
-          <CopyBlock text={weekly} label="העתק סיכום שבועי" boxLabel="סיכום שבועי לצ'אט" primary />
-          <button
-            type="button"
-            className="btn btn--block"
+          <CopyBlock text={weekly} label="העתק סיכום שבועי" boxLabel="סיכום שבועי לצ'אט" primary share />
+          <Button
+            variant="ghost"
+            block
+            icon={FileText}
             onClick={() => downloadText(`fatloss-week-${summaryWeekNo ?? 'x'}-${summaryWeek}.txt`, weekly, 'text/plain')}
           >
             הורד כקובץ טקסט
-          </button>
+          </Button>
           <p className="tiny muted" style={{ margin: 0 }}>
             נתונים מחושבים בלבד — משקל, מותניים, אימונים, אירובי, תזונה (ימים סגורים), צ'ק-אין ודגלים.
           </p>
         </div>
-      </section>
+      </Surface>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>ייצוא</h2>
-          <span className="tiny muted">
-            <span className="num">{report.length}</span> תווים
-          </span>
-        </div>
+      {/* 5. ייצוא: דוח הצ'ק-אין לצ'אט, וקובץ הגיבוי מאותו מקום. */}
+      <Surface aria-label="ייצוא">
+        <SectionHeader
+          title="ייצוא"
+          aside={
+            <>
+              <Num>{report.length}</Num> תווים
+            </>
+          }
+        />
         <div className="stack">
-          <CopyBlock text={report} label="העתק לצ'אט" boxLabel="דוח הצ'ק-אין" primary />
-          <div className="stack--tight">
+          <CopyBlock text={report} label="העתק לצ'אט" boxLabel="דוח הצ'ק-אין" primary share />
+          <div className="checkin-backup stack--tight">
+            <p className="label" style={{ margin: 0 }}>
+              גיבוי
+            </p>
             <BackupSave json={json} db={db} filename={`fatloss-${toLocalISO(new Date())}.json`} onBackedUp={markBackedUp} />
             <CopyBlock
               text={json}
@@ -214,7 +226,7 @@ export default function CheckinScreen({ store, today }: ScreenProps) {
             </p>
           </div>
         </div>
-      </section>
+      </Surface>
     </div>
   );
 }

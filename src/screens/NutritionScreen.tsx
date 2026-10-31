@@ -1050,30 +1050,22 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
             </div>
           </div>
         )}
-        {closed ? (
-          <div className="nut-close__state">
-            <Icon icon={CircleCheck} />
-            <span className="grow">
-              היום נסגר
+        {/* שלב 6: כפתור הסגירה אחד בלבד — בכותרת, כמו במסך היום. כאן רק המצב וההסבר. */}
+        <p className="tiny muted nut-close__note" style={{ margin: 0 }}>
+          {closed ? (
+            <>
+              <Icon icon={CircleCheck} size={14} /> היום נסגר
               {meta?.closedAt && (
-                <span className="tiny muted">
+                <>
                   {' '}
                   · <Num>{timeText(Date.parse(meta.closedAt))}</Num>
-                </span>
+                </>
               )}
-              <span className="tiny muted"> · אפשר עדיין לערוך</span>
-            </span>
-            <Button variant="ghost" onClick={toggleClosed}>
-              פתח מחדש
-            </Button>
-          </div>
-        ) : (
-          <Button variant="accent" block onClick={toggleClosed}>
-            סיימתי לרשום {isToday ? 'היום' : 'ביום הזה'}
-          </Button>
-        )}
-        <p className="tiny muted" style={{ margin: 0 }}>
-          יום שלא נסגר אינו מלא, ולא מסיקים ממנו על קלוריות.
+              {' '}· אפשר עדיין לערוך. פתיחה מחדש — בכותרת.
+            </>
+          ) : (
+            <>יום שלא נסגר אינו מלא, ולא מסיקים ממנו על קלוריות. "סגור יום" — בכותרת.</>
+          )}
         </p>
       </Surface>
 

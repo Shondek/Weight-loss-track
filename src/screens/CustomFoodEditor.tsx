@@ -290,12 +290,12 @@ export default function CustomFoodEditor({
             <span className="tiny muted">מהתווית, כמו שהם</span>
           </div>
           <div className="stack">
-            <label className="row" style={{ fontSize: 14, color: 'var(--text-primary)', gap: 'var(--sp-2)', cursor: 'pointer' }}>
+            <label className="row checkbox-row">
               <input
                 type="checkbox"
+                className="checkbox"
                 checked={unitFood}
                 onChange={(e) => setUnitFood(e.target.checked)}
-                style={{ width: 22, height: 22, margin: 0 }}
               />
               <span>
                 יחידה = 1 ג׳ <span className="muted tiny">— ערכי היחידה כמו שהם; ברישום מזינים 1 ליחידה. לפריט בלי משקל אריזה ידוע.</span>
