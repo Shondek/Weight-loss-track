@@ -24,3 +24,7 @@ export { default as Search } from 'lucide-react/icons/search';
 export { default as Footprints } from 'lucide-react/icons/footprints';
 export { default as HardDrive } from 'lucide-react/icons/hard-drive';
 export { default as Ruler } from 'lucide-react/icons/ruler';
+export { default as House } from 'lucide-react/icons/house';
+export { default as Pencil } from 'lucide-react/icons/pencil';
+export { default as ChevronLeft } from 'lucide-react/icons/chevron-left';
+export { default as Circle } from 'lucide-react/icons/circle';

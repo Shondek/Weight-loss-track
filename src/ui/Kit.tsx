@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import {
   Button,
+  DayDots,
+  HeroValue,
   Icon,
   ListRow,
+  MetricTile,
+  ScreenHeader,
   Notice,
   Num,
   ProgressBar,
@@ -236,6 +240,35 @@ export default function Kit() {
           <ListRow lead={icons.Footprints} title="צעדים · אתמול" sub="יעד 8,000" end={<Num>9,120</Num>} />
         </div>
       </Surface>
+
+      <SectionHeader title="ScreenHeader + HeroValue + DayDots" aside="מסך היום" />
+      <Surface variant="hero">
+        <ScreenHeader title="יום רביעי" sub={<><Num>28/10/2026</Num> · שבוע <Num>8</Num></>} />
+        <div className="stack" style={{ marginTop: 'var(--sp-4)' }}>
+          <HeroValue value="94.40" unit='ק"ג' state="dim" aside={<><Num>3/7</Num><StatusChip tone="partial">חלקי</StatusChip></>} />
+          <DayDots
+            label="שקילות השבוע"
+            days={[
+              { key: 'a', letter: 'א', state: 'done', label: 'ראשון: נשקל' },
+              { key: 'b', letter: 'ב', state: 'done', label: 'שני: נשקל' },
+              { key: 'c', letter: 'ג', state: 'missing', label: 'שלישי: חסר' },
+              { key: 'd', letter: 'ד', state: 'done', today: true, label: 'רביעי: נשקל (היום)' },
+              { key: 'e', letter: 'ה', state: 'future', label: 'חמישי: עדיין לא' },
+              { key: 'f', letter: 'ו', state: 'future', label: 'שישי: עדיין לא' },
+              { key: 'g', letter: 'ש', state: 'future', label: 'שבת: עדיין לא' },
+            ]}
+          />
+          <HeroValue value="94.12" unit='ק"ג' state="full" aside={<><Num>7/7</Num><StatusChip tone="done">שבוע מלא</StatusChip></>} />
+        </div>
+      </Surface>
+
+      <SectionHeader title="MetricTile" aside="שניים בשורה" />
+      <div className="tiles">
+        <MetricTile label="מותניים" icon={icons.Ruler} value={<Num>96.5</Num>} unit='ס"מ' chip={<StatusChip tone="done">נמדד · רביעי <Num>28/10</Num></StatusChip>} sub={<>קודם <Num>97.0</Num> · <Num>21/10</Num></>} onTap={() => undefined} tapLabel="מותניים — לטופס" />
+        <MetricTile label="חלבון היום" icon={icons.Utensils} value={<Num>116</Num>} unit={<Num>/ 170</Num>} bar={<ProgressBar fraction={116 / 170} tone="partial" label="חלבון מול היעד" valueNow={116} valueMax={170} />} sub={<>חסר <Num>54</Num> ג׳</>} />
+        <MetricTile label="מותניים" icon={icons.Ruler} value={<Num>97.0</Num>} unit='ס"מ' dim chip={<StatusChip tone="partial">חסר — למדוד היום</StatusChip>} sub={<>אחרון <Num>21/10</Num></>} />
+        <MetricTile label="מותניים" icon={icons.Ruler} value={<Num>97.0</Num>} unit='ס"מ' dim chip={<StatusChip tone="missing">הוחמץ השבוע</StatusChip>} sub={<>אחרון <Num>21/10</Num></>} />
+      </div>
 
       <SectionHeader title="אייקונים" aside="Lucide · קו 2" />
       <div className="kit__icons">

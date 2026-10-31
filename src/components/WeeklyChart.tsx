@@ -22,7 +22,11 @@ const MIN_SPAN = 1;
 /**
  * ממוצעים שבועיים כקו מבטא (שבוע חלקי — נקודה חלולה), ושקילות יומיות
  * כנקודות שקטות קטנות סביבו. צבעים מה-tokens בלבד. בלי קווי רשת, בלי אנימציה; שני מספרים בקצה
- * הציר נותנים קנה מידה. הזמן זורם מימין לשמאל, כמו שאר הממשק.
+ * הציר נותנים קנה מידה.
+ *
+ * ציר הזמן רץ **משמאל לימין** (docs/ui-decisions.md, החלטה 1): השבוע
+ * המוקדם משמאל, האחרון מימין, כך שירידה במשקל נראית כקו יורד. רק הכיוון
+ * השתנה — הנתונים והחישובים לא.
  */
 export default function WeeklyChart({ weeks }: Props) {
   const box = useRef<HTMLDivElement>(null);
@@ -46,15 +50,16 @@ export default function WeeklyChart({ weeks }: Props) {
     const n = weeks.length;
     const step = n > 1 ? innerW / (n - 1) : 0;
 
-    // x=0 הוא הימני ביותר (השבוע המוקדם) — כיוון הזמן ב-RTL. כל שבוע
-    // תופס "צעד" אחד; הימים שלו פרוסים סביב מרכזו, ראשון מימין לשבת משמאל.
-    const xOfWeek = (i: number) => width - PAD_X - i * step;
+    // השבוע המוקדם צמוד ל-GUTTER (שמאל, אחרי תוויות הערך), האחרון צמוד
+    // לקצה הימני. כל שבוע תופס "צעד" אחד; הימים שלו פרוסים סביב מרכזו,
+    // ראשון משמאל לשבת מימין.
+    const xOfWeek = (i: number) => GUTTER + i * step;
     const yOf = (v: number) => PAD_TOP + (1 - (v - lo) / span) * innerH;
     const xy = points.map((p) => {
       const i = weeks.indexOf(p);
       return { x: xOfWeek(i), y: yOf(p.avg), complete: p.complete, week: p.weekStart, avg: p.avg };
     });
-    const dots = daily.map((d) => ({ x: xOfWeek(d.i) + ((3 - d.j) / 7) * step, y: yOf(d.v), key: `${d.i}-${d.j}` }));
+    const dots = daily.map((d) => ({ x: xOfWeek(d.i) + ((d.j - 3) / 7) * step, y: yOf(d.v), key: `${d.i}-${d.j}` }));
 
     body = (
       <svg
@@ -89,6 +94,10 @@ export default function WeeklyChart({ weeks }: Props) {
             strokeWidth="2"
           />
         ))}
+        {/* תאריך השבוע הראשון משמאל, האחרון מימין — כיוון הזמן. */}
+        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--text-quiet)" textAnchor="start" direction="ltr">
+          {formatDM(points[0]!.weekStart)}
+        </text>
         <text
           x={width - PAD_X}
           y={H - 4}
@@ -97,9 +106,6 @@ export default function WeeklyChart({ weeks }: Props) {
           textAnchor="end"
           direction="ltr"
         >
-          {formatDM(points[0]!.weekStart)}
-        </text>
-        <text x={GUTTER} y={H - 4} fontSize="11" fill="var(--text-quiet)" textAnchor="start" direction="ltr">
           {formatDM(points[points.length - 1]!.weekStart)}
         </text>
         {/* גבולות הציר. בלי קווי רשת — רק שני מספרים שנותנים קנה מידה. */}

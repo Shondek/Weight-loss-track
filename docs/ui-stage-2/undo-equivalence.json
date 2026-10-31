@@ -1,0 +1,23 @@
+{
+ "identical": false,
+ "diffs": [
+  {
+   "path": "/days/14",
+   "afterUndo": {
+    "d": "2026-10-28",
+    "closed": false
+   }
+  }
+ ],
+ "toastSeen": true,
+ "closedBetween": true,
+ "dayRecordUntouched": null,
+ "dayRecordAfterUndo": {
+  "d": "2026-10-28",
+  "closed": false
+ },
+ "daysCount": {
+  "untouched": 14,
+  "afterUndo": 15
+ }
+}
