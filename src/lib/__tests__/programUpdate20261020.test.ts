@@ -9,6 +9,13 @@
  * snapshot ההצעות: אותם שני מזהים ואותו מפרט, אבל סף ה-RIR עובר עם התא
  * (17/10/2026): בשני תרחישי ה-RIR 1 בלבד `face-pull` מקבל R1 במקום R5
  * ו-`reverse-pec-deck` (בלי תא מארח → סף 2) R5 במקום R1. אפס שורות מחוץ לזוג.
+ *
+ * 4/11/2026 — B5 → ההרחקה בפולי (`cable-reverse-fly`) עצמה, בלי חלופות; החתירה
+ * בחבל (`face-pull`) שוב במאגר — אותו מזהה, מפרט, הערה וסרטון — ואינה חלופה של
+ * אף תא; B7 → פשיטת מרפקים במוט (`cable-bar-pushdown`). programUpdate20261104.test.ts.
+ * מה שנשאר מ-20/10 ונבדק כאן: הפרפר ההפוך במאגר בלי תא, ההיסטוריה של שלושת
+ * המזהים נפרדת ושלמה, רשומות ישנות נטענות כמו שהן, אין מפתח אחסון חדש.
+ * ההנחות שהשתנו ב-4/11 מסומנות.
  */
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
@@ -34,9 +41,11 @@ const CABLE_VIDEO = 'https://drive.google.com/file/d/1-fJHu5tp9fL4o9Trs-KTPSQQsD
 const B5_NOTE =
   'הגלגלת בגובה הפנים, לא מעל הראש. צעד אחורה, כך שהמשקל לא נוחת בין החזרות. מושכים את מרכז החבל לכיוון העיניים ומפרידים את הידיים — בסוף הן ליד האוזניים והאגרופים פונים לאחור. מרפקים בגובה הכתף, לא מעל. השכמות נאספות, הכתפיים לא עולות. בלי להישען אחורה. משקל קל, חזרה איטית.';
 const REVERSE_PEC_DECK_NOTE = 'פרפר הפוך. פנים לכרית, החזה צמוד אליה · ידיות בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף, בלי למשוך עם הידיים ובלי להרים כתפיים · חזרה איטית.';
-const CABLE_NOTE = 'כבלים בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף.';
+/** 4/11/2026: ההערה החדשה של ההרחקה בפולי כתא B5. */
+const CABLE_NOTE = 'הגלגלות בגובה הכתף. עומדים באמצע העמדה, יד ימין אוחזת בכבל השמאלי ויד שמאל בימני — הכבלים מצטלבים לפני החזה. פותחים את הידיים לצדדים בקשת רחבה עד קו הגוף, לא מעבר. מרפקים מעט כפופים וקבועים — פתיחה, לא חתירה. הכתפיים לא עולות לאוזניים, בלי תנופה מהגב. משקל קל, חזרה איטית. עמדה תפוסה → דלג ואחזור.';
 
-const B_ORDER = ['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', B5, 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise'];
+// 4/11/2026: B5 הרחקה בפולי, B7 פשיטת מרפקים במוט
+const B_ORDER = ['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', CABLE, 'db-supinated-curl', 'cable-bar-pushdown', 'floor-leg-raise'];
 
 const ids = (list: { exerciseId: string }[]) => list.map((e) => e.exerciseId);
 
@@ -70,8 +79,8 @@ const FACE_PULL_ONLY = [B_OCT06, B_OCT13];
 const ALL = [B_OCT06, B_OCT13, B_OCT17];
 
 describe('B5 — חתירה אופקית בחבל, פייס פול (face-pull, 20/10/2026)', () => {
-  it('המפרט: חמישי ב-B, 3×15–20, RIR 1, בידוד, step 5, ההערה החדשה מילה במילה, הסרטון שהיה במאגר; חלופה יחידה — הרחקה בפולי; לא במאגר ולא בפרושים', () => {
-    const b5 = exerciseIn('B', B5)!;
+  it('המפרט של החתירה בחבל (B5 מ-20/10 עד 4/11/2026): 3×15–20, בידוד, step 5, ההערה מ-20/10 מילה במילה, אותו סרטון — מ-4/11/2026 במאגר (סף 2), לא בפרושים, לא חלופה של אף תא', () => {
+    const b5 = exerciseById(B5)!;
     expect(b5).toMatchObject({
       id: B5,
       name: 'חתירה אופקית- חבל',
@@ -84,7 +93,8 @@ describe('B5 — חתירה אופקית בחבל, פייס פול (face-pull, 2
       reps: '15-20',
       repRangeMin: 15,
       repRangeMax: 20,
-      effort: 'RIR 1',
+      // 4/11/2026: במאגר אין effort → סף 2
+      effort: null,
       step: 5,
       mode: 'progress',
       bodyweightStart: false,
@@ -94,15 +104,16 @@ describe('B5 — חתירה אופקית בחבל, פייס פול (face-pull, 2
       assisted: false,
       note: B5_NOTE,
       videoUrl: B5_VIDEO,
-      alternates: [CABLE],
+      alternates: [],
     });
-    expect(PROGRAM.B[4]).toBe(b5);
-    expect(exerciseById(B5)).toBe(b5);
+    // 4/11/2026: B5 הוא ההרחקה בפולי
+    expect(PROGRAM.B[4]!.id).toBe(CABLE);
+    expect(exerciseIn('B', B5)).toBeUndefined();
     expect(PROGRAM.B.map((e) => e.id)).toEqual(B_ORDER);
-    expect(ALTERNATES.some((a) => a.id === B5)).toBe(false);
+    expect(ALTERNATES.filter((a) => a.id === B5)).toHaveLength(1);
     expect(RETIRED.some((r) => r.id === B5)).toBe(false);
-    expect(rirThreshold(b5.effort)).toBe(1);
-    // החתירה בחבל אינה חלופה של אף תא — היא התא
+    expect(rirThreshold(b5.effort)).toBe(2);
+    // החתירה בחבל אינה חלופה של אף תא (החלטה קבועה מ-16/10)
     for (const t of WORKOUT_TYPES) {
       for (const e of PROGRAM[t]) expect(e.alternates, e.id).not.toContain(B5);
     }
@@ -114,10 +125,10 @@ describe('B5 — חתירה אופקית בחבל, פייס פול (face-pull, 2
 
   it('step 5 כמו שאר תרגילי הכבל — כפי שהיה שמור במאגר, לא הומצא', () => {
     for (const id of ['cable-fly', 'cable-low-fly', 'seated-cable-row', 'triceps-pushdown', CABLE]) expect(exerciseById(id)?.step, id).toBe(5);
-    expect(exerciseIn('B', B5)!.step).toBe(5);
+    expect(exerciseById(B5)!.step).toBe(5);
   });
 
-  it('אימון B: 8 תאים, 22 סטים; סדר התרגילים לא זז פרט לתא B5; לכל התאים סרטון', () => {
+  it('אימון B: 8 תאים, 22 סטים; סדר התרגילים לא זז פרט לתא B5 (ומ-4/11/2026 B7); לכל התאים סרטון', () => {
     expect(PROGRAM.B).toHaveLength(8);
     expect(PROGRAM.B.reduce((n, e) => n + e.sets, 0)).toBe(22);
     expect(PROGRAM.B.map((e) => e.id)).toEqual(B_ORDER);
@@ -158,54 +169,56 @@ describe('B5 — חתירה אופקית בחבל, פייס פול (face-pull, 2
     expect(resolveExerciseId('הרחקה אופקית- מכונת פרפר')).toBe(REVERSE_PEC_DECK);
   });
 
-  it('חלופות B5: ההרחקה בפולי בלבד — ללא שינוי בהערה, בסרטון וב-step; ההרחקה עם משקולות יד במאגר בלי תא', () => {
-    expect(alternatesFor(B5).map((a) => a.id)).toEqual([CABLE]);
-    expect(alternatesFor(B5).map((a) => a.name)).toEqual(['הרחקה אופקית- פולי גובה כתף']);
-    expect(exerciseById(CABLE)).toMatchObject({ id: CABLE, name: 'הרחקה אופקית- פולי גובה כתף', sets: 3, repRangeMin: 15, repRangeMax: 20, step: 5, note: CABLE_NOTE, videoUrl: CABLE_VIDEO });
-    expect(ALTERNATES.filter((a) => a.id === CABLE)).toHaveLength(1);
+  it('ההרחקה בפולי: עד 4/11/2026 החלופה היחידה של B5; מ-4/11/2026 התא B5 עצמו — אותו מזהה, 3×15–20, RIR 1, step 5, אותו סרטון, הערה חדשה, בלי חלופות; ההרחקה עם משקולות יד במאגר בלי תא', () => {
+    expect(alternatesFor(B5)).toEqual([]);
+    expect(alternatesFor(CABLE)).toEqual([]);
+    expect(exerciseIn('B', CABLE)).toMatchObject({ id: CABLE, name: 'הרחקה אופקית- פולי גובה כתף', sets: 3, repRangeMin: 15, repRangeMax: 20, effort: 'RIR 1', step: 5, note: CABLE_NOTE, videoUrl: CABLE_VIDEO, alternates: [] });
+    expect(exerciseById(CABLE)).toBe(exerciseIn('B', CABLE));
+    expect(ALTERNATES.some((a) => a.id === CABLE)).toBe(false);
     expect(exerciseById(DB_FLY)).toMatchObject({ id: DB_FLY, name: 'הרחקה אופקית עם משקולות יד', sets: 3, repRangeMin: 15, repRangeMax: 20, step: 2.5, note: null, videoUrl: null });
     for (const t of WORKOUT_TYPES) {
-      expect(exerciseIn(t, CABLE)).toBeUndefined();
+      expect(exerciseIn(t, CABLE) === undefined, t).toBe(t !== 'B');
       expect(exerciseIn(t, DB_FLY)).toBeUndefined();
       for (const e of PROGRAM[t]) expect(e.alternates, e.id).not.toContain(DB_FLY);
     }
   });
 
-  it('אין מזהה כפול: כל מזהה פעם אחת בתוכנית+מאגר (פרט לתאים שחוזרים בכוונה ב-A/B/C); גודל המאגר 38 כמו קודם', () => {
+  it('אין מזהה כפול: כל מזהה פעם אחת בתוכנית+מאגר (פרט לתאים שחוזרים בכוונה ב-A/B/C/D); גודל המאגר', () => {
     const program = WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => e.id));
     const pool = ALTERNATES.map((a) => a.id);
-    // אותו מזהה בשני אימונים — תאים שחוזרים בכוונה (לג-פרס, כפיפת ברכיים, פשיטת מרפקים)
+    // אותו מזהה בכמה אימונים — תאים שחוזרים בכוונה (לג-פרס, כפיפת ברכיים; מ-4/11/2026 פשיטת מרפקים במוט ב-B/C/D במקום החבל ב-B/C)
     const repeated = program.filter((id, i) => program.indexOf(id) !== i);
-    expect([...new Set(repeated)].sort()).toEqual(['leg-curl', 'leg-press', 'triceps-pushdown']);
+    expect([...new Set(repeated)].sort()).toEqual(['cable-bar-pushdown', 'leg-curl', 'leg-press']);
     expect(new Set(pool).size).toBe(pool.length);
     for (const id of pool) expect(program, id).not.toContain(id);
     for (const id of pool) expect(RETIRED.some((r) => r.id === id), id).toBe(false);
     // 25/10/2026: אימון D — ארבעה מזהים עברו מהמאגר לתוכנית (38 → 34) ו-D4 חדש (58 → 59)
-    expect(pool).toHaveLength(34);
+    // 4/11/2026: החתירה בחבל והפשיטה בחבל למאגר, ההרחקה בפולי לתוכנית (34 → 35); אותם 59 מזהים
+    expect(pool).toHaveLength(35);
     expect(new Set([...program, ...pool]).size - 1).toBe(59);
   });
 });
 
-describe('ההצעה ל-B5 מחושבת מההיסטוריה של החתירה בחבל', () => {
-  it('B חדש: B5 הוא החתירה בחבל עם המשקל הפותח האחרון שלה (20), וההצעה מההיסטוריה שלה (R4 — קפיצה גדולה ביחס למשקל)', () => {
+describe('ההיסטוריה של החתירה בחבל — שלמה גם אחרי 4/11/2026', () => {
+  it('B חדש: B5 הוא ההרחקה בפולי בלי היסטוריה → בלי משקל פותח; המשקל הפותח (20) וההצעה (R4) של החתירה בחבל נשארים שלה, לפי המזהה', () => {
     const rows = prefilledExercises(FACE_PULL_ONLY, 'B');
     expect(ids(rows)).toEqual([WARMUP_ID, ...B_ORDER, FINISHER_ID]);
     const b5 = rows[5]!;
-    expect(b5).toMatchObject({ exerciseId: B5, n: 'חתירה אופקית- חבל', targetRepMin: 15, targetRepMax: 20, type: 'isolation', bodyweightOnly: false });
+    expect(b5).toMatchObject({ exerciseId: CABLE, n: 'הרחקה אופקית- פולי גובה כתף', targetRepMin: 15, targetRepMax: 20, type: 'isolation', bodyweightOnly: false });
     expect(b5.sets).toHaveLength(3);
-    expect(b5.sets.every((s) => s.weight === 20 && s.reps === null && s.seconds === null)).toBe(true);
+    expect(b5.sets.every((s) => s.weight === null && s.reps === null && s.seconds === null)).toBe(true);
     const h = exerciseHistory(FACE_PULL_ONLY, B5);
     expect(h.map((x) => x.d)).toEqual(['2026-10-06', '2026-10-13']);
     expect(openingWeight(FACE_PULL_ONLY, B5)).toBe(20);
-    expect(suggestNext(h, exerciseIn('B', B5)!)).toMatchObject({ action: 'same', weight: 20, rule: 'R4', repTarget: 22, basisWeight: 20 });
+    expect(suggestNext(h, exerciseById(B5)!)).toMatchObject({ action: 'same', weight: 20, rule: 'R4', repTarget: 22, basisWeight: 20 });
   });
 
-  it('סף RIR של התא (1): תקרה 40×20,20,20 עם RIR 1 → R1, +5 ק״ג (במאגר, בלי תא, זה היה R5)', () => {
+  it('סף RIR: עד 4/11/2026 התא (1) — תקרה 40×20,20,20 עם RIR 1 → R1; מ-4/11/2026 במאגר, בלי תא → סף 2 → R5 (כמו הפרפר ההפוך ב-20/10)', () => {
     const all = [wk('b-fp', '2026-10-13', 'B', [{ ...le(B5, 40, [20, 20, 20]), rir: 1 }])];
-    expect(suggestNext(exerciseHistory(all, B5), exerciseIn('B', B5)!)).toMatchObject({ action: 'up', weight: 45, rule: 'R1', repTarget: 15, basisWeight: 40 });
-    expect(suggestNext(exerciseHistory(all, B5), { ...exerciseIn('B', B5)!, effort: null })).toMatchObject({ action: 'same', weight: 40, rule: 'R5' });
+    expect(suggestNext(exerciseHistory(all, B5), exerciseById(B5)!)).toMatchObject({ action: 'same', weight: 40, rule: 'R5', repTarget: 20, basisWeight: 40 });
+    expect(suggestNext(exerciseHistory(all, B5), { ...exerciseById(B5)!, effort: 'RIR 1' })).toMatchObject({ action: 'up', weight: 45, rule: 'R1', repTarget: 15 });
     const db = { ...emptyDb(), workouts: all };
-    expect(buildWeeklySummary(db, '2026-10-13')).toContain('חתירה אופקית חבל 40×20,20,20 · RIR 1 · הבא: 45 ק״ג · 15 חזרות (R1)');
+    expect(buildWeeklySummary(db, '2026-10-13')).toContain('חתירה אופקית חבל 40×20,20,20 · RIR 1 · הבא: 40 ק״ג · 20 חזרות (R5)');
   });
 
   it('ההיסטוריה של הפרפר ההפוך נפרדת ונגישה לפי המזהה; ההיסטוריה של החתירה בחבל לא "ירשה" ממנה', () => {
@@ -221,22 +234,22 @@ describe('ההצעה ל-B5 מחושבת מההיסטוריה של החתירה �
 });
 
 describe('רשומת B ישנה עם הפרפר ההפוך ב-B5', () => {
-  it('נטענת ומוצגת בלי שגיאה: השורה במקומה עם הנתונים; החתירה בחבל שורה ריקה אחריה עם המשקל הפותח מההיסטוריה שלה; הפרפר ההפוך לא "דולג"', () => {
+  it('נטענת ומוצגת בלי שגיאה: השורה במקומה עם הנתונים; התאים החסרים (מ-4/11/2026: B5 הרחקה בפולי ו-B7 פשיטה במוט) שורות ריקות אחריה; הפרפר ההפוך לא "דולג"', () => {
     const r = parseWorkouts(ALL);
     expect(r.rejected).toEqual([]);
     expect(r.ok).toEqual(ALL);
     const rows = exercisesFor(B_OCT17, ALL);
-    expect(ids(rows)).toEqual([WARMUP_ID, 'barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', REVERSE_PEC_DECK, 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise', B5, FINISHER_ID]);
+    expect(ids(rows)).toEqual([WARMUP_ID, 'barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', REVERSE_PEC_DECK, 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise', CABLE, 'cable-bar-pushdown', FINISHER_ID]);
     const rpd = rows.find((x) => x.exerciseId === REVERSE_PEC_DECK)!;
     expect(rpd).toMatchObject({ n: 'הרחקה אופקית- מכונת פרפר', targetRepMin: 15, targetRepMax: 20, rir: 2 });
     expect(rpd.sets).toEqual([{ weight: 30, reps: 20, seconds: null }, { weight: 30, reps: 20, seconds: null }, { weight: 30, reps: 20, seconds: null }]);
     expect(hasData(rpd)).toBe(true);
-    const b5 = rows.find((x) => x.exerciseId === B5)!;
+    const b5 = rows.find((x) => x.exerciseId === CABLE)!;
     expect(hasData(b5)).toBe(false);
     expect(b5.sets).toHaveLength(3);
-    expect(b5.sets.every((s) => s.weight === 20 && s.reps === null)).toBe(true);
-    expect(ids(skippedExercises(B_OCT17))).not.toContain(B5);
-    expect(ids(skippedExercises(B_OCT17))).not.toContain(REVERSE_PEC_DECK);
+    expect(b5.sets.every((s) => s.weight === null && s.reps === null)).toBe(true);
+    expect(ids(rows)).not.toContain(B5);
+    expect(ids(skippedExercises(B_OCT17))).toEqual([]);
   });
 
   it('הסיכום השבועי והדוח: שורת הפרפר ההפוך עם ההצעה שלה (RIR 2 → דרגה אחת, R1), בלי שורה לחתירה בחבל באימון הזה ובלי "דולגו"', () => {
@@ -257,20 +270,22 @@ describe('רשומת B ישנה עם הפרפר ההפוך ב-B5', () => {
     expect(buildWeeklySummary(db, '2026-10-17')).toContain('פרפר הפוך 30×20,20,20 · RIR 1 · הבא: 30 ק״ג · 20 חזרות (R5)');
   });
 
-  it('רשומה ישנה שבה B5 (אז הפרפר ההפוך) הוחלף להרחקה בפולי (swappedFrom: reverse-pec-deck) נטענת כמו שהיא; החתירה בחבל שורה ריקה אחריה', () => {
+  it('רשומה ישנה שבה B5 (אז הפרפר ההפוך) הוחלף להרחקה בפולי (swappedFrom: reverse-pec-deck) נטענת כמו שהיא; מ-4/11/2026 ההרחקה בפולי היא התא B5 — השורה שהוחלפה נשארת עם הנתונים ותא B5 מתווסף ריק אחריה (אותו מזהה פעמיים); בלי שורה לחתירה בחבל', () => {
     const old = { ...le(CABLE, 25, [20, 20, 20]), swappedFrom: REVERSE_PEC_DECK, rir: 2 as const };
     const r = parseWorkouts([wk('b-swap', '2026-10-17', 'B', [old])]);
     expect(r.rejected).toEqual([]);
     expect(r.ok[0]?.ex[0]).toMatchObject({ exerciseId: CABLE, swappedFrom: REVERSE_PEC_DECK, targetRepMin: 15, targetRepMax: 20 });
     const all = [...FACE_PULL_ONLY, ...r.ok];
     const rows = exercisesFor(r.ok[0]!, all);
-    // השורה שהוחלפה נשארת (יש בה נתון); כל תאי B החסרים ברשומה — ובהם B5 החתירה בחבל — שורות ריקות לפי סדר התוכנית
-    expect(ids(rows)).toEqual([WARMUP_ID, CABLE, 'barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', B5, 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise', FINISHER_ID]);
-    expect(rows[1]).toMatchObject({ swappedFrom: REVERSE_PEC_DECK });
-    expect(rows[1]!.sets.map((x) => x.weight)).toEqual([25, 25, 25]);
-    const b5 = rows.find((x) => x.exerciseId === B5)!;
-    expect(hasData(b5)).toBe(false);
-    expect(b5.sets.every((s) => s.weight === 20 && s.reps === null)).toBe(true);
+    // השורה שהוחלפה נשארת (יש בה נתון) ותופסת את התא שממנו הוחלפה — הפרפר ההפוך, שכבר אינו תא; לכן כל תאי B החסרים ברשומה — ובהם B5 (ההרחקה בפולי, אותו מזהה) — שורות ריקות לפי סדר התוכנית, כמו ב-20/10
+    expect(ids(rows)).toEqual([WARMUP_ID, CABLE, 'barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', CABLE, 'db-supinated-curl', 'cable-bar-pushdown', 'floor-leg-raise', FINISHER_ID]);
+    const swapped = rows[1]!;
+    expect(swapped).toMatchObject({ swappedFrom: REVERSE_PEC_DECK });
+    expect(swapped.sets.map((x) => x.weight)).toEqual([25, 25, 25]);
+    expect(hasData(swapped)).toBe(true);
+    expect(rows[6]!.swappedFrom).toBeUndefined();
+    expect(hasData(rows[6]!)).toBe(false);
+    expect(ids(rows)).not.toContain(B5);
     expect(ids(rows)).not.toContain(REVERSE_PEC_DECK);
     expect(exerciseHistory(all, CABLE).map((h) => h.d)).toEqual(['2026-10-17']);
     expect(exerciseHistory(all, B5)).toHaveLength(2);
@@ -279,18 +294,17 @@ describe('רשומת B ישנה עם הפרפר ההפוך ב-B5', () => {
 });
 
 describe('"החלף" ב-B5 ומסך התרגיל', () => {
-  it('"החלף" מציע רק את ההרחקה בפולי — בלי היסטוריה, סטים ריקים, יורשת 3×15–20; הסף של התא (RIR 1) חל על השורה שהוחלפה', () => {
-    const slot = exerciseIn('B', B5)!;
-    const alts = alternatesFor(B5);
-    expect(alts.map((a) => a.id)).toEqual([CABLE]);
-    const row = swapExercise(slot, alts[0]!, openingWeight(ALL, CABLE));
-    expect(row).toMatchObject({ exerciseId: CABLE, n: 'הרחקה אופקית- פולי גובה כתף', swappedFrom: B5, targetRepMin: 15, targetRepMax: 20 });
-    expect(row.sets).toHaveLength(3);
-    expect(row.sets.every((s) => s.weight === null)).toBe(true);
-    expect(suggestNext(exerciseHistory(ALL, CABLE), { ...alts[0]!, sets: slot.sets })).toBeNull();
+  it('"החלף" ב-B5: עד 4/11/2026 הציע רק את ההרחקה בפולי; מ-4/11/2026 היא התא עצמו, בלי חלופות; שורה ישנה שהוחלפה מהחתירה בחבל להרחקה בפולי (RIR 1 בתקרה) עדיין מקבלת R1 — הסף של ההרחקה בפולי הוא 1', () => {
+    const slot = exerciseIn('B', CABLE)!;
+    expect(alternatesFor(CABLE, 'B')).toEqual([]);
+    expect(alternatesFor(B5)).toEqual([]);
+    expect(suggestNext(exerciseHistory(ALL, CABLE), slot)).toBeNull();
     const swapped = le(CABLE, 40, [20, 20, 20], { rir: 1, swappedFrom: B5 });
     const db = { ...emptyDb(), workouts: [wk('b', '2026-10-20', 'B', [swapped])] };
     expect(buildWeeklySummaryData(db, '2026-10-18').workouts.items[0]!.lines[0]!.suggestion).toMatchObject({ rule: 'R1', action: 'up', weight: 45, repTarget: 15 });
+    // "החלף" בכיוון ההפוך לא קיים: החתירה בחבל אינה חלופה של אף תא
+    for (const t of WORKOUT_TYPES) for (const e of PROGRAM[t]) expect(e.alternates, `${t} ${e.id}`).not.toContain(B5);
+    expect(swapExercise(slot, exerciseById(B5)!, openingWeight(ALL, B5))).toMatchObject({ exerciseId: B5, swappedFrom: CABLE, targetRepMin: 15, targetRepMax: 20 });
   });
 
   function html(spec: Exercise, alternates: readonly AlternateOption[]): string {
@@ -313,22 +327,22 @@ describe('"החלף" ב-B5 ומסך התרגיל', () => {
     );
   }
 
-  it('B5: קישור ▶ לסרטון, ההערה המלאה, "החלף" ו"דלג ואחזור"; החלופה היחידה — ההרחקה בפולי', () => {
-    const spec = exerciseIn('B', B5)!;
-    const options: AlternateOption[] = alternatesFor(B5).map((alt) => ({ spec: alt, last: lastExercise(ALL, alt.id) }));
+  it('B5 (4/11/2026 — הרחקה בפולי): קישור ▶ לסרטון, ההערה החדשה המלאה, "דלג ואחזור" בלי "החלף"; ההערה והסרטון של החתירה בחבל לא מופיעים', () => {
+    const spec = exerciseIn('B', CABLE)!;
+    const options: AlternateOption[] = alternatesFor(CABLE, 'B').map((alt) => ({ spec: alt, last: lastExercise(ALL, alt.id) }));
     const out = html(spec, options);
-    expect(out).toContain(`href="${B5_VIDEO}"`);
+    expect(out).toContain(`href="${CABLE_VIDEO}"`);
     expect(out).toContain('target="_blank"');
-    expect(out).toContain('סרטון הדגמה — חתירה אופקית- חבל');
-    expect(out).toContain(B5_NOTE);
-    expect(out).toContain('>החלף<');
+    expect(out).toContain('סרטון הדגמה — הרחקה אופקית- פולי גובה כתף');
+    expect(out).toContain(CABLE_NOTE);
+    expect(out).not.toContain('>החלף<');
     expect(out).toContain('>דלג ואחזור<');
-    expect(out).toContain('משקל — חתירה אופקית- חבל');
+    expect(out).toContain('משקל — הרחקה אופקית- פולי גובה כתף');
+    expect(out).not.toContain(B5_VIDEO);
+    expect(out).not.toContain(B5_NOTE);
     expect(out).not.toContain(REVERSE_PEC_DECK_VIDEO);
     expect(out).not.toContain(REVERSE_PEC_DECK_NOTE);
-    expect(options.map((o) => o.spec.id)).toEqual([CABLE]);
-    expect(options[0]!.spec.videoUrl).toBe(CABLE_VIDEO);
-    expect(options[0]!.last).toBeNull();
+    expect(options).toEqual([]);
   });
 });
 

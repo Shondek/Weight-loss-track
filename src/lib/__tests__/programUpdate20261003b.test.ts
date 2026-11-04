@@ -67,10 +67,11 @@ describe('A2 סמית — אימון A חדש ו"החלף"', () => {
 describe('C עם 8 תרגילים — אימונים ישנים עם 7', () => {
   it('C חדש: 8 תרגילים בסדר הנכון (מ-17/10/2026: C6 כיסא כומר, C7 פשיטת מרפקים) ו-C8 רוטציות; תא בלי היסטוריה → בלי הצעה', () => {
     const rows = prefilledExercises(ALL, 'C');
-    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'machine-row', 'smith-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'ez-bar-preacher-curl', 'triceps-pushdown', 'cable-torso-rotation', FINISHER_ID]);
+    // 4/11/2026: C7 הוא פשיטת המרפקים במוט (cable-bar-pushdown); החבל במאגר
+    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'machine-row', 'smith-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'ez-bar-preacher-curl', 'cable-bar-pushdown', 'cable-torso-rotation', FINISHER_ID]);
     expect(rows[6]).toMatchObject({ exerciseId: 'ez-bar-preacher-curl', targetRepMin: 12, targetRepMax: 15 });
     expect(rows[6]!.sets).toHaveLength(2);
-    expect(rows[7]).toMatchObject({ exerciseId: 'triceps-pushdown', targetRepMin: 12, targetRepMax: 15 });
+    expect(rows[7]).toMatchObject({ exerciseId: 'cable-bar-pushdown', targetRepMin: 12, targetRepMax: 15 });
     expect(rows[8]!.sets.map((s) => s.weight)).toEqual([20, 20, 20]); // רוטציות — המשקל האחרון מההיסטוריה
     expect(suggestNext(exerciseHistory(ALL, 'cable-rope-curl'), exerciseById('cable-rope-curl')!)).toBeNull();
     expect(suggestNext(exerciseHistory(ALL, 'ez-bar-preacher-curl'), exerciseIn('C', 'ez-bar-preacher-curl')!)).toBeNull();
@@ -82,11 +83,12 @@ describe('C עם 8 תרגילים — אימונים ישנים עם 7', () => {
     expect(r.rejected).toEqual([]);
     expect(r.ok[0]).toEqual(C_OCT3);
     const rows = exercisesFor(C_OCT3, ALL);
-    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'db-single-arm-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-torso-rotation', 'machine-row', 'smith-incline-bench-press', 'ez-bar-preacher-curl', FINISHER_ID]);
+    // 4/11/2026: גם C7 החדש (פשיטת מרפקים במוט) שורה ריקה אחרי השורות שנשמרו; הפשיטה בחבל נשארת במקומה עם הנתונים
+    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'db-single-arm-row', 'db-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'triceps-pushdown', 'cable-torso-rotation', 'machine-row', 'smith-incline-bench-press', 'ez-bar-preacher-curl', 'cable-bar-pushdown', FINISHER_ID]);
     for (const id of ['triceps-pushdown', 'cable-torso-rotation', 'db-single-arm-row', 'db-incline-bench-press']) {
       expect(hasData(rows.find((x) => x.exerciseId === id)!), id).toBe(true);
     }
-    for (const id of ['machine-row', 'smith-incline-bench-press', 'ez-bar-preacher-curl']) {
+    for (const id of ['machine-row', 'smith-incline-bench-press', 'ez-bar-preacher-curl', 'cable-bar-pushdown']) {
       expect(hasData(rows.find((x) => x.exerciseId === id)!), id).toBe(false);
     }
     expect(ids(rows)).not.toContain('cable-rope-curl');

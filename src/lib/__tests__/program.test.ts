@@ -60,12 +60,15 @@ describe('program-abc.json — מבנה', () => {
         expect(e[k], `${e.id}.${k}`).toEqual(first[k]);
       }
     }
-    // הכפילות המכוונת: כפיפת ברכיים ב-A וב-B, ופשיטת מרפקים ב-B וב-C
+    // הכפילות המכוונת: כפיפת ברכיים ב-A וב-B; מ-4/11/2026 פשיטת מרפקים במוט ב-B, ב-C וב-D (2/2/3 סטים, טווח אחד 12–15)
     expect(exerciseIn('A', 'leg-curl')?.sets).toBe(2);
     expect(exerciseIn('B', 'leg-curl')?.sets).toBe(3);
     expect(exerciseIn('C', 'leg-curl')).toBeUndefined();
-    expect(exerciseIn('B', 'triceps-pushdown')?.sets).toBe(2);
-    expect(exerciseIn('C', 'triceps-pushdown')?.sets).toBe(2);
+    expect(exerciseIn('B', 'cable-bar-pushdown')?.sets).toBe(2);
+    expect(exerciseIn('C', 'cable-bar-pushdown')?.sets).toBe(2);
+    expect(exerciseIn('D', 'cable-bar-pushdown')?.sets).toBe(3);
+    expect(exerciseIn('B', 'triceps-pushdown')).toBeUndefined();
+    expect(exerciseIn('C', 'triceps-pushdown')).toBeUndefined();
   });
 
   it('id של תרגיל פרוש לא מתנגש עם התוכנית', () => {
@@ -174,8 +177,8 @@ describe('program-abc.json — C2 מכונת חתירה (3/10/2026)', () => {
     expect(c2.note).toMatch(/הסרטון מראה מכונה דומה, לא אותו דגם\.$/);
     expect(exerciseIn('C', 'machine-row')).toBe(c2);
     expect(exerciseIn('C', 'db-single-arm-row')).toBeUndefined();
-    // 17/10/2026: C3 בסמית, C6 כיסא כומר, פשיטת המרפקים ל-C7
-    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'smith-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'ez-bar-preacher-curl', 'triceps-pushdown', 'cable-torso-rotation']);
+    // 17/10/2026: C3 בסמית, C6 כיסא כומר, פשיטת המרפקים ל-C7. 4/11/2026: C7 פשיטת מרפקים במוט (cable-bar-pushdown)
+    expect(PROGRAM.C.map((e) => e.id)).toEqual(['machine-hip-abduction', 'machine-row', 'smith-incline-bench-press', 'leg-press', 'db-lateral-raise-standing', 'ez-bar-preacher-curl', 'cable-bar-pushdown', 'cable-torso-rotation']);
     // machine-row כבר לא במאגר — הוא תרגיל בתוכנית; הפולי התחתון ב-B עדיין מציע אותו כחלופה
     expect(ALTERNATES.some((a) => a.id === 'machine-row')).toBe(false);
     expect(alternatesFor('seated-cable-row').map((a) => a.id)).toContain('machine-row');
@@ -225,7 +228,9 @@ describe('program-abc.json — כפיפת מרפקים בפולי תחתון ח�
     expect(rope).toMatchObject({ id: 'cable-rope-curl', name: 'כפיפת מרפקים- פולי תחתון חבל', machine: 'Cable Rope', type: 'isolation', sets: 2, repRangeMin: 12, repRangeMax: 15, step: 5, mode: 'progress' });
     expect(rope.note).toBe('פולי תחתון, חבל, אחיזה ניטרלית. מרפקים צמודים לגוף.');
     expect(rope.videoUrl).toBe('https://drive.google.com/file/d/1IlwfEWHhTiVN4BrimJNfPRc_ZUt-XsTI/view?usp=drive_link');
-    expect(exerciseIn('C', 'triceps-pushdown')).toBe(PROGRAM.C[6]);
+    // 4/11/2026: C7 הוא פשיטת המרפקים במוט (cable-bar-pushdown); החבל במאגר
+    expect(exerciseIn('C', 'cable-bar-pushdown')).toBe(PROGRAM.C[6]);
+    expect(exerciseIn('C', 'triceps-pushdown')).toBeUndefined();
     expect(exerciseIn('C', 'cable-torso-rotation')).toBe(PROGRAM.C[7]);
     expect(PROGRAM.C[7]).toMatchObject({ id: 'cable-torso-rotation', name: 'בטן- רוטציות גו פולי אמצעי', sets: 3, repRangeMin: 12, repRangeMax: 15, step: 5, unilateral: true });
     // 17/10/2026: במאגר, לא בתוכנית ולא בפרושים; חלופה יחידה של C6 (כיסא כומר מוט W)
@@ -300,10 +305,12 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     // 25/10/2026: הפרפר התחתון עבר ל-D1 והוסר מכאן.
     'pec-deck': ['פרפר- כייבל קרוס'],
     // 16/10/2026: B5 היה הפרפר ההפוך (reverse-pec-deck). 20/10/2026: B5 חזר לחתירה בחבל (face-pull); חלופה יחידה — הרחקה אופקית בפולי. הפרפר ההפוך במאגר ואינו חלופה.
-    'face-pull': ['הרחקה אופקית- פולי גובה כתף'],
+    // 4/11/2026: B5 הוא ההרחקה בפולי (cable-reverse-fly) — בלי חלופות; החתירה בחבל במאגר ואינה חלופה.
+    'cable-reverse-fly': [],
     // 25/10/2026: כפיפת הפטיש עברה ל-D2, פשיטת המרפקים עם מוט ל-D3 — והוסרו מכאן (B6, B7, C7).
     'db-supinated-curl': ['כפיפת מרפקים- פולי תחתון מוט', 'כפיפת מרפק- כיסא כומר מ.יד סופינציה'],
-    'triceps-pushdown': ['פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד'],
+    // 4/11/2026: B7 ו-C7 הם פשיטת המרפקים במוט (cable-bar-pushdown, גם D3) — אותן חלופות כמו שהיו לחבל; ב-D3 אין (ראה EXPECTED_BY_CELL). החבל במאגר ואינו חלופה.
+    'cable-bar-pushdown': ['פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד'],
     'machine-hip-abduction': ['בעמידה הרחקת ירך עם גומייה', 'בישיבה הרחקת ירך עם גומייה'],
     'machine-row': ['חתירה- הטיית גו עם מ.יד', 'חתירה- כייבל קרוס יד אחת', 'חתירה- מכונה ייעודית T-bar'],
     // 17/10/2026: C3 בסמית — חלופה יחידה הבנץ׳ העליון עם משקולות יד (הבנץ׳ העליון במכונה ועם מוט חופשי נשארו במאגר, לא חלופות)
@@ -318,24 +325,27 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     // 25/10/2026: אימון D — בלי חלופות לאף תא (תפוס = "דלג ואחזור").
     'cable-low-fly': [],
     'db-hammer-curl': [],
-    'cable-bar-pushdown': [],
     'bench-reverse-crunch': [],
     'cable-single-arm-lateral-raise': [],
   };
+  /** 4/11/2026: אותו מזהה בתאים עם רשימות שונות — הרשימה היא של התא באימון (alternatesFor עם סוג האימון). */
+  const EXPECTED_BY_CELL: Record<string, string[]> = {
+    'D:cable-bar-pushdown': [],
+  };
 
   it('לכל תא החלופות מהמפרט, בשמות ובסדר; כל מזהה נפתר', () => {
-    for (const { e } of ALL) {
-      expect(alternatesFor(e.id).map((a) => a.name), e.id).toEqual(EXPECTED[e.id]);
+    for (const { t, e } of ALL) {
+      expect(alternatesFor(e.id, t).map((a) => a.name), `${t} ${e.id}`).toEqual(EXPECTED_BY_CELL[`${t}:${e.id}`] ?? EXPECTED[e.id]);
       for (const id of e.alternates) expect(exerciseById(id), `${e.id} → ${id}`).toBeDefined();
     }
     expect(alternatesFor('hack-squat')).toEqual([]);
   });
 
-  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, B1 למוט ב-13/10/2026, B5 לפרפר הפוך ב-16/10/2026 וחזרה לחתירה בחבל ב-20/10/2026, C3/C6 ב-17/10/2026, השאר לא זז)', () => {
+  it('A/B/C: אותם מזהים, סטים וטווחים (A6 ו-B8 נוספו ב-6/10/2026, B1 למוט ב-13/10/2026, B5 לפרפר הפוך ב-16/10/2026 וחזרה לחתירה בחבל ב-20/10/2026, C3/C6 ב-17/10/2026, B5 להרחקה בפולי ו-B7/C7 לפשיטה במוט ב-4/11/2026, השאר לא זז)', () => {
     const snapshot = (t: 'A' | 'B' | 'C') => PROGRAM[t].map((e) => `${e.id}:${e.sets}x${e.repRangeMin}-${e.repRangeMax}`);
     expect(snapshot('A')).toEqual(['leg-press:3x10-12', 'smith-bench-press:3x8-12', 'lat-pulldown:3x10-12', 'leg-extension:2x12-15', 'leg-curl:2x10-12', 'back-extension:3x12-15', 'db-lateral-raise-seated:3x12-15', 'plank:3x60-60']);
-    expect(snapshot('B')).toEqual(['barbell-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'face-pull:3x15-20', 'db-supinated-curl:2x10-12', 'triceps-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
-    expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'smith-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'ez-bar-preacher-curl:2x12-15', 'triceps-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
+    expect(snapshot('B')).toEqual(['barbell-rdl:3x8-10', 'seated-cable-row:3x10-12', 'pec-deck:3x10-12', 'leg-curl:3x10-12', 'cable-reverse-fly:3x15-20', 'db-supinated-curl:2x10-12', 'cable-bar-pushdown:2x12-15', 'floor-leg-raise:3x10-15']);
+    expect(snapshot('C')).toEqual(['machine-hip-abduction:3x15-20', 'machine-row:3x10-12', 'smith-incline-bench-press:3x8-12', 'leg-press:3x10-12', 'db-lateral-raise-standing:3x12-15', 'ez-bar-preacher-curl:2x12-15', 'cable-bar-pushdown:2x12-15', 'cable-torso-rotation:3x12-15']);
   });
 
   it('אין חלופה שהיא הלג-פרס 45° — הוא alias של leg-press, לא תרגיל נפרד', () => {
@@ -380,8 +390,12 @@ describe('program-abc.json — חלופות (שלב 4.1)', () => {
     // 16/10/2026: ההרחקה בפולי קיבלה הערה וסרטון. 20/10/2026: הפרפר ההפוך במאגר עם ההערה והסרטון שלו כמו שהיו בתוכנית (החתירה בחבל חזרה לתוכנית)
     expect(byId('reverse-pec-deck').note).toBe('פרפר הפוך. פנים לכרית, החזה צמוד אליה · ידיות בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף, בלי למשוך עם הידיים ובלי להרים כתפיים · חזרה איטית.');
     expect(byId('reverse-pec-deck').videoUrl).toBe('https://drive.google.com/file/d/1Oyyswtd8u3qB4fsimpsinv3V0dqr4H3U/view?usp=drive_link');
-    expect(byId('cable-reverse-fly').note).toBe('כבלים בגובה הכתף, לא מעל · מרפקים מעט כפופים וקבועים · התנועה מהכתף.');
-    expect(byId('cable-reverse-fly').videoUrl).toBe('https://drive.google.com/file/d/1-fJHu5tp9fL4o9Trs-KTPSQQsD4Z0cW3/view?usp=drive_link');
+    // 4/11/2026: ההרחקה בפולי עברה לתוכנית (B5, הערה חדשה — programUpdate20261104.test.ts); החתירה בחבל והפשיטה בחבל במאגר עם ההערה והסרטון שהיו להן בתוכנית
+    expect(ALTERNATES.some((a) => a.id === 'cable-reverse-fly')).toBe(false);
+    expect(byId('face-pull').note).toBe('הגלגלת בגובה הפנים, לא מעל הראש. צעד אחורה, כך שהמשקל לא נוחת בין החזרות. מושכים את מרכז החבל לכיוון העיניים ומפרידים את הידיים — בסוף הן ליד האוזניים והאגרופים פונים לאחור. מרפקים בגובה הכתף, לא מעל. השכמות נאספות, הכתפיים לא עולות. בלי להישען אחורה. משקל קל, חזרה איטית.');
+    expect(byId('face-pull').videoUrl).toBe('https://drive.google.com/file/d/1FIt-HIDn_y2lMc-UjVUR0BDZiHHStjg1/view?usp=drive_link');
+    expect(byId('triceps-pushdown').note).toBeNull();
+    expect(byId('triceps-pushdown').videoUrl).toBe('https://drive.google.com/file/d/1SQCZVCe3hSpqMZHGTp9fIsE0ZJvZ0R3p/view?usp=drive_link');
     for (const a of ALTERNATES) {
       if (a.isTimed) {
         expect(a.repRangeMin, a.id).toBe(30);

@@ -15,6 +15,10 @@
  * snapshot ההצעות: `cable-low-fly` (טווח 10–12 → 12–15, סף 2 → 1) ו-`cable-bar-pushdown`
  * (12–15 → 10–15) השתנו; D2 ו-D5 — אותו טווח ואותו סף, זהים; D4 נוסף.
  *
+ * 4/11/2026: `cable-bar-pushdown` חזר ל-12–15 (הערה חדשה) ומארח גם את B7 ו-C7
+ * (2×12–15) — אותו מזהה בשלושה תאים; הפשיטה בחבל במאגר. החלופות של D3 נשארו
+ * ריקות — alternatesFor עם סוג האימון. programUpdate20261104.test.ts.
+ *
  * אין מיגרציה ואין מפתח אחסון חדש: רשומה עם `t: "D"` נשמרת כמו A/B/C, ורשומות
  * A/B/C קיימות נטענות כמו שהן.
  */
@@ -51,7 +55,8 @@ const VIDEOS: Record<string, string> = {
 const NOTES: Record<string, string> = {
   [D1]: 'הגלגלות בתחתית. הידיים עולות בקשת מגובה הירכיים עד גובה החזה העליון — לא מעל הכתפיים. מרפקים מעט כפופים וקבועים. בתחתית לא נותנים לכבלים למשוך את הכתפיים לאחור.',
   [D2]: 'אחיזה ניטרלית — אגודלים למעלה לכל אורך התנועה. מרפקים צמודים לגוף, בלי תנופה.',
-  [D3]: 'מוט ישר. מרפקים צמודים לגוף ולא זזים קדימה. נעילה למטה בלי להישען מעל המוט.',
+  // 4/11/2026: הערה חדשה (אותה הערה ב-B7, C7 ו-D3)
+  [D3]: 'מרפקים צמודים לגוף ולא זזים קדימה — רק האמה זזה. נעילה למטה בלי להישען מעל המוט. חזרה איטית עד שהאמה בערך מקבילה לרצפה.',
   [D4]: 'שוכבים על הספסל ואוחזים בקצה מאחורי הראש. מרימים את האגן ומקרבים ברכיים לחזה — הגו נשאר על הספסל. ירידה איטית. מציק לכתף? אוחזים בצדי הספסל ליד הירכיים. משקל גוף, חזרות בלבד.',
   [D5]: 'לכל צד. הכבל נמוך ועובר לפני הגוף. מרימים עד גובה הכתף, לא מעל. בלי תנופה מהגוף.',
 };
@@ -78,16 +83,18 @@ describe('1. המבנה: אימון D בתוכנית, מחוץ לסבב', () => 
     const d = (i: number) => PROGRAM.D[i]!;
     expect(d(0)).toMatchObject({ id: D1, name: 'פרפר- תחתון כייבל קרוס', sets: 3, reps: '12-15', repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 5, mode: 'progress', unilateral: false, bodyweightOnly: false, muscles: ['חזה עליון'] });
     expect(d(1)).toMatchObject({ id: D2, name: 'כפיפת מרפקים- מ.יד מיד פוזישן', sets: 3, reps: '10-12', repRangeMin: 10, repRangeMax: 12, effort: 'RIR 1', step: 2.5, mode: 'progress' });
-    expect(d(2)).toMatchObject({ id: D3, name: 'פשיטת מרפקים- פולי עליון מוט', sets: 3, reps: '10-15', repRangeMin: 10, repRangeMax: 15, effort: 'RIR 1', step: 5, mode: 'progress' });
+    // 4/11/2026: D3 10–15 → 12–15 (3 סטים, RIR 1 ללא שינוי) — טווח אחד למזהה בשלושת התאים
+    expect(d(2)).toMatchObject({ id: D3, name: 'פשיטת מרפקים- פולי עליון מוט', sets: 3, reps: '12-15', repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 5, mode: 'progress' });
     expect(d(3)).toMatchObject({ id: D4, name: 'בטן- כפיפות בטן לאחור על ספסל', machine: null, muscle: 'core', type: 'core', sets: 3, reps: '10-15', repRangeMin: 10, repRangeMax: 15, effort: 'RIR 1', step: null, mode: 'reps', bodyweightOnly: true, bodyweightStart: false, isTimed: false });
     expect(d(4)).toMatchObject({ id: D5, name: 'הרחקת כתף- כייבל קרוס יד אחת', sets: 2, reps: '12-15 לכל צד', repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 5, unilateral: true, mode: 'progress' });
     for (const e of PROGRAM.D) {
       expect(e.note, e.id).toBe(NOTES[e.id]);
       expect(e.videoUrl, e.id).toBe(VIDEOS[e.id]);
       expect(e.alternates, e.id).toEqual([]);
-      expect(alternatesFor(e.id), e.id).toEqual([]);
+      // 4/11/2026: D3 חולק מזהה עם B7/C7 (שיש להם חלופות) — החלופות של התא הן לפי סוג האימון
+      expect(alternatesFor(e.id, 'D'), e.id).toEqual([]);
       expect(rirThreshold(e.effort), e.id).toBe(1);
-      expect(exerciseById(e.id), e.id).toBe(e);
+      expect(exerciseById(e.id)?.id, e.id).toBe(e.id);
       expect(resolveExerciseId(e.name), e.id).toBe(e.id);
     }
   });
@@ -97,19 +104,21 @@ describe('1. המבנה: אימון D בתוכנית, מחוץ לסבב', () => 
       expect(ALTERNATES.some((a) => a.id === id), id).toBe(false);
       expect(RETIRED.some((r) => r.id === id), id).toBe(false);
     }
-    expect(ALTERNATES).toHaveLength(34);
-    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(34);
+    // 4/11/2026: החתירה בחבל והפשיטה בחבל למאגר, ההרחקה בפולי לתוכנית (34 → 35)
+    expect(ALTERNATES).toHaveLength(35);
+    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(35);
     const program = WORKOUT_TYPES.flatMap((t) => PROGRAM[t].map((e) => e.id));
     for (const a of ALTERNATES) expect(program, a.id).not.toContain(a.id);
-    // כל מזהה של D מופיע פעם אחת בתוכנית
-    for (const id of D_IDS) expect(program.filter((x) => x === id), id).toHaveLength(1);
+    // כל מזהה של D מופיע פעם אחת בתוכנית — פרט ל-D3, שמ-4/11/2026 הוא גם B7 ו-C7 (אותו מזהה, היסטוריה אחת)
+    for (const id of D_IDS) expect(program.filter((x) => x === id), id).toHaveLength(id === D3 ? 3 : 1);
   });
 
   it('ששת התאים: החלופות אחרי ההסרה — ושום שינוי אחר בהם', () => {
     expect(exerciseIn('B', 'pec-deck')!.alternates).toEqual(['cable-fly']);
     expect(exerciseIn('B', 'db-supinated-curl')!.alternates).toEqual(['cable-bar-curl', 'db-preacher-curl']);
-    expect(exerciseIn('B', 'triceps-pushdown')!.alternates).toEqual(['cable-kickback', 'db-kickback']);
-    expect(exerciseIn('C', 'triceps-pushdown')!.alternates).toEqual(['cable-kickback', 'db-kickback']);
+    // 4/11/2026: B7 ו-C7 הם פשיטת המרפקים במוט — אותן חלופות
+    expect(exerciseIn('B', D3)!.alternates).toEqual(['cable-kickback', 'db-kickback']);
+    expect(exerciseIn('C', D3)!.alternates).toEqual(['cable-kickback', 'db-kickback']);
     expect(exerciseIn('A', 'db-lateral-raise-seated')!.alternates).toEqual(['db-lateral-raise-standing']);
     expect(exerciseIn('C', 'db-lateral-raise-standing')!.alternates).toEqual(['db-lateral-raise-seated']);
     // אף רשימת חלופות ב-A/B/C לא מכילה מזהה של D
@@ -117,7 +126,7 @@ describe('1. המבנה: אימון D בתוכנית, מחוץ לסבב', () => 
     // המפרט של ששת התאים — כמו קודם
     expect(exerciseIn('B', 'pec-deck')).toMatchObject({ sets: 3, repRangeMin: 10, repRangeMax: 12, effort: 'RIR 2', step: null });
     expect(exerciseIn('B', 'db-supinated-curl')).toMatchObject({ sets: 2, repRangeMin: 10, repRangeMax: 12, effort: 'RIR 1', step: 2.5 });
-    expect(exerciseIn('B', 'triceps-pushdown')).toMatchObject({ sets: 2, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 5 });
+    expect(exerciseIn('B', D3)).toMatchObject({ sets: 2, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 5 });
     expect(exerciseIn('A', 'db-lateral-raise-seated')).toMatchObject({ sets: 3, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 2.5 });
     expect(exerciseIn('C', 'db-lateral-raise-standing')).toMatchObject({ sets: 3, repRangeMin: 12, repRangeMax: 15, effort: 'RIR 1', step: 2.5 });
   });
@@ -179,7 +188,8 @@ describe('2. הסבב: D שקוף ל-"הבא בתור" ולא נספר ב-3/3', 
     two.workouts = [wk('d1', '2026-10-26', 'D', [le(D3, 40, [12, 12, 12])]), wk('d2', '2026-10-29', 'D', [le(D3, 40, [15, 15, 15], { rir: 1 })])];
     const t2 = buildWeeklySummary(two, '2026-10-25');
     expect(t2).toContain('אימון D: 26/10 · 29/10\n26/10 D\n  פשיטת מרפקים מוט 40×12,12,12 · RIR — · הבא: ');
-    expect(t2).toContain('29/10 D\n  פשיטת מרפקים מוט 40×15,15,15 · RIR 1 · הבא: 45 ק״ג · 10 חזרות (R1)\nכאב');
+    // 4/11/2026: הטווח 12–15 — היעד חוזר ל-12
+    expect(t2).toContain('29/10 D\n  פשיטת מרפקים מוט 40×15,15,15 · RIR 1 · הבא: 45 ק״ג · 12 חזרות (R1)\nכאב');
   });
 
   it('הדוח לצ׳אט (ייצוא): "אימונים: n/3" בלי D, שורת "אימון D: dd/mm" ואחריה שורת האימון באותו פורמט; "חסר" לפי הסבב בלבד', () => {
@@ -268,7 +278,7 @@ describe('4. ההצעות בתאי D (המנוע לא השתנה)', () => {
     expect(suggestNext([sess(D2, '2026-10-28', 15, [12, 12, 12], 1)], spec(D2))).toMatchObject({ rule: 'R1', weight: 17.5, repTarget: 10 });
     expect(suggestNext([sess(D2, '2026-10-28', 15, [12, 12, 12], 0)], spec(D2))).toMatchObject({ rule: 'R5', weight: 15 });
     expect(suggestNext([sess(D5, '2026-10-28', 40, [15, 15], 1)], spec(D5))).toMatchObject({ rule: 'R1', weight: 45, repTarget: 12 });
-    // D3 10–15: אמצע הטווח → R6
+    // D3 12–15 (מ-4/11/2026): הרצפה → R6
     expect(suggestNext([sess(D3, '2026-10-28', 20, [12, 12, 12], 1)], spec(D3))).toMatchObject({ rule: 'R6', weight: 20, repTarget: 13 });
   });
 });
@@ -293,20 +303,22 @@ describe('5. הכרטיס: "החלף" בששת התאים מציג את הרשי
       }),
     );
   }
-  const options = (id: string): AlternateOption[] => alternatesFor(id).map((alt) => ({ spec: alt, last: null }));
+  // 4/11/2026: הרשימה היא של התא באימון (alternatesFor עם סוג האימון) — D3 חולק מזהה עם B7/C7
+  const options = (id: string, t: WorkoutType): AlternateOption[] => alternatesFor(id, t).map((alt) => ({ spec: alt, last: null }));
 
   it('ששת התאים — האפשרויות שהכרטיס מקבל ל"החלף" הן הרשימה החדשה, בלי ארבעת המזהים של D; הכפתור קיים', () => {
     const cases: [WorkoutType, string, string[]][] = [
       ['B', 'pec-deck', ['פרפר- כייבל קרוס']],
       ['B', 'db-supinated-curl', ['כפיפת מרפקים- פולי תחתון מוט', 'כפיפת מרפק- כיסא כומר מ.יד סופינציה']],
-      ['B', 'triceps-pushdown', ['פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד']],
-      ['C', 'triceps-pushdown', ['פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד']],
+      // 4/11/2026: B7 ו-C7 הם פשיטת המרפקים במוט (cable-bar-pushdown) — אותן חלופות
+      ['B', D3, ['פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד']],
+      ['C', D3, ['פשיטת מרפק- פולי עליון קיקבק', 'קיק בק- משקולות יד']],
       ['A', 'db-lateral-raise-seated', ['הרחקת כתפיים- עמידה מ.יד']],
       ['C', 'db-lateral-raise-standing', ['הרחקת כתפיים- ישיבה מ.יד']],
     ];
     for (const [t, id, names] of cases) {
-      const opts = options(id);
-      // הרשימה שהמסך מעביר לכרטיס (WorkoutScreen: alternatesFor(spec.id)) — השמות החדשים, בלי מזהי D
+      const opts = options(id, t);
+      // הרשימה שהמסך מעביר לכרטיס (WorkoutScreen: alternatesFor(spec.id, t)) — השמות החדשים, בלי מזהי D
       expect(opts.map((o) => o.spec.name), `${t} ${id}`).toEqual(names);
       for (const gone of MOVED) expect(opts.map((o) => o.spec.id), `${t} ${id} → ${gone}`).not.toContain(gone);
       // הרשימה עצמה נפתחת רק בלחיצה; בסטטי — הכפתור "החלף" קיים (יש חלופות)
@@ -317,8 +329,8 @@ describe('5. הכרטיס: "החלף" בששת התאים מציג את הרשי
 
   it('תאי D: ההערה והסרטון מוצגים, "דלג ואחזור" קיים, בלי כפתור "החלף" (אין חלופות)', () => {
     for (const e of PROGRAM.D) {
-      expect(options(e.id), e.id).toEqual([]);
-      const out = html(e, options(e.id));
+      expect(options(e.id, 'D'), e.id).toEqual([]);
+      const out = html(e, options(e.id, 'D'));
       expect(out, e.id).toContain(`href="${VIDEOS[e.id]}"`);
       expect(out, e.id).toContain(NOTES[e.id]!.slice(0, 20));
       expect(out, e.id).toContain('דלג ואחזור');
