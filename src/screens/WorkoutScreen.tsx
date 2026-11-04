@@ -718,7 +718,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
    */
   const alternativesOf = (row: LoggedExercise): AlternateOption[] => {
     if (!open || row.swappedFrom !== undefined) return [];
-    return alternatesFor(row.exerciseId)
+    return alternatesFor(row.exerciseId, open.t)
       .filter((alt) => !rows.some((r) => r.exerciseId === alt.id))
       .map((alt) => ({ spec: alt, last: lastExercise(db.workouts, alt.id, open.id) }));
   };

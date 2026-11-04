@@ -71,9 +71,10 @@ describe('rirThreshold — הסף מיעד ה-RIR של התא', () => {
       'B2 seated-cable-row RIR 2 progress → 2',
       'B3 pec-deck RIR 2 progress → 2',
       'B4 leg-curl RIR 2 progress → 2',
-      'B5 face-pull RIR 1 progress → 1',
+      // 4/11/2026: B5 הרחקה בפולי, B7/C7 פשיטת מרפקים במוט — אותו RIR 1, אותו סף 1
+      'B5 cable-reverse-fly RIR 1 progress → 1',
       'B6 db-supinated-curl RIR 1 progress → 1',
-      'B7 triceps-pushdown RIR 1 progress → 1',
+      'B7 cable-bar-pushdown RIR 1 progress → 1',
       'B8 floor-leg-raise RIR 1 reps → 1',
       'C1 machine-hip-abduction RIR 1-2 progress → 1',
       'C2 machine-row RIR 2 progress → 2',
@@ -81,7 +82,7 @@ describe('rirThreshold — הסף מיעד ה-RIR של התא', () => {
       'C4 leg-press RIR 2 progress → 2',
       'C5 db-lateral-raise-standing RIR 1 progress → 1',
       'C6 ez-bar-preacher-curl RIR 1 progress → 1',
-      'C7 triceps-pushdown RIR 1 progress → 1',
+      'C7 cable-bar-pushdown RIR 1 progress → 1',
       'C8 cable-torso-rotation RIR 1 progress → 1',
       // 25/10/2026: אימון D (אופציונלי) — כל התאים RIR 1 → סף 1
       'D1 cable-low-fly RIR 1 progress → 1',

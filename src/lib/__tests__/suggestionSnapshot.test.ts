@@ -38,6 +38,15 @@
  * (D5) — אותו טווח ואותו סף (1), רק מספר הסטים, ולכן זהים. `bench-reverse-crunch`
  * (D4, חזרות בלבד) נוסף. שתי שורות השתנו, אחת נוספה, אפס מחוץ לארבעת המזהים.
  * נבדק ב-programUpdate20261025.test.ts.
+ *
+ * 4/11/2026: B5 → `cable-reverse-fly` (מהמאגר לתוכנית, בלי חלופות) ו-`face-pull`
+ * למאגר; B7/C7 → `cable-bar-pushdown` (המזהה של D3) ו-`triceps-pushdown` למאגר;
+ * D3 10–15 → 12–15. `cable-bar-pushdown`: 8 מתוך 10 תרחישים השתנו — כולם רק
+ * הרצפה/היעד 10 → 12 (RIR 0 ו-"משקל קטן, RIR 3" זהים); `face-pull`
+ * ו-`triceps-pushdown`: בשני תרחישי ה-RIR 1 בלבד R1 → R5 (מאגר = סף 2, כמו
+ * `reverse-pec-deck` ב-20/10); `cable-reverse-fly`: אפס שורות — הסף שלה היה
+ * כבר 1 דרך התא המארח B5, ועכשיו דרך ה-effort שלה. אותם 59 מזהים, אפס נוספו,
+ * אפס מחוץ לארבעה. נבדק ב-programUpdate20261104.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import type { LoggedExercise, Rir } from '../../types';

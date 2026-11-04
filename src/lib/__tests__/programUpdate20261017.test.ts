@@ -28,6 +28,10 @@ const DB_INCLINE = 'db-incline-bench-press';
 const C6 = 'ez-bar-preacher-curl';
 const ROPE = 'cable-rope-curl';
 const C7 = 'triceps-pushdown';
+/** 4/11/2026: C7 (ו-B7) הם פשיטת המרפקים במוט — גם D3; הפשיטה בחבל (C7 עד 4/11) במאגר. */
+const C7_BAR = 'cable-bar-pushdown';
+const C7_BAR_VIDEO = 'https://drive.google.com/file/d/1DkANomsaOj1PYVMH5gIiQ0dp2irQ5XbS/view?usp=drive_link';
+const C7_BAR_NOTE = 'מרפקים צמודים לגוף ולא זזים קדימה — רק האמה זזה. נעילה למטה בלי להישען מעל המוט. חזרה איטית עד שהאמה בערך מקבילה לרצפה.';
 const A2 = 'smith-bench-press';
 const C3_VIDEO = 'https://drive.google.com/file/d/1vt0dsd5rHMKkk6K8ByX9pXWFVtYvOA4A/view?usp=drive_link';
 const C6_VIDEO = 'https://drive.google.com/file/d/1AHnam-k3Q4IdReZxiCb6kaS801yFs3hP/view?usp=drive_link';
@@ -41,9 +45,9 @@ const A2_NOTE_BEFORE = "ספסל שטוח. המוט יורד לחזה התחתו
 const A2_NOTE_AFTER = "ספסל ישר (שטוח). המוט יורד לחזה התחתון, מרפקים ב-45°. עצירות הבטיחות מעט מעל גובה החזה. רושמים את סך הפלטות בלי המוט. הסרטון מראה בנץ' עם מוט חופשי, לא סמית.";
 
 const A_ORDER = ['leg-press', A2, 'lat-pulldown', 'leg-extension', 'leg-curl', 'back-extension', 'db-lateral-raise-seated', 'plank'];
-// 20/10/2026: B5 חזר לחתירה בחבל (face-pull) — programUpdate20261020.test.ts
-const B_ORDER = ['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'face-pull', 'db-supinated-curl', 'triceps-pushdown', 'floor-leg-raise'];
-const C_ORDER = ['machine-hip-abduction', 'machine-row', C3, 'leg-press', 'db-lateral-raise-standing', C6, C7, 'cable-torso-rotation'];
+// 20/10/2026: B5 חזר לחתירה בחבל (face-pull) — programUpdate20261020.test.ts. 4/11/2026: B5 הרחקה בפולי, B7/C7 פשיטת מרפקים במוט — programUpdate20261104.test.ts
+const B_ORDER = ['barbell-rdl', 'seated-cable-row', 'pec-deck', 'leg-curl', 'cable-reverse-fly', 'db-supinated-curl', C7_BAR, 'floor-leg-raise'];
+const C_ORDER = ['machine-hip-abduction', 'machine-row', C3, 'leg-press', 'db-lateral-raise-standing', C6, C7_BAR, 'cable-torso-rotation'];
 
 const ids = (list: { exerciseId: string }[]) => list.map((e) => e.exerciseId);
 
@@ -212,14 +216,18 @@ describe('C6 — כפיפת מרפקים בכיסא כומר עם מוט W (ez-b
     expect(hosts).toEqual([`C:${C6}`]);
   });
 
-  it('17. C7 פשיטת מרפקים: אותו מזהה ומפרט, רק המיקום (מ-C6 ל-C7); זהה ל-B7', () => {
-    const c7 = exerciseIn('C', C7)!;
+  it('17. C7 פשיטת מרפקים: אותו מיקום (C7, מ-17/10); 4/11/2026 — המזהה הוא פשיטת המרפקים במוט, אותו מפרט 2×12–15; זהה ל-B7; הפשיטה בחבל במאגר עם המפרט והסרטון שלה', () => {
+    // 4/11/2026: הפשיטה בחבל יצאה מהתוכנית למאגר — אותו מזהה, מפרט, סרטון; לא חלופה של אף תא
+    expect(exerciseIn('C', C7)).toBeUndefined();
+    expect(exerciseById(C7)).toMatchObject({ id: C7, name: 'פשיטת מרפקים- פולי עליון חבל', short: 'פשיטת מרפקים', machine: 'Cable Rope', sets: 2, repRangeMin: 12, repRangeMax: 15, step: 5, note: null, videoUrl: C7_VIDEO, alternates: [] });
+    expect(ALTERNATES.filter((a) => a.id === C7)).toHaveLength(1);
+    const c7 = exerciseIn('C', C7_BAR)!;
     expect(PROGRAM.C[6]).toBe(c7);
     expect(c7).toMatchObject({
-      id: C7,
-      name: 'פשיטת מרפקים- פולי עליון חבל',
-      short: 'פשיטת מרפקים',
-      machine: 'Cable Rope',
+      id: C7_BAR,
+      name: 'פשיטת מרפקים- פולי עליון מוט',
+      short: 'פשיטת מרפקים מוט',
+      machine: 'Cable Bar',
       type: 'isolation',
       sets: 2,
       reps: '12-15',
@@ -227,12 +235,12 @@ describe('C6 — כפיפת מרפקים בכיסא כומר עם מוט W (ez-b
       repRangeMax: 15,
       effort: 'RIR 1',
       step: 5,
-      note: null,
-      videoUrl: C7_VIDEO,
-      // 25/10/2026: פשיטת המרפקים עם מוט (cable-bar-pushdown) עברה ל-D3 והוסרה מחלופות B7 ו-C7
+      note: C7_BAR_NOTE,
+      videoUrl: C7_BAR_VIDEO,
+      // 25/10/2026: פשיטת המרפקים עם מוט (cable-bar-pushdown) עברה ל-D3 והוסרה מחלופות B7 ו-C7. 4/11/2026: היא התא עצמו; החלופות כמו שהיו
       alternates: ['cable-kickback', 'db-kickback'],
     });
-    const b7 = exerciseIn('B', C7)!;
+    const b7 = exerciseIn('B', C7_BAR)!;
     const { alternates: _a, ...c7Rest } = c7;
     const { alternates: _b, ...b7Rest } = b7;
     expect(c7Rest).toEqual(b7Rest);
@@ -247,7 +255,8 @@ describe('11. התוכנית כולה: C בסדר החדש; A ו-B כמו קוד
     expect(PROGRAM.C.map((e) => e.id)).toEqual(C_ORDER);
     expect(PROGRAM.C).toHaveLength(8);
     expect(PROGRAM.C.reduce((n, e) => n + e.sets, 0)).toBe(22);
-    expect(PROGRAM.C.slice(6).map((e) => e.machine)).toEqual(['Cable Rope', 'Cable']);
+    // 4/11/2026: C7 פשיטת מרפקים במוט (Cable Bar) במקום החבל
+    expect(PROGRAM.C.slice(6).map((e) => e.machine)).toEqual(['Cable Bar', 'Cable']);
   });
 
   it('A ו-B: אותם מזהים, סטים, טווחים, RIR, step, חלופות, סרטונים והערות', () => {
@@ -271,10 +280,11 @@ describe('11. התוכנית כולה: C בסדר החדש; A ו-B כמו קוד
       // 25/10/2026: הפרפר התחתון → D1, הוסר מחלופות B3
       'pec-deck:3x10-12:RIR 2:null:progress:cable-fly',
       'leg-curl:3x10-12:RIR 2:null:progress:lying-leg-curl,single-leg-curl',
-      'face-pull:3x15-20:RIR 1:5:progress:cable-reverse-fly',
-      // 25/10/2026: כפיפת הפטיש → D2, פשיטת מרפקים עם מוט → D3 — הוסרו מחלופות B6, B7
+      // 4/11/2026: B5 הרחקה בפולי בלי חלופות (החתירה בחבל במאגר)
+      'cable-reverse-fly:3x15-20:RIR 1:5:progress:',
+      // 25/10/2026: כפיפת הפטיש → D2, פשיטת מרפקים עם מוט → D3 — הוסרו מחלופות B6, B7. 4/11/2026: B7 הוא פשיטת המרפקים במוט, אותן חלופות
       'db-supinated-curl:2x10-12:RIR 1:2.5:progress:cable-bar-curl,db-preacher-curl',
-      'triceps-pushdown:2x12-15:RIR 1:5:progress:cable-kickback,db-kickback',
+      'cable-bar-pushdown:2x12-15:RIR 1:5:progress:cable-kickback,db-kickback',
       'floor-leg-raise:3x10-15:RIR 1:null:reps:',
     ]);
     // C1, C2, C4, C5, C8 — ללא שינוי
@@ -321,10 +331,11 @@ describe('11. התוכנית כולה: C בסדר החדש; A ו-B כמו קוד
     const unique = new Set(all);
     for (const id of [C3, C6, DB_INCLINE, ROPE, C7]) expect(unique.has(id), id).toBe(true);
     // 25/10/2026: אימון D — +1 מזהה חדש (D4), וארבעה מזהים עברו מהמאגר לתוכנית (38 → 34)
+    // 4/11/2026: החתירה בחבל והפשיטה בחבל למאגר, ההרחקה בפולי לתוכנית (34 → 35); אותם מזהים
     expect(unique.size - 1).toBe(59);
-    expect(ALTERNATES).toHaveLength(34);
-    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(34);
-    expect(new Set(ALTERNATES.map((a) => a.name)).size).toBe(34);
+    expect(ALTERNATES).toHaveLength(35);
+    expect(new Set(ALTERNATES.map((a) => a.id)).size).toBe(35);
+    expect(new Set(ALTERNATES.map((a) => a.name)).size).toBe(35);
   });
 });
 
@@ -352,7 +363,8 @@ describe('14/19. ההיסטוריה של התרגילים שיצאו — שלמ�
 
   it('19. אימון C ישן (בנץ׳ עליון מ.יד ב-C3, כפיפת מרפקים בחבל ב-C7) נפתח לעריכה בלי שגיאה: השורות במקומן עם הנתונים, התאים החדשים כשורות ריקות אחריהן, ולא "דולגו"', () => {
     const rows = exercisesFor(C_OCT10, ALL);
-    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'machine-row', DB_INCLINE, 'leg-press', 'db-lateral-raise-standing', C7, ROPE, 'cable-torso-rotation', C3, C6, FINISHER_ID]);
+    // 4/11/2026: גם C7 החדש (פשיטת מרפקים במוט) שורה ריקה אחרי השורות שנשמרו; הפשיטה בחבל במקומה עם הנתונים
+    expect(ids(rows)).toEqual([WARMUP_ID, 'machine-hip-abduction', 'machine-row', DB_INCLINE, 'leg-press', 'db-lateral-raise-standing', C7, ROPE, 'cable-torso-rotation', C3, C6, C7_BAR, FINISHER_ID]);
     const incline = rows.find((x) => x.exerciseId === DB_INCLINE)!;
     expect(incline).toMatchObject({ n: "בנץ' פרס עליון- משקולות יד", targetRepMin: 8, targetRepMax: 12 });
     expect(incline.sets.map((s) => s.reps)).toEqual([12, 12, 10]);
@@ -360,7 +372,7 @@ describe('14/19. ההיסטוריה של התרגילים שיצאו — שלמ�
     expect(rope).toMatchObject({ n: 'כפיפת מרפקים- פולי תחתון חבל', targetRepMin: 12, targetRepMax: 15 });
     expect(rope.sets).toEqual([{ weight: 20, reps: 15, seconds: null }, { weight: 20, reps: 15, seconds: null }]);
     for (const id of [DB_INCLINE, ROPE, C7, 'cable-torso-rotation']) expect(hasData(rows.find((x) => x.exerciseId === id)!), id).toBe(true);
-    for (const id of [C3, C6]) {
+    for (const id of [C3, C6, C7_BAR]) {
       const row = rows.find((x) => x.exerciseId === id)!;
       expect(hasData(row), id).toBe(false);
       expect(row.sets.every((s) => s.weight === null && s.reps === null)).toBe(true);
@@ -395,7 +407,7 @@ describe('14/19. ההיסטוריה של התרגילים שיצאו — שלמ�
 });
 
 describe('15/16. אימון C חדש ו"החלף"', () => {
-  it('15. C חדש: C3 ו-C6 בתאים שלהם, סטים ריקים, בלי משקל פותח; לסשן הראשון אין הצעה (משקל פותח ידני); C7 פשיטת מרפקים עם המשקל האחרון', () => {
+  it('15. C חדש: C3 ו-C6 בתאים שלהם, סטים ריקים, בלי משקל פותח; לסשן הראשון אין הצעה (משקל פותח ידני); C7 (מ-4/11/2026 פשיטת מרפקים במוט) בלי משקל פותח — ההיסטוריה של החבל לא עוברת אליו', () => {
     const rows = prefilledExercises(ALL, 'C');
     expect(ids(rows)).toEqual([WARMUP_ID, ...C_ORDER, FINISHER_ID]);
     const c3 = rows[3]!;
@@ -406,8 +418,10 @@ describe('15/16. אימון C חדש ו"החלף"', () => {
     expect(c6).toMatchObject({ exerciseId: C6, n: 'כפיפת מרפקים- כיסא כומר מוט W', targetRepMin: 12, targetRepMax: 15, type: 'isolation', bodyweightOnly: false });
     expect(c6.sets).toHaveLength(2);
     expect(c6.sets.every((s) => s.weight === null && s.reps === null)).toBe(true);
-    expect(rows[7]).toMatchObject({ exerciseId: C7 });
-    expect(rows[7]!.sets.map((s) => s.weight)).toEqual([25, 25]);
+    // 4/11/2026: C7 הוא מזהה אחר (מוט) — בלי היסטוריה ב-ALL → בלי משקל פותח; ההיסטוריה של החבל (25) נשארת שלו
+    expect(rows[7]).toMatchObject({ exerciseId: C7_BAR });
+    expect(rows[7]!.sets.map((s) => s.weight)).toEqual([null, null]);
+    expect(openingWeight(ALL, C7)).toBe(25);
     for (const id of [C3, C6]) {
       expect(suggestNext(exerciseHistory(ALL, id), exerciseIn('C', id)!), id).toBeNull();
       expect(suggestNext([], exerciseIn('C', id)!), id).toBeNull();

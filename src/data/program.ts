@@ -173,9 +173,14 @@ export function resolveExerciseId(name: string): string | null {
 /**
  * החלופות של תא בתוכנית, לפי הסדר בקובץ. תרגיל שאינו בתוכנית → ריק.
  * אותו מזהה בשני אימונים (לג-פרס) — אותה רשימה.
+ *
+ * 4/11/2026: אותו מזהה יכול לשבת בתאים עם רשימות שונות — `cable-bar-pushdown`
+ * ב-B7/C7 עם חלופות וב-D3 בלי (אימון D בלי חלופות לאף תא). עם `t` הרשימה
+ * היא של התא באימון הזה; בלי `t`, או כשהמזהה אינו תא באימון הזה (שורה
+ * שהוחלפה, רשומה ישנה), המופע הראשון בתוכנית — כמו קודם.
  */
-export function alternatesFor(exerciseId: string): Exercise[] {
-  const spec = WORKOUT_TYPES.flatMap((t) => PROGRAM[t]).find((e) => e.id === exerciseId);
+export function alternatesFor(exerciseId: string, t?: WorkoutType): Exercise[] {
+  const spec = (t === undefined ? undefined : exerciseIn(t, exerciseId)) ?? WORKOUT_TYPES.flatMap((t) => PROGRAM[t]).find((e) => e.id === exerciseId);
   if (!spec) return [];
   return spec.alternates.map((id) => BY_ID.get(id)).filter((e): e is Exercise => e !== undefined);
 }
