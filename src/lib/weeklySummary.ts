@@ -8,7 +8,8 @@
  *  - שבוע תקף = 7/7 שקילות. שבוע תקף מושווה לשבוע התקף האחרון שלפניו —
  *    לא בהכרח השבוע הקודם.
  *  - מותניים נמדדים ברביעי. אין רביעי → חמישי נחשב מדידת השבוע ומוצג עם
- *    הערך (25/10/2026). שישי/שבת מוצגים כ"לא תקף" ואינם מדידת השבוע.
+ *    הערך (25/10/2026). אין גם חמישי → שישי בבוקר, באותה צורה (11/11/2026).
+ *    רק שבת מוצגת כ"לא תקף" ואינה מדידת השבוע.
  *  - החלטות קלוריות רק מימים סגורים; הרצפה מ-targets.ts; היעדים (קק״ל,
  *    חלבון) הם היעד שבתוקף בשבת של השבוע (`targetFor`).
  *
@@ -96,8 +97,13 @@ export type WeeklySummaryData = {
      */
     thursday: { d: ISODate; cm: number } | null;
     /**
-     * מדידה בשישי או בשבת כשאין רביעי וחמישי — מוצגת עם "לא תקף" ואינה
-     * מדידת השבוע (הדגל נשאר). המאוחרת מבין השתיים. null בכל מקרה אחר.
+     * מדידת שישי כשאין רביעי וחמישי (11/11/2026) — נחשבת מדידת השבוע ומוצגת
+     * כמו חמישי: היום והערך. null כשיש רביעי או חמישי, או כשאין שישי.
+     */
+    friday: { d: ISODate; cm: number } | null;
+    /**
+     * מדידה בשבת כשאין רביעי, חמישי ושישי — מוצגת עם "לא תקף" ואינה מדידת
+     * השבוע (הדגל נשאר). null בכל מקרה אחר.
      */
     late: { d: ISODate; cm: number } | null;
     /** המדידות האחרונות שלפני רביעי של השבוע, בכל יום בשבוע, מהחדשה לישנה. */
@@ -275,15 +281,12 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
   // ---- מותניים: הערך של רביעי, וההיסטוריה שלפניו (כל יום) ----
   const wednesday = days[WAIST_DAY]!;
   const wedEntry = db.waist.find((e) => e.d === wednesday) ?? null;
-  // אין רביעי → חמישי הוא מדידת השבוע. אין גם חמישי → שישי/שבת מוצגים כ"לא תקף".
+  // אין רביעי → חמישי הוא מדידת השבוע. אין גם חמישי → שישי. רק שבת "לא תקף".
   const thursday = days[WAIST_DAY + 1]!;
   const thuEntry = wedEntry ? null : (db.waist.find((e) => e.d === thursday) ?? null);
-  const lateEntry =
-    wedEntry || thuEntry
-      ? null
-      : (db.waist
-          .filter((e) => e.d === days[5] || e.d === days[6])
-          .sort((a, b) => compareISO(b.d, a.d))[0] ?? null);
+  const friday = days[WAIST_DAY + 2]!;
+  const friEntry = wedEntry || thuEntry ? null : (db.waist.find((e) => e.d === friday) ?? null);
+  const lateEntry = wedEntry || thuEntry || friEntry ? null : (db.waist.find((e) => e.d === days[6]) ?? null);
   const previousWaist = db.waist
     .filter((e) => compareISO(e.d, wednesday) < 0)
     .sort((a, b) => compareISO(b.d, a.d))
@@ -338,7 +341,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
   // ---- דגלים ----
   const flags: string[] = [];
   if (!valid) flags.push(`שבוע לא תקף (${current.count}/${WEEK_LENGTH})`);
-  if (!wedEntry && !thuEntry) flags.push('מותניים לא נמדדו ברביעי');
+  if (!wedEntry && !thuEntry && !friEntry) flags.push('מותניים לא נמדדו ברביעי');
   if (cardio.over) flags.push(`אירובי מעל התקציב (${cardio.total}/${cardio.budget} דק׳)`);
   if (steps.goal !== null) {
     if (steps.avg !== null && steps.avg < steps.goal) flags.push(`ממוצע צעדים מתחת ליעד (${thousands(steps.avg)}/${thousands(steps.goal)})`);
@@ -357,6 +360,7 @@ export function buildWeeklySummaryData(db: DB, week: ISODate): WeeklySummaryData
     waist: {
       wednesday: wedEntry ? { d: wedEntry.d, cm: wedEntry.cm } : null,
       thursday: thuEntry ? { d: thuEntry.d, cm: thuEntry.cm } : null,
+      friday: friEntry ? { d: friEntry.d, cm: friEntry.cm } : null,
       late: lateEntry ? { d: lateEntry.d, cm: lateEntry.cm } : null,
       previous: previousWaist,
     },
@@ -417,9 +421,11 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
       ? `רביעי ${formatDM(wa.wednesday.d)}: ${num(wa.wednesday.cm, 1)} ס״מ`
       : wa.thursday
         ? `מותניים ${num(wa.thursday.cm, 1)} (חמישי ${formatDM(wa.thursday.d)})`
-        : wa.late
-          ? `מותניים ${num(wa.late.cm, 1)} (${dayName(wa.late.d)} — לא תקף)`
-          : 'לא נמדד ברביעי',
+        : wa.friday
+          ? `מותניים ${num(wa.friday.cm, 1)} (שישי ${formatDM(wa.friday.d)})`
+          : wa.late
+            ? `מותניים ${num(wa.late.cm, 1)} (${dayName(wa.late.d)} — לא תקף)`
+            : 'לא נמדד ברביעי',
   );
   L.push(
     `אחרונות לפני: ${data.waist.previous.length ? data.waist.previous.map((e) => `${formatDM(e.d)} ${num(e.cm, 1)}`).join(' · ') : DASH}`,
