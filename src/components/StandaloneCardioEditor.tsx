@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { CardioMode, ISODate, StandaloneCardio } from '../types';
 import { NOTE_MAX } from '../types';
 import {
@@ -14,6 +14,8 @@ import { formatDMY } from '../lib/date';
 import DateField from './DateField';
 import NumberField from './NumberField';
 import Stepper from './Stepper';
+import { CARDIO_TIMER_OPTIONS, CardioClockLine, type CardioClock, type CardioTimerMode } from './CardioFocus';
+import { ChipSelect } from '../ui';
 
 type Props = {
   value: StandaloneCardio;
@@ -26,8 +28,10 @@ type Props = {
   session: CardioSession | null;
   /** ריצה אחרת פעילה — אי אפשר להתחיל שנייה. */
   sessionBusy: boolean;
-  /** "התחל": ריצה בחותמות זמן. לא כותב כלום. */
-  onStart: () => void;
+  /** "התחל": ריצה בחותמות זמן. לא כותב כלום. `stopwatch` — בלי זמן יעד. */
+  onStart: (stopwatch: boolean) => void;
+  /** השעון החי של הריצה הפעילה (מהטיימר). */
+  clock?: CardioClock | null | undefined;
   onSessionChange: (patch: { incline?: number | null; speed?: number | null }) => void;
   /** "סיים": פותח את הסיכום. */
   onFinish: () => void;
@@ -55,9 +59,13 @@ export default function StandaloneCardioEditor({
   onSessionChange,
   onFinish,
   onManual,
+  clock = null,
 }: Props) {
   const groupId = useId();
   const noteId = useId();
+  /** ספירה לאחור או סטופר. בחירה במסך בלבד, עד "התחל". */
+  const [timerMode, setTimerMode] = useState<CardioTimerMode>('countdown');
+  const stopwatch = timerMode === 'stopwatch';
   const live = session ? currentValues(session) : null;
 
   const setMode = (mode: CardioMode) => {
@@ -79,8 +87,15 @@ export default function StandaloneCardioEditor({
         </div>
         <p className="sub" style={{ margin: 0 }}>
           רץ · {cardioModeLabel(session.mode)} ·{' '}
-          <span className="num">{session.plannedMinutes}</span> דק׳ מתוכננות
+          {session.plannedMinutes >= CARDIO_MAX_MINUTES ? (
+            'סטופר'
+          ) : (
+            <>
+              <span className="num">{session.plannedMinutes}</span> דק׳ מתוכננות
+            </>
+          )}
         </p>
+        {clock && <CardioClockLine clock={clock} />}
         <p className="tiny muted" style={{ margin: 'var(--sp-1) 0 0' }}>
           כל שינוי שיפוע או מהירות נרשם עם חותמת זמן. אין השהיה. הריצה נחתכת
           בזמן שתוכנן גם אם לא תלחץ "סיים".
@@ -162,8 +177,16 @@ export default function StandaloneCardioEditor({
           </div>
         </div>
 
+        <ChipSelect<CardioTimerMode>
+          label="טיימר"
+          options={CARDIO_TIMER_OPTIONS}
+          value={timerMode}
+          clearable={false}
+          onChange={(v) => v && setTimerMode(v)}
+        />
+
         <NumberField
-          label="דקות"
+          label={stopwatch ? 'דקות (לרישום ידני בלבד)' : 'דקות'}
           value={value.minutes}
           onChange={(v) => onChange({ ...value, minutes: v ?? 0 })}
           min={0}
@@ -210,8 +233,8 @@ export default function StandaloneCardioEditor({
           <button
             type="button"
             className="btn btn--primary btn--block"
-            disabled={value.minutes <= 0 || sessionBusy}
-            onClick={onStart}
+            disabled={(!stopwatch && value.minutes <= 0) || sessionBusy}
+            onClick={() => onStart(stopwatch)}
           >
             התחל
           </button>

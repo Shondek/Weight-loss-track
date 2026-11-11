@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { LoggedExercise, LoggedSet, Rir } from '../types';
 import type { Exercise } from '../data/program';
 import { WEIGHT_STEP } from '../data/config';
@@ -10,7 +10,7 @@ import { clean, DASH } from '../lib/format';
 import ExerciseChart from './ExerciseChart';
 import { alternateHint, suggestionLabel, suggestionText, type Suggestion } from '../lib/progression';
 import { Button, ChipSelect, Disclosure, Icon, ListRow, Num, Sheet, StatusChip, Stepper, Surface } from '../ui';
-import { ArrowLeftRight, Check, Flag, History, Pencil, Play, SkipForward } from '../ui/icons';
+import { ArrowLeftRight, Check, Flag, History, Info, Play, SkipForward } from '../ui/icons';
 
 /** חלופה שמוצעת ב"החלף": המפרט שלה והביצוע האחרון שלה (לפי המזהה שלה). */
 export type AlternateOption = { spec: Exercise; last: ExerciseHistory | null };
@@ -157,6 +157,12 @@ export default function ExerciseFocus({
   const [editing, setEditing] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [swapOpen, setSwapOpen] = useState(false);
+  /** "הערות": שרירים, הערות ביצוע וסרטון — סגור כברירת מחדל, כדי שהסטים יעלו למסך. */
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notesId = useId();
+  const rirBlock = useRef<HTMLDivElement>(null);
+  const nextSet = useRef<HTMLDivElement>(null);
+  const entered = useRef(false);
   const swapped = swappedFromLabel(log);
   const hint = alternateHint(suggestion, log.swappedFrom !== undefined);
   const canSwap = onSwap !== undefined && alternates.length > 0 && log.swappedFrom === undefined;
@@ -168,6 +174,30 @@ export default function ExerciseFocus({
   const allLogged = performed.length > 0 && performed.every(Boolean);
   const nextIdx = performed.findIndex((p) => !p);
   const rirOpen = allLogged || log.rir !== undefined;
+  const hasNotes = Boolean(spec.note || spec.videoUrl || spec.muscles.length > 0);
+
+  /**
+   * אחרי הסט האחרון ה-RIR הוא הנגיעה הבאה — והוא נגיעת חובה לכללי ההתקדמות.
+   * מגלגלים אותו לתוך המסך, כדי שלא יישכח מתחת לקפל (ומתחת לפס הטיימר).
+   */
+  const rirDue = allLogged && log.rir === undefined;
+  useEffect(() => {
+    if (!rirDue) return;
+    rirBlock.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  }, [rirDue]);
+
+  /**
+   * אחרי "רשום": הסט הבא (והכפתור שלו) נכנסים למסך, מעל פס הטיימר — בלי
+   * גלילה ביד בין סט לסט. לא בכניסה לתרגיל: שם המסך מתחיל מהראש.
+   */
+  useEffect(() => {
+    if (!entered.current) {
+      entered.current = true;
+      return;
+    }
+    if (nextIdx === -1) return;
+    nextSet.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  }, [nextIdx]);
 
   /**
    * משקל אחד לתרגיל (R2). במודל הוא עדיין נשמר לכל סט — אותו ערך בכולם —
@@ -226,7 +256,23 @@ export default function ExerciseFocus({
 
   return (
     <div className="focus">
-      <h2 className="focus__name">{spec.name}</h2>
+      <div className="focus__title">
+        <h2 className="focus__name">{spec.name}</h2>
+        {hasNotes && (
+          // הערות הביצוע, הסרטון והשרירים: כפתור קטן ליד השם במקום שורה מלאה (שלב 7).
+          <Button
+            variant="ghost"
+            icon={Info}
+            className="focus__notes-btn"
+            aria-expanded={notesOpen}
+            aria-controls={notesId}
+            aria-label={`הערות ביצוע וסרטון — ${spec.name}`}
+            onClick={() => setNotesOpen((v) => !v)}
+          >
+            הערות
+          </Button>
+        )}
+      </div>
       {swapped && (
         <p className="tiny wk-swapped focus__swapped">
           {swapped}
@@ -257,11 +303,10 @@ export default function ExerciseFocus({
           </>
         ) : null}
       </p>
-      <p className="tiny muted focus__muscles">{spec.muscles.join(' · ')}</p>
-
-      {/* הערות הביצוע והסרטון — שורה אחת שנפתחת. */}
-      {(spec.note || spec.videoUrl) && (
-        <Disclosure title="הערות ביצוע וסרטון" lead={Pencil} className="focus__notes" keepMounted>
+      {/* שרירים, הערות ביצוע וסרטון — נשארים ב-DOM גם כשסגור (קוראי מסך, חיפוש). */}
+      {hasNotes && (
+        <div id={notesId} className="focus__notes" hidden={!notesOpen}>
+          {spec.muscles.length > 0 && <p className="tiny muted focus__muscles">{spec.muscles.join(' · ')}</p>}
           {spec.note && <p className="focus__note small">{spec.note}</p>}
           {spec.videoUrl && (
             // קישור רגיל בלבד: בלי preload, בלי אימות, בלי iframe.
@@ -276,42 +321,39 @@ export default function ExerciseFocus({
               סרטון הדגמה
             </a>
           )}
-        </Disclosure>
+        </div>
       )}
 
       {/* פאנל ההצעה: ההצעה, הכלל, הסבר, והסשן הקודם בשורה אחת. */}
       <Surface as="div" variant="sunk" className={`wk-suggest wk-suggest--${sugTone}`} role="note" aria-label="הצעה">
         {suggestion && sugLabel ? (
           <>
-            <div className="wk-suggest__head">
-              <span className="wk-suggest__label">
-                <Icon icon={Flag} size={16} />
-                הצעה
-              </span>
-              <StatusChip tone={sugTone === 'neutral' ? 'neutral' : sugTone}>
-                <Num>{suggestion.rule === 'M' ? 'שימור' : suggestion.rule}</Num>
+            {/* ההצעה והכלל בשורה אחת (שלב 7) — "הצעה" עבר לתוך הצ'יפ. */}
+            <div className="wk-suggest__head wk-suggest__head--value">
+              <p className="wk-suggest__value">
+                {suggestion.rule === 'M' ? (
+                  // עברית עם מספרים — RTL רגיל, לא Num (שהיה הופך את סדר המילים).
+                  <span className="wk-suggest__text wk-hist">{suggestionText(suggestion, spec)}</span>
+                ) : (
+                  <>
+                    {suggestion.weight !== null && sugLabel.weight === `${clean(suggestion.weight)} ק״ג` ? (
+                      <>
+                        <Num>{clean(suggestion.weight)}</Num>
+                        <span className="wk-suggest__unit">ק״ג</span>
+                      </>
+                    ) : (
+                      <span className="wk-suggest__text">{sugLabel.weight}</span>
+                    )}
+                    <span className="wk-suggest__x">×</span>
+                    <Num>{suggestion.repTarget}</Num>
+                    <span className="wk-suggest__unit">{timed ? 'שנ׳' : 'חזרות'}</span>
+                  </>
+                )}
+              </p>
+              <StatusChip tone={sugTone === 'neutral' ? 'neutral' : sugTone} icon={Flag}>
+                הצעה · <Num>{suggestion.rule === 'M' ? 'שימור' : suggestion.rule}</Num>
               </StatusChip>
             </div>
-            <p className="wk-suggest__value">
-              {suggestion.rule === 'M' ? (
-                // עברית עם מספרים — RTL רגיל, לא Num (שהיה הופך את סדר המילים).
-                <span className="wk-suggest__text wk-hist">{suggestionText(suggestion, spec)}</span>
-              ) : (
-                <>
-                  {suggestion.weight !== null && sugLabel.weight === `${clean(suggestion.weight)} ק״ג` ? (
-                    <>
-                      <Num>{clean(suggestion.weight)}</Num>
-                      <span className="wk-suggest__unit">ק״ג</span>
-                    </>
-                  ) : (
-                    <span className="wk-suggest__text">{sugLabel.weight}</span>
-                  )}
-                  <span className="wk-suggest__x">×</span>
-                  <Num>{suggestion.repTarget}</Num>
-                  <span className="wk-suggest__unit">{timed ? 'שנ׳' : 'חזרות'}</span>
-                </>
-              )}
-            </p>
             <p className="tiny muted wk-suggest__reason">{suggestion.reason}</p>
             {suggestion.rirUnknown && <StatusChip tone="partial">RIR לא נרשם — אשר בעצמך</StatusChip>}
           </>
@@ -414,7 +456,7 @@ export default function ExerciseFocus({
           const draft = reps[i] ?? null;
           const unitWord = timed ? 'שניות' : 'חזרות';
           return (
-            <div key={i} className={`set${logged ? ' is-done' : isNext ? ' is-next' : ''}`}>
+            <div key={i} ref={isNext ? nextSet : undefined} className={`set${logged ? ' is-done' : isNext ? ' is-next' : ''}`}>
               <div className="set__row">
                 <span className="set__no num" aria-hidden="true">
                   {i + 1}
@@ -482,7 +524,7 @@ export default function ExerciseFocus({
 
       {/* RIR בסט האחרון — הקלט שכללי ההתקדמות צריכים (R1/R5). נפתח כשלב הבא אחרי הסט האחרון. */}
       {rirOpen && (
-        <div className={`wk-rir${allLogged && log.rir === undefined ? ' is-due' : ''}`}>
+        <div ref={rirBlock} className={`wk-rir${rirDue ? ' is-due' : ''}`}>
           <ChipSelect<Rir>
             label="חזרות ברזרבה בסט האחרון"
             options={RIR_OPTIONS}

@@ -65,7 +65,8 @@ import { shakesOpenByDefault } from '../data/proteinShakes';
 import { CREATINE_DOSE_G, creatineOn, creatineTimeText, toggleCreatine } from '../lib/creatine';
 import { toLocalISO } from '../lib/date';
 import { MEAL_HOURS } from '../data/config';
-import { gramsFor, quantityLabel, unitFor, type PortionSource } from '../lib/nutrition/portions';
+import { gramsFor, unitFor, type PortionSource } from '../lib/nutrition/portions';
+import { displayQuantity } from './nutritionView';
 
 const SEARCH_LIMIT = 12;
 const RECENT_LIMIT = 6;
@@ -103,10 +104,10 @@ function scaled(ref: Pick<FoodRef, 'kcal' | 'protein'>, grams: number): { kcal: 
   return { kcal: (ref.kcal * grams) / 100, protein: (ref.protein * grams) / 100 };
 }
 
-/** "כף מפולסת ×2" / "מנה ×½" / "×3" / "150 ג׳", ו"הערכה" לידני. */
+/** "כף מפולסת ×2" / "מנה ×½" / "×3" / "150 ג׳", ו"הערכה" לידני. מעל ×10 יחידות — גרמים (issue #13). */
 function entryQtyText(e: FoodEntry, source: PortionSource | null): string {
   if (e.adhoc) return 'הערכה';
-  return quantityLabel(source ?? { portions: [], unitFood: e.ref.unitFood === true }, e.grams);
+  return displayQuantity(source ?? { portions: [], unitFood: e.ref.unitFood === true }, e.grams);
 }
 
 /**
@@ -280,7 +281,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     for (const e of logged) {
       if (n >= 3) break;
       const before = out.length;
-      push(e.grams, quantityLabel(source ?? { portions: [], unitFood: e.ref.unitFood === true }, e.grams));
+      push(e.grams, displayQuantity(source ?? { portions: [], unitFood: e.ref.unitFood === true }, e.grams));
       if (out.length > before) n++;
     }
     if (source?.recipe && source.recipe.finalGrams > 0) push(source.recipe.finalGrams, `מנה · ${gramsText(source.recipe.finalGrams)} ג׳`);
@@ -301,7 +302,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
     const entry = live
       ? newEntry(live, sheet.grams, sheet.meal, ts, unique())
       : newEntryFromRef(sheet.foodId, sheet.ref, sheet.grams, sheet.meal, ts, unique());
-    commit(entry, `${sheet.name} ${quantityLabel(sourceOf(sheet.foodId) ?? { portions: [], unitFood: sheet.ref.unitFood === true }, sheet.grams)}`);
+    commit(entry, `${sheet.name} ${displayQuantity(sourceOf(sheet.foodId) ?? { portions: [], unitFood: sheet.ref.unitFood === true }, sheet.grams)}`);
     setSheet(null);
     setQuery('');
   };
@@ -815,7 +816,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
                       sub={
                         <>
                           {compositionOf(f.id) && <span className="nut-comp">{compositionOf(f.id)}</span>}
-                          <Num>{quantityLabel(sourceOf(f.id) ?? { portions: f.portions, unitFood: f.unitFood }, p)}</Num> · <Num>{int(v.kcal)}</Num> קק"ל · <Num>{int(v.protein)}</Num> חלבון
+                          <Num>{displayQuantity(sourceOf(f.id) ?? { portions: f.portions, unitFood: f.unitFood }, p)}</Num> · <Num>{int(v.kcal)}</Num> קק"ל · <Num>{int(v.protein)}</Num> חלבון
                         </>
                       }
                       end={<Icon icon={Plus} className="nut-plus" />}
@@ -850,7 +851,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
           <div className="qtiles">
             {favorites.map(({ food, grams }) => {
               const v = scaled(food, grams);
-              const qty = quantityLabel(sourceOf(food.id) ?? { portions: food.portions, unitFood: food.unitFood }, grams);
+              const qty = displayQuantity(sourceOf(food.id) ?? { portions: food.portions, unitFood: food.unitFood }, grams);
               return (
                 <QuickTile
                   key={food.id}
@@ -893,7 +894,7 @@ export default function NutritionScreen({ store, today }: ScreenProps) {
               const live = item.kind === 'food' ? resolve(item.foodId) : null;
               const base = live ?? item.ref;
               const v = item.kind === 'adhoc' ? scaled(item.ref, 1) : scaled(base, item.lastGrams);
-              const qty = item.kind === 'adhoc' ? 'הערכה' : quantityLabel(sourceOf(item.foodId) ?? { portions: [], unitFood: item.unitFood }, item.lastGrams);
+              const qty = item.kind === 'adhoc' ? 'הערכה' : displayQuantity(sourceOf(item.foodId) ?? { portions: [], unitFood: item.unitFood }, item.lastGrams);
               return (
                 <li key={item.key}>
                   <ListRow

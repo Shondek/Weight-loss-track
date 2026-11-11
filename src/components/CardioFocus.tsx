@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { CardioLog, CardioMode, LoggedExercise } from '../types';
 import {
   CARDIO_INCLINE_MAX,
@@ -19,6 +19,44 @@ import {
 } from '../lib/workouts';
 import NumberField from './NumberField';
 import Stepper from './Stepper';
+import { mmss } from '../hooks/timerCore';
+import { ChipSelect, Num } from '../ui';
+
+/** חימום: 6–10 דקות בנגיעה אחת. משך אחר — "אחר" פותח את שדה הדקות, כמו קודם. */
+const WARMUP_MINUTES = [6, 7, 8, 9, 10] as const;
+type WarmupChoice = (typeof WARMUP_MINUTES)[number] | 'other';
+const WARMUP_OPTIONS: readonly { value: WarmupChoice; label: string }[] = [
+  ...WARMUP_MINUTES.map((m) => ({ value: m, label: String(m) })),
+  { value: 'other', label: 'אחר' },
+];
+
+/** אירובי: ספירה לאחור לפי הדקות שבשדה, או סטופר (עד תקרת הדקות). */
+export type CardioTimerMode = 'countdown' | 'stopwatch';
+export const CARDIO_TIMER_OPTIONS: readonly { value: CardioTimerMode; label: string }[] = [
+  { value: 'countdown', label: 'ספירה לאחור' },
+  { value: 'stopwatch', label: 'סטופר' },
+];
+
+/** השעון החי של ריצה פעילה — מהטיימר של האפליקציה (מבוסס זמן סיום). */
+export type CardioClock = { elapsedSec: number; remainingSec: number; stopwatch: boolean };
+
+/** "12:34 עברו · נשארו 17:26" — השעון בתוך כרטיס הריצה. */
+export function CardioClockLine({ clock }: { clock: CardioClock }) {
+  return (
+    <p className="cardio__clock" role="timer" aria-label={`עברו ${mmss(clock.elapsedSec)}${clock.stopwatch ? '' : `, נשארו ${mmss(clock.remainingSec)}`}`}>
+      <Num className="cardio__clock-main">{mmss(clock.elapsedSec)}</Num>
+      <span className="cardio__clock-sub">
+        עברו
+        {!clock.stopwatch && (
+          <>
+            {' · נשארו '}
+            <Num>{mmss(clock.remainingSec)}</Num>
+          </>
+        )}
+      </span>
+    </p>
+  );
+}
 
 type Props = {
   log: LoggedExercise;
@@ -39,7 +77,10 @@ type Props = {
   session?: CardioSession | null | undefined;
   /** ריצה אחרת פעילה (אימון אחר / עצמאי) — אי אפשר להתחיל שנייה. */
   sessionBusy?: boolean | undefined;
-  onStartSession?: (() => void) | undefined;
+  /** `stopwatch` — ריצה בלי זמן יעד (סטופר); אחרת ספירה לאחור לפי הדקות שבשדה. */
+  onStartSession?: ((stopwatch: boolean) => void) | undefined;
+  /** השעון החי של הריצה הפעילה (מהטיימר). חסר = לא מוצג. */
+  clock?: CardioClock | null | undefined;
   onSessionChange?: ((patch: { incline?: number | null; speed?: number | null }) => void) | undefined;
   onFinishSession?: (() => void) | undefined;
   /** אירובי שכבר נרשם: פותח את הסיכום לעריכה. */
@@ -69,10 +110,16 @@ export default function CardioFocus({
   onSessionChange,
   onFinishSession,
   onEditSummary,
+  clock = null,
 }: Props) {
   const groupId = useId();
   const cardio = cardioOf(log);
   const { mode, minutes } = cardio;
+  /** חימום: "אחר" נבחר — שדה הדקות פתוח. מתחיל פתוח רק כשהמשך השמור אינו 6–10. */
+  const [otherMinutes, setOtherMinutes] = useState(() => !(WARMUP_MINUTES as readonly number[]).includes(minutes));
+  /** אירובי סיום: ספירה לאחור או סטופר. בחירה במסך בלבד, עד "התחל". */
+  const [timerMode, setTimerMode] = useState<CardioTimerMode>('countdown');
+  const stopwatch = detailed === true && timerMode === 'stopwatch';
   const done = cardioMinutesDone(log);
   const running = detailed && session ? session : null;
   const live = running ? currentValues(running) : null;
@@ -131,10 +178,17 @@ export default function CardioFocus({
         <h3 className="focus__name">{log.n}</h3>
         <p className="sub" style={{ margin: 'var(--sp-3) 0 0' }}>
           רץ · {cardioModeLabel(running.mode)} ·{' '}
-          <span className="num">{running.plannedMinutes}</span> דק׳ מתוכננות
+          {running.plannedMinutes >= CARDIO_MAX_MINUTES ? (
+            'סטופר'
+          ) : (
+            <>
+              <span className="num">{running.plannedMinutes}</span> דק׳ מתוכננות
+            </>
+          )}
         </p>
+        {clock && <CardioClockLine clock={clock} />}
         <p className="tiny muted" style={{ margin: 'var(--sp-1) 0 0' }}>
-          כל שינוי שיפוע או מהירות נרשם עם חותמת זמן. אין השהיה.
+          כל שינוי שיפוע או מהירות נרשם עם חותמת זמן. אין השהיה. בסיום הדקות מתמלאות לפי הזמן שעבר.
         </p>
         <div className="row cardio__gauges">
           <Stepper
@@ -195,26 +249,56 @@ export default function CardioFocus({
           ))}
         </div>
 
-        <div className="cardio__minutes">
-          <NumberField
+        {detailed ? (
+          <ChipSelect<CardioTimerMode>
+            label={`טיימר — ${log.n}`}
+            hideLabel
+            className="cardio__timer"
+            options={CARDIO_TIMER_OPTIONS}
+            value={timerMode}
+            clearable={false}
+            onChange={(v) => v && setTimerMode(v)}
+          />
+        ) : (
+          <ChipSelect<WarmupChoice>
             label={`דקות — ${log.n}`}
             hideLabel
-            value={minutes}
-            onChange={setMinutes}
-            min={0}
-            max={CARDIO_MAX_MINUTES}
-            placeholder="דק׳"
+            columns={WARMUP_OPTIONS.length}
+            options={WARMUP_OPTIONS}
+            value={otherMinutes ? 'other' : (minutes as WarmupChoice)}
+            clearable={false}
+            onChange={(v) => {
+              if (v === 'other') setOtherMinutes(true);
+              else if (v !== null) {
+                setOtherMinutes(false);
+                setMinutes(v);
+              }
+            }}
           />
-          <span className="tiny muted">דק׳</span>
-        </div>
+        )}
+
+        {(detailed ? !stopwatch : otherMinutes) && (
+          <div className="cardio__minutes">
+            <NumberField
+              label={detailed ? `דקות — ${log.n}` : `דקות אחרות — ${log.n}`}
+              hideLabel
+              value={minutes}
+              onChange={setMinutes}
+              min={0}
+              max={CARDIO_MAX_MINUTES}
+              placeholder="דק׳"
+            />
+            <span className="tiny muted">דק׳</span>
+          </div>
+        )}
 
         <button
           type="button"
           className="btn btn--primary"
-          disabled={minutes <= 0 || (detailed && sessionBusy)}
+          disabled={(!stopwatch && minutes <= 0) || (detailed && sessionBusy)}
           onClick={() => {
             if (detailed) {
-              onStartSession?.();
+              onStartSession?.(stopwatch);
               return;
             }
             onChange(markCardioDone(log, minutes));
@@ -262,7 +346,9 @@ export default function CardioFocus({
         {detailed
           ? sessionBusy
             ? 'ריצת אירובי אחרת פעילה — סיים אותה קודם.'
-            : 'לא נרשם. "התחל" פותח ריצה; הרשומה נכתבת רק מהסיכום.'
+            : stopwatch
+              ? `לא נרשם. סטופר — בלי זמן יעד (עד ${CARDIO_MAX_MINUTES} דק׳); "סיים" ממלא את הדקות לפי הזמן שעבר.`
+              : 'לא נרשם. "התחל" פותח ריצה; הרשומה נכתבת רק מהסיכום.'
           : done === null
             ? 'לא נרשם'
             : `נרשם: ${cardioModeLabel(mode)} · ${done} דק׳`}

@@ -4,7 +4,8 @@
  *     קבוע בקוד: הסיכום משתמש ביעד שבתוקף בשבת של השבוע, המסכים ביעד של היום.
  *  2. תקציב אירובי 60 → 120 — כבר תלוי תאריך (`CARDIO_BUDGET_SCHEDULE`), נבדק
  *     ב-cardioBudget.test.ts.
- *  3. מותניים בסיכום: רביעי; אין רביעי → חמישי עם הערך; שישי/שבת "לא תקף".
+ *  3. מותניים בסיכום: רביעי; אין רביעי → חמישי עם הערך; אין גם חמישי → שישי
+ *     באותה צורה (11/11/2026); רק שבת "לא תקף".
  *  4. צעדים: שורת היעד הקיימת מ-1/11 ("ימים ≥ 8,000: X/הוזנו", steps.ts) — בלי שינוי.
  *  5. צהריים מהבית: שדה אופציונלי חדש בצ'ק-אין; בסיכום רק משבוע 1/11.
  */
@@ -52,7 +53,7 @@ describe('2. תקציב אירובי — כבר תלוי תאריך, לא השת
   });
 });
 
-describe('3. מותניים בסיכום — רביעי, אחרת חמישי עם הערך, שישי/שבת לא תקף', () => {
+describe('3. מותניים בסיכום — רביעי, אחרת חמישי או שישי עם הערך, רק שבת לא תקף', () => {
   // שבוע 18–24/10/2026: רביעי 21/10, חמישי 22/10, שישי 23/10, שבת 24/10
   const WS = '2026-10-18';
   const section = (text: string) => text.split('מותניים\n')[1]!.split('\n\n')[0]!;
@@ -64,14 +65,14 @@ describe('3. מותניים בסיכום — רביעי, אחרת חמישי ע�
 
   it('רק רביעי → השורה הקיימת, בלי דגל', () => {
     const d = withWaist([{ d: '2026-10-21', cm: 89.5 }]);
-    expect(d.waist).toEqual({ wednesday: { d: '2026-10-21', cm: 89.5 }, thursday: null, late: null, previous: [] });
+    expect(d.waist).toEqual({ wednesday: { d: '2026-10-21', cm: 89.5 }, thursday: null, friday: null, late: null, previous: [] });
     expect(section(weeklySummaryText(d))).toBe('רביעי 21/10: 89.5 ס״מ\nאחרונות לפני: —');
     expect(d.flags).not.toContain('מותניים לא נמדדו ברביעי');
   });
 
   it('רק חמישי → "מותניים 89.0 (חמישי 22/10)", נחשב מדידת השבוע — בלי דגל', () => {
     const d = withWaist([{ d: '2026-10-22', cm: 89 }]);
-    expect(d.waist).toEqual({ wednesday: null, thursday: { d: '2026-10-22', cm: 89 }, late: null, previous: [] });
+    expect(d.waist).toEqual({ wednesday: null, thursday: { d: '2026-10-22', cm: 89 }, friday: null, late: null, previous: [] });
     expect(section(weeklySummaryText(d))).toBe('מותניים 89.0 (חמישי 22/10)\nאחרונות לפני: —');
     expect(d.flags).not.toContain('מותניים לא נמדדו ברביעי');
   });
@@ -87,21 +88,30 @@ describe('3. מותניים בסיכום — רביעי, אחרת חמישי ע�
     expect(section(weeklySummaryText(d))).toBe('רביעי 21/10: 89.5 ס״מ\nאחרונות לפני: —');
   });
 
-  it('רק שישי → "(שישי — לא תקף)", הדגל נשאר; רק שבת → "(שבת — לא תקף)"', () => {
+  it('רק שישי → "מותניים 90.0 (שישי 23/10)", נחשב מדידת השבוע כמו חמישי — בלי "לא תקף" ובלי דגל', () => {
     const fri = withWaist([{ d: '2026-10-23', cm: 90 }]);
-    expect(fri.waist).toEqual({ wednesday: null, thursday: null, late: { d: '2026-10-23', cm: 90 }, previous: [] });
-    expect(section(weeklySummaryText(fri))).toBe('מותניים 90.0 (שישי — לא תקף)\nאחרונות לפני: —');
-    expect(fri.flags).toContain('מותניים לא נמדדו ברביעי');
+    expect(fri.waist).toEqual({ wednesday: null, thursday: null, friday: { d: '2026-10-23', cm: 90 }, late: null, previous: [] });
+    expect(section(weeklySummaryText(fri))).toBe('מותניים 90.0 (שישי 23/10)\nאחרונות לפני: —');
+    expect(weeklySummaryText(fri)).not.toContain('לא תקף)');
+    expect(fri.flags).not.toContain('מותניים לא נמדדו ברביעי');
+  });
 
+  it('רק שבת → "(שבת — לא תקף)", הדגל נשאר — כמו קודם', () => {
     const sat = withWaist([{ d: '2026-10-24', cm: 90.5 }]);
+    expect(sat.waist).toEqual({ wednesday: null, thursday: null, friday: null, late: { d: '2026-10-24', cm: 90.5 }, previous: [] });
     expect(section(weeklySummaryText(sat))).toBe('מותניים 90.5 (שבת — לא תקף)\nאחרונות לפני: —');
     expect(sat.flags).toContain('מותניים לא נמדדו ברביעי');
-    // שישי ושבת → המאוחרת (שבת)
+  });
+
+  it('שישי ושבת → שישי (תקף); השבת לא מוצגת', () => {
     const both = withWaist([
       { d: '2026-10-23', cm: 90 },
       { d: '2026-10-24', cm: 90.5 },
     ]);
-    expect(both.waist.late).toEqual({ d: '2026-10-24', cm: 90.5 });
+    expect(both.waist.friday).toEqual({ d: '2026-10-23', cm: 90 });
+    expect(both.waist.late).toBeNull();
+    expect(section(weeklySummaryText(both))).toBe('מותניים 90.0 (שישי 23/10)\nאחרונות לפני: —');
+    expect(both.flags).not.toContain('מותניים לא נמדדו ברביעי');
   });
 
   it('חמישי ושישי → חמישי (תקף), השישי לא מוצג; ראשון–שלישי לא נוגעים — נשארים ב"אחרונות לפני"', () => {
@@ -111,6 +121,7 @@ describe('3. מותניים בסיכום — רביעי, אחרת חמישי ע�
       { d: '2026-10-23', cm: 90 },
     ]);
     expect(d.waist.thursday).toEqual({ d: '2026-10-22', cm: 89 });
+    expect(d.waist.friday).toBeNull();
     expect(d.waist.late).toBeNull();
     expect(d.waist.previous).toEqual([{ d: '2026-10-19', cm: 91 }]);
     expect(section(weeklySummaryText(d))).toBe('מותניים 89.0 (חמישי 22/10)\nאחרונות לפני: 19/10 91.0');

@@ -46,3 +46,8 @@ export { default as Settings } from 'lucide-react/icons/settings';
 export { default as ShieldAlert } from 'lucide-react/icons/shield-alert';
 export { default as FileText } from 'lucide-react/icons/file-text';
 export { default as UserRound } from 'lucide-react/icons/user-round';
+export { default as Pause } from 'lucide-react/icons/pause';
+export { default as RotateCcw } from 'lucide-react/icons/rotate-ccw';
+export { default as Volume2 } from 'lucide-react/icons/volume-2';
+export { default as VolumeX } from 'lucide-react/icons/volume-x';
+export { default as PictureInPicture2 } from 'lucide-react/icons/picture-in-picture-2';

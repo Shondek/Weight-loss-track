@@ -21,7 +21,7 @@ import {
   exerciseIn,
   restSeconds,
 } from '../data/program';
-import { HISTORY_ROWS } from '../data/config';
+import { CARDIO_MAX_MINUTES, HISTORY_ROWS } from '../data/config';
 import { activeProfile } from '../data/profile';
 import { workoutFeatures } from '../lib/profile';
 import { suggestNext } from '../lib/progression';
@@ -45,7 +45,6 @@ import {
   cardioSegmentsOf,
   exerciseHistory,
   finishCardio,
-  exercisesFor,
   hasData,
   isCardio,
   lastWeightOf,
@@ -105,6 +104,7 @@ import CardioSummary from '../components/CardioSummary';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
 import { useWakeLock } from '../hooks/useWakeLock';
+import { editorRows, uniqueRows } from './workoutRows';
 import { Button, ChipSelect, Disclosure, ListRow, Num, ProgressSegments, SectionHeader, Sheet, StatusChip, Surface, Toast, useToast, type Segment } from '../ui';
 import { ChevronLeft, ChevronRight, Timer } from '../ui/icons';
 import {
@@ -218,7 +218,8 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
       {expanded && (
         <div className="stack--tight" style={{ padding: 'var(--sp-2) 0' }}>
           <ul className="list list--block small">
-            {w.ex.filter(hasData).map((e) => (
+            {/* שורה אחת לכל תרגיל, גם ברשומה שנשמרה בעבר עם שורה כפולה (ממצא 4). */}
+            {uniqueRows(w.ex).filter(hasData).map((e) => (
               <li key={e.exerciseId}>
                 <div>
                   {exerciseLine(e)}
@@ -331,8 +332,10 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const open = draft ?? stored;
   // בלי אירובי (בת הזוג): שורת אירובי הסיום לא מוצגת ולא נשמרת. היא ממילא
   // ריקה עד "התחל" (לא נתון), ו-exercisesFor משלים אותה בכל קריאה.
+  // `editorRows` (ממצא 4): לאימון ישן מציגים רק את השורות שנשמרו בו — בלי תאים
+  // שנוספו לתוכנית אחריו ובלי שורה כפולה לתרגיל שהוחלף. אימון חדש — בלי שינוי.
   const rows = open
-    ? exercisesFor(open, db.workouts).filter((r) => FEATURES.cardio || r.exerciseId !== FINISHER_ID)
+    ? editorRows(open, db.workouts).filter((r) => FEATURES.cardio || r.exerciseId !== FINISHER_ID)
     : [];
   const warmupRow = rows.find((r) => r.exerciseId === WARMUP_ID) ?? null;
   const finisherRow = rows.find((r) => r.exerciseId === FINISHER_ID) ?? null;
@@ -348,6 +351,22 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   /** מספר התרגיל לתצוגה: "תרגיל 3 מתוך 8". */
   const currentNo = current ? strengthRows.indexOf(current) + 1 : strengthTotal;
   useWakeLock(open !== null);
+
+  /**
+   * "מה הלאה" לטיימר (החלון הצף וקוראי מסך): הסט הבא בתרגיל שבמוקד, ואם
+   * כולם נרשמו — התרגיל הבא. נגזר ממה שבמסך; בזיכרון בלבד.
+   */
+  const upNextText = (() => {
+    if (!open || !current) return '';
+    const idx = current.sets.findIndex((s) => !setPerformed(s));
+    if (idx !== -1) return `${current.n} · סט ${idx + 1}/${current.sets.length}`;
+    const after = rows[currentIndex + 1];
+    return after && currentIndex + 1 < finishIndex ? after.n : 'סיום האימון';
+  })();
+  const { setNext: setTimerNext } = timer;
+  useEffect(() => {
+    setTimerNext(upNextText);
+  }, [upNextText, setTimerNext]);
 
   // אימון שנמחק מבחוץ (ייבוא, מחיקה גורפת) לא נשאר פתוח על ריק.
   // מטפל גם במזהה שהוחזר מהאחסון ושייך לאימון שכבר לא קיים.
@@ -604,6 +623,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     if (session) openSummaryFromSession(session);
   };
 
+  /** השעון החי של ריצת האירובי הפעילה — מהטיימר (זמן סיום), לכרטיס הריצה. */
+  const cardioClock =
+    session && timer.kind === 'cardio' && timer.running
+      ? { elapsedSec: timer.elapsedSec, remainingSec: timer.remainingSec, stopwatch: timer.stopwatch }
+      : null;
+
   /** רישום ידני / עריכת רשומה קיימת — סיכום בלי ריצה. */
   const openSummary = (
     target: CardioSessionTarget,
@@ -637,7 +662,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           knee: null,
           shoulder: null,
         } satisfies WorkoutEntry);
-      const entryRows = exercisesFor(existingEntry, db.workouts);
+      const entryRows = editorRows(existingEntry, db.workouts);
       patch({
         ...existingEntry,
         ex: entryRows.map((e) =>
@@ -782,7 +807,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const onSetLogged = (ex: LoggedExercise, setIndex: number) => {
     const isLastSet = setIndex + 1 === ex.sets.length;
     const seconds = restSeconds(ex.type, isLastSet);
-    timer.start(seconds, isLastSet ? 'מנוחה לפני התרגיל הבא' : 'מנוחה');
+    // כיתוב קצר: הפס מציג אותו בשורה אחת מעל הזמן (שלב 7).
+    timer.start(seconds, isLastSet ? 'לפני התרגיל הבא' : 'מנוחה');
   };
 
   /** חימום/אירובי: אותו טיימר, במשך שנקבע ידנית. אין מנוחה אחריו. */
@@ -880,12 +906,14 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       defaultsFor={(mode) => lastFinisherCardio(db.workouts, mode, open.id)}
       session={sessionFor({ kind: 'finisher', workoutId: open.id, t: open.t, d: open.d })}
       sessionBusy={session !== null}
-      onStartSession={() => {
+      clock={cardioClock}
+      onStartSession={(stopwatch) => {
         const c = cardioOf(finisherRow);
         beginSession(
           { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
           c.mode,
-          c.minutes,
+          // סטופר = ריצה במשך המרבי: נחתכת רק בתקרה, ו"סיים" גוזר את הדקות מהזמן שעבר.
+          stopwatch ? CARDIO_MAX_MINUTES : c.minutes,
           c.incline ?? null,
           c.speed ?? null,
           'אירובי',
@@ -977,8 +1005,9 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           </Button>
         </div>
 
-        {/* חימום: שורה מקופלת בראש הסשן. לא חוסמת את התרגיל הראשון. */}
-        {warmupRow && (
+        {/* חימום: שורה מקופלת בראש הסשן, בתרגיל הראשון בלבד (שלב 7) — מהתרגיל
+            השני היא רק דחפה את הסטים אל מתחת לקפל. נגישה תמיד מרשימת התרגילים. */}
+        {warmupRow && (currentIndex <= 1 || warmupOpen) && (
           <Surface as="div" className="surface--row" aria-label="חימום">
             <Disclosure
               lead={Timer}
@@ -997,7 +1026,11 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                     ex: rows.map((e) => (e.exerciseId === next.exerciseId ? next : e)),
                   });
                 }}
-                onStart={(minutes) => onCardioStart(warmupRow, minutes)}
+                onStart={(minutes) => {
+                  onCardioStart(warmupRow, minutes);
+                  // "התחל" רושם ומתחיל לספור — השורה נסגרת לבד, התרגיל הראשון עולה.
+                  setWarmupOpen(false);
+                }}
               />
             </Disclosure>
           </Surface>
@@ -1120,6 +1153,19 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         {listOpen && (
           <Sheet title={`אימון ${open.t} · התרגילים`} onClose={() => setListOpen(false)}>
             <div aria-label="רשימת התרגילים">
+              {warmupRow && (
+                <ListRow
+                  lead={Timer}
+                  title="חימום"
+                  sub={warmupSummary}
+                  end={cardioMinutesDone(warmupRow) === null ? undefined : <StatusChip tone="done">נרשם</StatusChip>}
+                  onTap={() => {
+                    setFocus(1);
+                    setWarmupOpen(true);
+                    setListOpen(false);
+                  }}
+                />
+              )}
               {rows.map((r, i) => {
                 if (isCardio(r)) return null;
                 const st = segmentState(r, i);
@@ -1209,11 +1255,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           defaultsFor={(mode) => lastStandalone(db.standaloneCardio, mode)}
           session={sessionFor({ kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note })}
           sessionBusy={session !== null}
-          onStart={() =>
+          clock={cardioClock}
+          onStart={(stopwatch) =>
             beginSession(
               { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
               cardioOpen.mode,
-              cardioOpen.minutes,
+              stopwatch ? CARDIO_MAX_MINUTES : cardioOpen.minutes,
               cardioOpen.incline,
               cardioOpen.speed,
               'אירובי — עצמאי',

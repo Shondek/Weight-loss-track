@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { waistStatus, weekDots } from '../todayView';
 import type { WaistEntry } from '../../types';
 
-// שבוע הבדיקה: ראשון 25/10/2026 … שבת 31/10/2026. רביעי = 28/10, חמישי = 29/10.
+// שבוע הבדיקה: ראשון 25/10/2026 … שבת 31/10/2026. רביעי = 28/10, חמישי = 29/10, שישי = 30/10.
 const WEEK = ['2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31'] as const;
 const NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'] as const;
 const PREV: WaistEntry = { d: '2026-10-21', cm: 97.5 };
@@ -10,7 +10,8 @@ const OLDER: WaistEntry = { d: '2026-10-14', cm: 98 };
 
 describe('waistStatus — לא נמדד השבוע, לפי היום בשבוע', () => {
   const history = [OLDER, PREV];
-  const expected = ['upcoming', 'upcoming', 'upcoming', 'due', 'due', 'missed', 'missed'] as const;
+  // שלב 7: שישי בבוקר עדיין תקף — "למדוד היום" גם בשישי; רק שבת = הוחמץ.
+  const expected = ['upcoming', 'upcoming', 'upcoming', 'due', 'due', 'due', 'missed'] as const;
   WEEK.forEach((today, i) => {
     it(`${NAMES[i]} → ${expected[i]}`, () => {
       const s = waistStatus(history, today);
@@ -52,14 +53,28 @@ describe('waistStatus — נמדד השבוע', () => {
     expect(waistStatus([wedE, thu], '2026-10-30').inWeek).toEqual(wedE);
   });
 
-  it('מדידה בשישי = צ\'יפ ניטרלי (measured-other), לא "תקין" ולא "הוחמץ"', () => {
+  it('מדידה בשישי בלי רביעי וחמישי = נמדד (תקין), כמו בסיכום השבועי (שלב 7)', () => {
     const fri: WaistEntry = { d: '2026-10-30', cm: 96.5 };
     const s = waistStatus([PREV, fri], '2026-10-30');
-    expect(s.kind).toBe('measured-other');
+    expect(s.kind).toBe('measured');
     expect(s.inWeek).toEqual(fri);
     expect(s.measuredDay).toBe('שישי');
     expect(s.previous).toEqual(PREV);
-    expect(waistStatus([PREV, fri], '2026-10-31').kind).toBe('measured-other');
+    expect(waistStatus([PREV, fri], '2026-10-31').kind).toBe('measured');
+  });
+
+  it('חמישי וגם שישי — חמישי גובר', () => {
+    const thu: WaistEntry = { d: '2026-10-29', cm: 96 };
+    const fri: WaistEntry = { d: '2026-10-30', cm: 96.5 };
+    expect(waistStatus([thu, fri], '2026-10-31').inWeek).toEqual(thu);
+  });
+
+  it('מדידה בשבת = צ\'יפ ניטרלי (measured-other), לא "תקין" ולא "הוחמץ"', () => {
+    const sat: WaistEntry = { d: '2026-10-31', cm: 96.5 };
+    const s = waistStatus([PREV, sat], '2026-10-31');
+    expect(s.kind).toBe('measured-other');
+    expect(s.inWeek).toEqual(sat);
+    expect(s.measuredDay).toBe('שבת');
   });
 
   it('מדידה בשני = ניטרלי, וביום ראשון שלפניה היא עוד לא נראית', () => {
