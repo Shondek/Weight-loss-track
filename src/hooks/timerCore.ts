@@ -202,3 +202,36 @@ export function agoText(sec: number): string {
   if (sec < 60) return `לפני ${sec} שניות`;
   return `לפני ${mmss(sec)} דק׳`;
 }
+
+// ---------- החלון הצף ----------
+
+/** מה שמצויר בחלון הצף (picture-in-picture): שלוש שורות ופס התקדמות. */
+export type FloatingContent = {
+  /** השורה העליונה: סוג הטיימר, או "המנוחה נגמרה". */
+  title: string;
+  /** המספר הגדול: הזמן שנשאר / שעבר, או "+0:12" אחרי הסיום. ריק כשאין טיימר. */
+  big: string;
+  /** השורה התחתונה: "הבא: <תרגיל>". ריק כשאין. */
+  sub: string;
+  /** החלק שנשאר, 0–1. */
+  fraction: number;
+  tone: 'running' | 'paused' | 'finished' | 'idle';
+};
+
+export function floatingContent(t: TimerCore, next: string, now: number): FloatingContent {
+  const v = view(t, now);
+  const sub = next ? `הבא: ${next}` : '';
+  if (v.finished) {
+    return { title: finishedTitle(t.kind), big: `+${mmss(v.endedAgoSec)}`, sub, fraction: 0, tone: 'finished' };
+  }
+  if (v.running) {
+    return {
+      title: `${kindLabel(t.kind)}${v.stopwatch ? ' · סטופר' : ''}${v.paused ? ' · מושהה' : ''}`,
+      big: mmss(v.stopwatch ? v.elapsedSec : v.remainingSec),
+      sub,
+      fraction: v.stopwatch ? 0 : v.fractionLeft,
+      tone: v.paused ? 'paused' : 'running',
+    };
+  }
+  return { title: 'אין טיימר פעיל', big: '', sub, fraction: 0, tone: 'idle' };
+}

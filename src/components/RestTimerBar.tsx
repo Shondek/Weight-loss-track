@@ -1,13 +1,15 @@
 import type { CSSProperties } from 'react';
 import type { RestTimer } from '../hooks/useRestTimer';
+import type { FloatingControls } from '../hooks/useFloatingTimer';
 import { agoText, finishedTitle, kindLabel, mmss } from '../hooks/timerCore';
-import { Button, Icon, Num } from '../ui';
-import { Pause, Play, RotateCcw, Volume2, VolumeX, X } from '../ui/icons';
+import { Button, Icon, Num, useToast } from '../ui';
+import { Pause, PictureInPicture2, Play, RotateCcw, Volume2, VolumeX, X } from '../ui/icons';
 
 type Props = {
   timer: RestTimer;
   soundEnabled: boolean;
   onToggleSound: (v: boolean) => void;
+  floating: FloatingControls;
 };
 
 /**
@@ -17,10 +19,17 @@ type Props = {
  * שורה אחת, בלי שבירה (שלב 7): מימין הכיתוב הקטן ומתחתיו הזמן; משמאל
  * הפקדים. מנוחה: −15, +30, דלג. חימום: השהה/המשך, אפס, דלג. אירובי: תצוגה
  * בלבד ("סיים" נמצא בכרטיס האירובי, כי שם נפתח הסיכום). אחרי הסיום: "המנוחה
- * נגמרה · לפני X שניות" עד שסוגרים או עד שמתחיל טיימר חדש. בקצה: מתג הצליל.
+ * נגמרה · לפני X שניות" עד שסוגרים או עד שמתחיל טיימר חדש. בקצה: טיימר צף
+ * (רק היכן שנתמך) ומתג הצליל.
  */
-export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Props) {
+export default function RestTimerBar({ timer, soundEnabled, onToggleSound, floating }: Props) {
+  const toast = useToast();
   if (!timer.running && !timer.finished) return null;
+
+  const openFloating = async () => {
+    const ok = await floating.toggle();
+    if (!ok) toast.show({ text: 'טיימר צף לא נפתח במכשיר הזה', ms: 3000 });
+  };
 
   const toggleSound = () => {
     const next = !soundEnabled;
@@ -98,6 +107,18 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Pro
             </>
           )}
 
+          {floating.available && (
+            <Button
+              variant="ghost"
+              className="resttimer__icon"
+              aria-label={floating.open ? 'סגור טיימר צף' : 'טיימר צף'}
+              aria-pressed={floating.open}
+              title="טיימר צף"
+              onClick={() => void openFloating()}
+            >
+              <Icon icon={PictureInPicture2} size={20} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             className="resttimer__icon"

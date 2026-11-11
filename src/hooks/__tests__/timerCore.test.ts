@@ -13,6 +13,7 @@ import {
   addSeconds,
   agoText,
   finishedTitle,
+  floatingContent,
   fromStored,
   isStopwatch,
   mmss,
@@ -243,5 +244,39 @@ describe('טקסט', () => {
     expect(finishedTitle('rest')).toBe('המנוחה נגמרה');
     expect(finishedTitle('countdown')).toBe('החימום נגמר');
     expect(finishedTitle('cardio')).toBe('האירובי נגמר');
+  });
+});
+
+describe('החלון הצף — סוג הטיימר, הזמן, והתרגיל הבא', () => {
+  it('מנוחה: "מנוחה" · הזמן שנשאר · "הבא: …", נכון גם אחרי דקה ברקע', () => {
+    const t = startTimer(T0, 90, 'לפני התרגיל הבא');
+    expect(floatingContent(t, 'לחיצת רגליים', T0 + 60 * SEC)).toEqual({
+      title: 'מנוחה',
+      big: '0:30',
+      sub: 'הבא: לחיצת רגליים',
+      fraction: 30 / 90,
+      tone: 'running',
+    });
+  });
+
+  it('חימום מושהה, אירובי בספירה לאחור ובסטופר', () => {
+    const warm = pauseTimer(startTimer(T0, 480, 'חימום', 'countdown'), T0 + 60 * SEC);
+    expect(floatingContent(warm, '', T0 + 999 * SEC)).toMatchObject({ title: 'חימום · מושהה', big: '7:00', sub: '', tone: 'paused' });
+    const cardio = startTimer(T0, 30 * 60, 'אירובי', 'cardio');
+    expect(floatingContent(cardio, '', T0 + 10 * 60 * SEC)).toMatchObject({ title: 'אירובי', big: '20:00', tone: 'running' });
+    const sw = startTimer(T0, STOPWATCH_SEC, 'אירובי', 'cardio');
+    expect(floatingContent(sw, '', T0 + 10 * 60 * SEC)).toMatchObject({ title: 'אירובי · סטופר', big: '10:00', fraction: 0 });
+  });
+
+  it('אחרי הסיום: "המנוחה נגמרה" וכמה זמן עבר; בלי טיימר: "אין טיימר פעיל"', () => {
+    const ended = tick(startTimer(T0, 60, 'מנוחה'), T0 + 72 * SEC).timer;
+    expect(floatingContent(ended, 'סיום האימון', T0 + 72 * SEC)).toEqual({
+      title: 'המנוחה נגמרה',
+      big: '+0:12',
+      sub: 'הבא: סיום האימון',
+      fraction: 0,
+      tone: 'finished',
+    });
+    expect(floatingContent(IDLE, '', T0)).toEqual({ title: 'אין טיימר פעיל', big: '', sub: '', fraction: 0, tone: 'idle' });
   });
 });

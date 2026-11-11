@@ -11,6 +11,7 @@ import { defaultTab, visibleTabs, type TabId } from './lib/profile';
 import { onAppUpdate } from './platform/appUpdate';
 import { requestPersistentStorage } from './platform/storagePersist';
 import { useRestTimer } from './hooks/useRestTimer';
+import { useFloatingTimer } from './hooks/useFloatingTimer';
 import RestTimerBar from './components/RestTimerBar';
 import { Notice, TabBar, ToastProvider, type IconComponent } from './ui';
 import { ClipboardCheck, Database, Dumbbell, House, Utensils } from './ui/icons';
@@ -70,6 +71,8 @@ export default function App() {
    */
   const timer = useRestTimer(store.db.settings.soundEnabled);
   const timerVisible = timer.running || timer.finished;
+  /** טיימר צף (ניסיוני): חי כאן מאותה סיבה — החלון נשאר פתוח גם במעבר טאב. */
+  const floating = useFloatingTimer(timer, timerVisible);
   const thisWeek = weekStart(today);
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
 
@@ -244,6 +247,7 @@ export default function App() {
         onToggleSound={(soundEnabled) =>
           void store.update('settings', { ...store.db.settings, soundEnabled })
         }
+        floating={floating}
       />
 
       {/* צ'ק-אין ממתין מסומן בנקודה על הטאב בלבד (ראו למעלה). */}

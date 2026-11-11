@@ -50,3 +50,4 @@ export { default as Pause } from 'lucide-react/icons/pause';
 export { default as RotateCcw } from 'lucide-react/icons/rotate-ccw';
 export { default as Volume2 } from 'lucide-react/icons/volume-2';
 export { default as VolumeX } from 'lucide-react/icons/volume-x';
+export { default as PictureInPicture2 } from 'lucide-react/icons/picture-in-picture-2';
