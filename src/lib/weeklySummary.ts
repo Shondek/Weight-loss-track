@@ -39,6 +39,7 @@ import {
   isCardio,
   isTimedExercise,
   peakPain,
+  perSetText,
   setPerformed,
   setValue,
   rotationWorkouts,
@@ -71,6 +72,8 @@ export type ExerciseLine = {
   next: string | null;
   /** R1 שהוצע בלי RIR בסט האחרון — "אשר בעצמך". */
   rirUnknown: boolean;
+  /** ההצעה חושבה מסשן עם כמה משקלים (מהנמוך שבהם) — "אשר בעצמך". */
+  mixedWeights: boolean;
 };
 
 export type WeeklySummaryData = {
@@ -211,9 +214,14 @@ function weightText(ex: LoggedExercise): string {
   return weights.map((w) => (w === null ? DASH : clean(w))).join(',');
 }
 
-/** "לג-פרס 60×12,12,10" / "פלאנק 45,45,45 שנ׳" / "פלאנק 2.5×45,45,45 שנ׳". */
+/**
+ * "לג-פרס 60×12,12,10" / "פלאנק 45,45,45 שנ׳" / "פלאנק 2.5×45,45,45 שנ׳".
+ * סשן עם כמה משקלים מוצג סט-סט: "כפיפת ברכיים 85×10 · 80×11 · 80×10".
+ */
 function exerciseText(e: LoggedExercise): string {
   const name = shortName(e.exerciseId, e.n);
+  const perSet = e.bodyweightOnly ? null : perSetText(e, (w) => (w === null ? DASH : clean(w)));
+  if (perSet !== null) return `${name} ${perSet}${isTimedExercise(e) ? ' שנ׳' : ''}`;
   const values = e.sets
     .filter(setPerformed)
     .map((s) => {
@@ -248,6 +256,7 @@ function exerciseLine(db: DB, w: WorkoutEntry, row: LoggedExercise): ExerciseLin
     suggestion,
     next: suggestion ? suggestionText(suggestion, spec) : null,
     rirUnknown: suggestion?.rirUnknown ?? false,
+    mixedWeights: suggestion?.mixedWeights ?? false,
   };
 }
 
@@ -390,6 +399,8 @@ const weekTag = (s: WeekSummary) => `${s.count}/${WEEK_LENGTH}`;
 
 /** מסומן על R1 שהוצע בלי RIR — ההצעה עומדת, אבל הנתון שמאשר אותה חסר. */
 export const RIR_UNKNOWN_NOTE = 'RIR לא נרשם — אשר בעצמך';
+/** מסומן על הצעה שחושבה מסשן עם כמה משקלים (מהסטים במשקל הנמוך). */
+export const MIXED_WEIGHTS_SUMMARY_NOTE = 'משקלים שונים — אשר בעצמך';
 
 export function weeklySummaryText(data: WeeklySummaryData): string {
   const L: string[] = [];
@@ -448,6 +459,7 @@ export function weeklySummaryText(data: WeeklySummaryData): string {
           : `הבא: ${DASH}`,
       );
       if (line.rirUnknown) parts.push(RIR_UNKNOWN_NOTE);
+      if (line.mixedWeights && line.suggestion?.rule !== 'M') parts.push(MIXED_WEIGHTS_SUMMARY_NOTE);
       L.push(`  ${parts.join(' · ')}`);
     }
     if (it.skipped.length) L.push(`  דולגו: ${it.skipped.join(', ')}`);

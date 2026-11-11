@@ -130,6 +130,43 @@ export function lastWeightOf(ex: LoggedExercise): number | null {
   return null;
 }
 
+/**
+ * המשקל הכבד ביותר שבוצע בתרגיל — מה שמייצג את הסשן בגרף. בסשן במשקל אחד
+ * זה המשקל עצמו; בסשן עם כמה משקלים (ירדתי או עליתי באמצע) הסט הכבד נשאר
+ * בגרף. בלי סט שבוצע עם משקל — המשקל האחרון שבשורה, כמו קודם.
+ */
+export function topWeightOf(ex: LoggedExercise): number | null {
+  let top: number | null = null;
+  for (const s of ex.sets) {
+    if (!setPerformed(s) || s.weight === null) continue;
+    if (top === null || s.weight > top) top = s.weight;
+  }
+  return top ?? lastWeightOf(ex);
+}
+
+/** האם בוצעו סטים במשקלים שונים (סט בלי משקל נחשב ערך בפני עצמו, כמו בתצוגה). */
+export function hasMixedWeights(ex: LoggedExercise): boolean {
+  const performed = ex.sets.filter(setPerformed);
+  return new Set(performed.map((s) => s.weight)).size > 1;
+}
+
+/**
+ * סשן עם כמה משקלים, סט-סט: "85×10 · 80×11 · 80×10" — כל סט עם המשקל שלו,
+ * כדי שלא יהיה צריך להצליב שתי רשימות. null לסשן במשקל אחד (שמוצג כמו תמיד:
+ * "80×11,10,10"). `fmt` מעצב את המשקל (ברירת המחדל: המספר כמו שהוא; null → "—").
+ */
+export function perSetText(ex: LoggedExercise, fmt: (w: number | null) => string = defaultWeightText): string | null {
+  if (!hasMixedWeights(ex)) return null;
+  return ex.sets
+    .filter(setPerformed)
+    .map((s) => `${fmt(s.weight)}×${setValue(s) ?? '—'}`)
+    .join(' · ');
+}
+
+function defaultWeightText(w: number | null): string {
+  return w === null ? '—' : String(w);
+}
+
 // ---------- היסטוריה לפי תרגיל ----------
 
 export type ExerciseHistory = { d: ISODate; workoutId: string; ex: LoggedExercise };
@@ -181,15 +218,16 @@ export function exerciseHistory(
 }
 
 /**
- * הערך שמייצג ביצוע אחד בגרף ההתקדמות: המשקל בתרגיל משקל, השניות הטובות
- * ביותר בתרגיל זמן, והחזרות הטובות ביותר בתרגיל משקל גוף. ביצוע בלי ערך
- * (משקל שלא נרשם) נשמט — הגרף מצייר רק מה שנרשם.
+ * הערך שמייצג ביצוע אחד בגרף ההתקדמות: המשקל בתרגיל משקל (בסשן עם כמה
+ * משקלים — הכבד שבהם, `topWeightOf`), השניות הטובות ביותר בתרגיל זמן,
+ * והחזרות הטובות ביותר בתרגיל משקל גוף. ביצוע בלי ערך (משקל שלא נרשם)
+ * נשמט — הגרף מצייר רק מה שנרשם.
  */
 export function progressValue(
   ex: LoggedExercise,
   measure: 'weight' | 'seconds' | 'reps',
 ): number | null {
-  if (measure === 'weight') return lastWeightOf(ex);
+  if (measure === 'weight') return topWeightOf(ex);
   const values = ex.sets
     .map((s) => (measure === 'seconds' ? s.seconds : s.reps))
     .filter((v): v is number => v !== null);
