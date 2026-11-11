@@ -83,7 +83,11 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Pro
           type="button"
           className="btn btn--quiet"
           aria-pressed={soundEnabled}
-          onClick={() => onToggleSound(!soundEnabled)}
+          onClick={() => {
+            onToggleSound(!soundEnabled);
+            // הדלקה מנגנת את הצליל מיד: פותחת את השמע בתוך הנגיעה, ומאשרת שהוא נשמע.
+            if (!soundEnabled) timer.testSound();
+          }}
           title={soundEnabled ? 'כבה צליל' : 'הפעל צליל'}
         >
           {soundEnabled ? 'צליל' : 'שקט'}

@@ -12,10 +12,13 @@
  * שני סוגים על אותו מנגנון: `rest` — מנוחה אוטומטית אחרי סט (±15, דלג);
  * `countdown` — חימום/אירובי במשך שנקבע ידנית (השהה, אפס, דלג). השהיה
  * שומרת את מה שנשאר במקום דדליין, ולכן טיימר מושהה לא פג לעולם.
+ *
+ * הצליל והרטט בסיום: timerSound.ts (שלב 7 — אבחון ותיקון "אין צליל").
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { readTimer, writeTimer, type TimerKind } from '../platform/uiState';
+import { installAudioUnlock, playAlert, primeAudio, releaseAudio, vibrateAlert } from './timerSound';
 
 const TICK_MS = 250;
 
@@ -40,66 +43,9 @@ export type RestTimer = {
   resume: () => void;
   /** חזרה למשך המלא, מושהה — כדי להתחיל מחדש בלחיצה. */
   reset: () => void;
+  /** מנגן את צליל הסיום עכשיו (נגיעה בכפתור הצליל) — גם בדיקה שהוא נשמע. */
+  testSound: () => void;
 };
-
-/**
- * צליל קצר דרך WebAudio. בלי קובץ שמע — עובד אופליין, לא מוסיף תלות,
- * ולא דורש הורדה בפעם הראשונה.
- *
- * iOS דורש שה-AudioContext ייווצר או יופעל מתוך מחווה של המשתמש; הוא
- * נוצר בהפעלת הטיימר הראשונה, שהיא תמיד תוצאה של הקלדה או לחיצה.
- */
-let audioCtx: AudioContext | null = null;
-
-function ensureAudio(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const Ctor =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!Ctor) return null;
-    audioCtx ??= new Ctor();
-    if (audioCtx.state === 'suspended') void audioCtx.resume();
-    return audioCtx;
-  } catch {
-    return null;
-  }
-}
-
-function beep(): void {
-  const ctx = ensureAudio();
-  if (!ctx) return;
-  try {
-    const now = ctx.currentTime;
-    // שני צלילים קצרים — נשמע כמו התראה, לא כמו קליק אקראי
-    for (const [at, freq] of [
-      [0, 880],
-      [0.18, 1175],
-    ] as const) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, now + at);
-      gain.gain.exponentialRampToValueAtTime(0.25, now + at + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.15);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(now + at);
-      osc.stop(now + at + 0.18);
-    }
-  } catch {
-    /* צליל הוא תוספת; הוויברציה היא מה שחייב לעבוד */
-  }
-}
-
-function vibrate(): void {
-  try {
-    navigator.vibrate?.([200, 100, 200]);
-  } catch {
-    /* לא נתמך — לא קריטי */
-  }
-}
 
 export function useRestTimer(soundEnabled: boolean): RestTimer {
   // אתחול מהאחסון: טיימר שעדיין לא פג (או מושהה) ממשיך אחרי רענון.
@@ -122,8 +68,10 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
   const finish = useCallback(() => {
     if (fired.current) return;
     fired.current = true;
-    vibrate();
-    if (sound.current) beep();
+    // הרטט תמיד (אנדרואיד); הצליל לפי המתג. ראו timerSound.ts.
+    vibrateAlert();
+    if (sound.current) void playAlert();
+    else releaseAudio();
     setJustFinished(true);
     window.setTimeout(() => setJustFinished(false), 3000);
   }, []);
@@ -157,6 +105,16 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
     };
   }, [deadline, finish]);
 
+  /**
+   * כל עוד ספירה רצה: כל נגיעה פותחת את השמע. מכסה טיימר ששוחזר אחרי
+   * טעינה מחדש, שלא עבר "התחל" בדף הזה ולכן ה-AudioContext שלו נעול.
+   */
+  const counting = deadline !== null;
+  useEffect(() => {
+    if (!counting) return;
+    return installAudioUnlock(() => sound.current);
+  }, [counting]);
+
   const start = useCallback((seconds: number, nextLabel: string, nextKind: TimerKind = 'rest') => {
     if (seconds <= 0) return;
     fired.current = false;
@@ -169,8 +127,8 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
     setRemainingMs(seconds * 1000);
     setDeadline(next);
     writeTimer({ deadline: next, totalSec: seconds, label: nextLabel, kind: nextKind, pausedMs: null });
-    // פותחים את ה-AudioContext בתוך המחווה, כדי ש-iOS ירשה צליל בסיום
-    ensureAudio();
+    // פותחים את השמע בתוך המחווה, כדי שהצליל בסיום לא יהיה תלוי בדפדפן.
+    if (sound.current) primeAudio();
   }, []);
 
   const add = useCallback(
@@ -194,6 +152,7 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
     setRemainingMs(0);
     setJustFinished(false);
     writeTimer(null);
+    releaseAudio();
   }, []);
 
   const pause = useCallback(() => {
@@ -211,7 +170,7 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
     setRemainingMs(pausedMs);
     setDeadline(next);
     writeTimer({ deadline: next, totalSec, label, kind, pausedMs: null });
-    ensureAudio();
+    if (sound.current) primeAudio();
   }, [pausedMs, totalSec, label, kind]);
 
   const reset = useCallback(() => {
@@ -223,6 +182,11 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
     setJustFinished(false);
     writeTimer({ deadline: 0, totalSec, label, kind, pausedMs: full });
   }, [deadline, pausedMs, totalSec, label, kind]);
+
+  const testSound = useCallback(() => {
+    primeAudio();
+    void playAlert(deadline !== null);
+  }, [deadline]);
 
   const paused = pausedMs !== null;
   return {
@@ -239,5 +203,6 @@ export function useRestTimer(soundEnabled: boolean): RestTimer {
     pause,
     resume,
     reset,
+    testSound,
   };
 }
