@@ -1855,6 +1855,39 @@ input[type='file']::file-selector-button {
 }
 
 /* צעדים: שורת שבעת הימים האחרונים */
+/* צעדי אתמול בראש מסך "היום" (שלב 7): אייקון · כיתוב · שדה · שמור, בשורה אחת. */
+.today-steps__form {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--tap);
+  padding: var(--sp-2) 0;
+}
+
+.today-steps__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--t-body);
+  color: var(--text-primary);
+}
+
+.today-steps__goal {
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+.today-steps__field {
+  flex: 0 0 112px;
+}
+
+.today-steps__field input[type='number'] {
+  width: 100%;
+  min-height: var(--tap);
+  text-align: center;
+}
+
 .steps-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

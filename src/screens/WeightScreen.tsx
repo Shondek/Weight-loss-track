@@ -49,7 +49,7 @@ import { programStartWeek } from '../lib/db';
 import { DASH } from '../lib/format';
 import { confidenceOf } from '../components/confidence';
 import { Button, DayDots, HeroValue, Icon, ListRow, MetricTile, Num, ScreenHeader, SectionHeader, StatusChip, Surface, useToast } from '../ui';
-import { ChevronLeft, Circle, CircleCheck, Dumbbell, Pencil, Ruler, Utensils } from '../ui/icons';
+import { ChevronLeft, Circle, CircleCheck, Dumbbell, Footprints, Pencil, Ruler, Utensils } from '../ui/icons';
 import { waistStatus, weekDots } from './todayView';
 
 const RECENT_COUNT = 10;
@@ -88,6 +88,10 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
   const [openRecent, setOpenRecent] = useState<string | null>(null);
   /** טופס המותניים, יעד הנגיעה באריח. */
   const waistForm = useRef<HTMLElement>(null);
+  /** כרטיס הצעדים המלא — יעד "ערוך" בשורת הצעדים שבראש המסך. */
+  const stepsSection = useRef<HTMLElement>(null);
+  /** הזנה מהירה של צעדי אתמול בראש המסך (שלב 7). טיוטה במסך עד "שמור". */
+  const [quickSteps, setQuickSteps] = useState<number | null>(null);
   /**
    * טוסט אחד לכל האפליקציה (שלב 5): "נשמר" אחרי שמירה, "נמחק · בטל" אחרי
    * מחיקה. "בטל" מחזיר דרך אותן פונקציות שמוסיפות (upsert) על ה-DB העדכני.
@@ -151,6 +155,22 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
       </>,
       () => void store.update('days', upsertDay(store.latest().days, meta)),
     );
+  };
+
+  // ---- צעדי אתמול בראש המסך: מדד יומי מ-1/11, מוזן בבוקר יחד עם השקילה.
+  // אותה שמירה של הכרטיס המלא (`setDaySteps`), על אתמול.
+  const yesterday = addDays(today, -1);
+  const yesterdaySteps = stepsOn(db.days, yesterday);
+  const yesterdayGoal = stepsGoalFor(yesterday);
+  const saveQuickSteps = () => {
+    if (quickSteps === null) return;
+    void store.update('days', setDaySteps(db.days, yesterday, quickSteps));
+    setQuickSteps(null);
+    toast.saved();
+  };
+  const editYesterdaySteps = () => {
+    moveStepsDate(yesterday);
+    stepsSection.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const waistLast = useMemo(() => lastWaist(db.waist), [db.waist]);
@@ -383,6 +403,70 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
         </Surface>
       )}
 
+      {/* 2ב. צעדי אתמול (שלב 7): בראש המסך, יחד עם השקילה — בלי לגלול לכרטיס הצעדים.
+          חסר → שדה ו"שמור" במקום. הוזן → שורה אחת עם הערך; נגיעה בה מובילה לכרטיס המלא. */}
+      <Surface as="div" className="surface--row today-steps" aria-label="צעדים אתמול">
+        {yesterdaySteps === null ? (
+          <div className="today-steps__form">
+            <span className="listrow__lead">
+              <Icon icon={Footprints} />
+            </span>
+            <span className="today-steps__label">
+              צעדים אתמול
+              {yesterdayGoal !== null && (
+                <span className="today-steps__goal">
+                  יעד <Num>{yesterdayGoal.toLocaleString('en-US')}</Num>
+                </span>
+              )}
+            </span>
+            <div className="today-steps__field">
+              <NumberField
+                label={`צעדים אתמול — ${formatDMY(yesterday)}`}
+                hideLabel
+                value={quickSteps}
+                onChange={setQuickSteps}
+                min={0}
+                max={MAX_DAY_STEPS}
+                placeholder="צעדים"
+              />
+            </div>
+            <Button disabled={quickSteps === null} onClick={saveQuickSteps} aria-label="שמור צעדים של אתמול">
+              שמור
+            </Button>
+          </div>
+        ) : (
+          // כל השורה היא כפתור: נגיעה מובילה לכרטיס הצעדים המלא, על אתמול.
+          <ListRow
+            lead={Footprints}
+            title={
+              <>
+                צעדים אתמול <Num className="strong">{yesterdaySteps.toLocaleString('en-US')}</Num>
+              </>
+            }
+            sub={
+              yesterdayGoal !== null ? (
+                <>
+                  יעד <Num>{yesterdayGoal.toLocaleString('en-US')}</Num> · נגיעה לעריכה
+                </>
+              ) : (
+                'נרשם · נגיעה לעריכה'
+              )
+            }
+            end={
+              yesterdayGoal === null ? (
+                <Icon icon={ChevronLeft} />
+              ) : stepsStatus(yesterdaySteps, yesterday) === 'ok' ? (
+                <StatusChip tone="done">ביעד</StatusChip>
+              ) : (
+                <StatusChip tone="partial">מתחת ליעד</StatusChip>
+              )
+            }
+            onTap={editYesterdaySteps}
+            aria-label={`צעדים אתמול ${yesterdaySteps.toLocaleString('en-US')}. ערוך`}
+          />
+        )}
+      </Surface>
+
       {/* 3. גיבור: הממוצע השבועי. ממוצע מ-7/7 חשוב משקילה בודדת. */}
       <Surface variant="hero" aria-label="ממוצע שבועי">
         <WeekNav
@@ -555,7 +639,7 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
       {/* 7. מתחת לכל זה: צעדים, מותניים, גרף והיסטוריה — כמו במסך המשקל. */}
 
       {/* צעדים (שלב 6): כרטיס קומפקטי — אתמול כברירת מחדל, דפדוף אחורה, לא אל העתיד. */}
-      <section className="section">
+      <section className="section" ref={stepsSection} tabIndex={-1} aria-label="צעדים — כרטיס מלא">
         <div className="section__head">
           <h2>צעדים</h2>
           {stepsGoal !== null ? (
