@@ -1,0 +1,348 @@
+{
+ "errors": {
+  "old": [],
+  "pr2": []
+ },
+ "import": {
+  "line": {
+   "old": "מוזג: שקילות 69 · אימונים 29 · מותניים 9 · צ'ק-אין 0 · אירובי עצמאי 1",
+   "pr2": "מוזג: שקילות 69 · אימונים 29 · מותניים 9 · צ'ק-אין 0 · אירובי עצמאי 1"
+  },
+  "sourceVsOld": {
+   "count": 5,
+   "byKey": {
+    "workouts": 3,
+    "settings": 2
+   },
+   "sample": [
+    {
+     "path": "/workouts/28/ex/8/sets/0",
+     "a": {
+      "weight": null,
+      "reps": null,
+      "seconds": null
+     }
+    },
+    {
+     "path": "/workouts/28/ex/8/sets/1",
+     "a": {
+      "weight": null,
+      "reps": null,
+      "seconds": null
+     }
+    },
+    {
+     "path": "/workouts/28/ex/8/sets/2",
+     "a": {
+      "weight": null,
+      "reps": null,
+      "seconds": null
+     }
+    },
+    {
+     "path": "/settings/soundEnabled",
+     "a": false,
+     "b": true
+    },
+    {
+     "path": "/settings/lastBackup",
+     "a": "2026-11-12",
+     "b": null
+    }
+   ]
+  },
+  "oldVsPr2": {
+   "identical": true,
+   "diffs": []
+  },
+  "performedSets": {
+   "source": 594,
+   "old": 594,
+   "identical": true
+  },
+  "workouts": {
+   "source": 29,
+   "old": 29
+  },
+  "quarantineOld": 0,
+  "mixedExercises": {
+   "leg-curl": {
+    "source": [
+     {
+      "weight": 85,
+      "reps": 10,
+      "seconds": null
+     },
+     {
+      "weight": 80,
+      "reps": 11,
+      "seconds": null
+     },
+     {
+      "weight": 80,
+      "reps": 10,
+      "seconds": null
+     }
+    ],
+    "old": [
+     {
+      "weight": 85,
+      "reps": 10,
+      "seconds": null
+     },
+     {
+      "weight": 80,
+      "reps": 11,
+      "seconds": null
+     },
+     {
+      "weight": 80,
+      "reps": 10,
+      "seconds": null
+     }
+    ],
+    "rir": {
+     "source": 2,
+     "old": 2
+    },
+    "identical": true
+   },
+   "seated-cable-row": {
+    "source": [
+     {
+      "weight": 80,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 80,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 75,
+      "reps": 12,
+      "seconds": null
+     }
+    ],
+    "old": [
+     {
+      "weight": 80,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 80,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 75,
+      "reps": 12,
+      "seconds": null
+     }
+    ],
+    "rir": {
+     "source": 2,
+     "old": 2
+    },
+    "identical": true
+   },
+   "pec-deck": {
+    "source": [
+     {
+      "weight": 50,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 45,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 45,
+      "reps": null,
+      "seconds": null
+     }
+    ],
+    "old": [
+     {
+      "weight": 50,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 45,
+      "reps": 12,
+      "seconds": null
+     },
+     {
+      "weight": 45,
+      "reps": null,
+      "seconds": null
+     }
+    ],
+    "rir": {
+     "source": null,
+     "old": null
+    },
+    "identical": true
+   }
+  },
+  "droppedByImport": [
+   {
+    "exercise": "בטן- הרמת רגליים על הרצפה",
+    "bodyweightOnly": true,
+    "set": {
+     "weight": null,
+     "reps": null,
+     "seconds": null
+    },
+    "exercisePerformedSets": 0
+   },
+   {
+    "exercise": "בטן- הרמת רגליים על הרצפה",
+    "bodyweightOnly": true,
+    "set": {
+     "weight": null,
+     "reps": null,
+     "seconds": null
+    },
+    "exercisePerformedSets": 0
+   },
+   {
+    "exercise": "בטן- הרמת רגליים על הרצפה",
+    "bodyweightOnly": true,
+    "set": {
+     "weight": null,
+     "reps": null,
+     "seconds": null
+    },
+    "exercisePerformedSets": 0
+   }
+  ]
+ },
+ "texts": {
+  "weeklySummary": {
+   "linesOld": 65,
+   "linesPr2": 65,
+   "changedLines": [
+    {
+     "line": 39,
+     "old": "  חתירת כבל 80,80,75×12,12,12 · RIR 2 · הבא: 85 ק״ג · 10 חזרות (R1)",
+     "pr2": "  חתירת כבל 80×12 · 80×12 · 75×12 · RIR 2 · הבא: 80 ק״ג · 10 חזרות (R1) · משקלים שונים — אשר בעצמך"
+    },
+    {
+     "line": 40,
+     "old": "  פרפר 50,45×12,12 · RIR — · הבא: דרגה אחת למעלה · 10 חזרות (R1) · RIR לא נרשם — אשר בעצמך",
+     "pr2": "  פרפר 50×12 · 45×12 · RIR — · הבא: דרגה אחת למעלה · 10 חזרות (R1) · RIR לא נרשם — אשר בעצמך · משקלים שונים — אשר בעצמך"
+    },
+    {
+     "line": 41,
+     "old": "  כפיפת ברכיים 85,80,80×10,11,10 · RIR 2 · הבא: 80 ק״ג · 11 חזרות (R6)",
+     "pr2": "  כפיפת ברכיים 85×10 · 80×11 · 80×10 · RIR 2 · הבא: 80 ק״ג · 11 חזרות (R6) · משקלים שונים — אשר בעצמך"
+    }
+   ]
+  },
+  "chatReport": {
+   "changedLines": [
+    {
+     "line": 14,
+     "old": "14/11 B — חתירת כבל 80,80,75×12,12,12 · פרפר 50,45×12,12 · כפיפת ברכיים 85,80,80×10,11,10 · דולגו: RDL מוט, הרחקה בפולי, כפיפת מרפקים, פשיטת מרפקים מוט, הרמת רגליים",
+     "pr2": "14/11 B — חתירת כבל 80×12 · 80×12 · 75×12 · פרפר 50×12 · 45×12 · כפיפת ברכיים 85×10 · 80×11 · 80×10 · דולגו: RDL מוט, הרחקה בפולי, כפיפת מרפקים, פשיטת מרפקים מוט, הרמת רגליים"
+    }
+   ]
+  }
+ },
+ "oldVersionBehaviour": {
+  "loggingMissingSet": {
+   "mainStepper": "45.0",
+   "before": [
+    {
+     "weight": 50,
+     "reps": 12,
+     "seconds": null
+    },
+    {
+     "weight": 45,
+     "reps": 12,
+     "seconds": null
+    },
+    {
+     "weight": 45,
+     "reps": null,
+     "seconds": null
+    }
+   ],
+   "after": [
+    {
+     "weight": 45,
+     "reps": 12,
+     "seconds": null
+    },
+    {
+     "weight": 45,
+     "reps": 12,
+     "seconds": null
+    },
+    {
+     "weight": 45,
+     "reps": 12,
+     "seconds": null
+    }
+   ],
+   "uniqueWeightKept": false
+  },
+  "shown": {
+   "mainStepper": "80.0",
+   "rows": [
+    "1 85 × 10",
+    "2 80 × 11",
+    "3 80 × 10"
+   ]
+  },
+  "reExport": {
+   "weights": [
+    85,
+    80,
+    80
+   ],
+   "reps": [
+    10,
+    11,
+    10
+   ],
+   "rir": 2,
+   "uniqueWeightKept": true
+  },
+  "afterEditingReps": {
+   "weights": [
+    85,
+    80,
+    80
+   ],
+   "reps": [
+    10,
+    12,
+    10
+   ],
+   "rir": 2,
+   "uniqueWeightKept": true
+  },
+  "afterChangingMainStepper": {
+   "weights": [
+    82.5,
+    82.5,
+    82.5
+   ],
+   "reps": [
+    10,
+    12,
+    10
+   ],
+   "rir": 2,
+   "uniqueWeightKept": false
+  }
+ }
+}
