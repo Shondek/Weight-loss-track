@@ -1,0 +1,89 @@
+{
+ "note": "Chromium headless (Playwright). Not a real phone.",
+ "errors": [],
+ "soundOn": {
+  "contextRunningWhileCounting": true,
+  "oscillators": 6,
+  "frequencies": [
+   784,
+   1568,
+   1047,
+   2093,
+   1319,
+   2637
+  ],
+  "allOnRunningContext": true,
+  "sessionDuringAlert": [
+   "playback"
+  ],
+  "sessionTransitions": [
+   "playback",
+   "auto"
+  ],
+  "sessionAfter": "auto",
+  "vibrate": [
+   [
+    180,
+    90,
+    180,
+    90,
+    260
+   ]
+  ],
+  "contextAfterAlert": "suspended",
+  "bar": "המנוחה נגמרה לפני 2 שניות סגור"
+ },
+ "soundOff": {
+  "contexts": 0,
+  "oscillators": 0,
+  "vibrate": [
+   [
+    180,
+    90,
+    180,
+    90,
+    260
+   ]
+  ],
+  "sessionTransitions": []
+ },
+ "soundToggle": {
+  "oscillatorsAfterTurnOn": 6,
+  "pressed": "true"
+ },
+ "endedInBackground": {
+  "oscillators": 0,
+  "vibrate": 0,
+  "bar": "המנוחה נגמרה לפני 40 שניות סגור"
+ },
+ "endedThenReload": {
+  "bar": "המנוחה נגמרה לפני 41 שניות סגור",
+  "tab": "אימונים"
+ },
+ "backgroundMinute": {
+  "before": "10:00",
+  "afterOneMinute": "9:00"
+ },
+ "floating": {
+  "supported": true,
+  "buttonVisible": true,
+  "pressed": "true",
+  "rest": {
+   "w": 480,
+   "h": 270,
+   "pip": true,
+   "muted": true
+  },
+  "finished": {
+   "w": 480,
+   "h": 270,
+   "pip": true,
+   "muted": true
+  },
+  "closed": true
+ },
+ "floatingUnsupported": {
+  "buttonCount": 0,
+  "barStillThere": true
+ }
+}

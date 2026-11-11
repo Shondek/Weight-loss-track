@@ -1,0 +1,58 @@
+{
+ "before": {
+  "label": "before",
+  "cacheNameV1": "fatloss-6073f3aaf270",
+  "offline": {
+   "cacheNames": [
+    "fatloss-6073f3aaf270"
+   ],
+   "cacheNameFormatOk": true,
+   "foodsCached": true,
+   "appLoadsOffline": true,
+   "searchResultsOffline": 12,
+   "workoutScreenOffline": true,
+   "jsErrors": []
+  },
+  "update": {
+   "controlled": true,
+   "bannerAtStart": 0,
+   "swChecksAfterReturn": 0,
+   "bannerAfterReturnFromBackground": false,
+   "cacheNamesAfter": [
+    "fatloss-6073f3aaf270"
+   ],
+   "refreshButton": false
+  }
+ },
+ "after": {
+  "label": "after",
+  "cacheNameV1": "fatloss-e37d84fd41be",
+  "offline": {
+   "cacheNames": [
+    "fatloss-e37d84fd41be"
+   ],
+   "cacheNameFormatOk": true,
+   "foodsCached": true,
+   "appLoadsOffline": true,
+   "searchResultsOffline": 12,
+   "workoutScreenOffline": true,
+   "jsErrors": []
+  },
+  "update": {
+   "controlled": true,
+   "bannerAtStart": 0,
+   "swChecksAfterReturn": 1,
+   "bannerAfterReturnFromBackground": true,
+   "cacheNamesAfter": [
+    "fatloss-e37d84fd41be",
+    "fatloss-ffffffffffff"
+   ],
+   "refreshButton": true,
+   "afterRefresh": {
+    "appLoads": true,
+    "bannerGone": true,
+    "dataStillThere": true
+   }
+  }
+ }
+}

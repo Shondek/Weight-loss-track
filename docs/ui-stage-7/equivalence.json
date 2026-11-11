@@ -1,0 +1,559 @@
+{
+ "scenario": {
+  "today": "2026-11-11",
+  "time": "08:05:00"
+ },
+ "A_baseline": {
+  "identical": true,
+  "diffs": []
+ },
+ "B_session": {
+  "identical": true,
+  "diffs": [],
+  "workout": {
+   "schemaVersion": 2,
+   "id": "2026-11-11-0mwbpso38-4947f2bb-A",
+   "d": "2026-11-11",
+   "t": "A",
+   "ex": [
+    {
+     "exerciseId": "warmup",
+     "n": "חימום",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 480
+      }
+     ],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 8
+     }
+    },
+    {
+     "exerciseId": "leg-press",
+     "n": "לג-פרס במכונה בישיבה",
+     "sets": [
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 135,
+       "reps": 10,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "smith-bench-press",
+     "n": "בנץ' פרס- סמית משין",
+     "sets": [
+      {
+       "weight": 55,
+       "reps": 8,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 7,
+       "seconds": null
+      },
+      {
+       "weight": 55,
+       "reps": 8,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 8,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 1
+    },
+    {
+     "exerciseId": "lat-pulldown",
+     "n": "משיכה מפולי עליון- אחיזה רחבה בישיבה",
+     "sets": [
+      {
+       "weight": 50,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 50,
+       "reps": 10,
+       "seconds": null
+      },
+      {
+       "weight": 50,
+       "reps": 9,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "lying-leg-curl",
+     "n": "כפיפת ברכיים במכונה על הבטן",
+     "sets": [
+      {
+       "weight": 30,
+       "reps": 12,
+       "seconds": null
+      },
+      {
+       "weight": 30,
+       "reps": 12,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 10,
+     "targetRepMax": 12,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "swappedFrom": "leg-curl",
+     "rir": 3
+    },
+    {
+     "exerciseId": "back-extension",
+     "n": "פשיטת ירך בספסל רומי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      },
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      },
+      {
+       "weight": null,
+       "reps": 17,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "compound",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "db-lateral-raise-seated",
+     "n": "הרחקת כתפיים- ישיבה מ.יד",
+     "sets": [
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 15,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false
+    },
+    {
+     "exerciseId": "plank",
+     "n": "בטן- פלאנק סטטי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      },
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      },
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 60
+      }
+     ],
+     "targetRepMin": 60,
+     "targetRepMax": 60,
+     "type": "core",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "leg-extension",
+     "n": "פשיטת ברכיים במכונה",
+     "sets": [
+      {
+       "weight": 45,
+       "reps": 15,
+       "seconds": null
+      },
+      {
+       "weight": 45,
+       "reps": 15,
+       "seconds": null
+      }
+     ],
+     "targetRepMin": 12,
+     "targetRepMax": 15,
+     "type": "isolation",
+     "bodyweightOnly": false,
+     "assisted": false,
+     "rir": 2
+    },
+    {
+     "exerciseId": "finisher-cardio",
+     "n": "אירובי",
+     "sets": [
+      {
+       "weight": null,
+       "reps": null,
+       "seconds": 1200
+      }
+     ],
+     "targetRepMin": 0,
+     "targetRepMax": 0,
+     "type": "cardio",
+     "bodyweightOnly": true,
+     "assisted": false,
+     "cardio": {
+      "mode": "bike",
+      "minutes": 20,
+      "incline": 2,
+      "speed": 5.5,
+      "segments": [
+       {
+        "minutes": 20,
+        "incline": 2,
+        "speed": 5.5
+       }
+      ]
+     }
+    }
+   ],
+   "knee": 2,
+   "shoulder": 0
+  },
+  "log": [
+   {
+    "n": 1,
+    "name": "לג-פרס במכונה בישיבה",
+    "rir": 2
+   },
+   {
+    "n": 2,
+    "name": "בנץ' פרס- סמית משין",
+    "rir": 1
+   },
+   {
+    "n": 3,
+    "name": "משיכה מפולי עליון- אחיזה רחבה בישיבה",
+    "rir": 2
+   },
+   {
+    "n": 4,
+    "name": "פשיטת ברכיים במכונה",
+    "action": "skip"
+   },
+   {
+    "n": 4,
+    "name": "כפיפת ברכיים במכונה → כפיפת ברכיים במכונה על הבטן",
+    "rir": 3
+   },
+   {
+    "n": 5,
+    "name": "פשיטת ירך בספסל רומי",
+    "rir": 2
+   },
+   {
+    "n": 6,
+    "name": "הרחקת כתפיים- ישיבה מ.יד",
+    "rir": null
+   },
+   {
+    "n": 7,
+    "name": "בטן- פלאנק סטטי",
+    "rir": 2
+   },
+   {
+    "n": 8,
+    "name": "פשיטת ברכיים במכונה",
+    "rir": 2
+   }
+  ]
+ },
+ "C_edit": {
+  "identical": true,
+  "diffs": [],
+  "changedVsBaseline": true
+ },
+ "D_deletes": {
+  "weight": {
+   "toast": "נמחק · שקילה 09/11/2026 · 94.5 בטל",
+   "undoRestoresBaseline": {
+    "identical": true,
+    "diffs": []
+   },
+   "undoneBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deletedBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deleteReallyWritten": true
+  },
+  "waist": {
+   "toast": "נמחק · מותניים 04/11/2026 · 96.0 בטל",
+   "undoRestoresBaseline": {
+    "identical": true,
+    "diffs": []
+   },
+   "undoneBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deletedBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deleteReallyWritten": true
+  },
+  "steps": {
+   "toast": "נמחק · צעדים 10/11/2026 · 7,800 בטל",
+   "undoRestoresBaseline": {
+    "identical": true,
+    "diffs": []
+   },
+   "undoneBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deletedBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deleteReallyWritten": true
+  },
+  "entry": {
+   "toast": "נמחק · גבינת קוטג' 5% שומן, תנובה בטל",
+   "undoRestoresBaseline": {
+    "identical": true,
+    "diffs": []
+   },
+   "undoneBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deletedBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deleteReallyWritten": true
+  },
+  "standalone": {
+   "toast": "נמחק · אירובי 09/11 · הליכון · 45 דק׳ · שיפוע 2.5% · 5.5 קמ״ש בטל",
+   "undoRestoresBaseline": {
+    "identical": true,
+    "diffs": []
+   },
+   "undoneBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deletedBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deleteReallyWritten": true
+  },
+  "workout": {
+   "toast": "נמחק · אימון A 06/11 בטל",
+   "undoRestoresBaseline": {
+    "identical": true,
+    "diffs": []
+   },
+   "undoneBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deletedBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deleteReallyWritten": true
+  },
+  "customFood": {
+   "toast": "נמחק · PRO 40 יטבתה בטל",
+   "undoRestoresBaseline": {
+    "identical": true,
+    "diffs": []
+   },
+   "undoneBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deletedBeforeVsAfter": {
+    "identical": true,
+    "diffs": []
+   },
+   "deleteReallyWritten": true
+  }
+ },
+ "E_importOldBackup": {
+  "identical": true,
+  "diffs": [],
+  "line": {
+   "before": "מוזג: שקילות 9 · אימונים 3 · מותניים 2 · צ'ק-אין 2 · אירובי עצמאי 2",
+   "after": "מוזג: שקילות 9 · אימונים 3 · מותניים 2 · צ'ק-אין 2 · אירובי עצמאי 2"
+  },
+  "counts": {
+   "weights": 9,
+   "workouts": 3,
+   "legacyWorkouts": 1,
+   "waist": 2,
+   "checkins": 2,
+   "standaloneCardio": 2,
+   "customFoods": 4,
+   "entries": 4,
+   "targets": 2,
+   "favorites": 2,
+   "days": 3,
+   "creatine": 2,
+   "quarantine": 1
+  }
+ },
+ "F_texts": {
+  "weeklySummary": {
+   "identical": true,
+   "chars": 2327,
+   "changedLines": []
+  },
+  "chatReport": {
+   "identical": true,
+   "chars": 919,
+   "changedLines": []
+  },
+  "weeklySummaryFridayWaist": {
+   "identical": false,
+   "changedLines": [
+    {
+     "line": 9,
+     "before": "מותניים 96.5 (שישי — לא תקף)",
+     "after": "מותניים 96.5 (שישי 06/11)"
+    },
+    {
+     "line": 58,
+     "before": "· מותניים לא נמדדו ברביעי",
+     "after": "· 7 ימים סגורים מתחת ל-1850"
+    },
+    {
+     "line": 59,
+     "before": "· 7 ימים סגורים מתחת ל-1850",
+     "after": "· צ׳ק-אין לא מולא"
+    },
+    {
+     "line": 60,
+     "before": "· צ׳ק-אין לא מולא",
+     "after": null
+    }
+   ]
+  }
+ },
+ "G_morning": {
+  "identical": true,
+  "diffs": [],
+  "weightTaps": {
+   "before": {
+    "clicks": 1,
+    "typed": 0
+   },
+   "after": {
+    "clicks": 1,
+    "typed": 0
+   }
+  },
+  "stepsTaps": {
+   "before": {
+    "clicks": 2,
+    "typed": 1,
+    "fieldInViewWithoutScroll": false,
+    "fieldTop": 946
+   },
+   "after": {
+    "clicks": 2,
+    "typed": 1,
+    "fieldInViewWithoutScroll": true,
+    "fieldTop": 205
+   }
+  }
+ },
+ "H_taps": {
+  "exercise": {
+   "before": {
+    "clicks": 5,
+    "typed": 0
+   },
+   "after": {
+    "clicks": 5,
+    "typed": 0
+   }
+  },
+  "warmup": {
+   "before": {
+    "clicks": 4,
+    "typed": 1
+   },
+   "after": {
+    "clicks": 3,
+    "typed": 0
+   }
+  }
+ },
+ "errors": {
+  "before": [],
+  "after": []
+ }
+}
