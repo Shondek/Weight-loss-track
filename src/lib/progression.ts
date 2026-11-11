@@ -8,6 +8,12 @@
  *  R1  התקדמות כפולה: אותו משקל בכל הסטים; כשכל סט מגיע ל-targetRepMax
  *      ו-RIR בסט האחרון ≥ סף ה-RIR של התא → +step, היעד חוזר ל-targetRepMin.
  *  R2  לא משנים משקל בין סטים באותו אימון (ההצעה תמיד משקל אחד).
+ *      הכלל הוא ברירת המחדל של הרישום, לא איסור: מהשלב של "משקל שונה לסט"
+ *      אפשר לרשום סט במשקל אחר (ירדתי או עליתי באמצע). סשן כזה לא משנה את
+ *      הכללים — רק את הקלט שלהם: ההצעה מחושבת מהסטים במשקל **הנמוך ביותר**
+ *      בסשן (החזרות שלהם, וה-RIR אם הסט האחרון היה באותו משקל), כאילו זה
+ *      משקל העבודה, ומסומנת "אשר בעצמך" (`mixedWeights`). סשן במשקל אחד —
+ *      בדיוק כמו תמיד.
  *  R3  שני אימונים רצופים שבהם סט כלשהו מתחת ל-targetRepMin באותו משקל
  *      → −10%, מעוגל למטה ל-step.
  *  R4  קפיצה גדולה: step / משקל > 20% → לא קופצים ב-targetRepMax; קודם
@@ -112,8 +118,12 @@ export type Suggestion = {
   reason: string;
   /** R1 הוצע בלי RIR רשום — "אשר בעצמך". */
   rirUnknown: boolean;
+  /**
+   * בסשן האחרון היו משקלים שונים בין הסטים: ההצעה חושבה מהסטים במשקל הנמוך
+   * ביותר, ולכן מוצגת עם "אשר בעצמך" ועם `MIXED_WEIGHTS_NOTE`.
+   */
   mixedWeights: boolean;
-  /** המשקל שעליו מבוססת ההצעה (הנפוץ ביותר באימון האחרון). */
+  /** המשקל שעליו מבוססת ההצעה: משקל הסשן האחרון, ובסשן עם כמה משקלים — הנמוך שבהם. */
   basisWeight: number | null;
   lastDate: ISODate;
 };
@@ -122,6 +132,9 @@ export type Session = { d: ISODate; ex: LoggedExercise };
 
 type Analysis = { weight: number | null; mixed: boolean; values: number[]; rir: Rir | undefined; d: ISODate };
 
+/** השורה שמלווה הצעה שחושבה מסשן עם כמה משקלים. */
+export const MIXED_WEIGHTS_NOTE = 'בסשן הקודם היו משקלים שונים';
+
 /** מעגל למטה ל-step, עם הגנה מפני שגיאת נקודה צפה (11.25/2.5 = 4.5 → 4 → 10). */
 export function roundDownToStep(weight: number, step: number): number {
   const q = Math.floor(weight / step + 1e-9);
@@ -129,31 +142,28 @@ export function roundDownToStep(weight: number, step: number): number {
 }
 
 /**
- * ניתוח אימון אחד: המשקל הנפוץ ביותר (שוויון → זה שבסט המאוחר), האם היו
- * משקלים שונים, וערכי הסטים באותו משקל (חזרות, או שניות בתרגיל זמן).
+ * ניתוח אימון אחד: משקל העבודה, האם היו משקלים שונים, וערכי הסטים באותו
+ * משקל (חזרות, או שניות בתרגיל זמן).
+ *
+ * סשן במשקל אחד — המשקל הזה, וכל הסטים. סשן עם כמה משקלים — המשקל **הנמוך
+ * ביותר** והסטים שבוצעו בו בלבד, כאילו זה משקל העבודה; הסט הכבד נשאר
+ * בהיסטוריה ובגרף, אבל לא נכנס לחישוב. ה-RIR נרשם על הסט האחרון של התרגיל:
+ * הוא נלקח רק אם הסט האחרון היה במשקל הזה, אחרת הוא "לא ידוע" לסטים האלה.
  */
 function analyze(s: Session, timed: boolean): Analysis | null {
   const performed = s.ex.sets.filter(setPerformed);
   if (performed.length === 0) return null;
-  const counts = new Map<number, { n: number; last: number }>();
-  performed.forEach((set, i) => {
-    if (set.weight === null) return;
-    const c = counts.get(set.weight) ?? { n: 0, last: -1 };
-    counts.set(set.weight, { n: c.n + 1, last: i });
-  });
-  let weight: number | null = null;
-  let best = { n: 0, last: -1 };
-  for (const [w, c] of counts) {
-    if (c.n > best.n || (c.n === best.n && c.last > best.last)) {
-      best = c;
-      weight = w;
-    }
-  }
-  const mixed = counts.size > 1;
+  const distinct = new Set<number>();
+  for (const set of performed) if (set.weight !== null) distinct.add(set.weight);
+  const mixed = distinct.size > 1;
+  // משקל אחד: הוא עצמו. כמה משקלים: הנמוך שבהם. בלי משקל בכלל: null.
+  const weight = distinct.size === 0 ? null : Math.min(...distinct);
   const atBasis = weight === null ? performed : performed.filter((set) => set.weight === weight);
   const values = atBasis.map((set) => (timed ? set.seconds : set.reps)).filter((v): v is number => v !== null);
   if (values.length === 0) return null;
-  return { weight, mixed, values, rir: s.ex.rir, d: s.d };
+  const last = performed[performed.length - 1];
+  const rir = mixed && last?.weight !== weight ? undefined : s.ex.rir;
+  return { weight, mixed, values, rir, d: s.d };
 }
 
 const unitWord = (timed: boolean) => (timed ? 'שנ׳' : 'חזרות');
@@ -180,7 +190,7 @@ export function suggestNext(history: readonly Session[], spec: ProgressionSpec):
   const loadOf = (a: Analysis): number | null => (spec.bodyweightStart === true && a.weight === 0 ? null : a.weight);
   const w = loadOf(L);
   const fromBodyweight = spec.bodyweightStart === true && w === null;
-  const mixedNote = L.mixed ? ' · משקלים שונים בין סטים' : '';
+  const mixedNote = L.mixed ? ` · ${MIXED_WEIGHTS_NOTE}` : '';
   const base = { mixedWeights: L.mixed, basisWeight: w, lastDate: L.d, rirUnknown: false };
 
   // M — מצב שימור: לפני כל כלל אחר. לא קורא RIR ולא את הערכים שנרשמו.
