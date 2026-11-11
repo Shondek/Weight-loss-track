@@ -4,11 +4,12 @@ import type { Exercise } from '../data/program';
 import { WEIGHT_STEP } from '../data/config';
 import { restSeconds } from '../data/program';
 import type { ExerciseHistory } from '../lib/workouts';
-import { hasData, lastWeightOf, progressPoints, setPerformed, setValue, swappedFromLabel } from '../lib/workouts';
+import { hasData, perSetText, progressPoints, setPerformed, setValue, swappedFromLabel } from '../lib/workouts';
 import { formatDM } from '../lib/date';
 import { clean, DASH } from '../lib/format';
 import ExerciseChart from './ExerciseChart';
-import { alternateHint, suggestionLabel, suggestionText, type Suggestion } from '../lib/progression';
+import { MIXED_WEIGHTS_NOTE, alternateHint, suggestionLabel, suggestionText, type Suggestion } from '../lib/progression';
+import { applyExerciseWeight, applySetWeight, applyToPerformed, differingPerformed, exerciseWeight, initialOwn, logSetAt } from './setWeights';
 import { Button, ChipSelect, Disclosure, Icon, ListRow, Num, Sheet, StatusChip, Stepper, Surface } from '../ui';
 import { ArrowLeftRight, Check, Flag, History, Info, Play, SkipForward } from '../ui/icons';
 
@@ -78,6 +79,9 @@ function mmss(total: number): string {
  * רשומה ישנה עם משקל שונה בכל סט מציגה את כולם, כדי לא להסתיר דבר.
  */
 function historyText(h: ExerciseHistory, timed: boolean, usesWeight: boolean, bodyweightStart = false): string {
+  // סשן עם כמה משקלים: כל סט עם המשקל שלו — "03/09 · 85×10 · 80×11 · 80×10 ק״ג".
+  const perSet = usesWeight ? perSetText(h.ex, (w) => (w === null ? DASH : clean(w))) : null;
+  if (perSet !== null) return `${formatDM(h.d)} · ${perSet}${timed ? ' שנ׳' : ' ק״ג'}`;
   const performed = h.ex.sets.filter(setPerformed);
   const values = performed
     .map((s) => {
@@ -122,10 +126,11 @@ function initialReps(log: LoggedExercise, timed: boolean, suggestion: Suggestion
 
 function initialWeight(log: LoggedExercise, usesWeight: boolean, suggestion: Suggestion | null): number | null {
   if (!usesWeight) return null;
-  // תרגיל שכבר נרשם בו סט (המשך סשן, עריכת אימון עבר): המשקל שנרשם.
-  if (hasData(log)) return lastWeightOf(log);
+  // תרגיל שכבר נרשם בו סט (המשך סשן, עריכת אימון עבר): משקל התרגיל כפי שנשמר
+  // — של הסטים שעוד לא נרשמו, ואם כולם נרשמו, המשקל הנפוץ (setWeights.ts).
+  if (hasData(log)) return exerciseWeight(log.sets);
   // ההצעה; כשאין לה מספר ("דרגה אחת למעלה") — המשקל האחרון, שכבר מולא מראש.
-  return suggestion?.weight ?? lastWeightOf(log);
+  return suggestion?.weight ?? exerciseWeight(log.sets);
 }
 
 export default function ExerciseFocus({
@@ -153,6 +158,15 @@ export default function ExerciseFocus({
   const prev = history[0];
   const [weight, setWeightDraft] = useState<number | null>(() => initialWeight(log, usesWeight, suggestion));
   const [reps, setReps] = useState<(number | null)[]>(() => initialReps(log, timed, suggestion, prev));
+  /**
+   * סטים שעוד לא נרשמו ושיש להם משקל משלהם — הם לא עוקבים אחרי ה-stepper
+   * הראשי. נגזר ממה ששמור בכניסה לתרגיל; במסך בלבד (המשקל עצמו נשמר בסט).
+   */
+  const [own, setOwn] = useState<ReadonlySet<number>>(() => (usesWeight ? initialOwn(log.sets) : new Set<number>()));
+  /** הסט שחלונית המשקל שלו פתוחה. */
+  const [weightSheet, setWeightSheet] = useState<number | null>(null);
+  /** ה-stepper הראשי שונה אחרי שכבר נרשמו סטים — מציעים להחיל גם עליהם. */
+  const [mainChanged, setMainChanged] = useState(false);
   /** סט שנרשם ונפתח לעריכה. */
   const [editing, setEditing] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -200,13 +214,43 @@ export default function ExerciseFocus({
   }, [nextIdx]);
 
   /**
-   * משקל אחד לתרגיל (R2). במודל הוא עדיין נשמר לכל סט — אותו ערך בכולם —
-   * כדי שרשומות קיימות (עם משקל שונה בכל סט) ימשיכו להיקרא. השינוי נכתב
-   * מיד, כמו קודם; המילוי מראש מההצעה נכתב רק ב"רשום" הראשון.
+   * משקל התרגיל (R2): ברירת המחדל לכל הסטים. הוא נשמר לכל סט, כמו תמיד.
+   * שינוי כאן מעדכן רק סטים שעוד לא נרשמו ושאין להם משקל משלהם — סט שכבר
+   * נרשם שומר את המשקל שנרשם בו (ירדתי או עליתי באמצע). השינוי נכתב מיד,
+   * כמו קודם; המילוי מראש מההצעה נכתב רק ב"רשום" הראשון.
    */
   const setWeight = (w: number | null) => {
     setWeightDraft(w);
-    onChange({ ...log, sets: log.sets.map((s) => ({ ...s, weight: w })) });
+    setMainChanged(true);
+    onChange({ ...log, sets: applyExerciseWeight(log.sets, own, w) });
+  };
+
+  /** המשקל שהסט יירשם בו / נרשם בו: משלו, או של התרגיל. */
+  const weightOf = (i: number): number | null => (performed[i] || own.has(i) ? (log.sets[i]?.weight ?? null) : weight);
+  /** הסט במשקל ששונה ממשקל התרגיל — מסומן "משקל אחר". */
+  const differs = (i: number): boolean => usesWeight && (performed[i] || own.has(i)) && weightOf(i) !== weight;
+
+  /** משקל לסט אחד בלבד. נכתב מיד; סט שעוד לא נרשם מפסיק לעקוב אחרי ה-stepper הראשי. */
+  const changeSetWeight = (i: number, w: number | null) => {
+    if (!performed[i]) setOwn((prev) => new Set(prev).add(i));
+    onChange({ ...log, sets: applySetWeight(log.sets, i, w) });
+  };
+
+  /** "חזור למשקל התרגיל": הסט חוזר למשקל של ה-stepper הראשי ולעקוב אחריו. */
+  const resetSetWeight = (i: number) => {
+    setOwn((prev) => {
+      const next = new Set(prev);
+      next.delete(i);
+      return next;
+    });
+    onChange({ ...log, sets: applySetWeight(log.sets, i, weight) });
+  };
+
+  /** סטים שכבר נרשמו במשקל ששונה ממשקל התרגיל. */
+  const stale = usesWeight ? differingPerformed(log.sets, weight) : [];
+  const applyToLogged = () => {
+    onChange({ ...log, sets: applyToPerformed(log.sets, weight) });
+    setMainChanged(false);
   };
 
   /** RIR בסט האחרון: לחיצה חוזרת מנקה. אופציונלי — לא חוסם שמירה. */
@@ -216,7 +260,10 @@ export default function ExerciseFocus({
   };
 
   /**
-   * "רשום": שומר את הערכים שמוצגים — המשקל לכל הסטים (R2) והחזרות לסט הזה.
+   * "רשום": שומר את הערכים שמוצגים — לסט הזה את המשקל שלו (של התרגיל, או
+   * משלו) ואת החזרות; סטים שעוד לא נרשמו ואין להם משקל משלהם מתיישרים
+   * למשקל התרגיל. סט שכבר נרשם לא משתנה. ברישום רגיל (בלי משקל אחר) כל
+   * הסטים מקבלים את אותו משקל, בדיוק כמו קודם.
    * המנוחה נפתחת רק במעבר מריק למלא — לא כשמתקנים ערך שכבר הוזן.
    */
   const logSet = (i: number) => {
@@ -224,12 +271,9 @@ export default function ExerciseFocus({
     if (v === null) return;
     const before = log.sets[i];
     if (!before) return;
-    const sets = log.sets.map((s, j) => ({
-      ...s,
-      ...(usesWeight ? { weight } : {}),
-      ...(j === i ? (timed ? { seconds: v } : { reps: v }) : {}),
-    }));
+    const sets = logSetAt(log.sets, i, timed ? { seconds: v } : { reps: v }, weight, own, usesWeight);
     const after = sets[i]!;
+    setMainChanged(false);
     onChange({ ...log, sets });
     if (!setPerformed(before) && setPerformed(after)) onSetLogged(i);
   };
@@ -245,7 +289,7 @@ export default function ExerciseFocus({
 
   const sugLabel = suggestion ? suggestionLabel(suggestion, spec) : null;
   const sugTone = suggestion
-    ? suggestion.rirUnknown
+    ? suggestion.rirUnknown || suggestion.mixedWeights
       ? 'partial'
       : suggestion.action === 'up'
         ? 'done'
@@ -354,8 +398,16 @@ export default function ExerciseFocus({
                 הצעה · <Num>{suggestion.rule === 'M' ? 'שימור' : suggestion.rule}</Num>
               </StatusChip>
             </div>
-            <p className="tiny muted wk-suggest__reason">{suggestion.reason}</p>
-            {suggestion.rirUnknown && <StatusChip tone="partial">RIR לא נרשם — אשר בעצמך</StatusChip>}
+            <p className="tiny muted wk-suggest__reason">{suggestion.reason.replace(` · ${MIXED_WEIGHTS_NOTE}`, '')}</p>
+            {/* סשן קודם עם כמה משקלים: ההצעה חושבה מהסטים במשקל הנמוך — לאשר לבד. */}
+            {suggestion.mixedWeights ? (
+              <p className="wk-suggest__confirm">
+                <StatusChip tone="partial">אשר בעצמך</StatusChip>
+                <span className="tiny">{MIXED_WEIGHTS_NOTE}</span>
+              </p>
+            ) : (
+              suggestion.rirUnknown && <StatusChip tone="partial">RIR לא נרשם — אשר בעצמך</StatusChip>
+            )}
           </>
         ) : (
           <>
@@ -445,6 +497,25 @@ export default function ExerciseFocus({
         ) : (
           <span className="focus__bw">משקל גוף</span>
         )}
+        {/* ה-stepper הראשי לא נוגע בסטים שכבר נרשמו. מיד אחרי שינוי — אפשר להחיל גם עליהם. */}
+        {usesWeight && mainChanged && stale.length > 0 && (
+          <div className="focus__weight-hint">
+            <span className="tiny muted">
+              {stale.length === 1 ? (
+                <>
+                  סט <Num>{(stale[0] ?? 0) + 1}</Num> כבר נרשם במשקל אחר
+                </>
+              ) : (
+                <>
+                  <Num>{stale.length}</Num> סטים כבר נרשמו במשקל אחר
+                </>
+              )}
+            </span>
+            <Button variant="ghost" onClick={applyToLogged}>
+              החל גם עליהם
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* שורת סט לכל סט: מספר, stepper חזרות, "רשום". הסט הבא — "רשום" ברוחב מלא, במבטא. */}
@@ -455,6 +526,21 @@ export default function ExerciseFocus({
           const value = timed ? s.seconds : s.reps;
           const draft = reps[i] ?? null;
           const unitWord = timed ? 'שניות' : 'חזרות';
+          const w = weightOf(i);
+          const other = differs(i);
+          // המשקל של הסט: נגיעה פותחת stepper לסט הזה בלבד. לא חלק מהרישום הרגיל.
+          const weightButton = usesWeight && (
+            <Button
+              variant="ghost"
+              className={`set__w${other ? ' is-own' : ''}`}
+              aria-haspopup="dialog"
+              aria-label={`משקל לסט ${i + 1}: ${w === null ? 'ריק' : `${clean(w)} ק״ג`}${other ? ' — משקל אחר' : ''}. שנה לסט הזה בלבד`}
+              onClick={() => setWeightSheet(i)}
+            >
+              <Num>{w === null ? DASH : clean(w)}</Num>
+              <span className="set__w-unit">ק״ג</span>
+            </Button>
+          );
           return (
             <div key={i} ref={isNext ? nextSet : undefined} className={`set${logged ? ' is-done' : isNext ? ' is-next' : ''}`}>
               <div className="set__row">
@@ -464,9 +550,9 @@ export default function ExerciseFocus({
                 {logged && editing !== i ? (
                   <button
                     type="button"
-                    className="set__done"
+                    className={`set__done${other ? ' set__done--own' : ''}`}
                     onClick={() => setEditing(i)}
-                    aria-label={`סט ${i + 1} — נרשם ${usesWeight && s.weight !== null ? `${clean(s.weight)} × ` : ''}${value ?? DASH}${timed ? ' שנ׳' : ''}. ערוך`}
+                    aria-label={`סט ${i + 1} — נרשם ${usesWeight && s.weight !== null ? `${clean(s.weight)} × ` : ''}${value ?? DASH}${timed ? ' שנ׳' : ''}${other ? ', משקל אחר' : ''}. ערוך`}
                   >
                     <Icon icon={Check} size={18} />
                     <Num>
@@ -474,6 +560,8 @@ export default function ExerciseFocus({
                       {value ?? DASH}
                     </Num>
                     {timed && <span className="tiny muted">שנ׳</span>}
+                    {/* סט במשקל ששונה ממשקל התרגיל: מילה + צבע. */}
+                    {other && <span className="set__own-tag">משקל אחר</span>}
                   </button>
                 ) : (
                   <>
@@ -491,6 +579,7 @@ export default function ExerciseFocus({
                         placeholder={timed ? 'שנ׳' : 'חזרות'}
                       />
                     </div>
+                    {weightButton}
                     {logged ? (
                       <Button variant="secondary" aria-label={`סיום עריכה — סט ${i + 1}`} onClick={() => setEditing(null)}>
                         <Icon icon={Check} size={18} />
@@ -510,7 +599,7 @@ export default function ExerciseFocus({
                   {draft !== null && (
                     <span className="set__log-val">
                       <Num>
-                        {usesWeight && weight !== null ? `${clean(weight)} × ` : ''}
+                        {usesWeight && w !== null ? `${clean(w)} × ` : ''}
                         {draft}
                       </Num>
                     </span>
@@ -557,6 +646,41 @@ export default function ExerciseFocus({
           </Button>
         )}
       </div>
+
+      {/* משקל לסט בודד: stepper לסט הזה בלבד, ו"חזור למשקל התרגיל". נכתב מיד. */}
+      {usesWeight && weightSheet !== null && log.sets[weightSheet] && (
+        <Sheet title={`משקל לסט ${weightSheet + 1}`} onClose={() => setWeightSheet(null)}>
+          <p className="tiny muted" style={{ margin: 0 }}>
+            לסט הזה בלבד — {spec.name}. משקל התרגיל:{' '}
+            {weight === null ? 'ריק' : (
+              <>
+                <Num>{clean(weight)}</Num> ק״ג
+              </>
+            )}
+            .
+          </p>
+          <Stepper
+            label={`משקל, סט ${weightSheet + 1} — ${spec.name}`}
+            hideLabel
+            value={weightOf(weightSheet)}
+            onChange={(v) => changeSetWeight(weightSheet, v)}
+            step={WEIGHT_STEP}
+            min={0}
+            max={MAX_WEIGHT}
+            decimals={1}
+            unit='ק"ג'
+            placeholder={timed || spec.bodyweightStart ? 'משקל גוף' : 'ק"ג'}
+          />
+          <div className="row set-sheet__actions">
+            <Button variant="secondary" disabled={!differs(weightSheet)} onClick={() => resetSetWeight(weightSheet)}>
+              חזור למשקל התרגיל
+            </Button>
+            <Button variant="accent" className="grow" onClick={() => setWeightSheet(null)}>
+              סיום
+            </Button>
+          </div>
+        </Sheet>
+      )}
 
       {/* "החלף": רשימת החלופות לתא — שם, הערה, והביצוע האחרון של החלופה עצמה. */}
       {canSwap && swapOpen && (
