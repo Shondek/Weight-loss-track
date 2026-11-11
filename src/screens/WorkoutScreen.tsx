@@ -47,7 +47,8 @@ import {
   finishCardio,
   hasData,
   isCardio,
-  lastWeightOf,
+  perSetText,
+  progressValue,
   isTimedExercise,
   isWorkoutEmpty,
   lastFinisherCardio,
@@ -154,11 +155,14 @@ function newId(): string {
 }
 
 /**
- * שורת סיכום לתרגיל אחד: משקל אחד כשכולם זהים, רשימה כשהם משתנים
- * (רשומות ישנות עם משקל שונה בכל סט). חימום/אירובי: "חימום · אופניים · 10 דק׳".
+ * שורת סיכום לתרגיל אחד: משקל אחד כשכולם זהים; כשהם שונים — סט-סט,
+ * "85×10 · 80×11 · 80×10" (משקל שונה לסט, וגם רשומות ישנות עם משקל שונה
+ * בכל סט). חימום/אירובי: "חימום · אופניים · 10 דק׳".
  */
 function exerciseLine(e: LoggedExercise): string {
   if (isCardio(e)) return cardioLine(e) ?? e.n;
+  const perSet = e.bodyweightOnly ? null : perSetText(e, (w) => (w === null ? DASH : clean(w)));
+  if (perSet !== null) return `${e.n} ${perSet}${isTimedExercise(e) ? ' שנ׳' : ''}`;
   const performed = e.sets.filter(setPerformed);
   const values = performed
     .map((s) => {
@@ -234,7 +238,7 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
                   <Sparkline
                     label={`מגמת ${e.n}`}
                     values={exerciseHistory(workouts, e.exerciseId)
-                      .map((h) => lastWeightOf(h.ex))
+                      .map((h) => progressValue(h.ex, 'weight'))
                       .filter((v): v is number => v !== null)}
                   />
                 )}

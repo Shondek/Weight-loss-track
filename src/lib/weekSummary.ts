@@ -26,6 +26,7 @@ import {
   isCardio,
   isTimedExercise,
   peakPain,
+  perSetText,
   rotationWorkouts,
   setPerformed,
   setValue,
@@ -89,10 +90,15 @@ export function cardioLineText(c: CardioWeek): string {
   return c.steps === null ? base : `${base} · ${stepsText(c.steps)}`;
 }
 
-/** תרגיל אחד כפי שהוא מופיע בדוח: "לג-פרס 60×12,12,10". */
+/**
+ * תרגיל אחד כפי שהוא מופיע בדוח: "לג-פרס 60×12,12,10". סשן עם כמה משקלים
+ * מוצג סט-סט: "כפיפת ברכיים 85×10 · 80×11 · 80×10".
+ */
 export function exerciseText(e: LoggedExercise): string {
   if (isCardio(e)) return cardioText(e);
   const name = shortName(e.exerciseId, e.n);
+  const perSet = e.bodyweightOnly ? null : perSetText(e, (w) => (w === null ? DASH : clean(w)));
+  if (perSet !== null) return `${name} ${perSet}${isTimedExercise(e) ? ' שנ׳' : ''}`;
   const values = e.sets
     .filter(setPerformed)
     .map((s) => {

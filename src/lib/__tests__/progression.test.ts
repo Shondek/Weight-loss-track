@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { LoggedExercise } from '../../types';
 import { exerciseById, exerciseIn } from '../../data/program';
 import { exerciseHistory } from '../workouts';
-import { roundDownToStep, suggestNext, suggestionLabel, suggestionText, type ProgressionSpec, type Session } from '../progression';
+import { roundDownToStep, suggestNext, suggestionLabel, suggestionText, type ProgressionSpec, type Session, MIXED_WEIGHTS_NOTE } from '../progression';
 import { le, wk } from './helpers';
 
 function specOf(id: string): ProgressionSpec {
@@ -113,7 +113,7 @@ describe('2. כללים ומקרי קצה', () => {
     expect(small?.rule).toBe('R1');
   });
 
-  it('משקלים שונים בין סטים: הבסיס הוא המשקל הנפוץ, והסיבה מציינת זאת', () => {
+  it('משקלים שונים בין סטים: הבסיס הוא המשקל הנמוך ביותר, וההצעה מסומנת (משקל שונה לסט)', () => {
     const ex: LoggedExercise = {
       ...le('db-bench-press', 15, [12, 12, 12]),
       sets: [
@@ -124,11 +124,12 @@ describe('2. כללים ומקרי קצה', () => {
       rir: 2,
     };
     const s = suggestNext([session('2026-09-24', ex)], bench);
-    expect(s).toMatchObject({ action: 'up', weight: 17.5, basisWeight: 15, mixedWeights: true, rule: 'R1' });
-    expect(s?.reason).toContain('משקלים שונים בין סטים');
-    // שוויון בספירה → המשקל של הסט המאוחר
+    // עד השלב הזה הבסיס היה המשקל הנפוץ (15 → 17.5). עכשיו: הנמוך (12.5 → 15).
+    expect(s).toMatchObject({ action: 'up', weight: 15, basisWeight: 12.5, mixedWeights: true, rule: 'R1' });
+    expect(s?.reason).toContain(MIXED_WEIGHTS_NOTE);
+    // שני סטים בשני משקלים → הנמוך, לא המאוחר
     const tie: LoggedExercise = { ...ex, sets: [{ weight: 15, reps: 10, seconds: null }, { weight: 17.5, reps: 8, seconds: null }] };
-    expect(suggestNext([session('2026-09-24', tie)], bench)?.basisWeight).toBe(17.5);
+    expect(suggestNext([session('2026-09-24', tie)], bench)?.basisWeight).toBe(15);
   });
 
   it('אין היסטוריה → null; סטים ריקים בלבד → null', () => {

@@ -1,0 +1,178 @@
+{
+ "errors": [],
+ "exercise": "כפיפת ברכיים במכונה",
+ "mainChanged": {
+  "rows": [
+   "1 85 × 10 משקל אחר",
+   "2 חזרות, סט 2 — כפיפת ברכיים במכונה 80 ק״ג רשום סט 2 80 × 10",
+   "3 חזרות, סט 3 — כפיפת ברכיים במכונה 80 ק״ג רשום"
+  ],
+  "hint": "סט 1 כבר נרשם במשקל אחר החל גם עליהם"
+ },
+ "checks_mainChanged": {
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastFails": 0,
+  "contrastMin": 4.77,
+  "hscroll": false,
+  "flippedNums": 0
+ },
+ "session": {
+  "rows": [
+   "1 85 × 10 משקל אחר",
+   "2 80 × 11",
+   "3 80 × 10"
+  ],
+  "tapsForSet1": {
+   "clicks": 1,
+   "typed": 0
+  },
+  "hintGoneAfterLog": true
+ },
+ "checks_logged": {
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastFails": 0,
+  "contrastMin": 4.77,
+  "hscroll": false,
+  "flippedNums": 0
+ },
+ "checks_summary": {
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastFails": 0,
+  "contrastMin": 4.77,
+  "hscroll": false,
+  "flippedNums": 0
+ },
+ "summaryOnScreen": "B · 14/11 ש כפיפת ברכיים 85×10 · 80×11 · 80×10 · דולגו: RDL מוט, חתירת כבל, פרפר, הרחקה בפולי, כפיפת מרפקים, פשיטת מרפקים מוט, הרמת רגליים",
+ "weeklySummaryLine": "  כפיפת ברכיים 85×10 · 80×11 · 80×10 · RIR 2 · הבא: 80 ק״ג · 11 חזרות (R6) · משקלים שונים — אשר בעצמך",
+ "weeklySummaryUniformLine": "  כפיפת ברכיים 40×12,12,12 · RIR 2 · הבא: דרגה אחת למעלה · 10 חזרות (R1)",
+ "weeklySummaryChars": 2540,
+ "chatReportHasLine": true,
+ "stored": {
+  "sets": [
+   {
+    "weight": 85,
+    "reps": 10,
+    "seconds": null
+   },
+   {
+    "weight": 80,
+    "reps": 11,
+    "seconds": null
+   },
+   {
+    "weight": 80,
+    "reps": 10,
+    "seconds": null
+   }
+  ],
+  "rir": 2,
+  "setKeys": [
+   "reps",
+   "seconds",
+   "weight"
+  ],
+  "exerciseKeys": [
+   "assisted",
+   "bodyweightOnly",
+   "exerciseId",
+   "n",
+   "rir",
+   "sets",
+   "targetRepMax",
+   "targetRepMin",
+   "type"
+  ]
+ },
+ "nextSuggestion": {
+  "text": "80 ק״ג × 11 חזרות הצעה · R6 אותו משקל, +1 בסט הנמוך (10 → 11) אשר בעצמך בסשן הקודם היו משקלים שונים פעם קודמת · 14/11 85×10 · 80×11 · 80×10 ק״ג · RIR 2",
+  "mainWeight": "80.0"
+ },
+ "checks_suggestion": {
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastFails": 0,
+  "contrastMin": 4.77,
+  "hscroll": false,
+  "flippedNums": 0
+ },
+ "previousLine": "85×10 · 80×11 · 80×10 ק״ג · RIR 2",
+ "sheet": {
+  "title": "משקל לסט 3",
+  "resetDisabledBefore": true,
+  "resetEnabledAfter": true,
+  "afterReset": "80.0",
+  "pendingRow": "3 חזרות, סט 3 — כפיפת ברכיים במכונה 75 ק״ג רשום סט 3 75 × 10",
+  "afterMainChange": "3 חזרות, סט 3 — כפיפת ברכיים במכונה 75 ק״ג רשום סט 3 75 × 10",
+  "rows": [
+   "1 80 × 12",
+   "2 80 × 12",
+   "3 75 × 12 משקל אחר"
+  ],
+  "stored": [
+   {
+    "weight": 80,
+    "reps": 12,
+    "seconds": null
+   },
+   {
+    "weight": 80,
+    "reps": 12,
+    "seconds": null
+   },
+   {
+    "weight": 75,
+    "reps": 12,
+    "seconds": null
+   }
+  ]
+ },
+ "checks_sheet": {
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastFails": 0,
+  "contrastMin": 4.77,
+  "hscroll": false,
+  "flippedNums": 0
+ },
+ "editOld": {
+  "original": "55.0",
+  "before": [
+   "1 55 × 12",
+   "2 55 × 12",
+   "3 55 × 12"
+  ],
+  "afterOne": [
+   "1 60 × 12 משקל אחר",
+   "2 55 × 12",
+   "3 55 × 12"
+  ],
+  "afterMain": [
+   "1 60 × 12 משקל אחר",
+   "2 55 × 12 משקל אחר",
+   "3 55 × 12 משקל אחר"
+  ],
+  "hint": "3 סטים כבר נרשמו במשקל אחר החל גם עליהם",
+  "afterApply": [
+   "1 50 × 12",
+   "2 50 × 12",
+   "3 50 × 12"
+  ]
+ },
+ "partner": {
+  "rows": [
+   "1 145 × 10",
+   "2 140 × 10 משקל אחר"
+  ]
+ },
+ "checks_partner": {
+  "smallTargets": 0,
+  "smallTargetsList": [],
+  "contrastFails": 0,
+  "contrastMin": 4.77,
+  "hscroll": false,
+  "flippedNums": 0
+ }
+}

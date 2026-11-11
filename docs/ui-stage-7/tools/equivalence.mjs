@@ -21,9 +21,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launch, openSeeded, phone, serve, settle } from './lib.mjs';
-import { CLIPBOARD_STUB, driverFor } from './drive.mjs';
+import { CLIPBOARD_STUB, driverFor as makeDriver } from './drive.mjs';
 
-const [, , distBefore, distAfter, outJson] = process.argv;
+// נהג לכל build: ברירת המחדל "before" (הבסיס) מול "after" (שלב 7). להשוואת
+// PR 1 מול PR 2 שני ה-builds הם של שלב 7, ולכן שניהם עם הנהג "after".
+const [, , distBefore, distAfter, outJson, driverBefore = 'before', driverAfter = 'after'] = process.argv;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN = fs.readFileSync(path.join(HERE, '../../../src/lib/__tests__/fixtures/backup-golden-before.json'), 'utf8');
 const SCENARIO = { today: '2026-11-11', time: '08:05:00' };
@@ -77,7 +79,7 @@ async function runSession(d) {
 
 const read = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 
-async function run(dist, port, label) {
+async function run(dist, port, label, driver) {
   const server = await serve(dist, port);
   const browser = await launch();
   const out = { label, errors: [] };
@@ -86,6 +88,8 @@ async function run(dist, port, label) {
     page.on('pageerror', (e) => out.errors.push(String(e.message)));
     return page;
   };
+  // `label` הוא שם הצד בהשוואה; `driver` הוא הממשק שהנהג מצפה לו.
+  const driverFor = (page) => makeDriver(page, driver);
   let ctx;
   try {
     ctx = await phone(browser);
@@ -93,14 +97,14 @@ async function run(dist, port, label) {
     // ---- A. golden: ייצוא הבסיס ----
     {
       const page = await open();
-      out.baseline = read(await driverFor(page, label).export());
+      out.baseline = read(await driverFor(page).export());
       await page.close();
     }
 
     // ---- B. סשן מלא ----
     {
       const page = await open();
-      const d = driverFor(page, label);
+      const d = driverFor(page);
       out.sessionLog = await runSession(d);
       out.session = read(await d.export());
       await page.close();
@@ -109,7 +113,7 @@ async function run(dist, port, label) {
     // ---- C. עריכת אימון עבר ----
     {
       const page = await open();
-      const d = driverFor(page, label);
+      const d = driverFor(page);
       await d.openTab('אימונים');
       await d.editWorkout('04/11');
       await d.goTo(1);
@@ -140,7 +144,7 @@ async function run(dist, port, label) {
       // עם "בטל"
       {
         const page = await open();
-        const d = driverFor(page, label);
+        const d = driverFor(page);
         await act(d);
         const toast = await d.toastText();
         await d.undo();
@@ -151,7 +155,7 @@ async function run(dist, port, label) {
       // בלי "בטל"
       {
         const page = await open();
-        const d = driverFor(page, label);
+        const d = driverFor(page);
         await act(d);
         await d.letToastExpire();
         out.deletes[kind].deleted = read(await d.export());
@@ -162,7 +166,7 @@ async function run(dist, port, label) {
     // ---- E. ייבוא גיבוי ישן (golden) למכשיר ריק ----
     {
       const page = await open(SCENARIO, { seed: false });
-      const d = driverFor(page, label);
+      const d = driverFor(page);
       out.importLine = await d.importMerge(GOLDEN);
       out.imported = read(await d.export());
       await page.close();
@@ -171,7 +175,7 @@ async function run(dist, port, label) {
     // ---- F. הטקסטים לצ'אט ----
     {
       const page = await open();
-      const d = driverFor(page, label);
+      const d = driverFor(page);
       out.weeklySummary = await d.copyWeeklySummary();
       out.chatReport = await d.copyChatReport();
       await page.close();
@@ -179,7 +183,7 @@ async function run(dist, port, label) {
     // F2. שבוע שבו המותניים נמדדו בשישי בלבד (06/11 במקום רביעי 04/11) — ממצא 5.
     {
       const page = await open({ ...SCENARIO, waistSkip: ['2026-11-04'], waistExtra: ['2026-11-06'] });
-      const d = driverFor(page, label);
+      const d = driverFor(page);
       out.weeklySummaryFriday = await d.copyWeeklySummary();
       await page.close();
     }
@@ -187,7 +191,7 @@ async function run(dist, port, label) {
     // ---- G. שקילה + צעדי אתמול ----
     {
       const page = await open({ ...SCENARIO, noStepsYesterday: true });
-      const d = driverFor(page, label);
+      const d = driverFor(page);
       d.counter.reset();
       await d.saveWeight();
       out.weightTaps = d.counter.get();
@@ -199,7 +203,7 @@ async function run(dist, port, label) {
     // ---- H. ספירת נגיעות: תרגיל של 3 סטים, ההצעה כמו שהיא; חימום ----
     {
       const page = await open();
-      const d = driverFor(page, label);
+      const d = driverFor(page);
       await d.openTab('אימונים');
       await d.start('A');
       out.warmupTaps = await d.warmup(8);
@@ -253,8 +257,8 @@ function lineDiff(a, b) {
   return out;
 }
 
-const before = await run(distBefore, 4710, 'before');
-const after = await run(distAfter, 4711, 'after');
+const before = await run(distBefore, 4710, 'before', driverBefore);
+const after = await run(distAfter, 4711, 'after', driverAfter);
 
 const deletes = {};
 for (const kind of Object.keys(after.deletes)) {

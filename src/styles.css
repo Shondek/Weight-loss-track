@@ -842,6 +842,68 @@ button {
   min-width: 0;
 }
 
+/* המשקל של הסט: כפתור שקט בשורה. נגיעה = stepper לסט הזה בלבד (משקל שונה לסט). */
+.set__w {
+  flex: 0 0 auto;
+  min-width: 56px;
+  padding-inline: var(--sp-2);
+  gap: 4px;
+  font-size: var(--t-body);
+  color: var(--text-secondary);
+}
+
+.set__w-unit {
+  font-size: var(--t-micro);
+  color: var(--text-quiet);
+}
+
+/* משקל ששונה ממשקל התרגיל: מבטא, ומשטח — לא רק צבע. */
+.set__w.is-own {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.set__w.is-own .set__w-unit {
+  color: var(--accent);
+}
+
+/* סט שנרשם במשקל אחר: אותה שורה, עם תג "משקל אחר" ופס מבטא בתחילתה. */
+.set__done--own {
+  border-inline-start: 3px solid var(--accent);
+}
+
+.set__own-tag {
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  padding: 2px var(--sp-2);
+}
+
+/* אחרי שינוי משקל התרגיל כשכבר נרשמו סטים: "החל גם עליהם". */
+.focus__weight-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.set-sheet__actions {
+  margin-top: var(--sp-3);
+}
+
+/* ההצעה חושבה מסשן עם כמה משקלים: "אשר בעצמך" + השורה שמסבירה. */
+.wk-suggest__confirm {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  color: var(--text-secondary);
+}
+
 /* סט שנרשם: "✓ 45 × 8" — שורה מלאה, נגיעה פותחת לעריכה. */
 .set__done {
   appearance: none;
