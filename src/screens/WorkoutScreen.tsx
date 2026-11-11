@@ -45,7 +45,6 @@ import {
   cardioSegmentsOf,
   exerciseHistory,
   finishCardio,
-  exercisesFor,
   hasData,
   isCardio,
   lastWeightOf,
@@ -105,6 +104,7 @@ import CardioSummary from '../components/CardioSummary';
 import Sparkline from '../components/Sparkline';
 import type { RestTimer } from '../hooks/useRestTimer';
 import { useWakeLock } from '../hooks/useWakeLock';
+import { editorRows, uniqueRows } from './workoutRows';
 import { Button, ChipSelect, Disclosure, ListRow, Num, ProgressSegments, SectionHeader, Sheet, StatusChip, Surface, Toast, useToast, type Segment } from '../ui';
 import { ChevronLeft, ChevronRight, Timer } from '../ui/icons';
 import {
@@ -218,7 +218,8 @@ function WorkoutRow({ w, workouts, expanded, onToggle, onEdit, onDelete }: RowPr
       {expanded && (
         <div className="stack--tight" style={{ padding: 'var(--sp-2) 0' }}>
           <ul className="list list--block small">
-            {w.ex.filter(hasData).map((e) => (
+            {/* שורה אחת לכל תרגיל, גם ברשומה שנשמרה בעבר עם שורה כפולה (ממצא 4). */}
+            {uniqueRows(w.ex).filter(hasData).map((e) => (
               <li key={e.exerciseId}>
                 <div>
                   {exerciseLine(e)}
@@ -331,8 +332,10 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const open = draft ?? stored;
   // בלי אירובי (בת הזוג): שורת אירובי הסיום לא מוצגת ולא נשמרת. היא ממילא
   // ריקה עד "התחל" (לא נתון), ו-exercisesFor משלים אותה בכל קריאה.
+  // `editorRows` (ממצא 4): לאימון ישן מציגים רק את השורות שנשמרו בו — בלי תאים
+  // שנוספו לתוכנית אחריו ובלי שורה כפולה לתרגיל שהוחלף. אימון חדש — בלי שינוי.
   const rows = open
-    ? exercisesFor(open, db.workouts).filter((r) => FEATURES.cardio || r.exerciseId !== FINISHER_ID)
+    ? editorRows(open, db.workouts).filter((r) => FEATURES.cardio || r.exerciseId !== FINISHER_ID)
     : [];
   const warmupRow = rows.find((r) => r.exerciseId === WARMUP_ID) ?? null;
   const finisherRow = rows.find((r) => r.exerciseId === FINISHER_ID) ?? null;
@@ -659,7 +662,7 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           knee: null,
           shoulder: null,
         } satisfies WorkoutEntry);
-      const entryRows = exercisesFor(existingEntry, db.workouts);
+      const entryRows = editorRows(existingEntry, db.workouts);
       patch({
         ...existingEntry,
         ex: entryRows.map((e) =>
