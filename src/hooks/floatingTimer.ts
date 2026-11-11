@@ -100,13 +100,13 @@ export function drawFloating(g: CanvasRenderingContext2D, c: FloatingContent): v
     g.fillText(fit(g, c.sub, W - 40), W / 2, c.big ? 228 : H / 2 + 28);
   }
 
-  // פס התקדמות בתחתית: כמה נשאר.
+  // פס התקדמות בתחתית: כמה נשאר. מה שנשאר צמוד לשמאל ומה שעבר מתרוקן
+  // מימין — הזמן זורם מימין לשמאל, כמו בפס הטיימר במסך ובגרפים.
   g.fillStyle = track;
   g.fillRect(0, H - 10, W, 10);
   if (c.fraction > 0) {
     g.fillStyle = accent;
-    // RTL: הפס מתרוקן לכיוון ימין, כמו בפס הטיימר במסך.
-    g.fillRect(W - W * c.fraction, H - 10, W * c.fraction, 10);
+    g.fillRect(0, H - 10, W * c.fraction, 10);
   }
   g.restore();
 }

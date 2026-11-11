@@ -35,7 +35,11 @@ export function useFloatingTimer(timer: RestTimer, visible: boolean): FloatingCo
       return true;
     }
     const ok = await floatingTimer.open();
-    if (!ok) setFailed(true);
+    if (!ok) {
+      // הדפדפן סירב: הכפתור נעלם עד הטעינה הבאה, והווידאו המוכן משתחרר.
+      setFailed(true);
+      floatingTimer.dispose();
+    }
     return ok;
   }, []);
 

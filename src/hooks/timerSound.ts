@@ -29,6 +29,9 @@ let ctx: AudioContext | null = null;
 /** ההקשר עבר מחווה של המשתמש לפחות פעם אחת בחיי הדף. */
 let unlocked = false;
 let releaseTimer: number | null = null;
+/** כמה צפצופים מתנגנים כרגע, וסוג ערוץ השמע שהיה לפני הראשון מהם. */
+let alertsPlaying = 0;
+let sessionTypeBefore: string | null = null;
 
 /** שלושה צלילים עולים: סול5, דו6, מי6. [התחלה בשניות, תדר]. */
 const NOTES: readonly (readonly [number, number])[] = [
@@ -125,22 +128,30 @@ export async function playAlert(hold = false): Promise<boolean> {
   cancelRelease();
 
   // iOS: "playback" לא מושתק במתג השקט. רק סביב הצפצוף, ורק אם ה-API קיים.
+  // הסוג הקודם נשמר פעם אחת ומוחזר כשהצפצוף האחרון מסתיים — גם אם טיימר
+  // חדש התחיל בינתיים, כדי שהדף לא יישאר על ערוץ שלא מתערבב עם מוזיקה.
   const session = audioSession();
-  let previousType: string | null = null;
+  alertsPlaying += 1;
   try {
     if (session && session.type !== 'playback') {
-      previousType = session.type;
+      sessionTypeBefore = session.type;
       session.type = 'playback';
     }
   } catch {
-    previousType = null;
+    sessionTypeBefore = null;
   }
+  let restored = false;
   const restoreSession = () => {
+    if (restored) return;
+    restored = true;
+    alertsPlaying = Math.max(0, alertsPlaying - 1);
+    if (alertsPlaying > 0) return;
     try {
-      if (session && previousType !== null) session.type = previousType;
+      if (session && sessionTypeBefore !== null) session.type = sessionTypeBefore;
     } catch {
       /* לא קריטי */
     }
+    sessionTypeBefore = null;
   };
 
   try {
@@ -182,16 +193,17 @@ export async function playAlert(hold = false): Promise<boolean> {
     return false;
   }
 
-  // אחרי הצפצוף: מחזירים את סוג הערוץ, ומשהים את ההקשר אם אין טיימר נוסף —
-  // כדי שהדף לא יחזיק ערוץ שמע פעיל בין מנוחות.
-  releaseTimer = window.setTimeout(
-    () => {
+  // אחרי הצפצוף: מחזירים את סוג הערוץ (תמיד), ומשהים את ההקשר אם אין טיימר
+  // נוסף — כדי שהדף לא יחזיק ערוץ שמע פעיל בין מנוחות. ההשהיה מתבטלת אם
+  // התחיל טיימר חדש בינתיים (`primeAudio`); החזרת הסוג לא.
+  const afterMs = Math.ceil((ALERT_SEC + 0.25) * 1000);
+  window.setTimeout(restoreSession, afterMs);
+  if (!hold) {
+    releaseTimer = window.setTimeout(() => {
       releaseTimer = null;
-      restoreSession();
-      if (!hold) releaseAudio();
-    },
-    Math.ceil((ALERT_SEC + 0.25) * 1000),
-  );
+      releaseAudio();
+    }, afterMs);
+  }
   return true;
 }
 

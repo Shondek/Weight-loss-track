@@ -43,7 +43,7 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound, float
 
   return (
     <div className={`resttimer${timer.finished ? ' is-finished' : ''}`}>
-      {/* פס דק: כמה נשאר. מתרוקן לכיוון ימין. */}
+      {/* פס דק: כמה נשאר. מה שעבר מתרוקן מימין — הזמן זורם מימין לשמאל. */}
       <div className="resttimer__progress" aria-hidden="true">
         <span style={{ '--left': timer.running && !timer.stopwatch ? timer.fractionLeft : 0 } as CSSProperties} />
       </div>
