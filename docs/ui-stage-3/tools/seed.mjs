@@ -80,9 +80,10 @@ const BASE = {
   'barbell-rdl': 50,
   'seated-cable-row': 45,
   'pec-deck': 40,
-  'face-pull': 20,
+  'cable-reverse-fly': 20, // B5 מ-4/11/2026 (#37); קודם: face-pull
   'db-supinated-curl': 10,
-  'triceps-pushdown': 25,
+  'cable-bar-pushdown': 25, // B7/C7 מ-4/11/2026 (#37); קודם: triceps-pushdown
+  'triceps-pushdown': 25, // עדיין בתוכנית של בת הזוג (B6)
   'floor-leg-raise': null,
   'machine-hip-abduction': 50,
   'machine-row': 45,
