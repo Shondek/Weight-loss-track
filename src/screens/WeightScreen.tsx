@@ -50,6 +50,7 @@ import { DASH } from '../lib/format';
 import { confidenceOf } from '../components/confidence';
 import { Button, DayDots, HeroValue, Icon, ListRow, MetricTile, Num, ScreenHeader, SectionHeader, StatusChip, Surface, useToast } from '../ui';
 import { ChevronLeft, Circle, CircleCheck, Dumbbell, Footprints, Pencil, Ruler, Utensils } from '../ui/icons';
+import { readEditor } from '../platform/uiState';
 import { waistStatus, weekDots } from './todayView';
 
 const RECENT_COUNT = 10;
@@ -172,6 +173,12 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
     moveStepsDate(yesterday);
     stepsSection.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  // ---- אימון פתוח (נשמר ב-fatloss:ui:editor, עד שש שעות): "המשך" במקום "הבא בתור".
+  const activeWorkout = useMemo(() => {
+    const editor = readEditor();
+    return editor ? (db.workouts.find((w) => w.id === editor.openId) ?? null) : null;
+  }, [db.workouts]);
 
   const waistLast = useMemo(() => lastWaist(db.waist), [db.waist]);
   const waistExisting = db.waist.find((e) => e.d === waistDate) ?? null;
@@ -622,18 +629,34 @@ export default function WeightScreen({ store, today, onNavigate }: Props) {
 
       {/* 6. אימון: הבא בסבב, כפי שמסך האימונים כבר מחשב. נגיעה מעבירה לשם. */}
       <Surface as="div" className="surface--row" aria-label="אימון">
-        <ListRow
-          lead={Dumbbell}
-          title={
-            <>
-              הבא בתור: <span className="strong">{upNext}</span>
-            </>
-          }
-          sub="אימונים"
-          end={<Icon icon={ChevronLeft} />}
-          onTap={() => onNavigate?.('workout')}
-          aria-label={`אימון — הבא בתור ${upNext}. למסך האימונים`}
-        />
+        {activeWorkout ? (
+          // אימון שנפתח ועוד לא נסגר: נגיעה אחת חזרה אליו, באותו תרגיל.
+          <ListRow
+            lead={Dumbbell}
+            title={
+              <>
+                אימון <span className="strong">{activeWorkout.t}</span> פתוח <StatusChip tone="accent">בתהליך</StatusChip>
+              </>
+            }
+            sub="המשך מאיפה שעצרת"
+            end={<Icon icon={ChevronLeft} />}
+            onTap={() => onNavigate?.('workout')}
+            aria-label={`אימון ${activeWorkout.t} פתוח. המשך במסך האימונים`}
+          />
+        ) : (
+          <ListRow
+            lead={Dumbbell}
+            title={
+              <>
+                הבא בתור: <span className="strong">{upNext}</span>
+              </>
+            }
+            sub="אימונים"
+            end={<Icon icon={ChevronLeft} />}
+            onTap={() => onNavigate?.('workout')}
+            aria-label={`אימון — הבא בתור ${upNext}. למסך האימונים`}
+          />
+        )}
       </Surface>
 
       {/* 7. מתחת לכל זה: צעדים, מותניים, גרף והיסטוריה — כמו במסך המשקל. */}

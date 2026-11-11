@@ -10,6 +10,7 @@ import { activeProfile } from './data/profile';
 import { defaultTab, visibleTabs, type TabId } from './lib/profile';
 import { onAppUpdate } from './platform/appUpdate';
 import { requestPersistentStorage } from './platform/storagePersist';
+import { readCardioSession, readEditor } from './platform/uiState';
 import { useRestTimer } from './hooks/useRestTimer';
 import { useFloatingTimer } from './hooks/useFloatingTimer';
 import RestTimerBar from './components/RestTimerBar';
@@ -54,10 +55,21 @@ const TABS: { id: TabId; label: string; icon: IconComponent }[] = visibleTabs(PR
   icon: TAB_ICONS[id],
 }));
 
+/**
+ * הטאב שנפתח: ברירת המחדל של הפרופיל, חוץ מבאמצע אימון. אימון פתוח (נשמר
+ * ב-`fatloss:ui:editor`, עד שש שעות) או ריצת אירובי פעילה → ישר למסך
+ * האימונים, באותו תרגיל. בחדר כושר iOS סוגר את הדף ברקע, וכל פתיחה מחדש
+ * נחתה על "היום" ודרשה נגיעה נוספת. קריאה בלבד של מצב ממשק קיים.
+ */
+function initialTab(): TabId {
+  if (readEditor() !== null || readCardioSession() !== null) return 'workout';
+  return defaultTab(PROFILE);
+}
+
 export default function App() {
   const store = useDb();
   const today = useToday();
-  const [tab, setTab] = useState<TabId>(defaultTab(PROFILE));
+  const [tab, setTab] = useState<TabId>(initialTab);
   const [updateReady, setUpdateReady] = useState(false);
   useEffect(() => onAppUpdate(() => setUpdateReady(true)), []);
   // בקשה לאחסון קבוע בכל טעינה (סיכון #5). התוצאה מוצגת במסך "נתונים".
