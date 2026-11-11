@@ -21,7 +21,7 @@ import {
   exerciseIn,
   restSeconds,
 } from '../data/program';
-import { HISTORY_ROWS } from '../data/config';
+import { CARDIO_MAX_MINUTES, HISTORY_ROWS } from '../data/config';
 import { activeProfile } from '../data/profile';
 import { workoutFeatures } from '../lib/profile';
 import { suggestNext } from '../lib/progression';
@@ -620,6 +620,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
     if (session) openSummaryFromSession(session);
   };
 
+  /** השעון החי של ריצת האירובי הפעילה — מהטיימר (זמן סיום), לכרטיס הריצה. */
+  const cardioClock =
+    session && timer.kind === 'cardio' && timer.running
+      ? { elapsedSec: timer.elapsedSec, remainingSec: timer.remainingSec, stopwatch: timer.stopwatch }
+      : null;
+
   /** רישום ידני / עריכת רשומה קיימת — סיכום בלי ריצה. */
   const openSummary = (
     target: CardioSessionTarget,
@@ -897,12 +903,14 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
       defaultsFor={(mode) => lastFinisherCardio(db.workouts, mode, open.id)}
       session={sessionFor({ kind: 'finisher', workoutId: open.id, t: open.t, d: open.d })}
       sessionBusy={session !== null}
-      onStartSession={() => {
+      clock={cardioClock}
+      onStartSession={(stopwatch) => {
         const c = cardioOf(finisherRow);
         beginSession(
           { kind: 'finisher', workoutId: open.id, t: open.t, d: open.d },
           c.mode,
-          c.minutes,
+          // סטופר = ריצה במשך המרבי: נחתכת רק בתקרה, ו"סיים" גוזר את הדקות מהזמן שעבר.
+          stopwatch ? CARDIO_MAX_MINUTES : c.minutes,
           c.incline ?? null,
           c.speed ?? null,
           'אירובי',
@@ -1014,7 +1022,11 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
                     ex: rows.map((e) => (e.exerciseId === next.exerciseId ? next : e)),
                   });
                 }}
-                onStart={(minutes) => onCardioStart(warmupRow, minutes)}
+                onStart={(minutes) => {
+                  onCardioStart(warmupRow, minutes);
+                  // "התחל" רושם ומתחיל לספור — השורה נסגרת לבד, התרגיל הראשון עולה.
+                  setWarmupOpen(false);
+                }}
               />
             </Disclosure>
           </Surface>
@@ -1226,11 +1238,12 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           defaultsFor={(mode) => lastStandalone(db.standaloneCardio, mode)}
           session={sessionFor({ kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note })}
           sessionBusy={session !== null}
-          onStart={() =>
+          clock={cardioClock}
+          onStart={(stopwatch) =>
             beginSession(
               { kind: 'standalone', id: cardioOpen.id, d: cardioOpen.d, note: cardioOpen.note },
               cardioOpen.mode,
-              cardioOpen.minutes,
+              stopwatch ? CARDIO_MAX_MINUTES : cardioOpen.minutes,
               cardioOpen.incline,
               cardioOpen.speed,
               'אירובי — עצמאי',

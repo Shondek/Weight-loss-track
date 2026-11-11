@@ -1024,6 +1024,37 @@ button {
   font-size: 19px;
 }
 
+/* חימום: צ'יפים 6–10 + "אחר". אירובי: "ספירה לאחור / סטופר". שורה מלאה משלהם. */
+.cardio > .chipsel {
+  flex: 1 1 100%;
+}
+
+/* "התחל" ממלא את מה שנשאר מהשורה — יעד גדול, לא כפתור קטן בקצה. */
+.cardio > .btn--primary {
+  flex: 1 1 auto;
+}
+
+/* השעון החי בכרטיס הריצה: הזמן שעבר גדול, ומה שנשאר לידו בשקט. */
+.cardio__clock {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0 0;
+}
+
+.cardio__clock-main {
+  font-size: var(--t-hero-muted);
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.cardio__clock-sub {
+  color: var(--text-secondary);
+  font-size: var(--t-sub);
+}
+
 /* ---------- סיכום ריצת אירובי ---------- */
 
 .cardio-summary__list {
