@@ -349,6 +349,22 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const currentNo = current ? strengthRows.indexOf(current) + 1 : strengthTotal;
   useWakeLock(open !== null);
 
+  /**
+   * "מה הלאה" לטיימר (החלון הצף וקוראי מסך): הסט הבא בתרגיל שבמוקד, ואם
+   * כולם נרשמו — התרגיל הבא. נגזר ממה שבמסך; בזיכרון בלבד.
+   */
+  const upNextText = (() => {
+    if (!open || !current) return '';
+    const idx = current.sets.findIndex((s) => !setPerformed(s));
+    if (idx !== -1) return `${current.n} · סט ${idx + 1}/${current.sets.length}`;
+    const after = rows[currentIndex + 1];
+    return after && currentIndex + 1 < finishIndex ? after.n : 'סיום האימון';
+  })();
+  const { setNext: setTimerNext } = timer;
+  useEffect(() => {
+    setTimerNext(upNextText);
+  }, [upNextText, setTimerNext]);
+
   // אימון שנמחק מבחוץ (ייבוא, מחיקה גורפת) לא נשאר פתוח על ריק.
   // מטפל גם במזהה שהוחזר מהאחסון ושייך לאימון שכבר לא קיים.
   useEffect(() => {
@@ -782,7 +798,8 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
   const onSetLogged = (ex: LoggedExercise, setIndex: number) => {
     const isLastSet = setIndex + 1 === ex.sets.length;
     const seconds = restSeconds(ex.type, isLastSet);
-    timer.start(seconds, isLastSet ? 'מנוחה לפני התרגיל הבא' : 'מנוחה');
+    // כיתוב קצר: הפס מציג אותו בשורה אחת מעל הזמן (שלב 7).
+    timer.start(seconds, isLastSet ? 'לפני התרגיל הבא' : 'מנוחה');
   };
 
   /** חימום/אירובי: אותו טיימר, במשך שנקבע ידנית. אין מנוחה אחריו. */

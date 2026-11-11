@@ -1050,7 +1050,10 @@ button {
   align-items: start;
 }
 
-/* ---------- טיימר מנוחה: גדול, על משטח 3, מעל הניווט ---------- */
+/* ---------- פס הטיימר: שורה אחת, על משטח 3, מעל הניווט ---------- */
+/* מימין: כיתוב קטן ומתחתיו הזמן. משמאל: הפקדים. הכיתוב לעולם לא נשבר
+   לשורות — הוא נחתך עם "…" (שלב 7; קודם "מנוחה לפני התרגיל הבא" תפס
+   ארבע שורות ב-390px). הגובה נשאר 68px: הטוסט והריפוד של המסך תלויים בו. */
 
 .resttimer {
   position: fixed;
@@ -1060,41 +1063,112 @@ button {
   background: var(--surface-3);
 }
 
+/* פס דק בראש: כמה נשאר. מתרוקן לכיוון ימין (ההתחלה ב-RTL). */
+.resttimer__progress {
+  height: 3px;
+  background: var(--line);
+}
+
+.resttimer__progress > span {
+  display: block;
+  height: 100%;
+  width: calc(var(--left, 0) * 100%);
+  margin-inline-start: auto;
+  background: var(--accent);
+  transition: width 250ms linear;
+}
+
 .resttimer__inner {
   max-width: var(--maxw);
   margin: 0 auto;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  min-height: 68px;
-  padding: var(--sp-2) max(var(--sp-4), env(safe-area-inset-right))
-    var(--sp-2) max(var(--sp-4), env(safe-area-inset-left));
+  min-height: 65px;
+  padding: var(--sp-2) max(var(--sp-3), env(safe-area-inset-right))
+    var(--sp-2) max(var(--sp-3), env(safe-area-inset-left));
+}
+
+.resttimer__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resttimer__label,
+.resttimer__ago {
+  color: var(--text-secondary);
+  font-size: var(--t-micro);
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .resttimer__count {
   color: var(--text-primary);
-  font-size: 36px;
+  font-size: 30px;
   font-weight: 300;
-  line-height: 1;
+  line-height: 30px;
   font-variant-numeric: tabular-nums;
   direction: ltr;
   unicode-bidi: isolate;
-  min-width: 84px;
+  text-align: end;
+  align-self: flex-start;
+}
+
+.resttimer__done {
+  color: var(--status-done);
+  font-size: var(--t-body);
+  font-weight: 500;
+  line-height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resttimer__ago {
+  font-size: var(--t-label);
+  line-height: 18px;
+}
+
+.resttimer__actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
 }
 
 .resttimer .btn {
   background: var(--surface-2);
   color: var(--text-primary);
   min-height: var(--tap-min);
+  min-width: var(--tap-min);
   padding: 0 var(--sp-3);
   font-size: var(--t-sub);
 }
 
-.resttimer .btn--step {
-  flex: 0 0 auto;
-  width: auto;
-  height: auto;
-  min-width: var(--tap-min);
+.resttimer .btn--quiet {
+  background: none;
+  color: var(--text-secondary);
+  padding-inline: var(--sp-2);
+}
+
+.resttimer .resttimer__icon {
+  width: var(--tap-min);
+  padding: 0;
+}
+
+.resttimer .resttimer__step {
+  padding: 0 var(--sp-2);
+  min-width: 46px;
+}
+
+/* מתג פעיל (צליל פועל / חלון צף פתוח): טקסט ראשי במקום משני. */
+.resttimer .btn--quiet[aria-pressed='true'] {
+  color: var(--text-primary);
 }
 
 /* ---------- תזונה ---------- */
