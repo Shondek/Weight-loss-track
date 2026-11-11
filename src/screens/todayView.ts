@@ -10,12 +10,13 @@ import type { DayDot } from '../ui/DayDots';
 
 /**
  * מצב אריח המותניים לפי היום בשבוע:
- *  - `measured` — נמדד ברביעי (או בחמישי כשאין רביעי) של השבוע הנוכחי.
- *    רק זו מדידה "תקינה" של השבוע — אותו כלל כמו בסיכום השבועי.
+ *  - `measured` — נמדד ברביעי של השבוע הנוכחי; כשאין רביעי — בחמישי, וכשאין
+ *    גם חמישי — בשישי. רק זו מדידה "תקינה" של השבוע — אותו כלל כמו בסיכום
+ *    השבועי (שלב 7: שישי בבוקר תקף, רק שבת לא).
  *  - `measured-other` — נמדד השבוע ביום אחר. מוצג ניטרלי, לא כ"תקין".
  *  - `upcoming` — עוד לא נמדד, א'–ג': המדידה לפנינו.
- *  - `due` — עוד לא נמדד, ד'–ה': היום מודדים.
- *  - `missed` — לא נמדד, ו'–ש': השבוע הוחמץ. לא מבקשים למדוד.
+ *  - `due` — עוד לא נמדד, ד'–ו': היום מודדים.
+ *  - `missed` — לא נמדד, שבת: השבוע הוחמץ. לא מבקשים למדוד.
  */
 export type WaistStatusKind = 'measured' | 'measured-other' | 'upcoming' | 'due' | 'missed';
 
@@ -35,8 +36,8 @@ export function waistStatus(list: readonly WaistEntry[], today: ISODate): WaistS
   const previous = waistBeforeWeek(list, ws);
   const on = (d: ISODate | undefined) => (d ? (list.find((e) => e.d === d) ?? null) : null);
 
-  // רביעי קודם, חמישי אחריו — כמו הסיכום השבועי.
-  const valid = on(days[WAIST_DAY]) ?? on(days[WAIST_DAY + 1]);
+  // רביעי קודם, אחריו חמישי, אחריו שישי — כמו הסיכום השבועי.
+  const valid = on(days[WAIST_DAY]) ?? on(days[WAIST_DAY + 1]) ?? on(days[WAIST_DAY + 2]);
   if (valid) return { kind: 'measured', inWeek: valid, previous, measuredDay: dayName(valid.d) };
 
   // מדידה ביום אחר בשבוע הזה (עד היום): האחרונה שבהן.
@@ -48,7 +49,7 @@ export function waistStatus(list: readonly WaistEntry[], today: ISODate): WaistS
   if (other) return { kind: 'measured-other', inWeek: other, previous, measuredDay: dayName(other.d) };
 
   const dow = dayOfWeek(today);
-  const kind: WaistStatusKind = dow < WAIST_DAY ? 'upcoming' : dow <= WAIST_DAY + 1 ? 'due' : 'missed';
+  const kind: WaistStatusKind = dow < WAIST_DAY ? 'upcoming' : dow <= WAIST_DAY + 2 ? 'due' : 'missed';
   return { kind, inWeek: null, previous, measuredDay: null };
 }
 
