@@ -738,12 +738,34 @@ button {
   color: var(--text-secondary);
 }
 
+/* שם התרגיל, ובקצה כפתור "הערות" קטן (שלב 7: במקום שורה מלאה מעל הסטים). */
+.focus__title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+
+.focus__title .focus__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.focus__notes-btn {
+  flex: 0 0 auto;
+  margin-block: -8px;
+  min-height: var(--tap-min);
+}
+
+.focus__notes-btn[aria-expanded='true'] {
+  color: var(--text-primary);
+}
+
 .focus__muscles {
-  margin: calc(-1 * var(--sp-2)) 0 0;
+  margin: 0 0 var(--sp-2);
 }
 
 .focus__notes {
-  margin-top: calc(-1 * var(--sp-2));
+  margin-top: calc(-1 * var(--sp-1));
 }
 
 .focus__note {
@@ -788,6 +810,13 @@ button {
 .focus__sets {
   display: grid;
   gap: var(--sp-2);
+}
+
+/* גלילה אוטומטית לסט הבא ול-RIR (שלב 7): משאירים מקום לפס הטיימר ולניווט,
+   שהם fixed ולכן scrollIntoView לא מכיר אותם. */
+.set.is-next,
+.wk-rir {
+  scroll-margin-block: var(--sp-4) calc(var(--nav-h) + 68px + var(--sp-4) + env(safe-area-inset-bottom));
 }
 
 .set {
@@ -864,6 +893,21 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-2);
+}
+
+/* ההצעה והצ'יפ שלה באותה שורה; ההצעה נשברת לפני שהצ'יפ נדחק. */
+.wk-suggest__head--value {
+  align-items: flex-start;
+}
+
+.wk-suggest__head--value .wk-suggest__value {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.wk-suggest__head--value .chip {
+  flex: 0 0 auto;
+  margin-top: 4px;
 }
 
 .wk-suggest__label {

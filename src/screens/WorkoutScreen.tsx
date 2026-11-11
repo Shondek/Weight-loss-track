@@ -1005,8 +1005,9 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
           </Button>
         </div>
 
-        {/* חימום: שורה מקופלת בראש הסשן. לא חוסמת את התרגיל הראשון. */}
-        {warmupRow && (
+        {/* חימום: שורה מקופלת בראש הסשן, בתרגיל הראשון בלבד (שלב 7) — מהתרגיל
+            השני היא רק דחפה את הסטים אל מתחת לקפל. נגישה תמיד מרשימת התרגילים. */}
+        {warmupRow && (currentIndex <= 1 || warmupOpen) && (
           <Surface as="div" className="surface--row" aria-label="חימום">
             <Disclosure
               lead={Timer}
@@ -1152,6 +1153,19 @@ export default function WorkoutScreen({ store, today, timer }: Props) {
         {listOpen && (
           <Sheet title={`אימון ${open.t} · התרגילים`} onClose={() => setListOpen(false)}>
             <div aria-label="רשימת התרגילים">
+              {warmupRow && (
+                <ListRow
+                  lead={Timer}
+                  title="חימום"
+                  sub={warmupSummary}
+                  end={cardioMinutesDone(warmupRow) === null ? undefined : <StatusChip tone="done">נרשם</StatusChip>}
+                  onTap={() => {
+                    setFocus(1);
+                    setWarmupOpen(true);
+                    setListOpen(false);
+                  }}
+                />
+              )}
               {rows.map((r, i) => {
                 if (isCardio(r)) return null;
                 const st = segmentState(r, i);
