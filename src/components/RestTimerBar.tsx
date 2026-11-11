@@ -1,4 +1,5 @@
 import type { RestTimer } from '../hooks/useRestTimer';
+import { agoText, finishedTitle } from '../hooks/timerCore';
 
 type Props = {
   timer: RestTimer;
@@ -19,10 +20,10 @@ function mmss(total: number): string {
  * מנוחה: −15, +30 ודלג. ספירה לאחור (חימום/אירובי): השהה/המשך, אפס, דלג.
  */
 export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Props) {
-  if (!timer.running && !timer.justFinished) return null;
+  if (!timer.running && !timer.finished) return null;
 
   return (
-    <div className="resttimer" role="status" aria-live="polite">
+    <div className="resttimer">
       <div className="resttimer__inner">
         {timer.running && timer.kind === 'cardio' ? (
           // ריצת אירובי: תצוגה בלבד. אין השהיה (חותמות זמן לא משהות), ו"סיים"
@@ -74,9 +75,15 @@ export default function RestTimerBar({ timer, soundEnabled, onToggleSound }: Pro
             </button>
           </>
         ) : (
+          // הסתיים: "המנוחה נגמרה · לפני X שניות" — גם כשזה קרה כשהאפליקציה הייתה ברקע.
           <>
-            <span className="resttimer__count">סיום</span>
-            <span className="grow tiny muted">{timer.label}</span>
+            <span className="grow" role="status" aria-live="polite">
+              <span className="strong">{finishedTitle(timer.kind)}</span>{' '}
+              <span className="tiny muted">{agoText(timer.endedAgoSec)}</span>
+            </span>
+            <button type="button" className="btn btn--quiet" onClick={timer.skip}>
+              סגור
+            </button>
           </>
         )}
         <button

@@ -69,7 +69,7 @@ export default function App() {
    * וטיימר שיושב בתוכם היה נהרג בלחיצה מקרית באמצע אימון.
    */
   const timer = useRestTimer(store.db.settings.soundEnabled);
-  const timerVisible = timer.running || timer.justFinished;
+  const timerVisible = timer.running || timer.finished;
   const thisWeek = weekStart(today);
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
 
